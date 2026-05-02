@@ -9,32 +9,32 @@ const menus = [
 
 async function getWeather() {
   try {
-    const apiBase = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
     const now = new Date();
     const kst = new Date(now.getTime() + 9 * 3600000);
     const date = kst.toISOString().slice(0, 10).replace(/-/g, "");
-    const hour = kst.getHours();
-    const times = [2, 5, 8, 11, 14, 17, 20, 23];
-    const base = times.filter(t => t <= hour).pop() ?? 23;
-    const baseTime = String(base).padStart(2, "0") + "00";
+    const time = String(kst.getHours()).padStart(2, "0") + "00";
     const key = process.env.WEATHER_API_KEY!;
-    const nx = process.env.WEATHER_NX ?? "60";
-    const ny = process.env.WEATHER_NY ?? "127";
-    const url = `${apiBase}?serviceKey=${key}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${date}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const nx = process.env.WEATHER_NX ?? "55";
+    const ny = process.env.WEATHER_NY ?? "124";
+    const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${key}&pageNo=1&numOfRows=20&dataType=JSON&base_date=${date}&base_time=${time}&nx=${nx}&ny=${ny}`;
+    const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
     const items = data?.response?.body?.items?.item ?? [];
-    const get = (cat: string) => items.find((i: any) => i.category === cat)?.fcstValue;
-    const tmp = parseFloat(get("TMP") ?? "20");
+    const get = (cat: string) => items.find((i: any) => i.category === cat)?.obsrValue;
+    const tmp = parseFloat(get("T1H") ?? "20");
     const wsd = parseFloat(get("WSD") ?? "0");
     const pty = get("PTY") ?? "0";
+    const rn1 = get("RN1") ?? "0";
+
     const alerts: string[] = [];
     if (wsd >= 10) alerts.push(`🚨 강풍 ${wsd}m/s — 고소작업 중단 의무`);
     if (tmp >= 33) alerts.push(`☀️ 폭염 ${tmp}°C — 온열질환 주의`);
     if (tmp <= -10) alerts.push(`🥶 한파 ${tmp}°C — 저체온증 위험`);
-    if (pty !== "0") alerts.push(`🌧️ 강수 감지 — 야외작업 주의`);
-    return { tmp, wsd, pty, alerts };
-  } catch { return { tmp: null, wsd: null, pty: null, alerts: [] }; }
+    if (pty !== "0") alerts.push(`🌧️ 현재 ${["","비","비/눈","눈","소나기"][parseInt(pty)]} — 야외작업 주의`);
+
+    const icon = pty !== "0" ? "🌧️" : tmp >= 33 ? "☀️" : tmp <= 0 ? "🌨️" : "⛅";
+    return { tmp, wsd, pty, rn1, alerts, icon };
+  } catch { return { tmp: null, wsd: null, pty: null, rn1: null, alerts: [], icon: "⛅" }; }
 }
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,6 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const weather = await getWeather();
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
-  const weatherIcon = weather.pty !== "0" ? "🌧️" : weather.tmp && weather.tmp >= 33 ? "☀️" : weather.tmp && weather.tmp <= 0 ? "🌨️" : "⛅";
   return (
     <main className="min-h-screen bg-gray-950">
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
@@ -65,13 +64,11 @@ export default async function Home() {
         <div className={`px-4 py-3 border-b ${weather.alerts.length > 0 ? "bg-red-950 border-red-900" : "bg-gray-900 border-gray-800"}`}>
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-white text-sm font-medium">{weatherIcon} 현재 날씨</span>
+              <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨 (실황)</span>
               <span className="text-gray-400 text-xs">{weather.tmp}°C · 풍속 {weather.wsd}m/s</span>
             </div>
             {weather.alerts.length > 0 ? (
-              weather.alerts.map((a, i) => (
-                <p key={i} className="text-red-300 text-xs font-medium">{a}</p>
-              ))
+              weather.alerts.map((a, i) => <p key={i} className="text-red-300 text-xs font-medium">{a}</p>)
             ) : (
               <p className="text-gray-400 text-xs">날씨 이상 없음 — 정상 작업 가능</p>
             )}
