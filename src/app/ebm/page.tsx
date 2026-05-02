@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { SafeNav, StatusBadge } from "@/components/SafeLayout";
 
 async function getEbRows() {
   const apiBase = "https://api.notion.com/v1/databases";
@@ -20,36 +21,46 @@ async function getEbRows() {
   }));
 }
 
+const 유형색: Record<string, string> = {
+  "사진": "bg-blue-900 text-blue-300 border-blue-700",
+  "TBM기록": "bg-emerald-900 text-emerald-300 border-emerald-700",
+  "작업허가서": "bg-orange-900 text-orange-300 border-orange-700",
+  "점검표": "bg-yellow-900 text-yellow-300 border-yellow-700",
+  "교육기록": "bg-purple-900 text-purple-300 border-purple-700",
+};
+
 export default async function EbmPage() {
   const rows = await getEbRows();
   return (
-    <main className="p-6">
-      <div className="mb-4"><a href="/" className="text-blue-600 hover:underline text-sm">← 홈으로</a></div>
-      <h1 className="mb-6 text-2xl font-bold">📚 Evidence Book</h1>
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full border-collapse text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-4 py-2 text-left">증빙명</th>
-              <th className="border px-4 py-2 text-left">등록일</th>
-              <th className="border px-4 py-2 text-left">유형</th>
-              <th className="border px-4 py-2 text-left">연결TBM</th>
-              <th className="border px-4 py-2 text-left">연결PTW</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row: any) => (
-              <tr key={row.id} className="bg-white hover:bg-gray-50">
-                <td className="border px-4 py-2">{row.증빙명}</td>
-                <td className="border px-4 py-2">{row.등록일}</td>
-                <td className="border px-4 py-2">{row.증빙유형}</td>
-                <td className="border px-4 py-2">{row.관련TBM > 0 ? `${row.관련TBM}건` : "없음"}</td>
-                <td className="border px-4 py-2">{row.관련PTW > 0 ? `${row.관련PTW}건` : "없음"}</td>
-              </tr>
-            ))}
-            {rows.length === 0 && (<tr><td className="border px-4 py-6 text-center" colSpan={5}>데이터 없음</td></tr>)}
-          </tbody>
-        </table>
+    <main className="min-h-screen bg-gray-950 pb-10">
+      <SafeNav />
+      <div className="p-4 max-w-3xl mx-auto">
+        <div className="flex items-center justify-between mb-4 mt-2">
+          <h1 className="text-white text-xl font-bold">📚 Evidence Book</h1>
+          <span className="text-gray-400 text-sm">{rows.length}건</span>
+        </div>
+        <div className="space-y-2">
+          {rows.map((row: any) => (
+            <div key={row.id} className="bg-gray-900 border border-gray-700 rounded-xl p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-medium text-sm">{row.증빙명 || "제목 없음"}</div>
+                  <div className="text-gray-400 text-xs mt-1">{row.등록일}</div>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {row.관련TBM > 0 && <span className="px-2 py-0.5 bg-blue-900 text-blue-300 border border-blue-700 rounded-full text-xs">TBM {row.관련TBM}건</span>}
+                    {row.관련PTW > 0 && <span className="px-2 py-0.5 bg-orange-900 text-orange-300 border border-orange-700 rounded-full text-xs">PTW {row.관련PTW}건</span>}
+                  </div>
+                </div>
+                {row.증빙유형 && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border shrink-0 ${유형색[row.증빙유형] ?? "bg-gray-700 text-gray-300 border-gray-600"}`}>
+                    {row.증빙유형}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+          {rows.length === 0 && <div className="text-center text-gray-500 py-10">등록된 증빙 없음</div>}
+        </div>
       </div>
     </main>
   );

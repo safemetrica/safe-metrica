@@ -1,0 +1,52 @@
+import Link from "next/link";
+
+export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
+  return (
+    <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">🛡️</span>
+        <div>
+          <div className="text-white font-bold text-sm leading-tight">SafeMetrica™</div>
+          <div className="text-gray-400 text-xs">{company}</div>
+        </div>
+      </div>
+      <div className="flex gap-1">
+        <Link href="/tbm" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">📋 TBM</Link>
+        <Link href="/ebm" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">📚 EB</Link>
+        <Link href="/ptw" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">🧾 PTW</Link>
+        <Link href="/dashboard" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">📊 대시</Link>
+      </div>
+    </nav>
+  );
+}
+
+export function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    "조치 완료": "bg-green-900 text-green-300 border border-green-700",
+    "조치 필요": "bg-red-900 text-red-300 border border-red-700",
+    "확인 중": "bg-yellow-900 text-yellow-300 border border-yellow-700",
+    "허용": "bg-green-900 text-green-300 border border-green-700",
+    "금지": "bg-red-900 text-red-300 border border-red-700",
+    "승인": "bg-blue-900 text-blue-300 border border-blue-700",
+    "반려": "bg-red-900 text-red-300 border border-red-700",
+    "요청": "bg-gray-700 text-gray-300 border border-gray-600",
+    "완료": "bg-green-900 text-green-300 border border-green-700",
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[status] ?? "bg-gray-700 text-gray-300 border border-gray-600"}`}>
+      {status}
+    </span>
+  );
+}
+
+export function StatCard({ value, label, color, icon }: { value: number | string; label: string; color: string; icon: string }) {
+  return (
+    <div className={`rounded-xl p-4 border ${color} flex items-center gap-4`}>
+      <div className="text-3xl">{icon}</div>
+      <div>
+        <div className="text-3xl font-bold text-white leading-tight">{value}</div>
+        <div className="text-sm opacity-70 mt-0.5">{label}</div>
+      </div>
+    </div>
+  );
+}
