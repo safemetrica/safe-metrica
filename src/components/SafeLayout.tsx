@@ -1,11 +1,10 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
       <div className="flex items-center gap-3">
-        <img src="/logo.png.png" alt="SafeMetrica" className="w-8 h-8 object-contain bg-white rounded-lg p-1" />
+        <div className="w-8 h-8 bg-emerald-800 border border-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">S</div>
         <div>
           <div className="text-white font-bold text-sm leading-tight">SafeMetrica™</div>
           <div className="text-gray-400 text-xs">{company}</div>
@@ -38,17 +37,5 @@ export function StatusBadge({ status }: { status: string }) {
     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[status] ?? "bg-gray-700 text-gray-300 border border-gray-600"}`}>
       {status}
     </span>
-  );
-}
-
-export function StatCard({ value, label, color, icon }: { value: number | string; label: string; color: string; icon: string }) {
-  return (
-    <div className={`rounded-xl p-4 border ${color} flex items-center gap-4`}>
-      <div className="text-3xl">{icon}</div>
-      <div>
-        <div className="text-3xl font-bold text-white leading-tight">{value}</div>
-        <div className="text-sm opacity-70 mt-0.5">{label}</div>
-      </div>
-    </div>
   );
 }
