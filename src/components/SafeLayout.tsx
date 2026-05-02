@@ -4,7 +4,7 @@ export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-emerald-800 border border-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">S</div>
+        <span className="text-2xl">🛡️</span>
         <div>
           <div className="text-white font-bold text-sm leading-tight">SafeMetrica™</div>
           <div className="text-gray-400 text-xs">{company}</div>
