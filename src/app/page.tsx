@@ -2,9 +2,9 @@ import Link from "next/link";
 
 const menus = [
   { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
-  { href: "/ebm", icon: "📚", label: "Evidence Book", sub: "증빙 현황 조회", color: "from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600", border: "border-emerald-500" },
+  { href: "/ebm", icon: "📚", label: "Evidence Book(증빙)", sub: "증빙 현황 조회", color: "from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600", border: "border-emerald-500" },
   { href: "/ptw", icon: "🧾", label: "고위험작업허가서", sub: "PTW 승인 현황", color: "from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600", border: "border-orange-500" },
-  { href: "/dashboard", icon: "📊", label: "대시보드", sub: "통계 & 리스크 요약", color: "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600", border: "border-purple-500" },
+  { href: "/dashboard", icon: "📊", label: "대표 대시보드", sub: "통계 & 리스크 요약", , color: "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600", border: "border-purple-500" },
 ];
 
 async function getWeather() {
@@ -58,7 +58,7 @@ export default async function Home() {
         </div>
       </div>
       <div className="px-4 py-3 bg-blue-950 border-b border-blue-900">
-        <p className="text-blue-300 text-xs text-center">㈜대도환경 파일럿 · 오늘도 안전한 하루 되세요 👷</p>
+        <p className="text-blue-300 text-xs text-center">㈜대도환경 · 오늘도 안전한 하루 되세요 👷</p>
       </div>
       {weather.tmp !== null && (
         <div className={`px-4 py-3 border-b ${weather.alerts.length > 0 ? "bg-red-950 border-red-900" : "bg-gray-900 border-gray-800"}`}>
