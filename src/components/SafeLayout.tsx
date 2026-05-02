@@ -5,7 +5,7 @@ export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
       <div className="flex items-center gap-3">
-        <Image src="/logo.png.png" alt="SafeMetrica" width={32} height={32} className="rounded" />
+        <img src="/logo.png.png" alt="SafeMetrica" className="w-8 h-8 object-contain bg-white rounded-lg p-1" />
         <div>
           <div className="text-white font-bold text-sm leading-tight">SafeMetrica™</div>
           <div className="text-gray-400 text-xs">{company}</div>
