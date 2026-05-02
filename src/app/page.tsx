@@ -12,29 +12,52 @@ async function getWeather() {
     const now = new Date();
     const kst = new Date(now.getTime() + 9 * 3600000);
     const date = kst.toISOString().slice(0, 10).replace(/-/g, "");
-    const time = String(kst.getHours()).padStart(2, "0") + "00";
+    const hour = kst.getHours();
+    const time = String(hour).padStart(2, "0") + "00";
     const key = process.env.WEATHER_API_KEY;
     const nx = process.env.WEATHER_NX ?? "55";
     const ny = process.env.WEATHER_NY ?? "124";
-    if (!key) return { tmp: null, wsd: null, pty: null, alerts: [], icon: "⛅" };
-    const apiBase = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst";
-    const url = `${apiBase}?serviceKey=${key}&pageNo=1&numOfRows=20&dataType=JSON&base_date=${date}&base_time=${time}&nx=${nx}&ny=${ny}`;
-    const res = await fetch(url, { cache: "no-store" });
-    const data = await res.json();
-    const items = data?.response?.body?.items?.item ?? [];
-    const get = (cat: string) => items.find((i: any) => i.category === cat)?.obsrValue;
-    const tmp = parseFloat(get("T1H") ?? "20");
-    const wsd = parseFloat(get("WSD") ?? "0");
-    const pty = get("PTY") ?? "0";
+    if (!key) return { tmp: null, wsd: null, pty: "0", pop: 0, alerts: [], icon: "⛅" };
+
+    // 1) 초단기실황 (현재 기온·풍속·강수형태)
+    const ncstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${key}&pageNo=1&numOfRows=20&dataType=JSON&base_date=${date}&base_time=${time}&nx=${nx}&ny=${ny}`;
+    // 2) 단기예보 (강수확률 POP)
+    const fcstTimes = [2,5,8,11,14,17,20,23];
+    const baseH = fcstTimes.filter(t => t <= hour).pop() ?? 23;
+    const fcstTime = String(baseH).padStart(2,"0") + "00";
+    const fcstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${key}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${date}&base_time=${fcstTime}&nx=${nx}&ny=${ny}`;
+
+    const [ncstRes, fcstRes] = await Promise.all([
+      fetch(ncstUrl, { cache: "no-store" }),
+      fetch(fcstUrl, { next: { revalidate: 3600 } }),
+    ]);
+    const [ncstData, fcstData] = await Promise.all([ncstRes.json(), fcstRes.json()]);
+
+    const ncstItems = ncstData?.response?.body?.items?.item ?? [];
+    const fcstItems = fcstData?.response?.body?.items?.item ?? [];
+
+    const getNcst = (cat: string) => ncstItems.find((i: any) => i.category === cat)?.obsrValue;
+    const getFcst = (cat: string) => fcstItems.find((i: any) => i.category === cat)?.fcstValue;
+
+    const tmp = parseFloat(getNcst("T1H") ?? "20");
+    const wsd = parseFloat(getNcst("WSD") ?? "0");
+    const pty = getNcst("PTY") ?? "0";
+    const pop = parseInt(getFcst("POP") ?? "0");  // 강수확률 %
+    const sky = getFcst("SKY") ?? "1"; // 1=맑음 3=구름많음 4=흐림
+
     const alerts: string[] = [];
     if (wsd >= 10) alerts.push(`🚨 강풍 ${wsd}m/s — 고소작업 중단 의무`);
     if (tmp >= 33) alerts.push(`☀️ 폭염 ${tmp}°C — 온열질환 주의`);
     if (tmp <= -10) alerts.push(`🥶 한파 ${tmp}°C — 저체온증 위험`);
     if (pty !== "0") alerts.push(`🌧️ 현재 강수 감지 — 야외작업 주의`);
-    const icon = pty !== "0" ? "🌧️" : tmp >= 33 ? "☀️" : tmp <= 0 ? "🌨️" : "⛅";
-    return { tmp, wsd, pty, alerts, icon };
+    else if (pop >= 40) alerts.push(`🌦️ 강수확률 ${pop}% — 야외작업 시 우비 준비`);
+    else if (pop >= 20) alerts.push(`☁️ 강수확률 ${pop}% — 날씨 변화 주의`);
+
+    const icon = pty !== "0" ? "🌧️" : pop >= 40 ? "🌦️" : sky === "4" ? "☁️" : sky === "3" ? "⛅" : tmp >= 33 ? "☀️" : tmp <= 0 ? "🌨️" : "☀️";
+
+    return { tmp, wsd, pty, pop, alerts, icon };
   } catch {
-    return { tmp: null, wsd: null, pty: null, alerts: [], icon: "⛅" };
+    return { tmp: null, wsd: null, pty: null, pop: 0, alerts: [], icon: "⛅" };
   }
 }
 
@@ -65,8 +88,8 @@ export default async function Home() {
         <div className={`px-4 py-3 border-b ${weather.alerts.length > 0 ? "bg-red-950 border-red-900" : "bg-gray-900 border-gray-800"}`}>
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨 (실황)</span>
-              <span className="text-gray-400 text-xs">{weather.tmp}°C · 풍속 {weather.wsd}m/s</span>
+              <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨 (실황+예보)</span>
+              <span className="text-gray-400 text-xs">{weather.tmp}°C · 풍속 {weather.wsd}m/s · 강수확률 {weather.pop}%</span>
             </div>
             {weather.alerts.length > 0
               ? weather.alerts.map((a, i) => <p key={i} className="text-red-300 text-xs font-medium">{a}</p>)
@@ -96,4 +119,3 @@ export default async function Home() {
     </main>
   );
 }
-// force redeploy Sat May  2 15:26:37 UTC 2026
