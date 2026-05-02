@@ -1,10 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">🛡️</span>
+        <Image src="/logo.png.png" alt="SafeMetrica" width={32} height={32} className="rounded" />
         <div>
           <div className="text-white font-bold text-sm leading-tight">SafeMetrica™</div>
           <div className="text-gray-400 text-xs">{company}</div>
@@ -23,6 +24,7 @@ export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
 export function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     "조치 완료": "bg-green-900 text-green-300 border border-green-700",
+    "즉시 조치 완료": "bg-green-900 text-green-300 border border-green-700",
     "조치 필요": "bg-red-900 text-red-300 border border-red-700",
     "확인 중": "bg-yellow-900 text-yellow-300 border border-yellow-700",
     "허용": "bg-green-900 text-green-300 border border-green-700",

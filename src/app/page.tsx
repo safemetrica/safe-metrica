@@ -46,7 +46,7 @@ export default async function Home() {
     <main className="min-h-screen bg-gray-950">
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">🛡️</span>
+          <img src="/logo.png.png" alt="SafeMetrica" className="w-10 h-10 object-contain" />
           <div>
             <h1 className="text-white font-bold text-xl leading-tight">SafeMetrica™</h1>
             <p className="text-gray-400 text-xs">산업안전 통합 관리 플랫폼</p>
