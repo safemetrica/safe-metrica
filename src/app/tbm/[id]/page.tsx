@@ -33,7 +33,8 @@ export default async function TbmDetailPage({
 }: {
   params: { id: string };
 }) {
-  const tbm = await getTbmDetail(params.id);
+  const { id } = await Promise.resolve(params);
+  const tbm = await getTbmDetail(id);
   const needsEB = tbm.특이사항 && tbm.연결EB === 0;
 
   return (
