@@ -134,7 +134,7 @@ export default async function FieldPage() {
             </span>
           </div>
           <div className="space-y-2">
-            {d.checklist.map((c, i) => (
+            {d.checklist.map((c: {done: boolean; text: string; href: string; urgent: boolean}, i: number) => (
               <Link key={i} href={c.href}>
                 <div className={`flex items-center gap-3 p-3 rounded-lg hover:opacity-80 transition cursor-pointer ${
                   c.done ? "bg-gray-800" : c.urgent ? "bg-red-900/40 border border-red-800" : "bg-yellow-900/30 border border-yellow-800"
@@ -231,7 +231,7 @@ export default async function FieldPage() {
             <span className="text-white font-bold text-sm">현장 안전 현황</span>
           </div>
           <div className="space-y-1">
-            {d.칭찬멘트.map((m, i) => (
+            {d.칭찬멘트.map((m: string, i: number) => (
               <p key={i} className="text-green-200 text-sm">{m}</p>
             ))}
           </div>
