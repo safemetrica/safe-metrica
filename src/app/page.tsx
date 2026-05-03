@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SafeNav } from "@/components/SafeLayout";
 
 const menus = [
   { href: "/tbm",       icon: "📋", label: "TBM 현황",       sub: "툴박스미팅 실시간" },
@@ -118,6 +119,8 @@ export default async function Home() {
   } catch { safetyNews = []; }
 
   return (
+    <>
+    <SafeNav />
     <main className="min-h-screen bg-gray-950">
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -227,5 +230,6 @@ export default async function Home() {
         </div>
       </div>
     </main>
+  </>
   );
 }
