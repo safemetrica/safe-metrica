@@ -37,7 +37,8 @@ export default async function TbmDetailPage({
   const needsEB = tbm.특이사항 && tbm.연결EB === 0;
 
   return (
-    <SafeNav>
+    <main className="min-h-screen bg-gray-950 pb-10">
+      <SafeNav />
       <div className="max-w-2xl mx-auto px-4 py-8 text-white">
         <div className="flex items-center gap-3 mb-6">
           <Link href="/tbm" className="text-gray-400 hover:text-white text-sm">
@@ -59,25 +60,11 @@ export default async function TbmDetailPage({
             </span>
           )}
           {tbm.조치상태 && (
-            <span
-              className={`px-3 py-1 rounded-full text-xs border ${
-                tbm.조치상태 === "조치 필요"
-                  ? "bg-red-900 text-red-300 border-red-700"
-                  : "bg-green-900 text-green-300 border-green-700"
-              }`}
-            >
+            <span className={`px-3 py-1 rounded-full text-xs border ${tbm.조치상태 === "조치 필요" ? "bg-red-900 text-red-300 border-red-700" : "bg-green-900 text-green-300 border-green-700"}`}>
               {tbm.조치상태}
             </span>
           )}
-          <span
-            className={`px-3 py-1 rounded-full text-xs border ${
-              tbm.연결EB > 0
-                ? "bg-green-900 text-green-300 border-green-700"
-                : tbm.특이사항
-                ? "bg-red-900 text-red-300 border-red-700"
-                : "bg-gray-800 text-gray-400 border-gray-700"
-            }`}
-          >
+          <span className={`px-3 py-1 rounded-full text-xs border ${tbm.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : tbm.특이사항 ? "bg-red-900 text-red-300 border-red-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>
             {tbm.연결EB > 0 ? `✅ EB ${tbm.연결EB}건 연결` : "EB 없음"}
           </span>
         </div>
@@ -102,10 +89,7 @@ export default async function TbmDetailPage({
               <p className="text-xs text-gray-500 mb-1">작업 태그</p>
               <div className="flex flex-wrap gap-1">
                 {tbm.작업태그.map((tag: string) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 text-xs rounded bg-gray-800 border border-gray-600 text-gray-300"
-                  >
+                  <span key={tag} className="px-2 py-0.5 text-xs rounded bg-gray-800 border border-gray-600 text-gray-300">
                     {tag}
                   </span>
                 ))}
@@ -135,6 +119,6 @@ export default async function TbmDetailPage({
           📎 노션 원문 열기
         </a>
       </div>
-    </SafeNav>
+    </main>
   );
 }
