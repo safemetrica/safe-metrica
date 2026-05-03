@@ -3,16 +3,16 @@ import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 
 const TAG_RISK_MAP: Record<string, { factor: string; S: number; L: number }> = {
-  "고소작업": { factor: "추락", S: 5, L: 3 },
-  "밀폐공간": { factor: "산소결핍", S: 5, L: 2 },
-  "중장비": { factor: "협착/충돌", S: 4, L: 3 },
-  "전기작업": { factor: "감전", S: 4, L: 2 },
-  "화학물질": { factor: "중독/화재", S: 4, L: 2 },
-  "굴착": { factor: "토사붕괴", S: 4, L: 3 },
-  "차량운행": { factor: "교통사고", S: 3, L: 3 },
-  "용접": { factor: "화재/폭발", S: 3, L: 3 },
-  "야간작업": { factor: "조명불량", S: 3, L: 2 },
-  "폐기물처리": { factor: "유해물질", S: 3, L: 2 },
+  "고소작업":     { factor: "추락",     S: 5, L: 3 },
+  "밀폐공간":     { factor: "산소결핍", S: 5, L: 2 },
+  "차량/이동장비": { factor: "협착·충돌", S: 4, L: 3 },
+  "양중/중량물":  { factor: "낙하·충돌", S: 4, L: 3 },
+  "전기":        { factor: "감전",     S: 4, L: 2 },
+  "화학/MSDS":   { factor: "중독·화재", S: 4, L: 2 },
+  "용접/용단":   { factor: "화재·폭발", S: 3, L: 3 },
+  "상·하차":     { factor: "요통·충돌", S: 3, L: 3 },
+  "정비/청소":   { factor: "절단·말림", S: 3, L: 2 },
+  "기타":        { factor: "일반위험",  S: 2, L: 2 },
 };
 
 async function getDashboardData() {
