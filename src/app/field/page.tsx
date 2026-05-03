@@ -93,7 +93,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   try {
     const rssResults = await Promise.allSettled(
       NEWS_SOURCES.map(async (src) => {
-        const res = await fetch(src.url, { next: { revalidate: 1800 } as RequestInit & { next: { revalidate: number } } });
+        const res = await fetch(src.url);
         const xml = await res.text();
         const items: NewsItem[] = [];
         const matches = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
