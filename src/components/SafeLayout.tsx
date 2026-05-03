@@ -3,13 +3,13 @@ import Link from "next/link";
 export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
-      <div className="flex items-center gap-3">
+      <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
         <span className="text-2xl">🛡️</span>
         <div>
           <div className="text-white font-bold text-sm leading-tight">SafeMetrica™</div>
           <div className="text-gray-400 text-xs">{company}</div>
         </div>
-      </div>
+      </Link>
       <div className="flex gap-1">
         <Link href="/tbm" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">📋 TBM</Link>
         <Link href="/ebm" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">📚 EB</Link>
