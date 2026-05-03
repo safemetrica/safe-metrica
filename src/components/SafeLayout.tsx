@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Link from "next/link";
 
 export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
   return (
