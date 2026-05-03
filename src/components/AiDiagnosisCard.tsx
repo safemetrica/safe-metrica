@@ -26,6 +26,7 @@ export default function AiDiagnosisCard() {
         <div className="flex items-center gap-2">
           <span className="text-lg">🤖</span>
           <span className="text-white font-bold text-sm">AI 안전 진단</span>
+          <span className="ml-auto text-xs text-blue-300">GPT-4o-mini</span>
         </div>
         {updatedAt && <span className="text-indigo-400 text-xs">{updatedAt} 기준</span>}
       </div>

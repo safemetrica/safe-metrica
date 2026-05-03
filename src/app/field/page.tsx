@@ -171,7 +171,7 @@ export default async function FieldPage() {
   const dateStr = now.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
 
   return (
-    <main className="min-h-screen bg-gray-950 pb-10">
+    <main className="min-h-screen bg-[#F6F8FB] pb-10">
       <SafeNav />
       <div className="p-4 max-w-2xl mx-auto">
 
