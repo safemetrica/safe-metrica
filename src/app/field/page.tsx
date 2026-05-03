@@ -74,6 +74,52 @@ async function getFieldData(): Promise<Record<string, any>> {
   });
   const 오늘PTW = ptwRows.filter((r: any) => r.작업일 === today);
   const PTW필요미제출 = PTW필요태그.length > 0 && 오늘PTW.length === 0;
+  // 날씨 위험 감지
+  type WeatherAlert = { type: string; message: string; level: 'danger' | 'warning' } | null;
+  let weatherAlert: WeatherAlert = null;
+  try {
+    const apiKey = process.env.WEATHER_API_KEY;
+    const nx = process.env.WEATHER_NX ?? '55';
+    const ny = process.env.WEATHER_NY ?? '124';
+    const base_date = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10).replace(/-/g, '');
+    const wUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${apiKey}&numOfRows=50&pageNo=1&dataType=JSON&base_date=${base_date}&base_time=0500&nx=${nx}&ny=${ny}`;
+    const wRes = await fetch(wUrl, { cache: 'no-store' });
+    const wJson = await wRes.json();
+    const items: any[] = wJson?.response?.body?.items?.item ?? [];
+    const wnd = items.find((i: any) => i.category === 'WSD');
+    const tmp = items.find((i: any) => i.category === 'TMP');
+    const pty = items.find((i: any) => i.category === 'PTY');
+    if (wnd && parseFloat(wnd.fcstValue) >= 10)
+      weatherAlert = { type: '강풍', message: `풍속 ${wnd.fcstValue}m/s — 고소작업 중단 기준 초과`, level: 'danger' };
+    else if (tmp && parseFloat(tmp.fcstValue) >= 33)
+      weatherAlert = { type: '폭염', message: `기온 ${tmp.fcstValue}°C — 온열질환 주의`, level: 'warning' };
+    else if (tmp && parseFloat(tmp.fcstValue) <= -10)
+      weatherAlert = { type: '혹한', message: `기온 ${tmp.fcstValue}°C — 저체온증 위험`, level: 'warning' };
+    else if (pty && ['1','2','3','4'].includes(pty.fcstValue))
+      weatherAlert = { type: '강수', message: '강수 예보 — 야외작업 주의', level: 'warning' };
+  } catch { weatherAlert = null; }
+
+  // 오늘 할 일 — TBM/EB/PTW/날씨 종합 우선순위 자동 생성
+  type TodoItem = { priority: 'urgent' | 'check' | 'ok'; icon: string; title: string; desc: string; href: string };
+  const 오늘할일: TodoItem[] = [];
+  if (오늘TBM.length === 0)
+    오늘할일.push({ priority: 'urgent', icon: '🔴', title: 'TBM 미작성', desc: '오늘 TBM을 작성하세요', href: '/tbm' });
+  if (EB누락.length > 0)
+    오늘할일.push({ priority: 'urgent', icon: '🔴', title: `EB 누락 ${EB누락.length}건`, desc: '특이사항 발생 건에 증빙 등록 필요', href: '/ebm' });
+  if (PTW위험.length > 0)
+    오늘할일.push({ priority: 'urgent', icon: '🚨', title: `PTW 금지/반려 ${PTW위험.length}건`, desc: '작업 즉시 중단 또는 재제출 필요', href: '/ptw' });
+  if (PTW필요미제출)
+    오늘할일.push({ priority: 'urgent', icon: '🚨', title: 'PTW 미제출', desc: `고위험 작업(${PTW필요태그.join(', ')}) PTW 제출 필요`, href: '/ptw' });
+  if (weatherAlert?.level === 'danger')
+    오늘할일.push({ priority: 'urgent', icon: '⛔', title: `기상 위험 — ${weatherAlert.type}`, desc: weatherAlert.message, href: '/field' });
+  if (조치필요.length > 0)
+    오늘할일.push({ priority: 'check', icon: '🟡', title: `조치 미완료 ${조치필요.length}건`, desc: '조치 상태 업데이트 필요', href: '/tbm' });
+  if (PTW미승인.length > 0)
+    오늘할일.push({ priority: 'check', icon: '🟡', title: `PTW 승인대기 ${PTW미승인.length}건`, desc: '승인 처리 필요', href: '/ptw' });
+  if (weatherAlert?.level === 'warning')
+    오늘할일.push({ priority: 'check', icon: '⚠️', title: `기상 주의 — ${weatherAlert.type}`, desc: weatherAlert.message, href: '/field' });
+  if (오늘할일.length === 0)
+    오늘할일.push({ priority: 'ok', icon: '✅', title: '이상 없음', desc: '오늘 현장 안전 상태 정상', href: '/field' });
 
   // 잘된 점 멘트
   const 칭찬멘트: string[] = [];
@@ -112,7 +158,7 @@ async function getFieldData(): Promise<Record<string, any>> {
 
   return {
     today, 오늘TBM, 이번주TBM, EB누락, 조치필요, PTW미승인, PTW위험,
-    checklist, PTW필요태그, PTW필요미제출, 칭찬멘트, safetyNews,
+    checklist, PTW필요태그, PTW필요미제출, 칭찬멘트, safetyNews, 오늘할일, weatherAlert,
     전체미완료: checklist.filter((c: {done: boolean; text: string; href: string; urgent: boolean}) => !c.done).length,
   };
 }
