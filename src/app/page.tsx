@@ -190,26 +190,26 @@ export default async function Home() {
           <p className="text-gray-400 text-xs leading-relaxed">특이사항 발생 시 반드시 Evidence Book 등록 · 고위험작업은 PTW 제출 후 시작 · 중대재해 발생 즉시 119 신고</p>
         </div>
 
-        {/* 산업안전 뉴스 */}
-        <div className="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">📰</span>
+        {/* 산업안전 뉴스 - 가로 스크롤 */}
+        <div className="mt-4">
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-sm">📰</span>
             <span className="text-white text-sm font-semibold">산업안전 최신 뉴스</span>
-            <span className="text-gray-500 text-xs ml-auto">고용노동부</span>
+            <span className="text-gray-600 text-xs ml-auto">고용노동부</span>
           </div>
           {safetyNews.length === 0 ? (
-            <p className="text-gray-500 text-xs">뉴스를 불러오는 중입니다...</p>
+            <p className="text-gray-600 text-xs px-1">뉴스를 불러오는 중입니다...</p>
           ) : (
-            <div className="space-y-2">
-              {safetyNews.slice(0, 6).map((news: {title:string; link:string; tag:string; color:string}, i: number) => (
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style=scrollbarWidth:'none'>
+              {safetyNews.slice(0, 8).map((news: {title:string; link:string; tag:string; color:string}, i: number) => (
                 <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
-                  className="flex items-start gap-2 hover:bg-gray-800 p-1.5 rounded-lg transition group">
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5 ${
-                    news.color === 'blue' ? 'bg-blue-900 text-blue-300' :
-                    news.color === 'green' ? 'bg-green-900 text-green-300' :
-                    'bg-red-900 text-red-300'
+                  className="shrink-0 w-52 bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-col gap-2 hover:border-gray-600 transition active:scale-95">
+                  <span className={`self-start px-2 py-0.5 rounded-full text-xs font-bold ${
+                    news.color === 'blue' ? 'bg-blue-950 text-blue-400' :
+                    news.color === 'green' ? 'bg-green-950 text-green-400' :
+                    'bg-red-950 text-red-400'
                   }`}>{news.tag}</span>
-                  <span className="text-gray-400 text-xs leading-relaxed group-hover:text-white transition line-clamp-2">{news.title}</span>
+                  <span className="text-gray-300 text-xs leading-relaxed line-clamp-3">{news.title}</span>
                 </a>
               ))}
             </div>
