@@ -82,9 +82,37 @@ async function getFieldData(): Promise<Record<string, any>> {
   if (조치필요.length === 0) 칭찬멘트.push("🟢 미조치 건 없음 — 현장 조치 대응 우수!");
   if (칭찬멘트.length === 0) 칭찬멘트.push("💪 오늘도 현장 안전 관리 함께 해주셔서 감사합니다!");
 
+  // 산업안전 뉴스 RSS 직접 파싱
+  type NewsItem = {title:string; link:string; source:string; tag:string; color:string};
+  const NEWS_SOURCES = [
+    { name: '고용노동부 공지', url: 'https://www.moel.go.kr/rss/notice.do', tag: '공지', color: 'blue' },
+    { name: '고용노동부 정책', url: 'https://www.moel.go.kr/rss/policy.do', tag: '정책', color: 'green' },
+    { name: '입법예고', url: 'https://www.moel.go.kr/rss/lawinfo.do', tag: '법령', color: 'red' },
+  ];
+  let safetyNews: NewsItem[] = [];
+  try {
+    const rssResults = await Promise.allSettled(
+      NEWS_SOURCES.map(async (src) => {
+        const res = await fetch(src.url, { next: { revalidate: 1800 } as RequestInit & { next: { revalidate: number } } });
+        const xml = await res.text();
+        const items: NewsItem[] = [];
+        const matches = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+        for (const item of matches.slice(0, 4)) {
+          const t = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || item.match(/<title>(.*?)<\/title>/)?.[1] || '';
+          const l = item.match(/<link>(.*?)<\/link>/)?.[1] || '#';
+          if (t.trim()) items.push({ title: t.replace(/&amp;/g,'&').trim(), link: l.trim(), source: src.name, tag: src.tag, color: src.color });
+        }
+        return items;
+      })
+    );
+    safetyNews = rssResults
+      .filter((r): r is PromiseFulfilledResult<NewsItem[]> => r.status === 'fulfilled')
+      .flatMap(r => r.value);
+  } catch { safetyNews = []; }
+
   return {
     today, 오늘TBM, 이번주TBM, EB누락, 조치필요, PTW미승인, PTW위험,
-    checklist, PTW필요태그, PTW필요미제출, 칭찬멘트,
+    checklist, PTW필요태그, PTW필요미제출, 칭찬멘트, safetyNews,
     전체미완료: checklist.filter((c: {done: boolean; text: string; href: string; urgent: boolean}) => !c.done).length,
   };
 }
