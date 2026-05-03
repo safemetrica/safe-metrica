@@ -5,24 +5,22 @@
 @tailwind utilities;
 
 :root {
-  --bg:           #0D1B2A;
-  --bg-card:      #112236;
-  --bg-hover:     #162C44;
-  --border:       #1E3A5F;
-  --border-hover: #2A5080;
-  --accent:       #0EA5E9;
-  --danger:       #EF4444;
-  --warn:         #F59E0B;
-  --success:      #22C55E;
-  --text-1:       #F1F5F9;
-  --text-2:       #94A3B8;
-  --text-3:       #475569;
+  --navy:      #0F2D5E;
+  --accent:    #1D6FEB;
+  --danger:    #DC2626;
+  --warn:      #D97706;
+  --success:   #16A34A;
+  --bg:        #F4F6F9;
+  --card:      #FFFFFF;
+  --border:    #E2E8F0;
+  --text-1:    #0F172A;
+  --text-2:    #475569;
 }
 
 html, body {
   background-color: var(--bg);
   color: var(--text-1);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Pretendard', -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }

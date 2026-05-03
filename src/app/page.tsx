@@ -174,7 +174,7 @@ export default async function Home() {
         );
       })()}
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="p-5 max-w-2xl mx-auto">
         <div className="grid grid-cols-2 gap-3 mt-2">
           {menus.map((m) => (
             <Link key={m.href} href={m.href}
