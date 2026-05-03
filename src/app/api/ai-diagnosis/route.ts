@@ -12,12 +12,12 @@ export async function GET() {
     };
 
     const [tbmRes, ptwRes] = await Promise.all([
-      fetch(`{{https://api.notion.com/v1/databases/${process.env.NOTION_TBM_DB_ID}}}/query`, {
+      fetch(`https://api.notion.com/v1/databases/${process.env.NOTION_TBM_DB_ID}/query`, {
         method: "POST", headers,
         body: JSON.stringify({ page_size: 5, sorts: [{ property: "날짜", direction: "descending" }] }),
         cache: "no-store",
       }),
-      fetch(`{{https://api.notion.com/v1/databases/${process.env.NOTION_PTW_DB_ID}}}/query`, {
+      fetch(`https://api.notion.com/v1/databases/${process.env.NOTION_PTW_DB_ID}/query`, {
         method: "POST", headers,
         body: JSON.stringify({ page_size: 10, sorts: [{ property: "작업일", direction: "descending" }] }),
         cache: "no-store",
