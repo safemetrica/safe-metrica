@@ -15,6 +15,7 @@ export function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
         <Link href="/ebm" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">📚 EB</Link>
         <Link href="/ptw" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">🧾 PTW</Link>
         <Link href="/dashboard" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">📊 대시</Link>
+            <Link href="/field" className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition">👷 현장</Link>
       </div>
     </nav>
   );
