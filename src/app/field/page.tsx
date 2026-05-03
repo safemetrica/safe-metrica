@@ -251,7 +251,7 @@ export default async function FieldPage() {
               <span className="text-gray-500 text-xs ml-auto">고용노동부</span>
             </div>
             <div className="space-y-2">
-              {d.safetyNews.slice(0, 8).map((news, i) => (
+              {d.safetyNews.slice(0, 8).map((news: {title:string; link:string; pubDate:string; source:string; tag:string; color:string}, i: number) => (
                 <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
                   className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-800 transition cursor-pointer group">
                   <span className={`px-1.5 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5 ${
