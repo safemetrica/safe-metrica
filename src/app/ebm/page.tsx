@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
-import { SafeNav, StatusBadge } from "@/components/SafeLayout";
+import { SafeNav } from "@/components/SafeLayout";
+import Link from "next/link";
 
 async function getEbRows() {
   const apiBase = "https://api.notion.com/v1/databases";
@@ -41,23 +42,25 @@ export default async function EbmPage() {
         </div>
         <div className="space-y-2">
           {rows.map((row: any) => (
-            <div key={row.id} className="bg-gray-900 border border-gray-700 rounded-xl p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-medium text-sm">{row.증빙명 || "제목 없음"}</div>
-                  <div className="text-gray-400 text-xs mt-1">{row.등록일}</div>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {row.관련TBM > 0 && <span className="px-2 py-0.5 bg-blue-900 text-blue-300 border border-blue-700 rounded-full text-xs">TBM {row.관련TBM}건</span>}
-                    {row.관련PTW > 0 && <span className="px-2 py-0.5 bg-orange-900 text-orange-300 border border-orange-700 rounded-full text-xs">PTW {row.관련PTW}건</span>}
+            <Link key={row.id} href={`/ebm/${row.id}`}>
+              <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 cursor-pointer hover:opacity-80 transition">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white font-medium text-sm">{row.증빙명 || "제목 없음"}</div>
+                    <div className="text-gray-400 text-xs mt-1">{row.등록일}</div>
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {row.관련TBM > 0 && <span className="px-2 py-0.5 bg-blue-900 text-blue-300 border border-blue-700 rounded-full text-xs">TBM {row.관련TBM}건</span>}
+                      {row.관련PTW > 0 && <span className="px-2 py-0.5 bg-orange-900 text-orange-300 border border-orange-700 rounded-full text-xs">PTW {row.관련PTW}건</span>}
+                    </div>
                   </div>
+                  {row.증빙유형 && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border shrink-0 ${유형색[row.증빙유형] ?? "bg-gray-700 text-gray-300 border-gray-600"}`}>
+                      {row.증빙유형}
+                    </span>
+                  )}
                 </div>
-                {row.증빙유형 && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border shrink-0 ${유형색[row.증빙유형] ?? "bg-gray-700 text-gray-300 border-gray-600"}`}>
-                    {row.증빙유형}
-                  </span>
-                )}
               </div>
-            </div>
+            </Link>
           ))}
           {rows.length === 0 && <div className="text-center text-gray-500 py-10">등록된 증빙 없음</div>}
         </div>
