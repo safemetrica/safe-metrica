@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import AiDiagnosisCard from "@/components/AiDiagnosisCard";
+import TodayTasksCard from "@/components/TodayTasksCard";
+import EvidenceScoreCard from "@/components/EvidenceScoreCard";
 
 const TAG_RISK_MAP: Record<string, { factor: string; S: number; L: number }> = {
   "고소작업":     { factor: "추락",     S: 5, L: 3 },
@@ -16,6 +18,8 @@ const TAG_RISK_MAP: Record<string, { factor: string; S: number; L: number }> = {
   "기타":        { factor: "일반위험",  S: 2, L: 2 },
 };
 
+const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
+
 async function getDashboardData() {
   const headers = {
     Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
@@ -24,7 +28,7 @@ async function getDashboardData() {
   };
   const apiBase = "https://api.notion.com/v1/databases";
 
-  const [tbmRes, ptwRes] = await Promise.all([
+  const [tbmRes, ptwRes, ebRes] = await Promise.all([
     fetch(`${apiBase}/${process.env.NOTION_TBM_DB_ID}/query`, {
       method: "POST", headers,
       body: JSON.stringify({ page_size: 100, sorts: [{ property: "날짜", direction: "descending" }] }),
@@ -35,9 +39,14 @@ async function getDashboardData() {
       body: JSON.stringify({ page_size: 50, sorts: [{ property: "작업일", direction: "descending" }] }),
       cache: "no-store",
     }),
+    fetch(`${apiBase}/${process.env.NOTION_EBM_DB_ID}/query`, {
+      method: "POST", headers,
+      body: JSON.stringify({ page_size: 100 }),
+      cache: "no-store",
+    }),
   ]);
 
-  const [tbmData, ptwData] = await Promise.all([tbmRes.json(), ptwRes.json()]);
+  const [tbmData, ptwData, ebData] = await Promise.all([tbmRes.json(), ptwRes.json(), ebRes.json()]);
 
   const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
   const thisMonth = today.slice(0, 7);
@@ -62,11 +71,45 @@ async function getDashboardData() {
     허용여부: p.properties["작업 허용 여부"]?.select?.name ?? "",
   }));
 
+  const ebCount = (ebData.results ?? []).length;
+
   const EB누락목록 = rows.filter((r: any) => r.특이사항 && r.연결EB === 0);
   const 조치필요목록 = rows.filter((r: any) => r.조치상태 === "조치 필요");
   const 오늘TBM = rows.filter((r: any) => r.날짜 === today).length;
   const PTW위험목록 = ptwRows.filter((r: any) => r.허용여부 === "금지" || r.승인상태 === "반려");
   const PTW미승인목록 = ptwRows.filter((r: any) => r.승인상태 === "요청");
+
+  // PTW 필요하지만 없는 TBM 감지
+  const PTW필요미제출 = rows.filter((r: any) =>
+    r.작업태그.some((t: string) => PTW_REQUIRED_TAGS.includes(t)) &&
+    ptwRows.filter((p: any) => p.작업일 === r.날짜).length === 0
+  );
+
+  // 오늘 할 일 생성
+  const todayTasks: { icon: string; text: string; href: string; urgent: boolean }[] = [];
+  if (오늘TBM === 0) todayTasks.push({ icon: "📋", text: "오늘 TBM 미작성 — 즉시 입력", href: "/tbm", urgent: true });
+  if (EB누락목록.length > 0) todayTasks.push({ icon: "🔴", text: `EB 누락 ${EB누락목록.length}건 — 즉시 등록`, href: "/ebm", urgent: true });
+  if (조치필요목록.length > 0) todayTasks.push({ icon: "🟡", text: `조치 필요 ${조치필요목록.length}건 — 상태 업데이트`, href: "/tbm", urgent: false });
+  if (PTW미승인목록.length > 0) todayTasks.push({ icon: "🧾", text: `PTW 승인 대기 ${PTW미승인목록.length}건 — 검토 필요`, href: "/ptw", urgent: false });
+  if (PTW필요미제출.length > 0) todayTasks.push({ icon: "🚨", text: `고위험 작업 PTW 미제출 ${PTW필요미제출.length}건 — 법적 의무`, href: "/ptw", urgent: true });
+
+  // 증거 완결성 점수
+  const tbm전체 = rows.length;
+  const 특이사항건 = rows.filter((r: any) => r.특이사항).length;
+  const EB연결건 = rows.filter((r: any) => r.특이사항 && r.연결EB > 0).length;
+  const PTW승인건 = ptwRows.filter((r: any) => r.승인상태 === "승인" || r.승인상태 === "완료").length;
+  const PTW전체 = ptwRows.length;
+
+  const tbm점수 = tbm전체 > 0 ? 40 : 0;
+  const eb점수 = 특이사항건 > 0 ? Math.round((EB연결건 / 특이사항건) * 30) : 30;
+  const ptw점수 = PTW전체 > 0 ? Math.round((PTW승인건 / PTW전체) * 30) : 30;
+  const 증거점수 = Math.min(100, tbm점수 + eb점수 + ptw점수);
+
+  const 증거분석 = [
+    { label: "TBM 기록", ok: tbm전체 > 0, count: tbm전체 },
+    { label: "EB 연결 (특이사항 건)", ok: EB누락목록.length === 0, count: EB연결건 },
+    { label: "PTW 승인", ok: PTW전체 === 0 || PTW승인건 === PTW전체, count: PTW승인건 },
+  ];
 
   let 최악건: any = null;
   let 최악R = 0;
@@ -82,9 +125,9 @@ async function getDashboardData() {
   const 에스컬레이션 = 최악건 && (최악R >= 16 || (최악R >= 8 && 최악건.S === 5));
 
   return {
-    전체: rows.length,
+    전체: tbm전체,
     이번달: rows.filter((r: any) => r.날짜?.startsWith(thisMonth)).length,
-    특이사항: rows.filter((r: any) => r.특이사항).length,
+    특이사항: 특이사항건,
     EB누락: EB누락목록.length,
     조치필요: 조치필요목록.length,
     리스크점수: Math.min(100, EB누락목록.length * 20 + 조치필요목록.length * 10),
@@ -96,6 +139,9 @@ async function getDashboardData() {
     PTW미승인: PTW미승인목록.length,
     PTW위험목록: PTW위험목록.slice(0, 3),
     PTW미승인목록: PTW미승인목록.slice(0, 3),
+    todayTasks,
+    증거점수,
+    증거분석,
   };
 }
 
@@ -113,8 +159,14 @@ export default async function DashboardPage() {
           <span className="text-gray-400 text-xs">{new Date().toLocaleDateString("ko-KR")}</span>
         </div>
 
-        {/* AI 진단 카드 */}
+        {/* AI 진단 */}
         <AiDiagnosisCard />
+
+        {/* 오늘 할 일 */}
+        <TodayTasksCard tasks={s.todayTasks} />
+
+        {/* 증거 완결성 */}
+        <EvidenceScoreCard score={s.증거점수} breakdown={s.증거분석} />
 
         {/* 오늘 TBM 미작성 경보 */}
         {s.오늘TBM === 0 && (
@@ -200,7 +252,7 @@ export default async function DashboardPage() {
           ) : <div className="text-gray-500 text-sm">조치 필요 없음 ✅</div>}
         </div>
 
-        {/* 카드 3: 대표 에스컬레이션 */}
+        {/* 카드 3: 에스컬레이션 */}
         <div className={`rounded-2xl border p-4 mb-3 ${s.에스컬레이션 ? "bg-red-950 border-red-700" : "bg-gray-900 border-gray-700"}`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2"><span className="text-lg">⚫</span><span className="text-white font-bold">대표 에스컬레이션</span></div>
@@ -217,7 +269,7 @@ export default async function DashboardPage() {
           ) : <div className="text-gray-500 text-sm">작업 태그 매핑 없음</div>}
         </div>
 
-        {/* 카드 4: PTW 현황 */}
+        {/* 카드 4: PTW */}
         <div className={`rounded-2xl border p-4 mb-4 ${s.PTW위험 > 0 ? "bg-red-950 border-red-800" : s.PTW미승인 > 0 ? "bg-yellow-950 border-yellow-800" : "bg-gray-900 border-gray-700"}`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2"><span className="text-lg">🧾</span><span className="text-white font-bold">PTW 현황</span></div>
@@ -227,30 +279,22 @@ export default async function DashboardPage() {
               {s.PTW위험 === 0 && s.PTW미승인 === 0 && <span className="text-gray-400 text-sm">이상 없음 ✅</span>}
             </div>
           </div>
-          {s.PTW위험목록.length > 0 && (
-            <div className="space-y-2 mb-2">
-              {s.PTW위험목록.map((r: any) => (
-                <Link key={r.id} href={`/ptw/${r.id}`}>
-                  <div className="bg-red-900/40 rounded-lg p-3 hover:bg-red-900/60 transition cursor-pointer">
-                    <div className="text-white text-sm font-medium">{r.제목 || "제목 없음"}</div>
-                    <div className="text-red-300 text-xs mt-0.5">{r.작업일} · {r.작업유형} · {r.허용여부 === "금지" ? "🚫 금지" : "🔴 반려"}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          {s.PTW미승인목록.length > 0 && (
-            <div className="space-y-2">
-              {s.PTW미승인목록.map((r: any) => (
-                <Link key={r.id} href={`/ptw/${r.id}`}>
-                  <div className="bg-yellow-900/40 rounded-lg p-3 hover:bg-yellow-900/60 transition cursor-pointer">
-                    <div className="text-white text-sm font-medium">{r.제목 || "제목 없음"}</div>
-                    <div className="text-yellow-300 text-xs mt-0.5">{r.작업일} · {r.작업유형} · 승인 대기 중</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+          {s.PTW위험목록.map((r: any) => (
+            <Link key={r.id} href={`/ptw/${r.id}`}>
+              <div className="bg-red-900/40 rounded-lg p-3 mb-2 hover:bg-red-900/60 transition cursor-pointer">
+                <div className="text-white text-sm font-medium">{r.제목 || "제목 없음"}</div>
+                <div className="text-red-300 text-xs mt-0.5">{r.작업일} · {r.작업유형} · {r.허용여부 === "금지" ? "🚫 금지" : "🔴 반려"}</div>
+              </div>
+            </Link>
+          ))}
+          {s.PTW미승인목록.map((r: any) => (
+            <Link key={r.id} href={`/ptw/${r.id}`}>
+              <div className="bg-yellow-900/40 rounded-lg p-3 mb-2 hover:bg-yellow-900/60 transition cursor-pointer">
+                <div className="text-white text-sm font-medium">{r.제목 || "제목 없음"}</div>
+                <div className="text-yellow-300 text-xs mt-0.5">{r.작업일} · {r.작업유형} · 승인 대기 중</div>
+              </div>
+            </Link>
+          ))}
         </div>
 
         {/* 바로가기 */}

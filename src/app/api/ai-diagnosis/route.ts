@@ -5,37 +5,50 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const notionRes = await fetch(
-      `https://api.notion.com/v1/databases/${process.env.NOTION_TBM_DB_ID}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-          "Notion-Version": "2022-06-28",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          page_size: 5,
-          sorts: [{ property: "날짜", direction: "descending" }],
-        }),
-        cache: "no-store",
-      }
-    );
-    const notionData = await notionRes.json();
+    const headers = {
+      Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    };
 
-    const rows = (notionData.results ?? []).map((p: any) => ({
+    const [tbmRes, ptwRes] = await Promise.all([
+      fetch(`{{https://api.notion.com/v1/databases/${process.env.NOTION_TBM_DB_ID}}}/query`, {
+        method: "POST", headers,
+        body: JSON.stringify({ page_size: 5, sorts: [{ property: "날짜", direction: "descending" }] }),
+        cache: "no-store",
+      }),
+      fetch(`{{https://api.notion.com/v1/databases/${process.env.NOTION_PTW_DB_ID}}}/query`, {
+        method: "POST", headers,
+        body: JSON.stringify({ page_size: 10, sorts: [{ property: "작업일", direction: "descending" }] }),
+        cache: "no-store",
+      }),
+    ]);
+
+    const [tbmData, ptwData] = await Promise.all([tbmRes.json(), ptwRes.json()]);
+
+    const tbmRows = (tbmData.results ?? []).map((p: any) => ({
       작업명: p.properties["작업명"]?.title?.[0]?.plain_text ?? "",
       날짜: p.properties["날짜"]?.date?.start ?? "",
       특이사항: p.properties["특이사항"]?.checkbox ?? false,
       조치상태: p.properties["조치 상태"]?.select?.name ?? "",
       연결EB: p.properties["연결 EB"]?.relation?.length ?? 0,
       작업태그: p.properties["작업 태그"]?.multi_select?.map((t: any) => t.name) ?? [],
-      오늘주의사항: p.properties["오늘의 주의사항"]?.rich_text?.[0]?.plain_text ?? "",
     }));
 
-    const summary = rows.map((r: any, i: number) =>
-      `[${i + 1}] ${r.날짜} / ${r.작업명} / 태그: ${r.작업태그.join(", ") || "없음"} / 특이사항: ${r.특이사항 ? "있음" : "없음"} / EB연결: ${r.연결EB}건 / 조치상태: ${r.조치상태 || "없음"}`
+    const ptwRows = (ptwData.results ?? []).map((p: any) => ({
+      제목: p.properties["허가서 제목/번호 (예W-대도-20260324-고소-001)"]?.title?.[0]?.plain_text ?? "",
+      작업유형: p.properties["작업유형"]?.select?.name ?? "",
+      승인상태: p.properties["승인상태"]?.select?.name ?? "",
+      허용여부: p.properties["작업 허용 여부"]?.select?.name ?? "",
+    }));
+
+    const tbmSummary = tbmRows.map((r: any, i: number) =>
+      `[TBM${i + 1}] ${r.날짜} / ${r.작업명} / 태그: ${r.작업태그.join(", ") || "없음"} / 특이사항: ${r.특이사항 ? "있음" : "없음"} / EB연결: ${r.연결EB}건 / 조치상태: ${r.조치상태 || "없음"}`
     ).join("\n");
+
+    const ptwSummary = ptwRows.length > 0
+      ? ptwRows.map((r: any) => `[PTW] ${r.제목} / ${r.작업유형} / 승인: ${r.승인상태} / 허용: ${r.허용여부}`).join("\n")
+      : "[PTW] 없음";
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -44,25 +57,26 @@ export async function GET() {
       messages: [
         {
           role: "system",
-          content: `당신은 산업안전 전문 AI 비서입니다. 생활폐기물 수거·환경미화 현장의 TBM 데이터를 분석하여 현장 대표에게 오늘의 핵심 안전 진단을 3줄 이내로 제공합니다. 
-규칙:
-- 특이사항 있음 + EB 미등록 → 즉시 경고
-- 위험 태그(밀폐공간, 고소작업) → 법적 의무 안내
-- 조치 필요 상태 → 조치 촉구
-- 문제 없으면 → 간단한 칭찬 + 주의사항 1개
-- 말투: 간결·명확 (3줄 이내, 불릿 없이 자연스러운 문장)`
+          content: `당신은 생활폐기물·환경미화 현장의 산업안전 전문 AI입니다. TBM·PTW 데이터를 분석해 대표에게 오늘의 핵심 안전 진단을 제공합니다.
+
+분석 우선순위:
+1. 🚨 중대재해 위험: 밀폐공간(산소결핍)/고소작업(추락)/화기작업(폭발) 태그 + PTW 미제출 → 즉시 경고
+2. 🔴 PTW 필요 여부: 고소작업·밀폐공간·화기·전기 태그 있는데 PTW 없거나 미승인 → 법적 의무 경고
+3. 🟡 EB 누락: 특이사항 있음 + EB 미연결 → 등록 촉구
+4. 🟢 정상: 문제 없으면 간단히 칭찬 + 주의사항 1개
+
+출력 규칙: 3줄 이내, 자연스러운 문장, 불릿 없이, 이모지 1~2개 사용`
         },
         {
           role: "user",
-          content: `최근 TBM 5건:\n${summary}\n\n오늘 현장 안전 진단 부탁합니다.`
+          content: `최근 TBM:\n${tbmSummary}\n\nPTW 현황:\n${ptwSummary}\n\n오늘 현장 안전 진단 부탁합니다.`
         }
       ],
-      max_tokens: 200,
+      max_tokens: 250,
       temperature: 0.4,
     });
 
     const diagnosis = chat.choices[0]?.message?.content ?? "진단 결과를 가져올 수 없습니다.";
-
     return NextResponse.json({ diagnosis, updatedAt: new Date().toISOString() });
   } catch (e: any) {
     return NextResponse.json({ diagnosis: "AI 진단 오류: " + e.message }, { status: 500 });
