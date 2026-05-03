@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
+import FieldAiBrief from "@/components/FieldAiBrief";
 
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
 
