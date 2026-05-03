@@ -29,7 +29,7 @@ export default async function PtwPage() {
   const rows = await getPtwRows();
   const 위험건수 = rows.filter((r: any) => r.허용여부 === "금지" || r.승인상태 === "반려").length;
   return (
-    <main className="min-h-screen bg-[#F6F8FB] pb-10">
+    <main className="min-h-screen bg-gray-950 pb-10">
       <SafeNav />
       <div className="p-4 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-4 mt-2">
