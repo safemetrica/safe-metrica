@@ -178,10 +178,16 @@ export default async function Home() {
         <div className="grid grid-cols-2 gap-3 mt-2">
           {menus.map((m) => (
             <Link key={m.href} href={m.href}
-              className="bg-[#112236] border border-[#1E3A5F] hover:bg-[#162C44] hover:border-[#2A5080] rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg group">
-              <div className="text-4xl mb-3">{m.icon}</div>
-              <div className="text-white font-bold text-sm leading-tight">{m.label}</div>
-              <div className="text-white text-xs mt-1 opacity-75">{m.sub}</div>
+              className="relative flex flex-col justify-between bg-[#112236] border border-[#1E3A5F] hover:bg-[#162C44] hover:border-[#0EA5E9] rounded-2xl p-5 transition-all duration-200 active:scale-95 min-h-[140px] group overflow-hidden">
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 rounded-xl bg-[#0D1B2A] border border-[#1E3A5F] flex items-center justify-center text-2xl">{m.icon}</div>
+                <span className="text-[#1E3A5F] group-hover:text-[#0EA5E9] transition-colors text-lg">→</span>
+              </div>
+              <div className="mt-4">
+                <div className="text-white font-bold text-[15px] leading-tight">{m.label}</div>
+                <div className="text-slate-400 text-xs mt-1">{m.sub}</div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0EA5E9] opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
           ))}
         </div>
