@@ -1,4 +1,5 @@
 "use client";
+import KoshaCompanyStatus from "@/components/KoshaCompanyStatus";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
