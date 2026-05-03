@@ -70,7 +70,7 @@ const TOP_FIXES = [
   {
     title: "수립한 위험성 감소대책의 이행",
     area: "Ⅱ. 위험성평가 실행수준",
-    reason: "덕승기업 결과서에서 20점 중 10점으로 감점 폭이 큼",
+    reason: "(주)**기업 결과서에서 20점 중 10점으로 감점 폭이 큼",
     action: "완료 항목은 전사진·후사진·완료일을 연결",
     badge: "최우선",
   },
@@ -269,7 +269,7 @@ export default function KoshaPage() {
           <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold text-slate-500">덕승기업 결과서 기준 예시</p>
+                <p className="text-xs font-semibold text-slate-500">(주)**기업 결과서 기준 예시</p>
                 <div className="mt-2 flex items-end gap-2">
                   <span className="text-5xl font-black text-slate-900">{totalScore}</span>
                   <span className="pb-1 text-sm font-medium text-slate-500">점 / 100점</span>
