@@ -85,7 +85,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   return {
     today, 오늘TBM, 이번주TBM, EB누락, 조치필요, PTW미승인, PTW위험,
     checklist, PTW필요태그, PTW필요미제출, 칭찬멘트,
-    전체미완료: checklist.filter(c => !c.done).length,
+    전체미완료: checklist.filter((c: {done: boolean; text: string; href: string; urgent: boolean}) => !c.done).length,
   };
 }
 
@@ -130,7 +130,7 @@ export default async function FieldPage() {
               <span className="text-white font-bold text-sm">작업 전 체크리스트</span>
             </div>
             <span className={`text-sm font-bold ${d.전체미완료 > 0 ? "text-red-400" : "text-green-400"}`}>
-              {d.checklist.filter(c => c.done).length}/{d.checklist.length} 완료
+              {d.checklist.filter((c: {done: boolean; text: string; href: string; urgent: boolean}) => c.done).length}/{d.checklist.length} 완료
             </span>
           </div>
           <div className="space-y-2">
