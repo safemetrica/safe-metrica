@@ -95,6 +95,28 @@ export default async function Home() {
     },
   };
 
+  // RSS 뉴스
+  type NewsItem = {title:string; link:string; tag:string; color:string};
+  const NEWS_SRCS = [
+    {url:'https://www.moel.go.kr/rss/notice.do', tag:'공지', color:'blue'},
+    {url:'https://www.moel.go.kr/rss/policy.do', tag:'정책', color:'green'},
+    {url:'https://www.moel.go.kr/rss/lawinfo.do', tag:'법령', color:'red'},
+  ];
+  let safetyNews: NewsItem[] = [];
+  try {
+    const rr = await Promise.allSettled(NEWS_SRCS.map(async (s) => {
+      const r = await fetch(s.url);
+      const xml = await r.text();
+      const ms = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+      return ms.slice(0,4).map(item => {
+        const t = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || item.match(/<title>(.*?)<\/title>/)?.[1] || '';
+        const l = item.match(/<link>(.*?)<\/link>/)?.[1] || '#';
+        return {title:t.replace(/&amp;/g,'&').trim(), link:l.trim(), tag:s.tag, color:s.color};
+      }).filter(x => x.title);
+    }));
+    safetyNews = rr.filter((r): r is PromiseFulfilledResult<NewsItem[]> => r.status==='fulfilled').flatMap(r=>r.value);
+  } catch { safetyNews = []; }
+
   return (
     <main className="min-h-screen bg-gray-950">
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
@@ -166,6 +188,32 @@ export default async function Home() {
             <span className="text-white text-sm font-semibold">안전 수칙</span>
           </div>
           <p className="text-gray-400 text-xs leading-relaxed">특이사항 발생 시 반드시 Evidence Book 등록 · 고위험작업은 PTW 제출 후 시작 · 중대재해 발생 즉시 119 신고</p>
+        </div>
+
+        {/* 산업안전 뉴스 */}
+        <div className="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">📰</span>
+            <span className="text-white text-sm font-semibold">산업안전 최신 뉴스</span>
+            <span className="text-gray-500 text-xs ml-auto">고용노동부</span>
+          </div>
+          {safetyNews.length === 0 ? (
+            <p className="text-gray-500 text-xs">뉴스를 불러오는 중입니다...</p>
+          ) : (
+            <div className="space-y-2">
+              {safetyNews.slice(0, 6).map((news: {title:string; link:string; tag:string; color:string}, i: number) => (
+                <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
+                  className="flex items-start gap-2 hover:bg-gray-800 p-1.5 rounded-lg transition group">
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5 ${
+                    news.color === 'blue' ? 'bg-blue-900 text-blue-300' :
+                    news.color === 'green' ? 'bg-green-900 text-green-300' :
+                    'bg-red-900 text-red-300'
+                  }`}>{news.tag}</span>
+                  <span className="text-gray-400 text-xs leading-relaxed group-hover:text-white transition line-clamp-2">{news.title}</span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </main>
