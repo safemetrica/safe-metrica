@@ -98,9 +98,9 @@ export default async function Home() {
   // RSS 뉴스
   type NewsItem = {title:string; link:string; tag:string; color:string};
   const NEWS_SRCS = [
-    {url:'https://www.moel.go.kr/rss/notice.do', tag:'공지', color:'blue'},
-    {url:'https://www.moel.go.kr/rss/policy.do', tag:'정책', color:'green'},
-    {url:'https://www.moel.go.kr/rss/lawinfo.do', tag:'법령', color:'red'},
+    {url:'https://news.google.com/rss/search?q=산업재해+사고&hl=ko&gl=KR&ceid=KR:ko', tag:'사고', color:'red'},
+    {url:'https://news.google.com/rss/search?q=안전사고+현장&hl=ko&gl=KR&ceid=KR:ko', tag:'안전', color:'blue'},
+    {url:'https://news.google.com/rss/search?q=중대재해&hl=ko&gl=KR&ceid=KR:ko', tag:'중대', color:'orange'},
   ];
   let safetyNews: NewsItem[] = [];
   try {
@@ -190,30 +190,40 @@ export default async function Home() {
           <p className="text-gray-400 text-xs leading-relaxed">특이사항 발생 시 반드시 Evidence Book 등록 · 고위험작업은 PTW 제출 후 시작 · 중대재해 발생 즉시 119 신고</p>
         </div>
 
-        {/* 산업안전 뉴스 - 가로 스크롤 */}
+        {/* 산재사고 뉴스 - 자동 흐름 ticker */}
         <div className="mt-4">
+          <style>{`
+            @keyframes ticker {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .news-ticker { animation: ticker 35s linear infinite; }
+            .news-ticker:hover { animation-play-state: paused; }
+          `}</style>
           <div className="flex items-center gap-2 mb-2 px-1">
-            <span className="text-sm">📰</span>
-            <span className="text-white text-sm font-semibold">산업안전 최신 뉴스</span>
-            <span className="text-gray-600 text-xs ml-auto">고용노동부</span>
+            <span className="text-red-500 text-sm animate-pulse">●</span>
+            <span className="text-white text-sm font-semibold">산재사고 뉴스</span>
+            <span className="text-gray-600 text-xs ml-auto">실시간</span>
           </div>
-          {safetyNews.length === 0 ? (
-            <p className="text-gray-600 text-xs px-1">뉴스를 불러오는 중입니다...</p>
-          ) : (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {safetyNews.slice(0, 8).map((news: {title:string; link:string; tag:string; color:string}, i: number) => (
-                <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
-                  className="shrink-0 w-52 bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-col gap-2 hover:border-gray-600 transition active:scale-95">
-                  <span className={`self-start px-2 py-0.5 rounded-full text-xs font-bold ${
-                    news.color === 'blue' ? 'bg-blue-950 text-blue-400' :
-                    news.color === 'green' ? 'bg-green-950 text-green-400' :
-                    'bg-red-950 text-red-400'
-                  }`}>{news.tag}</span>
-                  <span className="text-gray-300 text-xs leading-relaxed line-clamp-3">{news.title}</span>
-                </a>
-              ))}
-            </div>
-          )}
+          <div className="overflow-hidden rounded-xl bg-gray-900 border border-gray-800 py-3">
+            {safetyNews.length === 0 ? (
+              <p className="text-gray-600 text-xs px-4">뉴스를 불러오는 중...</p>
+            ) : (
+              <div className="flex news-ticker w-max gap-8 px-4">
+                {[...safetyNews.slice(0,8), ...safetyNews.slice(0,8)].map((news: {title:string; link:string; tag:string; color:string}, i: number) => (
+                  <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
+                    className="shrink-0 flex items-center gap-2 group">
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-bold shrink-0 ${
+                      news.color === 'red' ? 'bg-red-950 text-red-400' :
+                      news.color === 'orange' ? 'bg-orange-950 text-orange-400' :
+                      'bg-blue-950 text-blue-400'
+                    }`}>{news.tag}</span>
+                    <span className="text-gray-400 text-xs group-hover:text-white transition whitespace-nowrap max-w-xs truncate">{news.title}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </main>
