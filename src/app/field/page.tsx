@@ -242,6 +242,31 @@ export default async function FieldPage() {
           </div>
         </div>
 
+        {/* 산업안전 뉴스 */}
+        {d.safetyNews.length > 0 && (
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">📰</span>
+              <span className="text-white font-bold text-sm">산업안전 최신 뉴스</span>
+              <span className="text-gray-500 text-xs ml-auto">고용노동부</span>
+            </div>
+            <div className="space-y-2">
+              {d.safetyNews.slice(0, 8).map((news, i) => (
+                <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
+                  className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-800 transition cursor-pointer group">
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-bold shrink-0 mt-0.5 ${
+                    news.color === 'blue' ? 'bg-blue-900 text-blue-300' :
+                    news.color === 'green' ? 'bg-green-900 text-green-300' :
+                    news.color === 'red' ? 'bg-red-900 text-red-300' :
+                    'bg-yellow-900 text-yellow-300'
+                  }`}>{news.tag}</span>
+                  <span className="text-gray-300 text-xs leading-relaxed group-hover:text-white transition line-clamp-2">{news.title}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 바로가기 */}
         <div className="grid grid-cols-3 gap-2">
           <Link href="/tbm" className="bg-gray-900 border border-gray-700 hover:border-blue-600 rounded-xl p-3 text-center transition">
