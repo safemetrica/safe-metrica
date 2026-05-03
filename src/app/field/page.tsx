@@ -4,7 +4,7 @@ import Link from "next/link";
 
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
 
-async function getFieldData() {
+async function getFieldData(): Promise<Record<string, any>> {
   const headers = {
     Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
     "Notion-Version": "2022-06-28",
