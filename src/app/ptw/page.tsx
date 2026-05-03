@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { SafeNav, StatusBadge } from "@/components/SafeLayout";
+import Link from "next/link";
 
 async function getPtwRows() {
   const apiBase = "https://api.notion.com/v1/databases";
@@ -45,25 +46,27 @@ export default async function PtwPage() {
           {rows.map((row: any) => {
             const isDanger = row.허용여부 === "금지" || row.승인상태 === "반려";
             return (
-              <div key={row.id} className={`rounded-xl border p-4 ${isDanger ? "bg-red-950 border-red-800" : "bg-gray-900 border-gray-700"}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{유형아이콘[row.작업유형] ?? "📋"}</span>
-                      <span className="text-white font-medium text-sm truncate">{row.제목 || "제목 없음"}</span>
+              <Link key={row.id} href={`/ptw/${row.id}`}>
+                <div className={`rounded-xl border p-4 cursor-pointer hover:opacity-80 transition ${isDanger ? "bg-red-950 border-red-800" : "bg-gray-900 border-gray-700"}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{유형아이콘[row.작업유형] ?? "📋"}</span>
+                        <span className="text-white font-medium text-sm truncate">{row.제목 || "제목 없음"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-gray-400 text-xs">{row.작업일}</span>
+                        {row.작업유형 && <span className="text-gray-500 text-xs">· {row.작업유형}</span>}
+                        {row.Dday && <span className={`text-xs font-medium ${row.Dday === "✅ 완료" ? "text-gray-500" : "text-yellow-400"}`}>{row.Dday}</span>}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-gray-400 text-xs">{row.작업일}</span>
-                      {row.작업유형 && <span className="text-gray-500 text-xs">· {row.작업유형}</span>}
-                      {row.Dday && <span className={`text-xs font-medium ${row.Dday === "✅ 완료" ? "text-gray-500" : "text-yellow-400"}`}>{row.Dday}</span>}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {row.허용여부 && <StatusBadge status={row.허용여부} />}
+                      {row.승인상태 && <StatusBadge status={row.승인상태} />}
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {row.허용여부 && <StatusBadge status={row.허용여부} />}
-                    {row.승인상태 && <StatusBadge status={row.승인상태} />}
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
           {rows.length === 0 && <div className="text-center text-gray-500 py-10">등록된 PTW 없음</div>}
