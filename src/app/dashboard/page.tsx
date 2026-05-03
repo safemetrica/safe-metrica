@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
+import AiDiagnosisCard from "@/components/AiDiagnosisCard";
 
 const TAG_RISK_MAP: Record<string, { factor: string; S: number; L: number }> = {
   "고소작업":     { factor: "추락",     S: 5, L: 3 },
@@ -111,6 +112,9 @@ export default async function DashboardPage() {
           <h1 className="text-white text-xl font-bold">📊 대시보드</h1>
           <span className="text-gray-400 text-xs">{new Date().toLocaleDateString("ko-KR")}</span>
         </div>
+
+        {/* AI 진단 카드 */}
+        <AiDiagnosisCard />
 
         {/* 오늘 TBM 미작성 경보 */}
         {s.오늘TBM === 0 && (
