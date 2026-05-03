@@ -191,10 +191,7 @@ export default async function FieldPage() {
           ) : (
             <div>
               <p className="text-orange-200 text-sm mb-2">오늘 TBM이 아직 제출되지 않았습니다.</p>
-              <a href="https://www.notion.so" target="_blank" rel="noopener noreferrer"
-                className="block w-full text-center py-2 rounded-lg bg-orange-800 hover:bg-orange-700 text-white text-sm transition">
-                📋 Notion 폼에서 TBM 작성하기
-              </a>
+              <p className="text-orange-300 text-xs mt-1">👉 Notion 폼에서 TBM을 작성하면 여기에 자동으로 반영됩니다.</p>
             </div>
           )}
         </div>
