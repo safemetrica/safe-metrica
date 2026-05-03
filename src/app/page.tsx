@@ -200,7 +200,7 @@ export default async function Home() {
           {safetyNews.length === 0 ? (
             <p className="text-gray-600 text-xs px-1">뉴스를 불러오는 중입니다...</p>
           ) : (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style=scrollbarWidth:'none'>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {safetyNews.slice(0, 8).map((news: {title:string; link:string; tag:string; color:string}, i: number) => (
                 <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
                   className="shrink-0 w-52 bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-col gap-2 hover:border-gray-600 transition active:scale-95">
