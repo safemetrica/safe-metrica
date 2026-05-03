@@ -180,6 +180,7 @@ export default async function FieldPage() {
           <h1 className="text-white text-xl font-bold">👷 현장 비서</h1>
           <p className="text-gray-400 text-sm mt-0.5">{dateStr} · {timeStr} · 관리감독자·안전담당자 전용</p>
         </div>
+<FieldAiBrief />
 
         {/* PTW 긴급 경고 */}
         {d.PTW필요미제출 && (
