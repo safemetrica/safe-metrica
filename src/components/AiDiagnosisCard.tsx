@@ -30,12 +30,7 @@ export default function AiDiagnosisCard() {
         {updatedAt && <span className="text-indigo-400 text-xs">{updatedAt} 기준</span>}
       </div>
       {loading ? (
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" />
-          <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style= animationDelay: "0.1s"  />
-          <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style= animationDelay: "0.2s"  />
-          <span className="text-indigo-300 text-xs ml-1">분석 중...</span>
-        </div>
+        <span className="text-indigo-300 text-sm">분석 중...</span>
       ) : (
         <p className="text-indigo-100 text-sm leading-relaxed whitespace-pre-line">{diagnosis}</p>
       )}
