@@ -17,11 +17,9 @@ async function getWeather() {
     const key = process.env.WEATHER_API_KEY;
     const nx = process.env.WEATHER_NX ?? "55";
     const ny = process.env.WEATHER_NY ?? "124";
-    if (!key) return { tmp: null, wsd: null, pty: "0", pop: 0, alerts: [], icon: "⛅" };
+    if (!key) return { tmp: null, wsd: null, pty: "0", pop: 0, alerts: [], icon: "⛅", decision: null, stopRequired: false };
 
-    // 1) 초단기실황 (현재 기온·풍속·강수형태)
     const ncstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${key}&pageNo=1&numOfRows=20&dataType=JSON&base_date=${date}&base_time=${time}&nx=${nx}&ny=${ny}`;
-    // 2) 단기예보 (강수확률 POP)
     const fcstTimes = [2,5,8,11,14,17,20,23];
     const baseH = fcstTimes.filter(t => t <= hour).pop() ?? 23;
     const fcstTime = String(baseH).padStart(2,"0") + "00";
@@ -42,8 +40,8 @@ async function getWeather() {
     const tmp = parseFloat(getNcst("T1H") ?? "20");
     const wsd = parseFloat(getNcst("WSD") ?? "0");
     const pty = getNcst("PTY") ?? "0";
-    const pop = parseInt(getFcst("POP") ?? "0");  // 강수확률 %
-    const sky = getFcst("SKY") ?? "1"; // 1=맑음 3=구름많음 4=흐림
+    const pop = parseInt(getFcst("POP") ?? "0");
+    const sky = getFcst("SKY") ?? "1";
 
     const alerts: string[] = [];
     if (wsd >= 10) alerts.push(`🚨 강풍 ${wsd}m/s — 고소작업 중단 의무`);
@@ -53,11 +51,16 @@ async function getWeather() {
     else if (pop >= 40) alerts.push(`🌦️ 강수확률 ${pop}% — 야외작업 시 우비 준비`);
     else if (pop >= 20) alerts.push(`☁️ 강수확률 ${pop}% — 날씨 변화 주의`);
 
+    // 의사결정 티켓 판정
+    const stopRequired = wsd >= 10; // 법적 작업중지 의무 (산안법 기준)
+    const limitRequired = tmp >= 33 || tmp <= -10 || pty !== "0";
+    const decision = stopRequired ? "STOP" : limitRequired ? "LIMIT" : "NORMAL";
+
     const icon = pty !== "0" ? "🌧️" : pop >= 40 ? "🌦️" : sky === "4" ? "☁️" : sky === "3" ? "⛅" : tmp >= 33 ? "☀️" : tmp <= 0 ? "🌨️" : "☀️";
 
-    return { tmp, wsd, pty, pop, alerts, icon };
+    return { tmp, wsd, pty, pop, alerts, icon, decision, stopRequired };
   } catch {
-    return { tmp: null, wsd: null, pty: null, pop: 0, alerts: [], icon: "⛅" };
+    return { tmp: null, wsd: null, pty: null, pop: 0, alerts: [], icon: "⛅", decision: null, stopRequired: false };
   }
 }
 
@@ -66,6 +69,31 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const weather = await getWeather();
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
+
+  const decisionConfig = {
+    STOP: {
+      bg: "bg-red-950 border-red-700",
+      badge: "bg-red-700 text-white",
+      label: "🚨 작업중지 필요",
+      desc: "풍속 10m/s 이상 — 고소작업 법적 중단 의무 (산안법)",
+      action: "현장 책임자 확인 후 중단 조치 → 대표 사후 보고 필수",
+    },
+    LIMIT: {
+      bg: "bg-yellow-950 border-yellow-700",
+      badge: "bg-yellow-600 text-white",
+      label: "🟡 제한 운영",
+      desc: "기상 임계값 도달 — 작업 범위 축소 권고",
+      action: "현장 책임자 판단 → 계속/제한 선택 시 대표 사후 보고",
+    },
+    NORMAL: {
+      bg: "bg-gray-900 border-gray-700",
+      badge: "bg-green-700 text-white",
+      label: "🟢 정상 작업",
+      desc: "기상 이상 없음",
+      action: "정상 운영 가능",
+    },
+  };
+
   return (
     <main className="min-h-screen bg-gray-950">
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
@@ -81,22 +109,45 @@ export default async function Home() {
           <div className="text-emerald-400 text-xs font-medium mt-0.5">● 시스템 정상</div>
         </div>
       </div>
+
       <div className="px-4 py-3 bg-blue-950 border-b border-blue-900">
         <p className="text-blue-300 text-xs text-center">㈜대도환경 · 오늘도 안전한 하루 되세요 👷</p>
       </div>
-      {weather.tmp !== null && (
-        <div className={`px-4 py-3 border-b ${weather.alerts.length > 0 ? "bg-red-950 border-red-900" : "bg-gray-900 border-gray-800"}`}>
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨 (실황+예보)</span>
-              <span className="text-gray-400 text-xs">{weather.tmp}°C · 풍속 {weather.wsd}m/s · 강수확률 {weather.pop}%</span>
+
+      {weather.tmp !== null && weather.decision && (() => {
+        const cfg = decisionConfig[weather.decision as keyof typeof decisionConfig];
+        return (
+          <div className={`px-4 py-4 border-b ${cfg.bg}`}>
+            <div className="max-w-2xl mx-auto">
+              {/* 날씨 수치 */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨</span>
+                <span className="text-gray-400 text-xs">{weather.tmp}°C · 풍속 {weather.wsd}m/s · 강수확률 {weather.pop}%</span>
+              </div>
+
+              {/* 의사결정 티켓 */}
+              <div className={`rounded-xl border p-3 ${cfg.bg}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${cfg.badge}`}>{cfg.label}</span>
+                  <span className="text-xs text-gray-400">현장 책임자 1명 확인 필수</span>
+                </div>
+                <p className="text-white text-xs font-medium mb-1">{cfg.desc}</p>
+                <p className="text-gray-400 text-xs">{cfg.action}</p>
+              </div>
+
+              {/* 경보 목록 */}
+              {weather.alerts.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {weather.alerts.map((a, i) => (
+                    <p key={i} className="text-red-300 text-xs font-medium">{a}</p>
+                  ))}
+                </div>
+              )}
             </div>
-            {weather.alerts.length > 0
-              ? weather.alerts.map((a, i) => <p key={i} className="text-red-300 text-xs font-medium">{a}</p>)
-              : <p className="text-gray-400 text-xs">날씨 이상 없음 — 정상 작업 가능</p>}
           </div>
-        </div>
-      )}
+        );
+      })()}
+
       <div className="p-4 max-w-2xl mx-auto">
         <div className="grid grid-cols-2 gap-3 mt-2">
           {menus.map((m) => (
