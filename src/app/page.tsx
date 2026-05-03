@@ -6,8 +6,8 @@ const menus = [
   { href: "/ptw", icon: "🧾", label: "고위험작업허가서", sub: "PTW 승인 현황", color: "from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600", border: "border-orange-500" },
   { href: "/dashboard", icon: "📊", label: "대표 대시보드", sub: "통계 & 리스크 요약", color: "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600", border: "border-purple-500" },
   { href: "/field", icon: "👷", label: "현장 비서", sub: "관리감독자 전용", color: "from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600", border: "border-teal-500" },
+  { href: "/kosha", icon: "🏅", label: "KOSHA 인정심사", sub: "11개 Gate 이행률 자동 산출", color: "from-yellow-700 to-yellow-800 hover:from-yellow-600 hover:to-yellow-700" },
 ];
-
 async function getWeather() {
   try {
     const now = new Date();
