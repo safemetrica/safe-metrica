@@ -1,11 +1,16 @@
 export const dynamic = "force-dynamic";
 import { SafeNav, StatusBadge } from "@/components/SafeLayout";
+import Link from "next/link";
 
 async function getTbmRows() {
   const apiBase = "https://api.notion.com/v1/databases";
   const res = await fetch(`${apiBase}/${process.env.NOTION_TBM_DB_ID}/query`, {
     method: "POST",
-    headers: { "Authorization": `Bearer ${process.env.NOTION_API_KEY}`, "Notion-Version": "2022-06-28", "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ page_size: 100, sorts: [{ property: "날짜", direction: "descending" }] }),
     cache: "no-store",
   });
@@ -57,22 +62,24 @@ export default async function TbmPage() {
           {rows.map((row: any) => {
             const needsEb = row.특이사항 && row.연결EB === 0;
             return (
-              <div key={row.id} className={`rounded-xl border p-4 ${needsEb ? "bg-red-950 border-red-800" : "bg-gray-900 border-gray-700"}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white font-medium text-sm truncate">{row.작업명 || "작업명 없음"}</div>
-                    <div className="text-gray-400 text-xs mt-1">{row.날짜}</div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {row.조치상태 && <StatusBadge status={row.조치상태} />}
-                    {row.특이사항 && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${row.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : "bg-red-900 text-red-300 border-red-700"}`}>
-                        {row.연결EB > 0 ? `✅ EB ${row.연결EB}건` : "🔴 EB 없음"}
-                      </span>
-                    )}
+              <Link key={row.id} href={`/tbm/${row.id}`}>
+                <div className={`rounded-xl border p-4 cursor-pointer hover:opacity-80 transition ${needsEb ? "bg-red-950 border-red-800" : "bg-gray-900 border-gray-700"}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-medium text-sm truncate">{row.작업명 || "작업명 없음"}</div>
+                      <div className="text-gray-400 text-xs mt-1">{row.날짜}</div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {row.조치상태 && <StatusBadge status={row.조치상태} />}
+                      {row.특이사항 && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${row.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : "bg-red-900 text-red-300 border-red-700"}`}>
+                          {row.연결EB > 0 ? `✅ EB ${row.연결EB}건` : "🔴 EB 없음"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
