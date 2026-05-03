@@ -10,7 +10,7 @@ type AuditArea = {
   title: string;
   max: number;
   current: number;
-  weighted: number;
+  weight: number;
   weightLabel: string;
   note: string;
 };
@@ -26,7 +26,6 @@ type Gate = {
 };
 
 const PASS_SCORE = 90;
-const SAMPLE_SCORE = 84;
 
 const AUDIT_AREAS: AuditArea[] = [
   {
@@ -34,7 +33,7 @@ const AUDIT_AREAS: AuditArea[] = [
     title: "Ⅰ. 사업주의 관심도",
     max: 100,
     current: 97,
-    weighted: 10,
+    weight: 10,
     weightLabel: "10점 반영",
     note: "방침·목표, 조직 구성, 교육, 예산, 사업주 노력",
   },
@@ -43,7 +42,7 @@ const AUDIT_AREAS: AuditArea[] = [
     title: "Ⅱ. 위험성평가 실행수준",
     max: 100,
     current: 80,
-    weighted: 48,
+    weight: 60,
     weightLabel: "60점 반영",
     note: "계획 수립, 위험요인 파악, 감소대책, 이행확인, 정기·수시평가",
   },
@@ -52,7 +51,7 @@ const AUDIT_AREAS: AuditArea[] = [
     title: "Ⅲ. 구성원의 참여 및 이해 수준",
     max: 100,
     current: 86,
-    weighted: 22,
+    weight: 25,
     weightLabel: "25점 반영",
     note: "사업주·관리자·근로자 참여와 이해 수준",
   },
@@ -61,7 +60,7 @@ const AUDIT_AREAS: AuditArea[] = [
     title: "Ⅳ. 재해발생 수준",
     max: 100,
     current: 100,
-    weighted: 5,
+    weight: 5,
     weightLabel: "5점 반영",
     note: "동일 업종·규모 대비 재해율",
   },
@@ -246,7 +245,8 @@ export default function KoshaPage() {
 
   const checked = passed.length + failed.length;
   const passRate = checked === 0 ? 0 : Math.round((passed.length / checked) * 100);
-  const gap = Math.max(PASS_SCORE - SAMPLE_SCORE, 0);
+  const totalScore = Math.round(AUDIT_AREAS.reduce((sum, a) => sum + (a.current * a.weight) / 100, 0));
+  const gap = Math.max(PASS_SCORE - totalScore, 0);
 
   return (
     <main className="min-h-screen bg-[#F6F8FB] pb-16 text-slate-900">
@@ -271,7 +271,7 @@ export default function KoshaPage() {
               <div>
                 <p className="text-xs font-semibold text-slate-500">덕승기업 결과서 기준 예시</p>
                 <div className="mt-2 flex items-end gap-2">
-                  <span className="text-5xl font-black text-slate-900">{SAMPLE_SCORE}</span>
+                  <span className="text-5xl font-black text-slate-900">{totalScore}</span>
                   <span className="pb-1 text-sm font-medium text-slate-500">점 / 100점</span>
                 </div>
               </div>
@@ -282,12 +282,12 @@ export default function KoshaPage() {
             </div>
 
             <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-orange-500" style={{ width: `${SAMPLE_SCORE}%` }} />
+              <div className="h-full rounded-full bg-orange-500" style={{ width: `${totalScore}%` }} />
             </div>
 
             <div className="mt-3 flex justify-between text-xs text-slate-400">
               <span>0점</span>
-              <span className="font-semibold text-orange-500">현재 84점</span>
+              <span className="font-semibold text-orange-500">현재 {totalScore}점</span>
               <span className="font-semibold text-green-600">90점 이상 인정</span>
             </div>
 
@@ -330,7 +330,7 @@ export default function KoshaPage() {
                   <span className="text-3xl font-black text-slate-900">{area.current}</span>
                   <span className="pb-1 text-xs text-slate-400">/ {area.max}</span>
                 </div>
-                <p className="mt-1 text-xs font-semibold text-blue-700">{area.weightLabel} · 종합 {area.weighted}점</p>
+                <p className="mt-1 text-xs font-semibold text-blue-700">{area.weightLabel} · 기여 {Math.round(area.current * area.weight / 100)}점</p>
                 <p className="mt-3 text-xs leading-relaxed text-slate-500">{area.note}</p>
               </div>
             ))}
