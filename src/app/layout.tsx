@@ -32,8 +32,8 @@ export default function RootLayout({
 				<Providers>
 					<main className="flex-1">{children}</main>
 
-					<footer className="border-t border-white/10 bg-black/20 text-white/70">
-						<div className="mx-auto w-full max-w-6xl px-4 py-6 text-xs leading-5">
+					<footer className="border-t border-white/10 bg-black/70 text-white">
+						<div className="mx-auto w-full max-w-6xl px-4 py-6 text-xs leading-5 text-white/80">
 							<div>
 								사업자명: 레인보우비즈컨설팅 | 대표: 김진형 | 사업자등록번호:
 								787-36-01366 | 통신판매업신고번호: 제 2026-인천연수구-1103호
