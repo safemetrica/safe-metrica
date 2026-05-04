@@ -44,13 +44,16 @@ export default function RootLayout({
 							</div>
 							<div>
 								문의:{" "}
-								<a className="underline underline-offset-2" href="mailto:tirany2014@gmail.com">
+								<a
+									className="underline underline-offset-2"
+									href="mailto:tirany2014@gmail.com"
+								>
 									tirany2014@gmail.com
 								</a>
 								{" "}·{" "}
 								<a
 									className="underline underline-offset-2"
-									href="https://www.notion.so/e9e062cb41314b14b1ae0e186e9b496f"
+									href="https://obtainable-end-976.notion.site/"
 									target="_blank"
 									rel="noreferrer"
 								>
