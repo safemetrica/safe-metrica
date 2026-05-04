@@ -53,7 +53,7 @@ export default function RootLayout({
 								{" "}·{" "}
 								<a
 									className="underline underline-offset-2"
-									href="https://obtainable-end-976.notion.site/"
+									href="https://obtainable-end-976.notion.site/SafeMetrica-e9e062cb41314b14b1ae0e186e9b496f?source=copy_link"
 									target="_blank"
 									rel="noreferrer"
 								>
