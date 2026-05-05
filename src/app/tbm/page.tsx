@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic";
+
 import { SafeNav, StatusBadge } from "@/components/SafeLayout";
 import Link from "next/link";
-
+import { getCompanyConfig } from "@/lib/company";
 async function getTbmRows() {
   const apiBase = "https://api.notion.com/v1/databases";
-  const res = await fetch(`${apiBase}/${process.env.NOTION_TBM_DB_ID}/query`, {
+  const company = await getCompanyConfig();
+  const res = await fetch(`${apiBase}/${company.tbmDbId}/query`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
