@@ -2,26 +2,29 @@ export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import FieldAiBrief from "@/components/FieldAiBrief";
-
+import { getCompanyConfig } from "@/lib/company";
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
 
 async function getFieldData(): Promise<Record<string, any>> {
+  const company = await getCompanyConfig();
+  
   const headers = {
-    Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+    Authorization: `Bearer ${company.notionApiKey}`,
     "Notion-Version": "2022-06-28",
     "Content-Type": "application/json",
   };
   const apiBase = "https://api.notion.com/v1/databases";
+  
   const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
   const thisWeek = new Date(Date.now() + 9 * 3600000 - 7 * 86400000).toISOString().slice(0, 10);
 
   const [tbmRes, ptwRes] = await Promise.all([
-    fetch(`${apiBase}/${process.env.NOTION_TBM_DB_ID}/query`, {
+    fetch(`${apiBase}/${company.tbmDbId}/query`, {
       method: "POST", headers,
       body: JSON.stringify({ page_size: 100, sorts: [{ property: "날짜", direction: "descending" }] }),
       cache: "no-store",
     }),
-    fetch(`${apiBase}/${process.env.NOTION_PTW_DB_ID}/query`, {
+    fetch(`${apiBase}/${company.ptwDbId}/query`, {
       method: "POST", headers,
       body: JSON.stringify({ page_size: 20, sorts: [{ property: "작업일", direction: "descending" }] }),
       cache: "no-store",

@@ -1,35 +1,54 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { getCompanyConfig } from "@/lib/company";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const company = await getCompanyConfig();
+
     const headers = {
-      Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+      Authorization: `Bearer ${company.notionApiKey}`,
       "Notion-Version": "2022-06-28",
       "Content-Type": "application/json",
     };
 
     const [tbmRes, ebRes, ptwRes] = await Promise.all([
-      fetch(`https://api.notion.com/v1/databases/${process.env.NOTION_TBM_DB_ID}/query`, {
-        method: "POST", headers,
-        body: JSON.stringify({ page_size: 10, sorts: [{ property: "날짜", direction: "descending" }] }),
+      fetch(`https://api.notion.com/v1/databases/${company.tbmDbId}/query`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          page_size: 10,
+          sorts: [{ property: "날짜", direction: "descending" }],
+        }),
         cache: "no-store",
       }),
-      fetch(`https://api.notion.com/v1/databases/${process.env.NOTION_EBM_DB_ID}/query`, {
-        method: "POST", headers,
-        body: JSON.stringify({ page_size: 10, sorts: [{ property: "업로드 날짜", direction: "descending" }] }),
+      fetch(`https://api.notion.com/v1/databases/${company.ebmDbId}/query`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          page_size: 10,
+          sorts: [{ property: "업로드 날짜", direction: "descending" }],
+        }),
         cache: "no-store",
       }),
-      fetch(`https://api.notion.com/v1/databases/${process.env.NOTION_PTW_DB_ID}/query`, {
-        method: "POST", headers,
-        body: JSON.stringify({ page_size: 5, sorts: [{ property: "작업일", direction: "descending" }] }),
+      fetch(`https://api.notion.com/v1/databases/${company.ptwDbId}/query`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          page_size: 5,
+          sorts: [{ property: "작업일", direction: "descending" }],
+        }),
         cache: "no-store",
       }),
     ]);
 
-    const [tbmData, ebData, ptwData] = await Promise.all([tbmRes.json(), ebRes.json(), ptwRes.json()]);
+    const [tbmData, ebData, ptwData] = await Promise.all([
+      tbmRes.json(),
+      ebRes.json(),
+      ptwRes.json(),
+    ]);
 
     const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 
@@ -73,7 +92,8 @@ PTW 금지/반려: ${PTW위험.length}건
       messages: [
         {
           role: "system",
-          content: "당신은 생활폐기물·환경미화 현장의 안전 AI 비서입니다. 현장관리감독자와 안전담당자에게 오늘 현장 상황을 브리핑하고 즉시 해야 할 일을 안내합니다. 출력 규칙: 3줄 이내, 자연스러운 한국어, 현장 담당자가 바로 행동할 수 있는 구체적 지시, 이모지 1~2개 사용.",
+          content:
+            "당신은 생활폐기물·환경미화 현장의 안전 AI 비서입니다. 현장관리감독자와 안전담당자에게 오늘 현장 상황을 브리핑하고 즉시 해야 할 일을 안내합니다. 출력 규칙: 3줄 이내, 자연스러운 한국어, 현장 담당자가 바로 행동할 수 있는 구체적 지시, 이모지 1~2개 사용.",
         },
         {
           role: "user",
