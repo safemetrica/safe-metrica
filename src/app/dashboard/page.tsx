@@ -4,7 +4,7 @@ import Link from "next/link";
 import AiDiagnosisCard from "@/components/AiDiagnosisCard";
 import TodayTasksCard from "@/components/TodayTasksCard";
 import EvidenceScoreCard from "@/components/EvidenceScoreCard";
-
+import { getCompanyConfig } from "@/lib/company";
 const TAG_RISK_MAP: Record<string, { factor: string; S: number; L: number }> = {
   "고소작업":     { factor: "추락",     S: 5, L: 3 },
   "밀폐공간":     { factor: "산소결핍", S: 5, L: 2 },
@@ -21,25 +21,27 @@ const TAG_RISK_MAP: Record<string, { factor: string; S: number; L: number }> = {
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
 
 async function getDashboardData() {
+  const company = await getCompanyConfig();
+  
   const headers = {
-    Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+    Authorization: `Bearer ${company.notionApiKey}`,
     "Notion-Version": "2022-06-28",
     "Content-Type": "application/json",
   };
   const apiBase = "https://api.notion.com/v1/databases";
 
-  const [tbmRes, ptwRes, ebRes] = await Promise.all([
-    fetch(`${apiBase}/${process.env.NOTION_TBM_DB_ID}/query`, {
+  const [tbmRes, ebRes, ptwRes] = await Promise.all([
+    fetch(`${apiBase}/${company.tbmDbId}/query`, {
       method: "POST", headers,
       body: JSON.stringify({ page_size: 100, sorts: [{ property: "날짜", direction: "descending" }] }),
       cache: "no-store",
     }),
-    fetch(`${apiBase}/${process.env.NOTION_PTW_DB_ID}/query`, {
+    fetch(`${apiBase}/${company.ebmDbId}/query`, {
       method: "POST", headers,
       body: JSON.stringify({ page_size: 50, sorts: [{ property: "작업일", direction: "descending" }] }),
       cache: "no-store",
     }),
-    fetch(`${apiBase}/${process.env.NOTION_EBM_DB_ID}/query`, {
+    fetch(`${apiBase}/${company.ptwDbId}/query`, {
       method: "POST", headers,
       body: JSON.stringify({ page_size: 100 }),
       cache: "no-store",
