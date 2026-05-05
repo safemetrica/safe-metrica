@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
+import { getCompanyConfig } from "@/lib/company";
 
 async function getEbRows() {
   const apiBase = "https://api.notion.com/v1/databases";
-  const res = await fetch(`${apiBase}/${process.env.NOTION_EBM_DB_ID}/query`, {
+  const company = await getCompanyConfig();
+  const res = await fetch(`${apiBase}/${company.ebmDbId}/query`, {
     method: "POST",
     headers: { "Authorization": `Bearer ${process.env.NOTION_API_KEY}`, "Notion-Version": "2022-06-28", "Content-Type": "application/json" },
     body: JSON.stringify({ page_size: 100, sorts: [{ property: "등록일", direction: "descending" }] }),
