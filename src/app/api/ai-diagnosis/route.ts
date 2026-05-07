@@ -48,8 +48,8 @@ export async function GET() {
 
     const ptwRows = (ptwData.results ?? []).map((p: any) => ({
       제목:
-        p.properties["허가서 제목/번호 (예W-대도-20260324-고소-001)"]?.title?.[0]?.plain_text ??
-        "",
+        p.properties["허가서 제목/번호 (예W-대도-20260324-고소-001)"]?.title?.[0]
+          ?.plain_text ?? "",
       작업유형: p.properties["작업유형"]?.select?.name ?? "",
       승인상태: p.properties["승인상태"]?.select?.name ?? "",
       허용여부: p.properties["작업 허용 여부"]?.select?.name ?? "",
