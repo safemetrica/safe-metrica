@@ -56,15 +56,9 @@ export async function GET() {
     }));
 
     // =========================
-    // PTW 룰 엔진(코드 판정)
+    // PTW 룰 엔진(코드 판정) - GPT 개입 금지
     // =========================
-    const PTW_TRIGGER_TAGS = new Set([
-      "고소작업",
-      "밀폐공간",
-      "용접/용단",
-      "전기",
-      "양중/중량물",
-    ]);
+    const PTW_TRIGGER_TAGS = new Set(["고소작업", "밀폐공간", "용접/용단", "전기", "양중/중량물"]);
 
     const ptwCandidateTbms = tbmRows.filter((r: any) =>
       (r.작업태그 ?? []).some((t: string) => PTW_TRIGGER_TAGS.has(t))
@@ -77,25 +71,49 @@ export async function GET() {
 
     const ptwMissingOrNotApproved = ptwRequired && (!ptwRows.length || !ptwApproved);
 
+    const ptwCandidateTags = Array.from(
+      new Set(
+        ptwCandidateTbms.flatMap((r: any) =>
+          (r.작업태그 ?? []).filter((t: string) => PTW_TRIGGER_TAGS.has(t))
+        )
+      )
+    );
+
     // =========================
-    // 요약 문자열
+    // EB 룰 엔진(코드 판정) - 통일 v1
+    // EB 누락 = (특이사항 OR 조치 필요) AND (연결 EB 비어있음)
+    // =========================
+    const ebCandidateTbms = tbmRows.filter((r: any) => {
+      const hasException = !!r.특이사항 || r.조치상태 === "조치 필요";
+      const ebEmpty = (r.연결EB ?? 0) === 0;
+      return hasException && ebEmpty;
+    });
+
+    const ebMissing = ebCandidateTbms.length > 0;
+
+    const ebMissingTargets = ebCandidateTbms.slice(0, 2).map((r: any) => ({
+      날짜: r.날짜,
+      작업명: r.작업명,
+      조치상태: r.조치상태 || "",
+    }));
+
+    // =========================
+    // TBM 요약 문자열(GPT 입력)
     // =========================
     const tbmSummary = tbmRows
       .map(
         (r: any, i: number) =>
-          `[TBM${i + 1}] ${r.날짜} / ${r.작업명} / 태그: ${r.작업태그.join(", ") || "없음"} / 특이사항: ${
-            r.특이사항 ? "있음" : "없음"
-          } / EB연결: ${r.연결EB}건 / 조치상태: ${r.조치상태 || "없음"}`
+          `[TBM${i + 1}] ${r.날짜} / ${r.작업명} / 태그: ${
+            r.작업태그.join(", ") || "없음"
+          } / 특이사항: ${r.특이사항 ? "있음" : "없음"} / EB연결: ${r.연결EB}건 / 조치상태: ${
+            r.조치상태 || "없음"
+          }`
       )
       .join("\n");
 
-    const ptwSummary =
-      ptwRows.length > 0
-        ? ptwRows
-            .map((r: any) => `[PTW] ${r.제목} / ${r.작업유형} / 승인: ${r.승인상태} / 허용: ${r.허용여부}`)
-            .join("\n")
-        : "[PTW] 없음";
-
+    // =========================
+    // GPT: PTW/EB 판정 금지(설명만)
+    // =========================
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const chat = await openai.chat.completions.create({
@@ -103,17 +121,27 @@ export async function GET() {
       messages: [
         {
           role: "system",
-          content: `당신은 생활폐기물·환경미화 현장의 산업안전 전문 AI입니다. TBM·PTW 데이터를 분석해 대표에게 오늘의 핵심 안전 진단을 제공합니다.
-분석 우선순위:
-1. 🚨 중대재해 위험: 밀폐공간/고소/화기 태그 + PTW 미제출 → 즉시 경고
-2. 🔴 PTW 필요 여부: 고소·밀폐·화기·전기 태그 있는데 PTW 없거나 미승인 → 법적 의무 경고
-3. 🟡 EB 누락: 특이사항 있음 + EB 미연결 → 등록 촉구
-4. 🟢 정상: 문제 없으면 간단히 칭찬 + 주의사항 1개
+          content: `당신은 생활폐기물·환경미화 현장의 산업안전 전문 AI입니다.
+
+중요(LOCK):
+- PTW(작업허가) 필요/미제출/미승인 여부는 시스템(룰 엔진)에서만 판정합니다. PTW를 언급하거나 추정/판정하지 마세요.
+- EB 누락(증빙 누락) 여부도 시스템(룰 엔진)에서만 판정합니다. EB 누락을 추정/단정하지 마세요.
+
+당신의 역할:
+- 아래에 제공되는 룰 판정값과 TBM 요약을 바탕으로, 대표에게 2~3문장으로 '오늘 해야 할 행동'을 안내합니다.
+- 문장은 짧게, 실행 중심(예: 점검/연결/확인/주의).
 출력 규칙: 3줄 이내, 자연스러운 문장, 불릿 없이, 이모지 1~2개 사용`,
         },
         {
           role: "user",
-          content: `최근 TBM:\n${tbmSummary}\n\nPTW 현황:\n${ptwSummary}\n\n오늘 현장 안전 진단 부탁합니다.`,
+          content: `최근 TBM:\n${tbmSummary}
+
+룰 판정:
+- ptwMissingOrNotApproved: ${ptwMissingOrNotApproved}
+- ebMissing: ${ebMissing}
+- ebMissingTargets: ${JSON.stringify(ebMissingTargets)}
+
+요약 진단 작성해줘. (PTW/EB는 위 룰 값이 true일 때만 '조치 필요'로 언급하고, false면 단정하지 마)`,
         },
       ],
       max_tokens: 250,
@@ -122,14 +150,34 @@ export async function GET() {
 
     const aiText = chat.choices[0]?.message?.content ?? "진단 결과를 가져올 수 없습니다.";
 
-    // GPT와 무관하게 “PTW 먼저” 경고를 고정으로 붙임
+    // =========================
+    // 최종 진단: PTW/EB는 룰 고정 prefix
+    // =========================
     const ptwPrefix = ptwMissingOrNotApproved
-      ? "🚨 PTW(작업허가) 대상 작업이 있습니다. 작업 시작 전 PTW 작성/승인부터 진행하세요.\n"
+      ? `🚨 [필수] PTW(작업허가) 대상 작업이 감지되었습니다(${ptwCandidateTags.join(
+          ", "
+        )}). 작업 시작 전 PTW 작성 및 승인/완료 처리 후 진행하세요.\n`
       : "";
 
-    const diagnosis = ptwPrefix + aiText;
+    const ebPrefix = ebMissing
+      ? `🟥 [필수] EB(증빙) 연결 누락이 있습니다. 관리자(QR-2)에서 해당 TBM에 증빙을 연결하세요.\n`
+      : "";
 
-    return NextResponse.json({ diagnosis, updatedAt: new Date().toISOString() });
+    const diagnosis = ptwPrefix + ebPrefix + aiText;
+
+    return NextResponse.json({
+      diagnosis,
+
+      ptwRequired,
+      ptwApproved,
+      ptwMissingOrNotApproved,
+      ptwCandidateTags,
+
+      ebMissing,
+      ebMissingTargets,
+
+      updatedAt: new Date().toISOString(),
+    });
   } catch (e: any) {
     return NextResponse.json({ diagnosis: "AI 진단 오류: " + e.message }, { status: 500 });
   }
