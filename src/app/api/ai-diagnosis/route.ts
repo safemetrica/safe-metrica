@@ -48,13 +48,38 @@ export async function GET() {
 
     const ptwRows = (ptwData.results ?? []).map((p: any) => ({
       제목:
-        p.properties["허가서 제목/번호 (예W-대도-20260324-고소-001)"]?.title?.[0]?.plain_text ??
-        "",
+        p.properties["허가서 제목/번호 (예W-대도-20260324-고소-001)"]?.title?.[0]
+          ?.plain_text ?? "",
       작업유형: p.properties["작업유형"]?.select?.name ?? "",
       승인상태: p.properties["승인상태"]?.select?.name ?? "",
       허용여부: p.properties["작업 허용 여부"]?.select?.name ?? "",
     }));
 
+    // =========================
+    // PTW 룰 엔진(코드 판정)
+    // =========================
+    const PTW_TRIGGER_TAGS = new Set([
+      "고소작업",
+      "밀폐공간",
+      "용접/용단",
+      "전기",
+      "양중/중량물",
+    ]);
+
+    const ptwCandidateTbms = tbmRows.filter((r: any) =>
+      (r.작업태그 ?? []).some((t: string) => PTW_TRIGGER_TAGS.has(t))
+    );
+
+    const ptwRequired = ptwCandidateTbms.length > 0;
+
+    // PTW DB 승인상태 옵션: 요청/승인/반려/완료
+    const ptwApproved = ptwRows.some((p: any) => ["승인", "완료"].includes(p.승인상태));
+
+    const ptwMissingOrNotApproved = ptwRequired && (!ptwRows.length || !ptwApproved);
+
+    // =========================
+    // 요약 문자열
+    // =========================
     const tbmSummary = tbmRows
       .map(
         (r: any, i: number) =>
@@ -95,7 +120,15 @@ export async function GET() {
       temperature: 0.4,
     });
 
-    const diagnosis = chat.choices[0]?.message?.content ?? "진단 결과를 가져올 수 없습니다.";
+    const aiText = chat.choices[0]?.message?.content ?? "진단 결과를 가져올 수 없습니다.";
+
+    // GPT와 무관하게 “PTW 먼저” 경고를 고정으로 붙임
+    const ptwPrefix = ptwMissingOrNotApproved
+      ? "🚨 PTW(작업허가) 대상 작업이 있습니다. 작업 시작 전 PTW 작성/승인부터 진행하세요.\n"
+      : "";
+
+    const diagnosis = ptwPrefix + aiText;
+
     return NextResponse.json({ diagnosis, updatedAt: new Date().toISOString() });
   } catch (e: any) {
     return NextResponse.json({ diagnosis: "AI 진단 오류: " + e.message }, { status: 500 });
