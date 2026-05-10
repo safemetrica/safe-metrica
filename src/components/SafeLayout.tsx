@@ -1,6 +1,18 @@
 import Link from "next/link";
+import { getCompanyConfig } from "@/lib/company";
 
-export async function SafeNav({ company = "㈜대도환경" }: { company?: string }) {
+export async function SafeNav({ company }: { company?: string }) {
+  let displayCompany = company ?? "회사 선택 필요";
+
+  if (!company) {
+    try {
+      const config = await getCompanyConfig();
+      displayCompany = config.name;
+    } catch {
+      displayCompany = "회사 선택 필요";
+    }
+  }
+
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
       <Link
@@ -12,7 +24,7 @@ export async function SafeNav({ company = "㈜대도환경" }: { company?: strin
           <div className="text-white font-bold text-sm leading-tight">
             SafeMetrica™
           </div>
-          <div className="text-gray-400 text-xs">{company}</div>
+          <div className="text-gray-400 text-xs">{displayCompany}</div>
         </div>
       </Link>
 
