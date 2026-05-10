@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCompanyConfig } from "@/lib/company";
 
 const menus = [
   { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
@@ -68,6 +70,12 @@ async function getWeather() {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const company = await getCompanyConfig().catch(() => null);
+
+  if (!company) {
+    redirect("/login?error=tenant_required");
+  }
+
   const weather = await getWeather();
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
 
@@ -134,7 +142,9 @@ export default async function Home() {
       </div>
 
       <div className="px-4 py-3 bg-blue-950 border-b border-blue-900">
-        <p className="text-blue-300 text-xs text-center">㈜대도환경 · 오늘도 안전한 하루 되세요 👷</p>
+        <p className="text-blue-300 text-xs text-center">
+  {company.name} · 오늘도 안전한 하루 되세요 👷
+</p>
       </div>
 
       {weather.tmp !== null && weather.decision && (() => {
