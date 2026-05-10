@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 
 export default function AiDiagnosisCard() {
@@ -11,7 +12,12 @@ export default function AiDiagnosisCard() {
       .then((r) => r.json())
       .then((d) => {
         setDiagnosis(d.diagnosis);
-        setUpdatedAt(new Date(d.updatedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
+        setUpdatedAt(
+          new Date(d.updatedAt).toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        );
         setLoading(false);
       })
       .catch(() => {
@@ -28,12 +34,17 @@ export default function AiDiagnosisCard() {
           <span className="text-white font-bold text-sm">AI 안전 진단</span>
           <span className="ml-auto text-xs text-blue-300">GPT-4o-mini</span>
         </div>
-        {updatedAt && <span className="text-indigo-400 text-xs">{updatedAt} 기준</span>}
+        {updatedAt && (
+          <span className="text-indigo-400 text-xs">{updatedAt} 기준</span>
+        )}
       </div>
+
       {loading ? (
         <span className="text-indigo-300 text-sm">분석 중...</span>
       ) : (
-        <p className="text-indigo-100 text-sm leading-relaxed whitespace-pre-line">{diagnosis}</p>
+        <p className="text-indigo-100 text-sm leading-relaxed whitespace-pre-line">
+          {diagnosis}
+        </p>
       )}
     </div>
   );
