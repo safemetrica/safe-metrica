@@ -1,4 +1,6 @@
-import { headers } from "next/headers";
+import "server-only";
+
+import { cookies, headers } from "next/headers";
 
 export type CompanyConfig = {
   code: string;
@@ -12,27 +14,80 @@ export type CompanyConfig = {
   listeningDbId?: string;
 };
 
+export class TenantRequiredError extends Error {
+  constructor() {
+    super("TENANT_REQUIRED");
+    this.name = "TenantRequiredError";
+  }
+}
+
+export class UnknownCompanyError extends Error {
+  constructor(code: string) {
+    super(`UNKNOWN_OR_INACTIVE_COMPANY:${code}`);
+    this.name = "UnknownCompanyError";
+  }
+}
+
+function normalizeCompanyCode(code: string): string {
+  return code.trim().toLowerCase();
+}
+
+function assertSafeCompanyCode(code: string): string {
+  const normalized = normalizeCompanyCode(code);
+
+  if (!/^[a-z0-9_-]{2,50}$/.test(normalized)) {
+    throw new UnknownCompanyError(normalized || "empty");
+  }
+
+  return normalized;
+}
+
 export async function getCompanyCodeFromRequest(): Promise<string> {
+  if (process.env.NODE_ENV !== "production") {
   const h = await headers();
-  return h.get("x-company-code") ?? "daedo";
+  const fromHeader = h.get("x-company-code");
+
+  if (fromHeader) {
+    return assertSafeCompanyCode(fromHeader);
+  }
+}
+
+const c = await cookies();
+  const fromCookie = c.get("sm_company_code")?.value;
+
+  if (fromCookie) {
+    return assertSafeCompanyCode(fromCookie);
+  }
+
+  // 운영 환경에서는 절대 daedo fallback 금지.
+  // tenant가 없으면 데이터 노출 방지를 위해 명시적으로 실패시킨다.
+  if (process.env.NODE_ENV !== "production" && process.env.DEFAULT_COMPANY_CODE) {
+    return assertSafeCompanyCode(process.env.DEFAULT_COMPANY_CODE);
+  }
+
+  throw new TenantRequiredError();
 }
 
 function getTextPropPlainText(prop: any): string {
-  return prop?.rich_text?.[0]?.plain_text ?? "";
+  return prop?.rich_text?.[0]?.plain_text?.trim() ?? "";
 }
 
 function getTitlePropPlainText(prop: any): string {
-  return prop?.title?.[0]?.plain_text ?? "";
+  return prop?.title?.[0]?.plain_text?.trim() ?? "";
 }
 
-export async function getCompanyConfig(): Promise<CompanyConfig> {
-  const code = await getCompanyCodeFromRequest();
-
+async function queryCompanyRow(code: string) {
   const notionApiKey = process.env.NOTION_API_KEY;
-  if (!notionApiKey) throw new Error("Missing env: NOTION_API_KEY");
+
+  if (!notionApiKey) {
+    throw new Error("Missing env: NOTION_API_KEY");
+  }
 
   const companiesDbId = process.env.NOTION_COMPANIES_DB_ID;
-  if (!companiesDbId) throw new Error("Missing env: NOTION_COMPANIES_DB_ID");
+
+  if (!companiesDbId) {
+    throw new Error("Missing env: NOTION_COMPANIES_DB_ID");
+  }
 
   const res = await fetch(`https://api.notion.com/v1/databases/${companiesDbId}/query`, {
     method: "POST",
@@ -44,8 +99,18 @@ export async function getCompanyConfig(): Promise<CompanyConfig> {
     body: JSON.stringify({
       filter: {
         and: [
-          { property: "companyCode", rich_text: { equals: code } },
-          { property: "active", checkbox: { equals: true } },
+          {
+            property: "companyCode",
+            rich_text: {
+              equals: code,
+            },
+          },
+          {
+            property: "active",
+            checkbox: {
+              equals: true,
+            },
+          },
         ],
       },
       page_size: 1,
@@ -53,9 +118,29 @@ export async function getCompanyConfig(): Promise<CompanyConfig> {
     cache: "no-store",
   });
 
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Companies DB query failed: ${res.status} ${text}`);
+  }
+
   const data = await res.json();
-  const row = data?.results?.[0];
-  if (!row) throw new Error(`Unknown or inactive companyCode: ${code}`);
+  return data?.results?.[0] ?? null;
+}
+
+export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
+  const code = assertSafeCompanyCode(rawCode);
+
+  const notionApiKey = process.env.NOTION_API_KEY;
+
+  if (!notionApiKey) {
+    throw new Error("Missing env: NOTION_API_KEY");
+  }
+
+  const row = await queryCompanyRow(code);
+
+  if (!row) {
+    throw new UnknownCompanyError(code);
+  }
 
   const props = row.properties;
 
@@ -65,13 +150,24 @@ export async function getCompanyConfig(): Promise<CompanyConfig> {
   const ebmDbId = getTextPropPlainText(props["ebmDbId"]);
   const ptwDbId = getTextPropPlainText(props["ptwDbId"]);
 
-  if (!tbmDbId) throw new Error(`Missing tbmDbId for ${code}`);
-  if (!ebmDbId) throw new Error(`Missing ebmDbId for ${code}`);
-  if (!ptwDbId) throw new Error(`Missing ptwDbId for ${code}`);
+  if (!tbmDbId) {
+    throw new Error(`Missing tbmDbId for ${code}`);
+  }
 
-  const adminEvidenceDbId = getTextPropPlainText(props["adminEvidenceDbId"]) || undefined;
-  const fieldVoiceDbId = getTextPropPlainText(props["fieldVoiceDbId"]) || undefined;
-  const listeningDbId = getTextPropPlainText(props["listeningDbId"]) || undefined;
+  if (!ebmDbId) {
+    throw new Error(`Missing ebmDbId for ${code}`);
+  }
+
+  if (!ptwDbId) {
+    throw new Error(`Missing ptwDbId for ${code}`);
+  }
+
+  const adminEvidenceDbId =
+    getTextPropPlainText(props["adminEvidenceDbId"]) || undefined;
+  const fieldVoiceDbId =
+    getTextPropPlainText(props["fieldVoiceDbId"]) || undefined;
+  const listeningDbId =
+    getTextPropPlainText(props["listeningDbId"]) || undefined;
 
   return {
     code,
@@ -84,4 +180,9 @@ export async function getCompanyConfig(): Promise<CompanyConfig> {
     fieldVoiceDbId,
     listeningDbId,
   };
+}
+
+export async function getCompanyConfig(): Promise<CompanyConfig> {
+  const code = await getCompanyCodeFromRequest();
+  return getCompanyConfigByCode(code);
 }

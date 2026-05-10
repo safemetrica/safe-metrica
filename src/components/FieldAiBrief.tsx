@@ -1,21 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 
 export default function FieldAiBrief() {
-  const pathname = usePathname();
-  const companyCode = pathname?.split("/").filter(Boolean)?.[0];
-  const prefix = companyCode ? `/${companyCode}` : "";
-
   const [brief, setBrief] = useState("");
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState("");
 
   useEffect(() => {
-    const url = `${prefix}/api/field-ai-brief`;
-
-    fetch(url)
+    fetch("/api/field-ai-brief")
       .then((r) => r.json())
       .then((d) => {
         setBrief(d.brief ?? "");
@@ -23,7 +16,7 @@ export default function FieldAiBrief() {
       })
       .catch(() => setBrief("AI 브리핑을 불러올 수 없습니다."))
       .finally(() => setLoading(false));
-  }, [prefix]);
+  }, []);
 
   return (
     <div className="bg-indigo-950 border border-indigo-700 rounded-2xl p-4 mb-4">

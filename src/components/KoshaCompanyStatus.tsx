@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 
 type CompanyItem = {
   id: string;
@@ -21,19 +20,13 @@ type Summary = {
 };
 
 export default function KoshaCompanyStatus() {
-  const pathname = usePathname();
-  const companyCode = pathname?.split("/").filter(Boolean)?.[0];
-  const prefix = companyCode ? `/${companyCode}` : "";
-
   const [summary, setSummary] = useState<Summary | null>(null);
   const [mustFail, setMustFail] = useState<CompanyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const url = `${prefix}/api/kosha-data`;
-
-    fetch(url)
+    fetch("/api/kosha-data")
       .then((r) => r.json())
       .then((d) => {
         if (d.error) {
@@ -45,7 +38,7 @@ export default function KoshaCompanyStatus() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [prefix]);
+  }, []);
 
   if (loading)
     return (
@@ -63,38 +56,17 @@ export default function KoshaCompanyStatus() {
 
   return (
     <div className="mt-5">
-      <h2 className="mb-3 text-sm font-bold text-slate-700">
-        📡 실행 DB 실시간 현황 (노션 연동)
-      </h2>
+      <h2 className="mb-3 text-sm font-bold text-slate-700">📡 실행 DB 실시간 현황 (노션 연동)</h2>
 
       {summary && (
         <div className="grid grid-cols-4 gap-3 mb-4">
           {[
-            {
-              label: "전체",
-              value: summary.total,
-              color: "bg-slate-50 border-slate-200 text-slate-700",
-            },
-            {
-              label: "PASS",
-              value: summary.passCount,
-              color: "bg-green-50 border-green-200 text-green-700",
-            },
-            {
-              label: "FAIL",
-              value: summary.failCount,
-              color: "bg-red-50 border-red-200 text-red-700",
-            },
-            {
-              label: "Must FAIL",
-              value: summary.mustFailCount,
-              color: "bg-orange-50 border-orange-200 text-orange-700",
-            },
+            { label: "전체", value: summary.total, color: "bg-slate-50 border-slate-200 text-slate-700" },
+            { label: "PASS", value: summary.passCount, color: "bg-green-50 border-green-200 text-green-700" },
+            { label: "FAIL", value: summary.failCount, color: "bg-red-50 border-red-200 text-red-700" },
+            { label: "Must FAIL", value: summary.mustFailCount, color: "bg-orange-50 border-orange-200 text-orange-700" },
           ].map((item) => (
-            <div
-              key={item.label}
-              className={`rounded-xl border p-3 text-center ${item.color}`}
-            >
+            <div key={item.label} className={`rounded-xl border p-3 text-center ${item.color}`}>
               <p className="text-xs font-semibold opacity-70">{item.label}</p>
               <p className="mt-1 text-2xl font-black">{item.value}</p>
             </div>
@@ -104,9 +76,7 @@ export default function KoshaCompanyStatus() {
 
       {mustFail.length > 0 && (
         <div className="rounded-2xl border border-red-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-xs font-bold text-red-700">
-            🚨 Must FAIL — 즉시 보완 필요
-          </p>
+          <p className="mb-3 text-xs font-bold text-red-700">🚨 Must FAIL — 즉시 보완 필요</p>
           <div className="space-y-2">
             {mustFail.slice(0, 5).map((item) => (
               <div
@@ -117,9 +87,7 @@ export default function KoshaCompanyStatus() {
                   <p className="text-sm font-bold text-slate-800">{item.항목}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {item.우선순위 && (
-                      <span className="mr-2 font-semibold text-orange-600">
-                        {item.우선순위}
-                      </span>
+                      <span className="mr-2 font-semibold text-orange-600">{item.우선순위}</span>
                     )}
                     {item.기한 && <span>기한: {item.기한}</span>}
                   </p>
@@ -135,9 +103,7 @@ export default function KoshaCompanyStatus() {
 
       {mustFail.length === 0 && summary && summary.failCount === 0 && (
         <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-center">
-          <p className="text-sm font-bold text-green-700">
-            ✅ 모든 항목 PASS — 인정심사 준비 완료
-          </p>
+          <p className="text-sm font-bold text-green-700">✅ 모든 항목 PASS — 인정심사 준비 완료</p>
         </div>
       )}
     </div>

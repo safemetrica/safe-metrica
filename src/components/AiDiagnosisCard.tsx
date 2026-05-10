@@ -1,21 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 
 export default function AiDiagnosisCard() {
-  const pathname = usePathname();
-  const companyCode = pathname?.split("/").filter(Boolean)?.[0];
-  const prefix = companyCode ? `/${companyCode}` : "";
-
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<string>("");
 
   useEffect(() => {
-    const url = `${prefix}/api/ai-diagnosis`;
-
-    fetch(url)
+    fetch("/api/ai-diagnosis")
       .then((r) => r.json())
       .then((d) => {
         setDiagnosis(d.diagnosis);
@@ -31,7 +24,7 @@ export default function AiDiagnosisCard() {
         setDiagnosis("AI 진단을 불러올 수 없습니다.");
         setLoading(false);
       });
-  }, [prefix]);
+  }, []);
 
   return (
     <div className="rounded-2xl border border-indigo-700 bg-indigo-950 p-4 mb-4">

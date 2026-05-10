@@ -26,7 +26,7 @@ export default function LoginPage() {
             {TENANTS.map((t) => (
               <Link
                 key={t.code}
-                href={`/${t.code}/dashboard`}
+                href={`/select-tenant?code=${t.code}`}
                 className="w-full bg-gray-800 hover:bg-gray-750 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-between transition-colors"
               >
                 <span className="flex items-center gap-2">
