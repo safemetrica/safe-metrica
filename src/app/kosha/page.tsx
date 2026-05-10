@@ -3,7 +3,6 @@ import KoshaCompanyStatus from "@/components/KoshaCompanyStatus";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-
 type Status = "pass" | "fail" | null;
 
 type AuditArea = {

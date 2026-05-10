@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   try {
     const company = await getCompanyConfigByCode(code);
 
-    const res = NextResponse.redirect(new URL("/dashboard", req.url));
+    const res = NextResponse.redirect(new URL("/", req.url));
 
     res.cookies.set("sm_company_code", company.code, {
       path: "/",

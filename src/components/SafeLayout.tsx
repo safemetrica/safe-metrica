@@ -16,7 +16,7 @@ export async function SafeNav({ company }: { company?: string }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
       <Link
-        href="/dashboard"
+        href="/"
         className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer"
       >
         <span className="text-2xl">🛡️</span>
@@ -48,7 +48,7 @@ export async function SafeNav({ company }: { company?: string }) {
           🧾 PTW
         </Link>
         <Link
-          href="/dashboard"
+          href="/dashboard" 
           className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
           📊 대시
