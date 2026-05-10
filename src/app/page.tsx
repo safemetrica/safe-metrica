@@ -12,21 +12,26 @@ const menus = [
 ];
 async function getWeather() {
   try {
-    const now = new Date();
-    const kst = new Date(now.getTime() + 9 * 3600000);
-    const date = kst.toISOString().slice(0, 10).replace(/-/g, "");
-    const hour = kst.getHours();
-    const time = String(hour).padStart(2, "0") + "00";
+   const now = new Date();
+const kst = new Date(now.getTime() + 9 * 3600000);
+
+// 기상청 초단기실황은 발표 지연을 고려해 60분 전 정각을 기준으로 조회
+const ncstBase = new Date(kst.getTime() - 60 * 60 * 1000);
+const ncstDate = ncstBase.toISOString().slice(0, 10).replace(/-/g, "");
+const ncstTime = String(ncstBase.getHours()).padStart(2, "0") + "00";
+
+const fcstDate = kst.toISOString().slice(0, 10).replace(/-/g, "");
+const hour = kst.getHours();
     const key = process.env.WEATHER_API_KEY;
     const nx = process.env.WEATHER_NX ?? "55";
     const ny = process.env.WEATHER_NY ?? "124";
     if (!key) return { tmp: null, wsd: null, pty: "0", pop: 0, alerts: [], icon: "⛅", decision: null, stopRequired: false };
 
-    const ncstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${key}&pageNo=1&numOfRows=20&dataType=JSON&base_date=${date}&base_time=${time}&nx=${nx}&ny=${ny}`;
+    const ncstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${key}&pageNo=1&numOfRows=20&dataType=JSON&base_date=${ncstDate}&base_time=${ncstTime}&nx=${nx}&ny=${ny}`;
     const fcstTimes = [2,5,8,11,14,17,20,23];
     const baseH = fcstTimes.filter(t => t <= hour).pop() ?? 23;
     const fcstTime = String(baseH).padStart(2,"0") + "00";
-    const fcstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${key}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${date}&base_time=${fcstTime}&nx=${nx}&ny=${ny}`;
+    const fcstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${key}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${fcstDate}&base_time=${fcstTime}&nx=${nx}&ny=${ny}`;
 
     const [ncstRes, fcstRes] = await Promise.all([
       fetch(ncstUrl, { cache: "no-store" }),
