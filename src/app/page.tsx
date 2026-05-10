@@ -47,6 +47,8 @@ const hour = kst.getHours();
 
     const tmp = parseFloat(getNcst("T1H") ?? "20");
     const wsd = parseFloat(getNcst("WSD") ?? "0");
+    const feelsLike = Number.isFinite(tmp) ? Math.round(tmp) : null;
+    const observedAt = `${ncstTime.slice(0, 2)}:00`;
     const pty = getNcst("PTY") ?? "0";
     const pop = parseInt(getFcst("POP") ?? "0");
     const sky = getFcst("SKY") ?? "1";
@@ -66,9 +68,9 @@ const hour = kst.getHours();
 
     const icon = pty !== "0" ? "🌧️" : pop >= 40 ? "🌦️" : sky === "4" ? "☁️" : sky === "3" ? "⛅" : tmp >= 33 ? "☀️" : tmp <= 0 ? "🌨️" : "☀️";
 
-    return { tmp, wsd, pty, pop, alerts, icon, decision, stopRequired };
+    return { tmp, feelsLike, observedAt, wsd, pty, pop, alerts, icon, decision, stopRequired };
   } catch {
-    return { tmp: null, wsd: null, pty: null, pop: 0, alerts: [], icon: "⛅", decision: null, stopRequired: false };
+    return { tmp: null, feelsLike: null, observedAt: null, wsd: null, pty: null, pop: 0, alerts: [], icon: "⛅", decision: null, stopRequired: false };
   }
 }
 
@@ -160,8 +162,8 @@ export default async function Home() {
               {/* 날씨 수치 */}
               <div className="flex items-center justify-between mb-3">
                 <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨</span>
-                <span className="text-gray-400 text-xs">{weather.tmp}°C · 풍속 {weather.wsd}m/s · 강수확률 {weather.pop}%</span>
-              </div>
+                <span className="text-gray-400 text-xs">기온 {weather.tmp}°C · 체감 {weather.feelsLike}°C · 풍속 {weather.wsd}m/s · 강수확률 {weather.pop}%</span>
+              </div><p className="text-blue-200 text-xs mt-1">기상청 초단기실황 기준 {weather.observedAt}</p>
 
               {/* 의사결정 티켓 */}
               <div className={`rounded-xl border p-3 ${cfg.bg}`}>
