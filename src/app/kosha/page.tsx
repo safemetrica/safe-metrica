@@ -1,8 +1,8 @@
 "use client";
 import KoshaCompanyStatus from "@/components/KoshaCompanyStatus";
-
-import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type Status = "pass" | "fail" | null;
 
@@ -248,14 +248,19 @@ export default function KoshaPage() {
   const passRate = checked === 0 ? 0 : Math.round((passed.length / checked) * 100);
   const totalScore = Math.round(AUDIT_AREAS.reduce((sum, a) => sum + (a.current * a.weight) / 100, 0));
   const gap = Math.max(PASS_SCORE - totalScore, 0);
-
+  const pathname = usePathname();
+  const companyCode = pathname?.split("/").filter(Boolean)?.[0];
+  const prefix = companyCode ? `/${companyCode}` : "";
   return (
     <main className="min-h-screen bg-[#F6F8FB] pb-16 text-slate-900">
       <header className="bg-[#0F2D5E] text-white">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-4">
-          <Link href="/" className="rounded-lg px-2 py-1 text-blue-100 hover:bg-white/10">
-            ←
-          </Link>
+          <Link
+  href={companyCode ? `${prefix}/dashboard` : "/"}
+  className="rounded-lg px-2 py-1 text-blue-100 hover:bg-white/10"
+>
+  ←
+</Link>
           <div>
             <h1 className="text-lg font-bold leading-tight">KOSHA 인정심사 사전점검</h1>
             <p className="mt-0.5 text-xs text-blue-200">
