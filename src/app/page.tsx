@@ -33,17 +33,33 @@ const hour = kst.getHours();
     const fcstTime = String(baseH).padStart(2,"0") + "00";
     const fcstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${key}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${fcstDate}&base_time=${fcstTime}&nx=${nx}&ny=${ny}`;
 
-    const [ncstRes, fcstRes] = await Promise.all([
+        const [ncstRes, fcstRes] = await Promise.all([
       fetch(ncstUrl, { cache: "no-store" }),
       fetch(fcstUrl, { next: { revalidate: 3600 } }),
     ]);
-    const [ncstData, fcstData] = await Promise.all([ncstRes.json(), fcstRes.json()]);
 
-    const ncstItems = ncstData?.response?.body?.items?.item ?? [];
-    const fcstItems = fcstData?.response?.body?.items?.item ?? [];
+    const [ncstData, fcstData] = await Promise.all([
+      ncstRes.json(),
+      fcstRes.json(),
+    ]);
 
-    const getNcst = (cat: string) => ncstItems.find((i: any) => i.category === cat)?.obsrValue;
-    const getFcst = (cat: string) => fcstItems.find((i: any) => i.category === cat)?.fcstValue;
+    type WeatherItem = {
+      category?: string;
+      obsrValue?: string;
+      fcstValue?: string;
+    };
+
+    const ncstItems = (ncstData?.response?.body?.items?.item ??
+      []) as WeatherItem[];
+
+    const fcstItems = (fcstData?.response?.body?.items?.item ??
+      []) as WeatherItem[];
+
+    const getNcst = (cat: string) =>
+      ncstItems.find((i) => i.category === cat)?.obsrValue;
+
+    const getFcst = (cat: string) =>
+      fcstItems.find((i) => i.category === cat)?.fcstValue;
 
     const tmp = parseFloat(getNcst("T1H") ?? "20");
     const wsd = parseFloat(getNcst("WSD") ?? "0");
@@ -131,7 +147,32 @@ export default async function Home() {
     }));
     safetyNews = rr.filter((r): r is PromiseFulfilledResult<NewsItem[]> => r.status==='fulfilled').flatMap(r=>r.value);
   } catch { safetyNews = []; }
+    type SafetyCaseCard = {
+    id: string;
+    title: string;
+    accidentType: string;
+    action: string;
+    source: "KOSHA" | "SAMPLE";
+  };
 
+  let safetyCases: SafetyCaseCard[] = [];
+
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
+
+    const res = await fetch(`${baseUrl}/api/safety-news`, {
+      cache: "no-store",
+    });
+
+    if (res.ok) {
+      const data = (await res.json()) as { cards?: SafetyCaseCard[] };
+      safetyCases = data.cards ?? [];
+    }
+  } catch {
+    safetyCases = [];
+  } 
   return (
     <main className="min-h-screen bg-gray-950">
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
@@ -188,8 +229,8 @@ export default async function Home() {
         );
       })()}
 
-      <div className="p-4 max-w-2xl mx-auto">
-        <div className="grid grid-cols-2 gap-3 mt-2">
+      <div className="p-4 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
           {menus.map((m) => (
             <Link key={m.href} href={m.href}
               className={`bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
@@ -207,35 +248,110 @@ export default async function Home() {
           <p className="text-gray-400 text-xs leading-relaxed">특이사항 발생 시 반드시 Evidence Book 등록 · 고위험작업은 PTW 제출 후 시작 · 중대재해 발생 즉시 119 신고</p>
         </div>
 
-        {/* 산재사고 뉴스 - 자동 흐름 ticker */}
-        <div className="mt-4">
-          <style>{`
-            @keyframes ticker {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .news-ticker { animation: ticker 35s linear infinite; }
-            .news-ticker:hover { animation-play-state: paused; }
-          `}</style>
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <span className="text-red-500 text-sm animate-pulse">●</span>
-            <span className="text-white text-sm font-semibold">산재사고 뉴스</span>
-            <span className="text-gray-600 text-xs ml-auto">실시간</span>
-          </div>
-          <div className="overflow-hidden rounded-xl bg-gray-900 border border-gray-800 py-3">
-            {safetyNews.length === 0 ? (
-              <p className="text-gray-600 text-xs px-4">뉴스를 불러오는 중...</p>
+                {/* KOSHA TBM 체크포인트 + 산업안전 동향 */}
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 text-sm">●</span>
+                  <span className="text-white text-sm font-semibold">
+                    오늘 TBM 체크포인트
+                  </span>
+                </div>
+                <p className="text-gray-500 text-xs mt-1">
+                  최근 안전사고 사례를 참고해 오늘 확인할 항목입니다.
+                </p>
+              </div>
+              <span className="text-yellow-400 text-xs shrink-0">KOSHA</span>
+            </div>
+
+            {safetyCases.length === 0 ? (
+              <p className="text-gray-600 text-xs">
+                안전사고 사례를 불러오는 중입니다.
+              </p>
             ) : (
-              <div className="flex news-ticker w-max gap-8 px-4">
-                {[...safetyNews.slice(0,8), ...safetyNews.slice(0,8)].map((news: {title:string; link:string; tag:string; color:string}, i: number) => (
-                  <a key={i} href={news.link} target="_blank" rel="noopener noreferrer"
-                    className="shrink-0 flex items-center gap-2 group">
-                    <span className={`px-1.5 py-0.5 rounded text-xs font-bold shrink-0 ${
-                      news.color === 'red' ? 'bg-red-950 text-red-400' :
-                      news.color === 'orange' ? 'bg-orange-950 text-orange-400' :
-                      'bg-blue-950 text-blue-400'
-                    }`}>{news.tag}</span>
-                    <span className="text-gray-400 text-xs group-hover:text-white transition whitespace-nowrap max-w-xs truncate">{news.title}</span>
+              <div className="space-y-2">
+                {safetyCases.slice(0, 2).map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg bg-gray-950 border border-gray-800 px-3 py-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="px-1.5 py-0.5 rounded bg-red-950 text-red-300 text-[11px] font-bold shrink-0">
+                        {item.accidentType}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white text-xs font-semibold truncate">
+                          {item.title}
+                        </p>
+                        <p className="text-emerald-300 text-xs mt-1 truncate">
+                          {item.action}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-gray-600 text-[11px]">
+                        출처: {item.source === "KOSHA" ? "KOSHA 안전사례" : "예시 사례"}
+                      </span>
+                      <Link
+                        href={`/tbm?safetyCase=${encodeURIComponent(
+                          item.id
+                        )}&check=${encodeURIComponent(item.action)}`}
+                        className="rounded-full bg-blue-600 hover:bg-blue-500 px-3 py-1 text-[11px] font-semibold text-white transition"
+                      >
+                        TBM 체크
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400 text-sm">●</span>
+                  <span className="text-white text-sm font-semibold">
+                    산업안전 동향
+                  </span>
+                </div>
+                <p className="text-gray-500 text-xs mt-1">
+                  현장 안전관리자가 참고할 최신 안전 이슈입니다.
+                </p>
+              </div>
+              <span className="text-gray-600 text-xs shrink-0">뉴스</span>
+            </div>
+
+            {safetyNews.length === 0 ? (
+              <p className="text-gray-600 text-xs">
+                산업안전 동향을 불러오는 중입니다.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {safetyNews.slice(0, 3).map((news, i) => (
+                  <a
+                    key={`${news.link}-${i}`}
+                    href={news.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-lg bg-gray-950 border border-gray-800 px-3 py-2 group"
+                  >
+                    <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${
+                      news.color === "red"
+                        ? "bg-red-950 text-red-400"
+                        : news.color === "orange"
+                        ? "bg-orange-950 text-orange-400"
+                        : "bg-blue-950 text-blue-400"
+                    }`}>
+                      {news.tag}
+                    </span>
+                    <span className="text-gray-400 text-xs group-hover:text-white transition truncate">
+                      {news.title}
+                    </span>
                   </a>
                 ))}
               </div>
