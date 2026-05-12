@@ -25,52 +25,41 @@ type SafetyCaseCard = {
   summary: string;
   action: string;
   source: "KOSHA" | "SAMPLE";
-  sourceUrl?: string;
   relevanceScore: number;
   isSimilarIndustry: boolean;
 };
 
+type KoshaItem = {
+  business?: string;
+  contents?: string;
+  keyword?: string;
+  boardno?: string;
+};
+
+type KoshaPayload = {
+  body?: {
+    items?: {
+      item?: KoshaItem[] | KoshaItem;
+    };
+  };
+};
+
 const KOSHA_API_BASE_URL =
   process.env.KOSHA_API_BASE_URL ||
-  "http://apis.data.go.kr/B552468/disaster_api01";
+  "https://apis.data.go.kr/B552468/disaster_api02/getdisaster_api02";
 
-const KOSHA_SERVICE_KEY = process.env.KOSHA_SERVICE_KEY;
-const KOSHA_CALL_API_ID =
-  process.env.KOSHA_CALL_API_ID || "국내재해사례 게시판 조회";
-
-const WASTE_KEYWORDS = [
-  "폐기물",
-  "생활폐기물",
-  "환경미화",
-  "수거차",
-  "청소차",
-  "압축기",
-  "후진",
-  "투입구",
-  "끼임",
-  "부딪힘",
-  "깔림",
-];
-
-function pickText(item: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = item[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (typeof value === "number") return String(value);
-  }
-  return "";
-}
+const KOSHA_SERVICE_KEY = process.env.KOSHA_SERVICE_KEY || "";
+const KOSHA_CALL_API_ID = process.env.KOSHA_CALL_API_ID || "1060";
 
 function classifyAccidentType(text: string): AccidentType {
   const value = text.replace(/\s/g, "");
 
-  if (/추락|떨어짐|사다리|개구부|지붕|단부|고소/.test(value)) return "떨어짐";
-  if (/끼임|협착|말림|롤러|컨베이어|벨트|압축기|프레스|투입구/.test(value))
-    return "끼임";
-  if (/충돌|부딪힘|후진|지게차|차량|장비/.test(value)) return "부딪힘";
+  if (/추락|떨어짐|사다리|개구부|지붕|단부|고소|발판/.test(value)) return "떨어짐";
+  if (/끼임|협착|말림|롤러|컨베이어|벨트|압축기|프레스|투입구|운반구|승강로/.test(value)) return "끼임";
+  if (/충돌|부딪힘|후진|지게차|차량|장비|CCTV|주차/.test(value)) return "부딪힘";
   if (/낙하|비래|맞음|인양물|떨어진물체/.test(value)) return "맞음";
-  if (/깔림|전도|전복|붕괴|무너짐/.test(value)) return "깔림";
-  if (/넘어짐|미끄러짐|전도|통로|바닥/.test(value)) return "넘어짐";
+  if (/깔림|전도|전복|붕괴|무너짐|뒤집힘/.test(value)) return "깔림";
+  if (/넘어짐|미끄러짐|통로|바닥/.test(value)) return "넘어짐";
   if (/화재|폭발|파열|인화|용접|분진/.test(value)) return "화재폭발";
   if (/질식|중독|산소결핍|밀폐공간|가스/.test(value)) return "질식중독";
 
@@ -80,21 +69,10 @@ function classifyAccidentType(text: string): AccidentType {
 function classifyIndustry(text: string): IndustryTag {
   const value = text.replace(/\s/g, "");
 
-  if (/폐기물|생활폐기물|환경미화|수거차|청소차|압축기/.test(value)) {
-    return "폐기물";
-  }
-
-  if (/건설|비계|개구부|철거|해체|굴착|크레인/.test(value)) {
-    return "건설";
-  }
-
-  if (/제조|공장|프레스|컨베이어|롤러|설비|기계/.test(value)) {
-    return "제조";
-  }
-
-  if (/물류|창고|상하차|지게차|팔레트|적재/.test(value)) {
-    return "물류";
-  }
+  if (/폐기물|생활폐기물|환경미화|수거차|청소차|압축기/.test(value)) return "폐기물";
+  if (/건설|비계|개구부|철거|해체|굴착|크레인|공사|현장/.test(value)) return "건설";
+  if (/제조|공장|프레스|컨베이어|롤러|설비|기계|사다리/.test(value)) return "제조";
+  if (/물류|창고|상하차|지게차|팔레트|적재|화물/.test(value)) return "물류";
 
   return "공통";
 }
@@ -123,9 +101,23 @@ function getActionByAccidentType(type: AccidentType) {
 }
 
 function scoreRelevance(text: string, industryTag: IndustryTag) {
+  const wasteKeywords = [
+    "폐기물",
+    "생활폐기물",
+    "환경미화",
+    "수거차",
+    "청소차",
+    "압축기",
+    "후진",
+    "투입구",
+    "끼임",
+    "부딪힘",
+    "깔림",
+  ];
+
   let score = 0;
 
-  for (const keyword of WASTE_KEYWORDS) {
+  for (const keyword of wasteKeywords) {
     if (text.includes(keyword)) score += 2;
   }
 
@@ -135,57 +127,21 @@ function scoreRelevance(text: string, industryTag: IndustryTag) {
   return score;
 }
 
-function normalizeKoshas(items: Record<string, unknown>[]): SafetyCaseCard[] {
+function normalizeKoshaItems(items: KoshaItem[]): SafetyCaseCard[] {
   return items.map((item, index) => {
-    const title =
-      pickText(item, [
-        "title",
-        "ttl",
-        "subject",
-        "sj",
-        "boardTitle",
-        "bbsTitle",
-        "dataTitle",
-      ]) || "KOSHA 안전사례";
+    const title = item.keyword || "KOSHA 안전사례";
+    const summary = item.contents || title;
+    const combined = `${item.business || ""} ${title} ${summary}`;
 
-    const summary =
-      pickText(item, [
-        "summary",
-        "content",
-        "cn",
-        "contents",
-        "accidentCn",
-        "caseCn",
-        "dataContent",
-      ]) || title;
-
-    const date =
-      pickText(item, [
-        "date",
-        "regDate",
-        "writngDe",
-        "writeDate",
-        "createdAt",
-        "dataRegDt",
-      ]) || "";
-
-    const location =
-      pickText(item, ["location", "area", "place", "region", "addr"]) || "";
-
-    const boardNo =
-      pickText(item, ["boardno", "boardNo", "bbsNo", "id", "seq"]) ||
-      `kosha-${index}`;
-
-    const combined = `${title} ${summary} ${location}`;
     const accidentType = classifyAccidentType(combined);
     const industryTag = classifyIndustry(combined);
     const relevanceScore = scoreRelevance(combined, industryTag);
 
     return {
-      id: String(boardNo),
+      id: item.boardno || `kosha-${index}`,
       title,
-      date,
-      location,
+      date: "",
+      location: "",
       accidentType,
       industryTag,
       summary,
@@ -195,48 +151,6 @@ function normalizeKoshas(items: Record<string, unknown>[]): SafetyCaseCard[] {
       isSimilarIndustry: industryTag === "폐기물",
     };
   });
-}
-
-function extractItems(payload: unknown): Record<string, unknown>[] {
-  if (!payload || typeof payload !== "object") return [];
-
-  const data = payload as Record<string, unknown>;
-
-  const candidates = [
-    data.items,
-    data.item,
-    data.data,
-    data.list,
-    data.result,
-    data.response &&
-      typeof data.response === "object" &&
-      (data.response as Record<string, unknown>).body &&
-      typeof (data.response as Record<string, unknown>).body === "object" &&
-      ((data.response as Record<string, unknown>).body as Record<string, unknown>)
-        .items,
-  ];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
-      return candidate.filter(
-        (x): x is Record<string, unknown> =>
-          typeof x === "object" && x !== null
-      );
-    }
-
-    if (
-      candidate &&
-      typeof candidate === "object" &&
-      Array.isArray((candidate as Record<string, unknown>).item)
-    ) {
-      return ((candidate as Record<string, unknown>).item as unknown[]).filter(
-        (x): x is Record<string, unknown> =>
-          typeof x === "object" && x !== null
-      );
-    }
-  }
-
-  return [];
 }
 
 function sampleCases(): SafetyCaseCard[] {
@@ -311,11 +225,7 @@ function sampleCases(): SafetyCaseCard[] {
 
 function selectCards(cards: SafetyCaseCard[]) {
   const sorted = [...cards].sort((a, b) => b.relevanceScore - a.relevanceScore);
-
-  const similar = sorted
-    .filter((card) => card.isSimilarIndustry)
-    .slice(0, 2);
-
+  const similar = sorted.filter((card) => card.isSimilarIndustry).slice(0, 2);
   const common = sorted
     .filter((card) => !similar.some((s) => s.id === card.id))
     .slice(0, 3);
@@ -324,33 +234,33 @@ function selectCards(cards: SafetyCaseCard[]) {
 }
 
 async function fetchKoshaCases() {
-  if (!KOSHA_SERVICE_KEY) {
-    return [];
-  }
+  if (!KOSHA_SERVICE_KEY) return [];
 
   const params = new URLSearchParams({
-    ServiceKey: KOSHA_SERVICE_KEY,
+    serviceKey: KOSHA_SERVICE_KEY,
+    pageNo: "1",
+    numOfRows: "20",
     business: "",
     keyword: "",
     callApiId: KOSHA_CALL_API_ID,
-    pageNo: "1",
-    numOfRows: "20",
   });
 
-  const url = `${KOSHA_API_BASE_URL}?${params.toString()}`;
-
-  const response = await fetch(url, {
-    next: { revalidate: 60 * 60 },
+  const response = await fetch(`${KOSHA_API_BASE_URL}?${params.toString()}`, {
+    cache: "no-store",
   });
 
   if (!response.ok) {
     throw new Error(`KOSHA API failed: ${response.status}`);
   }
 
-  const payload = await response.json();
-  const items = extractItems(payload);
+  const payload = (await response.json()) as KoshaPayload;
+  const rawItem = payload.body?.items?.item;
 
-  return normalizeKoshas(items);
+  if (!rawItem) return [];
+
+  const items = Array.isArray(rawItem) ? rawItem : [rawItem];
+
+  return normalizeKoshaItems(items);
 }
 
 export async function GET() {
