@@ -158,13 +158,14 @@ export default async function Home() {
   let safetyCases: SafetyCaseCard[] = [];
 
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
+    const baseUrl =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://safe-metrica.vercel.app";
 
-    const res = await fetch(`${baseUrl}/api/safety-news`, {
-      cache: "no-store",
-    });
+const res = await fetch(`${baseUrl}/api/safety-news`, {
+  next: { revalidate: 1800 },
+});
 
     if (res.ok) {
       const data = (await res.json()) as { cards?: SafetyCaseCard[] };
