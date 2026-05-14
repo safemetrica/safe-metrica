@@ -282,7 +282,8 @@ function selectCards(
       ...card,
       relevanceScore: score,
       isSimilarIndustry:
-        card.industryTag === tenantIndustryTag || industryKeywordScore > 0,
+  card.industryTag === tenantIndustryTag ||
+  (card.industryTag === "공통" && industryKeywordScore > 0),
     };
   });
 
