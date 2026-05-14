@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import { getCompanyConfig } from "@/lib/company";
+import { getKstDateKey, pickDailyItem } from "@/lib/dailySafetyCase";
+import {
+  normalizeIndustryTag,
+  scoreIndustrySimilarity,
+} from "@/lib/safetyIndustry";
 
 export const dynamic = "force-dynamic";
 
@@ -54,14 +60,37 @@ const KOSHA_CALL_API_ID = process.env.KOSHA_CALL_API_ID || "1060";
 function classifyAccidentType(text: string): AccidentType {
   const value = text.replace(/\s/g, "");
 
-  if (/추락|떨어짐|사다리|개구부|지붕|단부|고소|발판/.test(value)) return "떨어짐";
-  if (/끼임|협착|말림|롤러|컨베이어|벨트|압축기|프레스|투입구|운반구|승강로/.test(value)) return "끼임";
-  if (/충돌|부딪힘|후진|지게차|차량|장비|CCTV|주차/.test(value)) return "부딪힘";
-  if (/낙하|비래|맞음|인양물|떨어진물체/.test(value)) return "맞음";
-  if (/깔림|전도|전복|붕괴|무너짐|뒤집힘/.test(value)) return "깔림";
-  if (/넘어짐|미끄러짐|통로|바닥/.test(value)) return "넘어짐";
-  if (/화재|폭발|파열|인화|용접|분진/.test(value)) return "화재폭발";
-  if (/질식|중독|산소결핍|밀폐공간|가스/.test(value)) return "질식중독";
+  if (/추락|떨어짐|사다리|개구부|지붕|단부|고소|발판/.test(value)) {
+    return "떨어짐";
+  }
+
+  if (/끼임|협착|말림|롤러|컨베이어|벨트|압축기|프레스|투입구|운반구|승강로/.test(value)) {
+    return "끼임";
+  }
+
+  if (/충돌|부딪힘|후진|지게차|차량|장비|CCTV|주차/.test(value)) {
+    return "부딪힘";
+  }
+
+  if (/낙하|비래|맞음|인양물|떨어진물체/.test(value)) {
+    return "맞음";
+  }
+
+  if (/깔림|전도|전복|붕괴|무너짐|뒤집힘/.test(value)) {
+    return "깔림";
+  }
+
+  if (/넘어짐|미끄러짐|통로|바닥/.test(value)) {
+    return "넘어짐";
+  }
+
+  if (/화재|폭발|파열|인화|용접|분진/.test(value)) {
+    return "화재폭발";
+  }
+
+  if (/질식|중독|산소결핍|밀폐공간|가스/.test(value)) {
+    return "질식중독";
+  }
 
   return "기타";
 }
@@ -69,15 +98,26 @@ function classifyAccidentType(text: string): AccidentType {
 function classifyIndustry(text: string): IndustryTag {
   const value = text.replace(/\s/g, "");
 
-  if (/폐기물|생활폐기물|환경미화|수거차|청소차|압축기/.test(value)) return "폐기물";
-  if (/건설|비계|개구부|철거|해체|굴착|크레인|공사|현장/.test(value)) return "건설";
-  if (/제조|공장|프레스|컨베이어|롤러|설비|기계|사다리/.test(value)) return "제조";
-  if (/물류|창고|상하차|지게차|팔레트|적재|화물/.test(value)) return "물류";
+  if (/폐기물|생활폐기물|환경미화|수거차|청소차|압축기|투입구/.test(value)) {
+    return "폐기물";
+  }
+
+  if (/건설|비계|개구부|철거|해체|굴착|크레인|공사|현장/.test(value)) {
+    return "건설";
+  }
+
+  if (/제조|공장|프레스|컨베이어|롤러|설비|기계|사다리/.test(value)) {
+    return "제조";
+  }
+
+  if (/물류|창고|상하차|지게차|팔레트|적재|화물/.test(value)) {
+    return "물류";
+  }
 
   return "공통";
 }
 
-function getActionByAccidentType(type: AccidentType) {
+function getActionByAccidentType(type: AccidentType): string {
   switch (type) {
     case "끼임":
       return "설비 정지 · 방호덮개 · LOTO 확인";
@@ -100,29 +140,26 @@ function getActionByAccidentType(type: AccidentType) {
   }
 }
 
-function scoreRelevance(text: string, industryTag: IndustryTag) {
-  const wasteKeywords = [
-    "폐기물",
-    "생활폐기물",
-    "환경미화",
-    "수거차",
-    "청소차",
-    "압축기",
-    "후진",
-    "투입구",
-    "끼임",
-    "부딪힘",
-    "깔림",
-  ];
+function scoreRelevance(
+  text: string,
+  cardIndustryTag: IndustryTag,
+  tenantIndustryTag: IndustryTag
+): number {
+  const industryScore = scoreIndustrySimilarity(tenantIndustryTag, text);
+  const commonScore = scoreIndustrySimilarity("공통", text);
 
   let score = 0;
 
-  for (const keyword of wasteKeywords) {
-    if (text.includes(keyword)) score += 2;
+  if (cardIndustryTag === tenantIndustryTag) {
+    score += 10;
   }
 
-  if (industryTag === "폐기물") score += 10;
-  if (industryTag === "공통") score += 1;
+  if (cardIndustryTag === "공통") {
+    score += 2;
+  }
+
+  score += industryScore * 2;
+  score += commonScore;
 
   return score;
 }
@@ -135,7 +172,6 @@ function normalizeKoshaItems(items: KoshaItem[]): SafetyCaseCard[] {
 
     const accidentType = classifyAccidentType(combined);
     const industryTag = classifyIndustry(combined);
-    const relevanceScore = scoreRelevance(combined, industryTag);
 
     return {
       id: item.boardno || `kosha-${index}`,
@@ -147,22 +183,25 @@ function normalizeKoshaItems(items: KoshaItem[]): SafetyCaseCard[] {
       summary,
       action: getActionByAccidentType(accidentType),
       source: "KOSHA",
-      relevanceScore,
-      isSimilarIndustry: industryTag === "폐기물",
+      relevanceScore: scoreIndustrySimilarity("공통", combined),
+      isSimilarIndustry: false,
     };
   });
 }
 
 function sampleCases(): SafetyCaseCard[] {
+  const today = getKstDateKey();
+
   return [
     {
       id: "sample-waste-001",
       title: "폐기물 설비 점검 중 끼임 위험 사례",
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       location: "",
       accidentType: "끼임",
       industryTag: "폐기물",
-      summary: "설비 점검 중 정지 확인과 방호조치가 미흡한 상태에서 끼임 위험이 발생할 수 있습니다.",
+      summary:
+        "설비 점검 중 정지 확인과 방호조치가 미흡한 상태에서 끼임 위험이 발생할 수 있습니다.",
       action: "설비 정지 · 방호덮개 · LOTO 확인",
       source: "SAMPLE",
       relevanceScore: 20,
@@ -171,11 +210,12 @@ function sampleCases(): SafetyCaseCard[] {
     {
       id: "sample-waste-002",
       title: "수거차 후진 작업 중 부딪힘 위험 사례",
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       location: "",
       accidentType: "부딪힘",
       industryTag: "폐기물",
-      summary: "후진 차량 주변 보행자 확인과 유도자 배치가 미흡하면 부딪힘 위험이 커질 수 있습니다.",
+      summary:
+        "후진 차량 주변 보행자 확인과 유도자 배치가 미흡하면 부딪힘 위험이 커질 수 있습니다.",
       action: "후진경보 · 유도자 · 보행동선 분리 확인",
       source: "SAMPLE",
       relevanceScore: 18,
@@ -184,11 +224,12 @@ function sampleCases(): SafetyCaseCard[] {
     {
       id: "sample-common-001",
       title: "작업장 통로 정리 미흡으로 넘어짐 위험 사례",
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       location: "",
       accidentType: "넘어짐",
       industryTag: "공통",
-      summary: "통로 적치물과 바닥 물기로 인해 이동 중 넘어짐 위험이 발생할 수 있습니다.",
+      summary:
+        "통로 적치물과 바닥 물기로 인해 이동 중 넘어짐 위험이 발생할 수 있습니다.",
       action: "바닥 정리 · 물기 제거 · 통로 확보 확인",
       source: "SAMPLE",
       relevanceScore: 4,
@@ -197,11 +238,12 @@ function sampleCases(): SafetyCaseCard[] {
     {
       id: "sample-common-002",
       title: "상부 적재물 낙하 위험 사례",
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       location: "",
       accidentType: "맞음",
       industryTag: "공통",
-      summary: "상부 적재 상태가 불안정하면 작업자에게 물체가 떨어질 위험이 있습니다.",
+      summary:
+        "상부 적재 상태가 불안정하면 작업자에게 물체가 떨어질 위험이 있습니다.",
       action: "상부작업 통제 · 적재상태 · 안전모 확인",
       source: "SAMPLE",
       relevanceScore: 3,
@@ -210,11 +252,12 @@ function sampleCases(): SafetyCaseCard[] {
     {
       id: "sample-common-003",
       title: "화기작업 전 가연물 정리 미흡 사례",
-      date: new Date().toISOString().slice(0, 10),
+      date: today,
       location: "",
       accidentType: "화재폭발",
       industryTag: "공통",
-      summary: "용접 등 화기작업 전 주변 가연물 제거와 소화기 준비가 필요합니다.",
+      summary:
+        "용접 등 화기작업 전 주변 가연물 제거와 소화기 준비가 필요합니다.",
       action: "화기작업 허가 · 소화기 · 가연물 제거 확인",
       source: "SAMPLE",
       relevanceScore: 3,
@@ -223,18 +266,76 @@ function sampleCases(): SafetyCaseCard[] {
   ];
 }
 
-function selectCards(cards: SafetyCaseCard[]) {
-  const sorted = [...cards].sort((a, b) => b.relevanceScore - a.relevanceScore);
-  const similar = sorted.filter((card) => card.isSimilarIndustry).slice(0, 2);
-  const common = sorted
-    .filter((card) => !similar.some((s) => s.id === card.id))
-    .slice(0, 3);
+function selectCards(
+  cards: SafetyCaseCard[],
+  tenantIndustryTag: IndustryTag,
+  companySeed: string
+): SafetyCaseCard[] {
+  const dateKey = getKstDateKey();
 
-  return [...similar, ...common].slice(0, 5);
+  const scored = cards.map((card) => {
+    const text = `${card.title} ${card.summary} ${card.action}`;
+    const industryKeywordScore = scoreIndustrySimilarity(tenantIndustryTag, text);
+    const score = scoreRelevance(text, card.industryTag, tenantIndustryTag);
+
+    return {
+      ...card,
+      relevanceScore: score,
+      isSimilarIndustry:
+        card.industryTag === tenantIndustryTag || industryKeywordScore > 0,
+    };
+  });
+
+  const industryCandidates = scored
+    .filter((card) => card.isSimilarIndustry)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  const commonCandidates = scored
+    .filter((card) => !card.isSimilarIndustry)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  const industryPick = pickDailyItem(industryCandidates, [
+    companySeed,
+    tenantIndustryTag,
+    dateKey,
+    "industry",
+  ]);
+
+  const commonPick = pickDailyItem(commonCandidates, [
+    companySeed,
+    tenantIndustryTag,
+    dateKey,
+    "common",
+  ]);
+
+  const selected = [industryPick, commonPick].filter(
+    (card): card is SafetyCaseCard => Boolean(card)
+  );
+
+  if (selected.length >= 2) {
+    return selected;
+  }
+
+  const fallbackCandidates = scored.filter(
+    (card) => !selected.some((picked) => picked.id === card.id)
+  );
+
+  const fallbackPick = pickDailyItem(fallbackCandidates, [
+    companySeed,
+    tenantIndustryTag,
+    dateKey,
+    "fallback",
+  ]);
+
+  return [...selected, fallbackPick]
+    .filter((card): card is SafetyCaseCard => Boolean(card))
+    .slice(0, 2);
 }
 
-async function fetchKoshaCases() {
-  if (!KOSHA_SERVICE_KEY) return [];
+async function fetchKoshaCases(): Promise<SafetyCaseCard[]> {
+  if (!KOSHA_SERVICE_KEY) {
+    return [];
+  }
 
   const params = new URLSearchParams({
     serviceKey: KOSHA_SERVICE_KEY,
@@ -256,34 +357,90 @@ async function fetchKoshaCases() {
   const payload = (await response.json()) as KoshaPayload;
   const rawItem = payload.body?.items?.item;
 
-  if (!rawItem) return [];
+  if (!rawItem) {
+    return [];
+  }
 
   const items = Array.isArray(rawItem) ? rawItem : [rawItem];
 
   return normalizeKoshaItems(items);
 }
 
+async function getTenantSafetyContext(): Promise<{
+  industryTag: IndustryTag;
+  safetyCaseEnabled: boolean;
+  companySeed: string;
+}> {
+  try {
+    const company = await getCompanyConfig();
+
+    return {
+      industryTag: normalizeIndustryTag(company.industryTag),
+      safetyCaseEnabled: company.safetyCaseEnabled ?? true,
+      companySeed: company.code,
+    };
+  } catch (error) {
+    console.error("[safety-news] tenant context fallback", error);
+
+    return {
+      industryTag: "공통",
+      safetyCaseEnabled: true,
+      companySeed: "anonymous",
+    };
+  }
+}
+
 export async function GET() {
+  const tenantContext = await getTenantSafetyContext();
+
+  if (!tenantContext.safetyCaseEnabled) {
+    return NextResponse.json({
+      ok: true,
+      title: "최근 안전사고 사례",
+      subtitle: "유사 사고를 확인하고 오늘 TBM에 반영하세요.",
+      source: "KOSHA",
+      mode: "disabled",
+      dateKey: getKstDateKey(),
+      cards: [],
+    });
+  }
+
   try {
     const koshaCards = await fetchKoshaCases();
-    const cards = koshaCards.length > 0 ? selectCards(koshaCards) : sampleCases();
+    const sourceCards = koshaCards.length > 0 ? koshaCards : sampleCases();
+
+    const cards = selectCards(
+      sourceCards,
+      tenantContext.industryTag,
+      tenantContext.companySeed
+    );
 
     return NextResponse.json({
       ok: true,
       title: "최근 안전사고 사례",
       subtitle: "유사 사고를 확인하고 오늘 TBM에 반영하세요.",
       source: koshaCards.length > 0 ? "KOSHA" : "SAMPLE",
+      mode: "tenant-aware",
+      dateKey: getKstDateKey(),
       cards,
     });
   } catch (error) {
     console.error("[safety-news]", error);
+
+    const cards = selectCards(
+      sampleCases(),
+      tenantContext.industryTag,
+      tenantContext.companySeed
+    );
 
     return NextResponse.json({
       ok: true,
       title: "최근 안전사고 사례",
       subtitle: "유사 사고를 확인하고 오늘 TBM에 반영하세요.",
       source: "SAMPLE",
-      cards: sampleCases(),
+      mode: "tenant-aware",
+      dateKey: getKstDateKey(),
+      cards,
       warning: "KOSHA API 호출 실패로 샘플 데이터를 표시합니다.",
     });
   }

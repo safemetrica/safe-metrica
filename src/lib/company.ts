@@ -12,6 +12,10 @@ export type CompanyConfig = {
   adminEvidenceDbId?: string;
   fieldVoiceDbId?: string;
   listeningDbId?: string;
+
+  industryTag?: string;
+  safetyCaseEnabled?: boolean;
+  safetyCaseMode?: "tenant-aware" | "common-only" | "manual";
 };
 
 export class TenantRequiredError extends Error {
@@ -67,15 +71,31 @@ const c = await cookies();
 
   throw new TenantRequiredError();
 }
-
-function getTextPropPlainText(prop: any): string {
+type NotionProperty = {
+  rich_text?: Array<{ plain_text?: string }>;
+  title?: Array<{ plain_text?: string }>;
+  select?: { name?: string };
+  checkbox?: boolean;
+};
+function getTextPropPlainText(prop: NotionProperty | undefined): string {
   return prop?.rich_text?.[0]?.plain_text?.trim() ?? "";
 }
 
-function getTitlePropPlainText(prop: any): string {
+function getTitlePropPlainText(prop: NotionProperty | undefined): string {
   return prop?.title?.[0]?.plain_text?.trim() ?? "";
 }
 
+function getSelectPropName(prop: NotionProperty | undefined): string {
+  return prop?.select?.name?.trim() ?? "";
+}
+
+function getCheckboxPropValue(prop: NotionProperty | undefined): boolean | undefined {
+  if (typeof prop?.checkbox === "boolean") {
+    return prop.checkbox;
+  }
+
+  return undefined;
+}
 async function queryCompanyRow(code: string) {
   const notionApiKey = process.env.NOTION_API_KEY;
 
@@ -168,7 +188,25 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
     getTextPropPlainText(props["fieldVoiceDbId"]) || undefined;
   const listeningDbId =
     getTextPropPlainText(props["listeningDbId"]) || undefined;
+  const industryTag =
+    getSelectPropName(props["industryTag"]) ||
+    getTextPropPlainText(props["industryTag"]) ||
+    "공통";
 
+  const safetyCaseEnabled =
+    getCheckboxPropValue(props["safetyCaseEnabled"]) ?? true;
+
+  const rawSafetyCaseMode =
+    getSelectPropName(props["safetyCaseMode"]) ||
+    getTextPropPlainText(props["safetyCaseMode"]) ||
+    "tenant-aware";
+
+  const safetyCaseMode =
+    rawSafetyCaseMode === "common-only" ||
+    rawSafetyCaseMode === "manual" ||
+    rawSafetyCaseMode === "tenant-aware"
+      ? rawSafetyCaseMode
+      : "tenant-aware";
   return {
     code,
     name,
@@ -179,6 +217,9 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
     adminEvidenceDbId,
     fieldVoiceDbId,
     listeningDbId,
+    industryTag,
+    safetyCaseEnabled,
+    safetyCaseMode,
   };
 }
 
