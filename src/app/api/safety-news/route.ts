@@ -282,8 +282,8 @@ function selectCards(
       ...card,
       relevanceScore: score,
       isSimilarIndustry:
-  card.industryTag === tenantIndustryTag ||
-  (card.industryTag === "공통" && industryKeywordScore > 0),
+        card.industryTag === tenantIndustryTag ||
+        (card.industryTag === "공통" && industryKeywordScore > 0),
     };
   });
 
@@ -292,47 +292,41 @@ function selectCards(
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
   const commonCandidates = scored
-    .filter((card) => !card.isSimilarIndustry)
+    .filter((card) => card.industryTag === "공통" && !card.isSimilarIndustry)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-  const industryPick = pickDailyItem(industryCandidates, [
-    companySeed,
-    tenantIndustryTag,
-    dateKey,
-    "industry",
-  ]);
+  const industryPick =
+    pickDailyItem(industryCandidates, [
+      companySeed,
+      tenantIndustryTag,
+      dateKey,
+      "industry",
+    ]) ?? getIndustryFallbackCard(tenantIndustryTag);
 
-  const commonPick = pickDailyItem(commonCandidates, [
-    companySeed,
-    tenantIndustryTag,
-    dateKey,
-    "common",
-  ]);
+  const commonPick =
+    pickDailyItem(commonCandidates, [
+      companySeed,
+      tenantIndustryTag,
+      dateKey,
+      "common",
+    ]) ??
+    scored.find(
+      (card) =>
+        card.industryTag === "공통" &&
+        card.id !== industryPick?.id
+    ) ??
+    getIndustryFallbackCard("공통");
 
-  const selected = [industryPick, commonPick].filter(
-    (card): card is SafetyCaseCard => Boolean(card)
-  );
-
-  if (selected.length >= 2) {
-    return selected;
-  }
-
-  const fallbackCandidates = scored.filter(
-    (card) => !selected.some((picked) => picked.id === card.id)
-  );
-
-  const fallbackPick = pickDailyItem(fallbackCandidates, [
-    companySeed,
-    tenantIndustryTag,
-    dateKey,
-    "fallback",
-  ]);
-
-  return [...selected, fallbackPick]
+  const selected = [industryPick, commonPick]
     .filter((card): card is SafetyCaseCard => Boolean(card))
-    .slice(0, 2);
-}
+    .filter(
+      (card, index, array) =>
+        array.findIndex((item) => item.id === card.id) === index
+    );
 
+  return selected.slice(0, 2);
+}
+ 
 async function fetchKoshaCases(): Promise<SafetyCaseCard[]> {
   if (!KOSHA_SERVICE_KEY) {
     return [];
@@ -445,4 +439,15 @@ export async function GET() {
       warning: "KOSHA API 호출 실패로 샘플 데이터를 표시합니다.",
     });
   }
+}
+function getIndustryFallbackCard(
+  tenantIndustryTag: IndustryTag
+): SafetyCaseCard | null {
+  const samples = sampleCases();
+
+  return (
+    samples.find((card) => card.industryTag === tenantIndustryTag) ??
+    samples.find((card) => card.industryTag === "공통") ??
+    null
+  );
 }
