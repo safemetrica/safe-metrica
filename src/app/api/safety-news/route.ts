@@ -281,9 +281,9 @@ function selectCards(
     return {
       ...card,
       relevanceScore: score,
-      isSimilarIndustry:
-        card.industryTag === tenantIndustryTag ||
-        (card.industryTag === "공통" && industryKeywordScore > 0),
+            isSimilarIndustry:
+              card.industryTag === tenantIndustryTag ||
+              (card.industryTag === "공통" && industryKeywordScore > 0), 
     };
   });
 
