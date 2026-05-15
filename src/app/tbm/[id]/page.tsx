@@ -1,6 +1,17 @@
 export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
+import { evaluateTbmEvidence } from "@/lib/tbmEvidence";
+
+function getNotionFileCount(props: any, names: string[]): number {
+  for (const name of names) {
+    const prop = props[name];
+    if (!prop) continue;
+    if (Array.isArray(prop.files)) return prop.files.length;
+  }
+  return 0;
+}
+
 
 async function getTbmDetail(id: string) {
   const res = await fetch(`https://api.notion.com/v1/pages/${id}`, {
@@ -25,6 +36,34 @@ async function getTbmDetail(id: string) {
     작업태그: p["작업 태그"]?.multi_select?.map((t: any) => t.name) ?? [],
     작업유형: p["작업 유형"]?.select?.name ?? "",
     오늘주의사항: p["오늘의 주의사항"]?.rich_text?.[0]?.plain_text ?? "",
+    참석서명사진수: getNotionFileCount(p, [
+      "TBM 참석서명사진",
+      "참석 서명사진",
+      "참석서명사진",
+      "근로자 서명사진",
+      "근로자서명사진",
+      "서명사진",
+      "참석자 서명사진",
+    ]),
+    체조사진수: getNotionFileCount(p, [
+      "TBM 체조사진",
+      "체조사진",
+      "작업 전 체조사진",
+      "작업전 체조사진",
+      "작업 전 활동사진",
+      "작업전 활동사진",
+      "안전체조사진",
+      "안전 활동사진",
+    ]),
+    기타증빙사진수: getNotionFileCount(p, [
+      "TBM 증빙사진",
+      "증빙사진",
+      "작업 전 사진",
+      "작업전사진",
+      "현장사진",
+      "사진",
+      "첨부사진",
+    ]),
   };
 }
 
@@ -36,6 +75,22 @@ export default async function TbmDetailPage({
   const { id } = await Promise.resolve(params);
   const tbm = await getTbmDetail(id);
   const needsEB = tbm.특이사항 && tbm.연결EB === 0;
+  const totalEvidencePhotoCount = tbm.참석서명사진수 + tbm.체조사진수 + tbm.기타증빙사진수;
+  const evidenceCheck = evaluateTbmEvidence({
+    hasSignaturePhoto: tbm.참석서명사진수 > 0,
+    hasExercisePhoto: tbm.체조사진수 > 0,
+    hasAnyEvidencePhoto: totalEvidencePhotoCount > 0,
+    hasCautionText: Boolean(tbm.오늘주의사항?.trim()),
+    hasTaskName: Boolean(tbm.작업명 && tbm.작업명 !== "(작업명 없음)"),
+  });
+  const evidenceTone =
+    evidenceCheck.status === "적합"
+      ? "border-emerald-800 bg-emerald-950/40 text-emerald-200"
+      : evidenceCheck.status === "보완 필요"
+        ? "border-amber-800 bg-amber-950/35 text-amber-200"
+        : evidenceCheck.status === "부적합"
+          ? "border-red-800 bg-red-950/35 text-red-200"
+          : "border-slate-700 bg-slate-900 text-slate-300";
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -109,6 +164,62 @@ export default async function TbmDetailPage({
               <p className="text-sm text-gray-300">{tbm.특이사항내용}</p>
             </div>
           )}
+        </div>
+
+        <div className={`rounded-lg border p-5 mb-6 ${evidenceTone}`}>
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🧾</span>
+                <span className="text-sm font-bold text-white">AI TBM 증빙 확인</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                참석 서명사진, 체조사진, 오늘의 주의사항 기록을 기준으로 TBM 증빙력을 자동 확인합니다.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold">
+              {evidenceCheck.status}
+            </span>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
+            <div className="rounded-lg bg-gray-950/40 p-3 text-center">
+              <div className="text-xs text-gray-400">증빙 점수</div>
+              <div className="mt-1 text-2xl font-black text-white">{evidenceCheck.score}</div>
+              <div className="text-xs text-gray-500">/ 100</div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-gray-400 mb-1">판단</p>
+                <p className="text-sm leading-relaxed text-gray-100 [word-break:keep-all]">
+                  {evidenceCheck.reason}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-400 mb-1">보완 요청</p>
+                <p className="text-sm leading-relaxed text-gray-200 [word-break:keep-all]">
+                  {evidenceCheck.suggestion}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">참석 서명사진</p>
+              <p className="mt-1 text-sm font-bold text-white">{tbm.참석서명사진수}건</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">체조/안전활동 사진</p>
+              <p className="mt-1 text-sm font-bold text-white">{tbm.체조사진수}건</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">기타 증빙사진</p>
+              <p className="mt-1 text-sm font-bold text-white">{tbm.기타증빙사진수}건</p>
+            </div>
+          </div>
         </div>
 
         <a
