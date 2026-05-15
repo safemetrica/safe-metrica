@@ -176,6 +176,9 @@ export default async function FieldPage() {
   const now = new Date(Date.now() + 9 * 3600000);
   const timeStr = now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   const dateStr = now.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
+  const primaryTbm = d.오늘TBM[0];
+  const sharePreviewItems = d.riskTbmShareNeededItems.slice(0, 3);
+  const incompleteCount = d.EB누락.length + d.조치필요.length;
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -310,6 +313,77 @@ export default async function FieldPage() {
                 ))}
               </div>
             </div>
+            {/* 오늘 TBM 진행 가이드 */}
+            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🎤</span>
+                    <span className="text-sm font-bold text-white">오늘 TBM 진행 가이드</span>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    관리감독자가 TBM에서 순서대로 확인할 내용입니다.
+                  </p>
+                </div>
+                <span className="inline-flex shrink-0 items-center rounded-full bg-blue-950 px-2.5 py-1 text-xs font-bold text-blue-200">
+                  진행 순서
+                </span>
+              </div>
+
+              {primaryTbm ? (
+                <div className="space-y-3">
+                  <div className="rounded-xl bg-slate-950/60 p-3">
+                    <div className="text-xs font-semibold text-slate-500">1. 오늘 작업 확인</div>
+                    <div className="mt-1 text-sm font-bold text-white [word-break:keep-all]">
+                      {primaryTbm.작업명}
+                    </div>
+                    {primaryTbm.주의사항 && (
+                      <div className="mt-1 text-xs leading-relaxed text-blue-300 [word-break:keep-all]">
+                        📌 {primaryTbm.주의사항}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl bg-slate-950/60 p-3">
+                    <div className="text-xs font-semibold text-slate-500">2. 함께 공유할 위험요인</div>
+                    {sharePreviewItems.length > 0 ? (
+                      <div className="mt-2 space-y-1.5">
+                        {sharePreviewItems.map((item: any) => (
+                          <div key={item.id} className="text-xs leading-relaxed text-slate-200 [word-break:keep-all]">
+                            • {item.title || item.taskName || item.processName || "위험성평가 항목"}
+                            {item.accidentType ? ` · ${item.accidentType}` : ""}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-emerald-300">
+                        추가 공유 위험요인은 없습니다.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-amber-800/60 bg-amber-950/25 p-3">
+                    <div className="text-xs font-semibold text-amber-300">3. 마무리 확인 질문</div>
+                    <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-amber-100 [word-break:keep-all]">
+                      <li>□ 오늘 작업 내용과 이동동선을 근로자에게 공유했나요?</li>
+                      <li>□ 주요 위험요인을 TBM에서 설명했나요?</li>
+                      <li>
+                        □ {incompleteCount > 0
+                          ? `미완료 조치 ${incompleteCount}건의 상태 업데이트가 필요한가요?`
+                          : "TBM 공유 후 필요한 증빙을 남겼나요?"}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+                  <p className="text-sm text-slate-300">
+                    오늘 TBM이 제출되면 작업명과 공유 위험요인을 기준으로 진행 가이드가 표시됩니다.
+                  </p>
+                </div>
+              )}
+            </div>
+
           </section>
 
           {/* 오른쪽: 공유·후속 조치 */}
