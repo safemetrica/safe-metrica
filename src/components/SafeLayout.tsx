@@ -14,48 +14,50 @@ export async function SafeNav({ company }: { company?: string }) {
   }
 
   return (
-    <nav className="bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+    <nav className="bg-gray-900 border-b border-gray-700 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sticky top-0 z-50">
       <Link
         href="/"
-        className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer"
+        className="flex min-w-0 shrink items-center gap-1.5 sm:gap-3 hover:opacity-80 transition cursor-pointer"
       >
-        <span className="text-2xl">🛡️</span>
-        <div>
-          <div className="text-white font-bold text-sm leading-tight">
+        <span className="text-xl sm:text-2xl shrink-0">🛡️</span>
+        <div className="min-w-0">
+          <div className="text-white font-bold text-xs sm:text-sm leading-tight truncate">
             SafeMetrica™
           </div>
-          <div className="text-gray-400 text-xs">{displayCompany}</div>
+          <div className="text-gray-400 text-[10px] sm:text-xs leading-tight truncate">
+            {displayCompany}
+          </div>
         </div>
       </Link>
 
-      <div className="flex gap-1">
+      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
         <Link
           href="/tbm"
-          className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
+          className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
           📋 TBM
         </Link>
         <Link
           href="/ebm"
-          className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
+          className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
           📚 EB
         </Link>
         <Link
           href="/ptw"
-          className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
+          className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
           🧾 PTW
         </Link>
         <Link
-          href="/dashboard" 
-          className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
+          href="/dashboard"
+          className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
           📊 대시
         </Link>
         <Link
           href="/field"
-          className="px-3 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
+          className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
           👷 현장
         </Link>
