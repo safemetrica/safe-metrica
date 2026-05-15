@@ -9,11 +9,11 @@ export default function AiDiagnosisCard() {
 
   useEffect(() => {
     fetch("/api/ai-diagnosis")
-      .then((r) => r.json())
-      .then((d) => {
-        setDiagnosis(d.diagnosis);
+      .then((response) => response.json())
+      .then((data) => {
+        setDiagnosis(data.diagnosis);
         setUpdatedAt(
-          new Date(d.updatedAt).toLocaleTimeString("ko-KR", {
+          new Date(data.updatedAt).toLocaleTimeString("ko-KR", {
             hour: "2-digit",
             minute: "2-digit",
           }),
@@ -21,28 +21,40 @@ export default function AiDiagnosisCard() {
         setLoading(false);
       })
       .catch(() => {
-        setDiagnosis("AI 진단을 불러올 수 없습니다.");
+        setDiagnosis("AI 운영 브리핑을 불러올 수 없습니다.");
         setLoading(false);
       });
   }, []);
 
   return (
-    <div className="rounded-2xl border border-indigo-700 bg-indigo-950 p-4 mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+    <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
           <span className="text-lg">🤖</span>
-          <span className="text-white font-bold text-sm">AI 안전 진단</span>
-          <span className="ml-auto text-xs text-blue-300">GPT-4o-mini</span>
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-white">AI 운영 비서 브리핑</div>
+            <div className="mt-0.5 text-xs text-slate-400">
+              TBM · EB · PTW · 위험성평가 관리신호 요약
+            </div>
+          </div>
         </div>
-        {updatedAt && (
-          <span className="text-indigo-400 text-xs">{updatedAt} 기준</span>
-        )}
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-300">
+            GPT 보조
+          </span>
+          {updatedAt && (
+            <span className="hidden text-xs text-slate-400 sm:inline">
+              {updatedAt} 기준
+            </span>
+          )}
+        </div>
       </div>
 
       {loading ? (
-        <span className="text-indigo-300 text-sm">분석 중...</span>
+        <span className="text-sm text-slate-300">브리핑 생성 중...</span>
       ) : (
-        <p className="text-indigo-100 text-sm leading-relaxed whitespace-pre-line">
+        <p className="whitespace-pre-line text-sm leading-relaxed text-slate-100">
           {diagnosis}
         </p>
       )}
