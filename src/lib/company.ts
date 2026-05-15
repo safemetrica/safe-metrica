@@ -12,6 +12,7 @@ export type CompanyConfig = {
   adminEvidenceDbId?: string;
   fieldVoiceDbId?: string;
   listeningDbId?: string;
+  riskAssessmentDbId?: string;
 
   industryTag?: string;
   safetyCaseEnabled?: boolean;
@@ -48,15 +49,15 @@ function assertSafeCompanyCode(code: string): string {
 
 export async function getCompanyCodeFromRequest(): Promise<string> {
   if (process.env.NODE_ENV !== "production") {
-  const h = await headers();
-  const fromHeader = h.get("x-company-code");
+    const h = await headers();
+    const fromHeader = h.get("x-company-code");
 
-  if (fromHeader) {
-    return assertSafeCompanyCode(fromHeader);
+    if (fromHeader) {
+      return assertSafeCompanyCode(fromHeader);
+    }
   }
-}
 
-const c = await cookies();
+  const c = await cookies();
   const fromCookie = c.get("sm_company_code")?.value;
 
   if (fromCookie) {
@@ -71,12 +72,14 @@ const c = await cookies();
 
   throw new TenantRequiredError();
 }
+
 type NotionProperty = {
   rich_text?: Array<{ plain_text?: string }>;
   title?: Array<{ plain_text?: string }>;
   select?: { name?: string };
   checkbox?: boolean;
 };
+
 function getTextPropPlainText(prop: NotionProperty | undefined): string {
   return prop?.rich_text?.[0]?.plain_text?.trim() ?? "";
 }
@@ -96,6 +99,7 @@ function getCheckboxPropValue(prop: NotionProperty | undefined): boolean | undef
 
   return undefined;
 }
+
 async function queryCompanyRow(code: string) {
   const notionApiKey = process.env.NOTION_API_KEY;
 
@@ -188,6 +192,10 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
     getTextPropPlainText(props["fieldVoiceDbId"]) || undefined;
   const listeningDbId =
     getTextPropPlainText(props["listeningDbId"]) || undefined;
+  const riskAssessmentDbId =
+  getTextPropPlainText(props["riskAssessmentDbId"]) ||
+  (code === "daedo" ? process.env.NOTION_DAEDO_RISK_ASSESSMENT_DB_ID : undefined);
+
   const industryTag =
     getSelectPropName(props["industryTag"]) ||
     getTextPropPlainText(props["industryTag"]) ||
@@ -207,6 +215,7 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
     rawSafetyCaseMode === "tenant-aware"
       ? rawSafetyCaseMode
       : "tenant-aware";
+
   return {
     code,
     name,
@@ -217,6 +226,7 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
     adminEvidenceDbId,
     fieldVoiceDbId,
     listeningDbId,
+    riskAssessmentDbId,
     industryTag,
     safetyCaseEnabled,
     safetyCaseMode,
