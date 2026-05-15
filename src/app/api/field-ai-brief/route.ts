@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getCompanyConfig } from "@/lib/company";
+import { getRiskIntelligenceData } from "@/lib/risk";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,12 @@ export async function GET() {
       ptwRes.json(),
     ]);
 
+    const risk = await getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey);
+    const tbmShareNames = risk.tbmShareNeededItems
+      .map((item) => item.title || item.taskName || item.processName)
+      .filter(Boolean)
+      .join(", ");
+
     const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 
     const tbmRows = (tbmData.results ?? []).map((p: any) => ({
@@ -83,6 +90,7 @@ export async function GET() {
 EB 누락(특이사항 있으나 미등록): ${EB누락.length}건 (${EB누락.map((r: any) => r.작업명).join(", ") || "없음"})
 조치 미완료: ${조치필요.length}건
 PTW 금지/반려: ${PTW위험.length}건
+TBM 공유 필요 위험요인: ${risk.tbmShareNeededCount}건 (${tbmShareNames || "없음"})
 최근 EB 등록: ${ebRows.length}건`;
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -93,7 +101,7 @@ PTW 금지/반려: ${PTW위험.length}건
         {
           role: "system",
           content:
-            "당신은 생활폐기물·환경미화 현장의 안전 AI 비서입니다. 현장관리감독자와 안전담당자에게 오늘 현장 상황을 브리핑하고 즉시 해야 할 일을 안내합니다. 출력 규칙: 3줄 이내, 자연스러운 한국어, 현장 담당자가 바로 행동할 수 있는 구체적 지시, 이모지 1~2개 사용.",
+            "당신은 생활폐기물·환경미화 현장의 안전 AI 비서입니다. 현장관리감독자와 안전담당자에게 오늘 현장 상황을 브리핑하고 즉시 해야 할 일을 안내합니다. 출력 규칙: 3줄 이내, 자연스러운 한국어, 현장 담당자가 바로 행동할 수 있는 구체적 지시, 이모지 1~2개 사용. TBM 공유 필요 위험요인이 있으면 작업 전 근로자에게 반복 공유하라고 안내하세요.",
         },
         {
           role: "user",

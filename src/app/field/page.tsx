@@ -3,6 +3,7 @@ import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import FieldAiBrief from "@/components/FieldAiBrief";
 import { getCompanyConfig } from "@/lib/company";
+import { getRiskIntelligenceData } from "@/lib/risk";
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
 
 async function getFieldData(): Promise<Record<string, any>> {
@@ -32,6 +33,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   ]);
 
   const [tbmData, ptwData] = await Promise.all([tbmRes.json(), ptwRes.json()]);
+  const risk = await getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey);
 
   const tbmRows = (tbmData.results ?? []).map((p: any) => ({
     id: p.id,
@@ -163,6 +165,8 @@ async function getFieldData(): Promise<Record<string, any>> {
   return {
     today, 오늘TBM, 이번주TBM, EB누락, 조치필요, PTW미승인, PTW위험,
     checklist, PTW필요태그, PTW필요미제출, 칭찬멘트, safetyNews, 오늘할일, weatherAlert,
+    riskTbmShareNeededCount: risk.tbmShareNeededCount,
+    riskTbmShareNeededItems: risk.tbmShareNeededItems,
     전체미완료: checklist.filter((c: {done: boolean; text: string; href: string; urgent: boolean}) => !c.done).length,
   };
 }
@@ -184,6 +188,49 @@ export default async function FieldPage() {
           <p className="text-gray-400 text-sm mt-0.5">{dateStr} · {timeStr} · 관리감독자·안전담당자 전용</p>
         </div>
 <FieldAiBrief />
+
+        {/* TBM 공유 필요 위험요인 */}
+        {d.riskTbmShareNeededCount > 0 && (
+          <div className="bg-red-950/60 border border-red-700 rounded-2xl p-4 mb-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📣</span>
+                  <span className="text-white font-bold text-sm">오늘 TBM 공유 필요 위험요인</span>
+                </div>
+                <p className="mt-1 text-red-200 text-xs leading-relaxed">
+                  작업 전 근로자에게 반복 공유할 위험요인입니다. TBM에서 공유하고 필요한 경우 증빙을 남겨주세요.
+                </p>
+              </div>
+              <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-red-800 px-2.5 py-1 text-xs font-bold text-red-100">
+                {d.riskTbmShareNeededCount}건
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {d.riskTbmShareNeededItems.map((item: any) => (
+                <div key={item.id} className="rounded-xl bg-red-900/35 border border-red-800/70 p-3">
+                  <div className="text-white text-sm font-semibold [word-break:keep-all]">
+                    {item.title || item.taskName || item.processName || "위험성평가 항목"}
+                  </div>
+                  <div className="mt-1 text-xs text-red-200 [word-break:keep-all]">
+                    {item.processName || "공정 미지정"}
+                    {item.accidentType ? ` · ${item.accidentType}` : ""}
+                  </div>
+                  <div className="mt-2 text-xs text-red-100 leading-relaxed [word-break:keep-all]">
+                    공유포인트: {item.hazard || item.improvementPlan || "작업 전 위험요인과 안전조치를 근로자에게 공유하세요."}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Link href="/risk?filter=tbm-needed">
+              <div className="mt-3 bg-red-800 rounded-lg p-2 text-center text-red-100 text-sm font-bold hover:bg-red-700 transition">
+                TBM 공유 항목 보기 →
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* PTW 긴급 경고 */}
         {d.PTW필요미제출 && (

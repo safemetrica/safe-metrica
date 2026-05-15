@@ -13,6 +13,7 @@ import {
   isHighRiskItem,
   isOwnerUnassignedItem,
   isReassessmentDueItem,
+  isTbmShareNeededItem,
   type RiskFilter,
   type RiskIntelligenceData,
   type RiskItemDetail,
@@ -33,6 +34,7 @@ const FILTERS: Array<{ key: RiskFilter; label: string }> = [
   { key: "action", label: "개선대책" },
   { key: "budget", label: "예산" },
   { key: "reassessment", label: "재평가" },
+  { key: "tbm-needed", label: "TBM 공유 필요" },
   { key: "unassigned", label: "담당 미지정" },
   { key: "open", label: "완료 전" },
 ];
@@ -436,6 +438,7 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
     isActionNeededItem(item) ? "개선대책" : null,
     isBudgetNeededItem(item) ? "예산" : null,
     isReassessmentDueItem(item) ? "재평가" : null,
+    isTbmShareNeededItem(item) ? "TBM 공유 필요" : null,
     isOwnerUnassignedItem(item) ? "담당 미지정" : null,
   ].filter((flag): flag is string => Boolean(flag));
 
