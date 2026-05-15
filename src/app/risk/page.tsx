@@ -393,7 +393,7 @@ function RiskChartsSection({ risk }: { risk: RiskIntelligenceData }) {
     <section className="mt-5 rounded-3xl border border-slate-700 bg-slate-900/50 p-4">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-base font-bold text-white">Risk Intelligence Charts</h2>
+          <h2 className="text-base font-bold text-white">위험관리 분석 차트</h2>
           <p className="text-xs leading-relaxed text-slate-400 [word-break:keep-all]">
             위험수준, 관리기간, 예산, 사고형태, 개선효과를 한눈에 확인합니다.
           </p>
@@ -567,10 +567,10 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
               ← 대표 대시보드
             </Link>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-white [word-break:keep-all]">
-              Risk Intelligence
+              Risk Intelligence · 위험성평가 관리현황
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-400 [word-break:keep-all]">
-              {company.name} Risk Items DB 기준으로 고위험, 개선대책, 예산, 재평가 항목을 상세 확인합니다.
+              {company.name} 위험성평가 DB 기준으로 고위험, 개선대책, 예산, 재평가 항목을 상세 확인합니다.
             </p>
           </div>
 
@@ -581,7 +581,7 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
 
         {!risk.hasDb ? (
           <section className="rounded-3xl border border-slate-700 bg-slate-900/70 p-6">
-            <h2 className="text-xl font-bold text-white">Risk Items DB 연결 필요</h2>
+            <h2 className="text-xl font-bold text-white">위험성평가 DB 연결 필요</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-400 [word-break:keep-all]">
               Companies DB에 riskAssessmentDbId가 연결되면 이 화면에서 위험성평가 상세 항목을 확인할 수 있습니다.
             </p>
@@ -589,7 +589,7 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
         ) : (
           <>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <SummaryCard label="총 Risk Item" value={risk.total} hint="등록된 위험성평가 항목" tone="slate" />
+              <SummaryCard label="전체 위험항목" value={risk.total} hint="등록된 위험항목" tone="slate" />
               <SummaryCard label="고위험 관리 항목" value={risk.highRiskCount} hint="위험수준 상 + 완료 전" tone="red" />
               <SummaryCard label="개선대책 관리 필요" value={risk.actionNeededCount} hint="개선대책 있음 + 완료 전" tone="yellow" />
               <SummaryCard label="예산 검토 필요" value={risk.budgetNeededCount} hint="예산 수반 + 완료 전" tone="orange" />
