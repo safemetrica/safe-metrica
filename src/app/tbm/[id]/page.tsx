@@ -44,7 +44,6 @@ function getNotionFileCountsByPurpose(props: any) {
       normalized.includes("작업대상") ||
       normalized.includes("대상") ||
       normalized.includes("작업사진") ||
-      normalized.includes("현장사진") ||
       normalized.includes("축대") ||
       normalized.includes("공사") ||
       normalized.includes("시설") ||
@@ -59,6 +58,8 @@ function getNotionFileCountsByPurpose(props: any) {
     if (
       normalized.includes("체조") ||
       normalized.includes("스트레칭") ||
+      normalized.includes("현장사진") ||
+      normalized.includes("현장") ||
       normalized.includes("안전활동") ||
       normalized.includes("브리핑") ||
       normalized.includes("교육") ||
