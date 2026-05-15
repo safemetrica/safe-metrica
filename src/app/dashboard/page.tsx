@@ -563,7 +563,7 @@ export default async function DashboardPage() {
                     조치, 증빙, 승인 상태 중 대표가 확인할 항목입니다.
                   </p>
                 </div>
-                <span className="rounded-full bg-amber-500/15 px-3 py-1 text-sm font-bold text-amber-300">
+                <span className="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-amber-500/15 px-3 py-1 text-sm font-bold leading-none text-amber-300">
                   {s.조치필요 + s.EB누락 + s.PTW미승인 + s.PTW위험}건
                 </span>
               </div>
