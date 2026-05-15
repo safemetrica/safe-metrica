@@ -429,9 +429,9 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
         </div>
         <Link
           href="/risk"
-          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-blue-950 px-3 py-1 text-xs text-blue-300 hover:bg-blue-900"
+          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-blue-400/40 bg-blue-600/90 px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-blue-500"
         >
-          Risk Items DB
+          Risk 상세 보기 →
         </Link>
       </div>
 
