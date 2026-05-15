@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import { evaluateTbmEvidence } from "@/lib/tbmEvidence";
+import { evaluateActionEvidence } from "@/lib/actionEvidence";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -105,6 +106,14 @@ export default async function TbmDetailPage({
         : evidenceCheck.status === "부적합"
           ? "border-red-800 bg-red-950/35 text-red-200"
           : "border-slate-700 bg-slate-900 text-slate-300";
+
+  const actionEvidence = evaluateActionEvidence({
+    taskName: tbm.작업명,
+    cautionText: tbm.오늘주의사항,
+    actionStatus: tbm.조치상태,
+    hasIssue: tbm.특이사항,
+    actionPhotoCount: tbm["작업 전 안전활동 사진수"] + tbm.기타증빙사진수,
+  });
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -232,6 +241,59 @@ export default async function TbmDetailPage({
             <div className="rounded-lg bg-gray-950/35 p-3">
               <p className="text-xs text-gray-500">기타 증빙사진</p>
               <p className="mt-1 text-sm font-bold text-white">{tbm.기타증빙사진수}건</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-blue-800 bg-blue-950/30 p-5 mb-6">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🛠️</span>
+                <span className="text-sm font-bold text-white">AI 작업·조치 증빙 확인</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                오늘 작업 위험도와 조치 필요 여부를 기준으로 작업·조치 증빙 필요성을 확인합니다.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-white">
+              {actionEvidence.status}
+            </span>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3 mb-4">
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">위험 수준</p>
+              <p className="mt-1 text-sm font-bold text-white">{actionEvidence.level}</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">PTW 가능성</p>
+              <p className="mt-1 text-sm font-bold text-white">
+                {actionEvidence.needsPTW ? "확인 권장" : "낮음"}
+              </p>
+            </div>
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">감지 키워드</p>
+              <p className="mt-1 text-sm font-bold text-white">
+                {actionEvidence.detectedKeywords.length > 0
+                  ? actionEvidence.detectedKeywords.join(", ")
+                  : "-"}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 mb-1">판단</p>
+              <p className="text-sm leading-relaxed text-gray-100 [word-break:keep-all]">
+                {actionEvidence.reason}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 mb-1">추천</p>
+              <p className="text-sm leading-relaxed text-gray-200 [word-break:keep-all]">
+                {actionEvidence.suggestion}
+              </p>
             </div>
           </div>
         </div>
