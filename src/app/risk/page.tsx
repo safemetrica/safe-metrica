@@ -14,6 +14,7 @@ import {
   isOwnerUnassignedItem,
   isReassessmentDueItem,
   type RiskFilter,
+  type RiskIntelligenceData,
   type RiskItemDetail,
 } from "@/lib/risk";
 
@@ -157,6 +158,185 @@ function SummaryCard({
     </div>
   );
 }
+
+
+type ChartTone = "red" | "yellow" | "orange" | "blue" | "purple" | "emerald" | "slate";
+
+type ChartDatum = {
+  label: string;
+  value: number;
+  tone: ChartTone;
+};
+
+function getChartToneClass(tone: ChartTone): string {
+  if (tone === "red") return "bg-red-400";
+  if (tone === "yellow") return "bg-yellow-300";
+  if (tone === "orange") return "bg-orange-300";
+  if (tone === "blue") return "bg-blue-300";
+  if (tone === "purple") return "bg-purple-300";
+  if (tone === "emerald") return "bg-emerald-300";
+  return "bg-slate-300";
+}
+
+function MiniBarChart({
+  title,
+  subtitle,
+  data,
+}: {
+  title: string;
+  subtitle: string;
+  data: ChartDatum[];
+}) {
+  const maxValue = Math.max(...data.map((item) => item.value), 1);
+
+  return (
+    <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-4 shadow-lg">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-white [word-break:keep-all]">{title}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-slate-400 [word-break:keep-all]">{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {data.map((item) => {
+          const percent = Math.max(4, Math.round((item.value / maxValue) * 100));
+
+          return (
+            <div key={item.label}>
+              <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+                <span className="font-semibold text-slate-300 [word-break:keep-all]">{item.label}</span>
+                <span className="shrink-0 font-black text-white">{item.value}건</span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className={`h-full rounded-full ${getChartToneClass(item.tone)}`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AverageRiskCard({ risk }: { risk: RiskIntelligenceData }) {
+  const currentItems = risk.items.filter((item) => typeof item.riskScore === "number");
+  const afterItems = risk.items.filter((item) => typeof item.afterRiskScore === "number");
+
+  const currentAverage =
+    currentItems.length > 0
+      ? currentItems.reduce((sum, item) => sum + (item.riskScore ?? 0), 0) / currentItems.length
+      : 0;
+
+  const afterAverage =
+    afterItems.length > 0
+      ? afterItems.reduce((sum, item) => sum + (item.afterRiskScore ?? 0), 0) / afterItems.length
+      : 0;
+
+  const reductionRate =
+    currentAverage > 0 && afterAverage > 0
+      ? Math.max(0, Math.round(((currentAverage - afterAverage) / currentAverage) * 100))
+      : 0;
+
+  return (
+    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-4 shadow-lg">
+      <h2 className="text-sm font-bold text-white">개선 전후 평균 위험도</h2>
+      <p className="mt-1 text-xs leading-relaxed text-slate-400 [word-break:keep-all]">
+        개선대책 반영 시 예상 위험도 감소 수준입니다.
+      </p>
+
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="rounded-xl bg-slate-950/50 p-3">
+          <div className="text-xs text-slate-500">개선 전</div>
+          <div className="mt-1 text-2xl font-black text-red-200">
+            {currentAverage ? currentAverage.toFixed(1) : "-"}
+          </div>
+        </div>
+        <div className="rounded-xl bg-slate-950/50 p-3">
+          <div className="text-xs text-slate-500">개선 후</div>
+          <div className="mt-1 text-2xl font-black text-emerald-200">
+            {afterAverage ? afterAverage.toFixed(1) : "-"}
+          </div>
+        </div>
+        <div className="rounded-xl bg-slate-950/50 p-3">
+          <div className="text-xs text-slate-500">감소율</div>
+          <div className="mt-1 text-2xl font-black text-blue-200">
+            {reductionRate ? `${reductionRate}%` : "-"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function countBy(items: RiskItemDetail[], selector: (item: RiskItemDetail) => string): Array<[string, number]> {
+  const map = new Map<string, number>();
+
+  items.forEach((item) => {
+    const key = selector(item).trim() || "미지정";
+    map.set(key, (map.get(key) ?? 0) + 1);
+  });
+
+  return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+}
+
+function RiskChartsSection({ risk }: { risk: RiskIntelligenceData }) {
+  const riskLevelData: ChartDatum[] = [
+    { label: "상", value: risk.items.filter((item) => item.riskLevel === "상").length, tone: "red" },
+    { label: "중", value: risk.items.filter((item) => item.riskLevel === "중").length, tone: "yellow" },
+    { label: "하", value: risk.items.filter((item) => item.riskLevel === "하").length, tone: "emerald" },
+  ];
+
+  const termData: ChartDatum[] = [
+    { label: "단기", value: risk.shortTermCount, tone: "red" },
+    { label: "중기", value: risk.midTermCount, tone: "blue" },
+    { label: "장기", value: risk.longTermCount, tone: "purple" },
+  ];
+
+  const budgetData: ChartDatum[] = [
+    { label: "예산 필요", value: risk.budgetNeededCount, tone: "orange" },
+    { label: "예산 불필요", value: Math.max(risk.total - risk.budgetNeededCount, 0), tone: "slate" },
+  ];
+
+  const accidentData: ChartDatum[] = countBy(risk.items, (item) => item.accidentType)
+    .slice(0, 5)
+    .map(([label, value], index) => ({
+      label,
+      value,
+      tone: (["red", "orange", "yellow", "blue", "purple"] as ChartTone[])[index] ?? "slate",
+    }));
+
+  return (
+    <section className="mt-5 rounded-3xl border border-slate-700 bg-slate-900/50 p-4">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-base font-bold text-white">Risk Intelligence Charts</h2>
+          <p className="text-xs leading-relaxed text-slate-400 [word-break:keep-all]">
+            위험수준, 관리기간, 예산, 사고형태, 개선효과를 한눈에 확인합니다.
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center whitespace-nowrap rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
+          운영 분석 v0.1
+        </span>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <MiniBarChart title="위험수준별 분포" subtitle="상·중·하 등급 기준" data={riskLevelData} />
+        <MiniBarChart title="단기·중기·장기 관리 분포" subtitle="관리 우선순위 자동 분류" data={termData} />
+        <MiniBarChart title="예산 필요 여부" subtitle="예산 수반 항목과 일반 항목 비교" data={budgetData} />
+        <MiniBarChart title="사고형태 TOP 5" subtitle="Risk Items DB 사고형태 기준" data={accidentData} />
+      </div>
+
+      <div className="mt-3">
+        <AverageRiskCard risk={risk} />
+      </div>
+    </section>
+  );
+}
+
 
 function RiskItemCard({ item }: { item: RiskItemDetail }) {
   const term = getManagementTerm(item);
@@ -328,6 +508,8 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
               <SummaryCard label="중기 관리" value={risk.midTermCount} hint="개선대책 담당·기한 관리" tone="blue" />
               <SummaryCard label="장기 관리" value={risk.longTermCount} hint="예산·설비개선 반영" tone="purple" />
             </section>
+
+            <RiskChartsSection risk={risk} />
 
             <section className="mt-5 rounded-3xl border border-slate-700 bg-slate-900/60 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
