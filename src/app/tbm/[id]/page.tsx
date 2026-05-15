@@ -7,12 +7,15 @@ import { evaluateActionEvidence } from "@/lib/actionEvidence";
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
   let safetyActivity = 0;
+  let workTarget = 0;
+  let action = 0;
   let other = 0;
 
   for (const [name, prop] of Object.entries(props) as any) {
     const files = prop?.files;
     if (!Array.isArray(files) || files.length === 0) continue;
 
+    const count = files.length;
     const normalized = String(name).replace(/\s+/g, "").toLowerCase();
 
     if (
@@ -21,31 +24,68 @@ function getNotionFileCountsByPurpose(props: any) {
       normalized.includes("출석") ||
       normalized.includes("sign")
     ) {
-      signature += files.length;
+      signature += count;
+      continue;
+    }
+
+    if (
+      normalized.includes("조치") ||
+      normalized.includes("개선") ||
+      normalized.includes("완료") ||
+      normalized.includes("전후") ||
+      normalized.includes("beforeafter") ||
+      normalized.includes("action")
+    ) {
+      action += count;
+      continue;
+    }
+
+    if (
+      normalized.includes("작업대상") ||
+      normalized.includes("대상") ||
+      normalized.includes("작업사진") ||
+      normalized.includes("현장사진") ||
+      normalized.includes("축대") ||
+      normalized.includes("공사") ||
+      normalized.includes("시설") ||
+      normalized.includes("설비") ||
+      normalized.includes("장비") ||
+      normalized.includes("차량")
+    ) {
+      workTarget += count;
       continue;
     }
 
     if (
       normalized.includes("체조") ||
-      normalized.includes("현장") ||
-      normalized.includes("안전") ||
-      normalized.includes("활동") ||
+      normalized.includes("스트레칭") ||
+      normalized.includes("안전활동") ||
       normalized.includes("브리핑") ||
       normalized.includes("교육") ||
-      normalized.includes("작업") ||
-      normalized.includes("tbm") ||
-      normalized.includes("사진")
+      normalized.includes("tbm")
     ) {
-      safetyActivity += files.length;
+      safetyActivity += count;
       continue;
     }
 
-    other += files.length;
+    if (
+      normalized.includes("현장") ||
+      normalized.includes("안전") ||
+      normalized.includes("작업") ||
+      normalized.includes("사진")
+    ) {
+      other += count;
+      continue;
+    }
+
+    other += count;
   }
 
   return {
     signature,
     safetyActivity,
+    workTarget,
+    action,
     other,
   };
 }
@@ -78,6 +118,8 @@ async function getTbmDetail(id: string) {
     오늘주의사항: p["오늘의 주의사항"]?.rich_text?.[0]?.plain_text ?? "",
     참석서명사진수: evidencePhotoCounts.signature,
     "작업 전 안전활동 사진수": evidencePhotoCounts.safetyActivity,
+    작업대상사진수: evidencePhotoCounts.workTarget,
+    조치사진수: evidencePhotoCounts.action,
     기타증빙사진수: evidencePhotoCounts.other,
   };
 }
@@ -90,7 +132,12 @@ export default async function TbmDetailPage({
   const { id } = await Promise.resolve(params);
   const tbm = await getTbmDetail(id);
   const needsEB = tbm.특이사항 && tbm.연결EB === 0;
-  const totalEvidencePhotoCount = tbm.참석서명사진수 + tbm["작업 전 안전활동 사진수"] + tbm.기타증빙사진수;
+  const totalEvidencePhotoCount =
+    tbm.참석서명사진수 +
+    tbm["작업 전 안전활동 사진수"] +
+    tbm.작업대상사진수 +
+    tbm.조치사진수 +
+    tbm.기타증빙사진수;
   const evidenceCheck = evaluateTbmEvidence({
     hasSignaturePhoto: tbm.참석서명사진수 > 0,
     hasExercisePhoto: tbm["작업 전 안전활동 사진수"] > 0,
@@ -112,7 +159,7 @@ export default async function TbmDetailPage({
     cautionText: tbm.오늘주의사항,
     actionStatus: tbm.조치상태,
     hasIssue: tbm.특이사항,
-    actionPhotoCount: tbm["작업 전 안전활동 사진수"] + tbm.기타증빙사진수,
+    actionPhotoCount: tbm.작업대상사진수 + tbm.조치사진수,
   });
 
   return (
@@ -237,6 +284,14 @@ export default async function TbmDetailPage({
             <div className="rounded-lg bg-gray-950/35 p-3">
               <p className="text-xs text-gray-500">작업 전 안전활동 사진</p>
               <p className="mt-1 text-sm font-bold text-white">{tbm["작업 전 안전활동 사진수"]}건</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">작업 대상사진</p>
+              <p className="mt-1 text-sm font-bold text-white">{tbm.작업대상사진수}건</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/35 p-3">
+              <p className="text-xs text-gray-500">조치사진</p>
+              <p className="mt-1 text-sm font-bold text-white">{tbm.조치사진수}건</p>
             </div>
             <div className="rounded-lg bg-gray-950/35 p-3">
               <p className="text-xs text-gray-500">기타 증빙사진</p>
