@@ -234,7 +234,7 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
         <div className={`rounded-xl p-3 ${item.owner ? "bg-slate-950/60" : "border border-red-500/30 bg-red-950/20"}`}>
           <div className="text-xs text-slate-500">담당 / 기한</div>
           <div className={`mt-1 text-sm font-semibold [word-break:keep-all] ${item.owner ? "text-slate-200" : "text-red-200"}`}>
-            {item.owner || "담당 미지정"} · {formatDate(item.dueDate)}
+            {item.owner || "담당 미지정"} · {item.dueDate ? formatDate(item.dueDate) : "기한 미지정"}
           </div>
         </div>
       </div>
