@@ -64,6 +64,79 @@ function formatMoney(value: number | null): string {
   return `${value.toLocaleString("ko-KR")}원`;
 }
 
+type DueStatus = {
+  label: string;
+  detail: string;
+  tone: "red" | "amber" | "emerald" | "slate";
+};
+
+function getTodayKstDate(): Date {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return new Date(`${kst.toISOString().slice(0, 10)}T00:00:00+09:00`);
+}
+
+function formatDueStatus(dueDate: string, status: string): DueStatus {
+  if (status === "완료") {
+    return {
+      label: "완료",
+      detail: "완료된 항목입니다.",
+      tone: "emerald",
+    };
+  }
+
+  if (!dueDate) {
+    return {
+      label: "기한 미지정",
+      detail: "담당자가 조치기한을 지정해야 합니다.",
+      tone: "red",
+    };
+  }
+
+  const today = getTodayKstDate();
+  const due = new Date(`${dueDate}T00:00:00+09:00`);
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const formattedDate = formatDate(dueDate);
+
+  if (diffDays < 0) {
+    return {
+      label: `${formattedDate} · D+${Math.abs(diffDays)} 초과`,
+      detail: "기한이 지난 항목입니다.",
+      tone: "red",
+    };
+  }
+
+  if (diffDays === 0) {
+    return {
+      label: `${formattedDate} · 오늘 마감`,
+      detail: "오늘 조치 확인이 필요합니다.",
+      tone: "amber",
+    };
+  }
+
+  return {
+    label: `${formattedDate} · D-${diffDays}`,
+    detail: diffDays <= 7 ? "7일 이내 조치기한입니다." : "기한 관리 중입니다.",
+    tone: diffDays <= 7 ? "amber" : "slate",
+  };
+}
+
+function getDueToneClass(tone: DueStatus["tone"]): string {
+  if (tone === "red") {
+    return "border border-red-500/40 bg-red-950/20";
+  }
+
+  if (tone === "amber") {
+    return "border border-amber-500/40 bg-amber-950/20";
+  }
+
+  if (tone === "emerald") {
+    return "border border-emerald-500/40 bg-emerald-950/20";
+  }
+
+  return "bg-slate-950/60";
+}
+
 function RiskLevelBadge({ level }: { level: string }) {
   const className =
     level === "상"
@@ -152,7 +225,14 @@ function SummaryCard({
 
   return (
     <div className={`rounded-2xl border p-4 shadow-lg ${toneClass}`}>
-      <div className={`text-4xl font-black leading-none ${valueClass}`}>{value}</div>
+      <div className="flex items-center gap-2">
+        <div className={`text-4xl font-black leading-none ${valueClass}`}>{value}</div>
+        {value === 0 ? (
+          <span className="inline-flex items-center whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-200">
+            해당 없음
+          </span>
+        ) : null}
+      </div>
       <div className="mt-3 text-sm font-bold text-white [word-break:keep-all]">{label}</div>
       <div className="mt-1 text-xs leading-relaxed text-slate-400 [word-break:keep-all]">{hint}</div>
     </div>
@@ -340,6 +420,7 @@ function RiskChartsSection({ risk }: { risk: RiskIntelligenceData }) {
 
 function RiskItemCard({ item }: { item: RiskItemDetail }) {
   const term = getManagementTerm(item);
+  const dueStatus = formatDueStatus(item.dueDate, item.status);
 
   const cardTone =
     item.riskLevel === "상"
@@ -389,7 +470,7 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
         </p>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-xl bg-slate-950/60 p-3">
           <div className="text-xs text-slate-500">사고형태</div>
           <div className="mt-1 text-sm font-semibold text-slate-200 [word-break:keep-all]">
@@ -412,9 +493,19 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
         </div>
 
         <div className={`rounded-xl p-3 ${item.owner ? "bg-slate-950/60" : "border border-red-500/30 bg-red-950/20"}`}>
-          <div className="text-xs text-slate-500">담당 / 기한</div>
-          <div className={`mt-1 text-sm font-semibold [word-break:keep-all] ${item.owner ? "text-slate-200" : "text-red-200"}`}>
-            {item.owner || "담당 미지정"} · {item.dueDate ? formatDate(item.dueDate) : "기한 미지정"}
+          <div className="text-xs text-slate-500">담당자</div>
+          <div className={`mt-1 text-sm font-bold [word-break:keep-all] ${item.owner ? "text-slate-100" : "text-red-200"}`}>
+            {item.owner || "담당자 지정 필요"}
+          </div>
+        </div>
+
+        <div className={`rounded-xl p-3 ${getDueToneClass(dueStatus.tone)}`}>
+          <div className="text-xs text-slate-500">기한</div>
+          <div className="mt-1 text-sm font-bold text-slate-100 [word-break:keep-all]">
+            {dueStatus.label}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-400 [word-break:keep-all]">
+            {dueStatus.detail}
           </div>
         </div>
       </div>
