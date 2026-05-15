@@ -128,8 +128,19 @@ function SummaryCard({
             ? "text-blue-200"
             : "text-slate-100";
 
+  const toneClass =
+    tone === "red"
+      ? "border-red-500/35 bg-red-950/25"
+      : tone === "yellow"
+        ? "border-yellow-500/35 bg-yellow-950/20"
+        : tone === "orange"
+          ? "border-orange-500/35 bg-orange-950/20"
+          : tone === "blue"
+            ? "border-blue-500/35 bg-blue-950/25"
+            : "border-slate-600/80 bg-slate-900/75";
+
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-4 shadow-lg">
+    <div className={`rounded-2xl border p-4 shadow-lg ${toneClass}`}>
       <div className={`text-4xl font-black leading-none ${valueClass}`}>{value}</div>
       <div className="mt-3 text-sm font-bold text-white [word-break:keep-all]">{label}</div>
       <div className="mt-1 text-xs leading-relaxed text-slate-400 [word-break:keep-all]">{hint}</div>
@@ -138,6 +149,15 @@ function SummaryCard({
 }
 
 function RiskItemCard({ item }: { item: RiskItemDetail }) {
+  const cardTone =
+    item.riskLevel === "상"
+      ? "border-l-4 border-l-red-500 bg-red-950/10"
+      : item.riskLevel === "중"
+        ? "border-l-4 border-l-yellow-500 bg-yellow-950/10"
+        : item.riskLevel === "하"
+          ? "border-l-4 border-l-emerald-500 bg-emerald-950/10"
+          : "border-l-4 border-l-slate-600 bg-slate-900/70";
+
   const flags = [
     isHighRiskItem(item) ? "고위험" : null,
     isActionNeededItem(item) ? "개선대책" : null,
@@ -146,7 +166,7 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
   ].filter(Boolean);
 
   return (
-    <article className="rounded-2xl border border-slate-700 bg-slate-900/70 p-4 shadow-lg">
+    <article className={`rounded-2xl border border-slate-700 p-4 shadow-lg ${cardTone}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="text-xs font-semibold text-slate-500">No. {item.no || "-"}</div>
@@ -259,8 +279,8 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
             </p>
           </div>
 
-          <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-blue-500/40 bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-200">
-            Risk Items DB 상세
+          <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-200">
+            {risk.hasDb ? `DB 연동됨 · ${risk.total}건` : "DB 연결 필요"}
           </span>
         </div>
 
@@ -300,7 +320,7 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
                         href={`/risk?filter=${item.key}`}
                         className={`inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                           active
-                            ? "bg-blue-500 text-white"
+                            ? "bg-blue-500 text-white shadow-lg shadow-blue-950/40"
                             : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
