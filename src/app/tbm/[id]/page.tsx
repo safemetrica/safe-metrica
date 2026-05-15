@@ -3,13 +3,50 @@ import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import { evaluateTbmEvidence } from "@/lib/tbmEvidence";
 
-function getNotionFileCount(props: any, names: string[]): number {
-  for (const name of names) {
-    const prop = props[name];
-    if (!prop) continue;
-    if (Array.isArray(prop.files)) return prop.files.length;
+function getNotionFileCountsByPurpose(props: any) {
+  let signature = 0;
+  let safetyActivity = 0;
+  let other = 0;
+
+  for (const [name, prop] of Object.entries(props) as any) {
+    const files = prop?.files;
+    if (!Array.isArray(files) || files.length === 0) continue;
+
+    const normalized = String(name).replace(/\s+/g, "").toLowerCase();
+
+    if (
+      normalized.includes("서명") ||
+      normalized.includes("참석") ||
+      normalized.includes("출석") ||
+      normalized.includes("sign")
+    ) {
+      signature += files.length;
+      continue;
+    }
+
+    if (
+      normalized.includes("체조") ||
+      normalized.includes("현장") ||
+      normalized.includes("안전") ||
+      normalized.includes("활동") ||
+      normalized.includes("브리핑") ||
+      normalized.includes("교육") ||
+      normalized.includes("작업") ||
+      normalized.includes("tbm") ||
+      normalized.includes("사진")
+    ) {
+      safetyActivity += files.length;
+      continue;
+    }
+
+    other += files.length;
   }
-  return 0;
+
+  return {
+    signature,
+    safetyActivity,
+    other,
+  };
 }
 
 
@@ -24,6 +61,8 @@ async function getTbmDetail(id: string) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.message ?? "Notion API error");
   const p = data.properties;
+  const evidencePhotoCounts = getNotionFileCountsByPurpose(p);
+
   return {
     id: data.id,
     notionUrl: data.url,
@@ -36,34 +75,9 @@ async function getTbmDetail(id: string) {
     작업태그: p["작업 태그"]?.multi_select?.map((t: any) => t.name) ?? [],
     작업유형: p["작업 유형"]?.select?.name ?? "",
     오늘주의사항: p["오늘의 주의사항"]?.rich_text?.[0]?.plain_text ?? "",
-    참석서명사진수: getNotionFileCount(p, [
-      "TBM 참석서명사진",
-      "참석 서명사진",
-      "참석서명사진",
-      "근로자 서명사진",
-      "근로자서명사진",
-      "서명사진",
-      "참석자 서명사진",
-    ]),
-    체조사진수: getNotionFileCount(p, [
-      "TBM 체조사진",
-      "체조사진",
-      "작업 전 체조사진",
-      "작업전 체조사진",
-      "작업 전 활동사진",
-      "작업전 활동사진",
-      "안전체조사진",
-      "안전 활동사진",
-    ]),
-    기타증빙사진수: getNotionFileCount(p, [
-      "TBM 증빙사진",
-      "증빙사진",
-      "작업 전 사진",
-      "작업전사진",
-      "현장사진",
-      "사진",
-      "첨부사진",
-    ]),
+    참석서명사진수: evidencePhotoCounts.signature,
+    "작업 전 안전활동 사진수": evidencePhotoCounts.safetyActivity,
+    기타증빙사진수: evidencePhotoCounts.other,
   };
 }
 
@@ -75,10 +89,10 @@ export default async function TbmDetailPage({
   const { id } = await Promise.resolve(params);
   const tbm = await getTbmDetail(id);
   const needsEB = tbm.특이사항 && tbm.연결EB === 0;
-  const totalEvidencePhotoCount = tbm.참석서명사진수 + tbm.체조사진수 + tbm.기타증빙사진수;
+  const totalEvidencePhotoCount = tbm.참석서명사진수 + tbm["작업 전 안전활동 사진수"] + tbm.기타증빙사진수;
   const evidenceCheck = evaluateTbmEvidence({
     hasSignaturePhoto: tbm.참석서명사진수 > 0,
-    hasExercisePhoto: tbm.체조사진수 > 0,
+    hasExercisePhoto: tbm["작업 전 안전활동 사진수"] > 0,
     hasAnyEvidencePhoto: totalEvidencePhotoCount > 0,
     hasCautionText: Boolean(tbm.오늘주의사항?.trim()),
     hasTaskName: Boolean(tbm.작업명 && tbm.작업명 !== "(작업명 없음)"),
@@ -174,7 +188,7 @@ export default async function TbmDetailPage({
                 <span className="text-sm font-bold text-white">AI TBM 증빙 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                참석 서명사진, 체조사진, 오늘의 주의사항 기록을 기준으로 TBM 증빙력을 자동 확인합니다.
+                참석 서명사진, 작업 전 안전활동 사진, 오늘의 주의사항 기록을 기준으로 TBM 증빙력을 자동 확인합니다.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold">
@@ -212,8 +226,8 @@ export default async function TbmDetailPage({
               <p className="mt-1 text-sm font-bold text-white">{tbm.참석서명사진수}건</p>
             </div>
             <div className="rounded-lg bg-gray-950/35 p-3">
-              <p className="text-xs text-gray-500">체조/안전활동 사진</p>
-              <p className="mt-1 text-sm font-bold text-white">{tbm.체조사진수}건</p>
+              <p className="text-xs text-gray-500">작업 전 안전활동 사진</p>
+              <p className="mt-1 text-sm font-bold text-white">{tbm["작업 전 안전활동 사진수"]}건</p>
             </div>
             <div className="rounded-lg bg-gray-950/35 p-3">
               <p className="text-xs text-gray-500">기타 증빙사진</p>
