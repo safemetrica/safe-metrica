@@ -39,6 +39,7 @@ export type RiskFilter =
   | "action"
   | "budget"
   | "reassessment"
+  | "tbm-needed"
   | "unassigned"
   | "open";
 
@@ -83,6 +84,8 @@ export type RiskIntelligenceData = {
   actionNeededCount: number;
   budgetNeededCount: number;
   reassessmentDueCount: number;
+  tbmShareNeededCount: number;
+  tbmShareNeededItems: RiskItemDetail[];
   openCount: number;
   completedCount: number;
   unassignedOwnerCount: number;
@@ -255,6 +258,25 @@ export function isDueSoonItem(item: RiskItemDetail): boolean {
   return isRiskItemOpen(item) && isDateWithinDays(item.dueDate, 30);
 }
 
+export function isTbmShareNeededItem(item: RiskItemDetail): boolean {
+  const accidentType = item.accidentType || "";
+  const majorAccident =
+    accidentType.includes("끼임") ||
+    accidentType.includes("협착") ||
+    accidentType.includes("충돌") ||
+    accidentType.includes("추락") ||
+    accidentType.includes("낙하") ||
+    accidentType.includes("온열") ||
+    accidentType.includes("질식") ||
+    accidentType.includes("화재");
+
+  return (
+    isRiskItemOpen(item) &&
+    !item.tbmLinked &&
+    (isHighRiskItem(item) || isDueSoonItem(item) || majorAccident)
+  );
+}
+
 export function getManagementTerm(item: RiskItemDetail): ManagementTerm {
   if (isHighRiskItem(item) || isReassessmentDueItem(item) || isDueSoonItem(item)) {
     return "단기";
@@ -314,6 +336,8 @@ export function filterRiskItems(
       return items.filter(isBudgetNeededItem);
     case "reassessment":
       return items.filter(isReassessmentDueItem);
+    case "tbm-needed":
+      return items.filter(isTbmShareNeededItem);
     case "unassigned":
       return items.filter(isOwnerUnassignedItem);
     case "open":
@@ -336,6 +360,8 @@ export async function getRiskIntelligenceData(
       actionNeededCount: 0,
       budgetNeededCount: 0,
       reassessmentDueCount: 0,
+      tbmShareNeededCount: 0,
+      tbmShareNeededItems: [],
       openCount: 0,
       completedCount: 0,
       unassignedOwnerCount: 0,
@@ -401,6 +427,8 @@ export async function getRiskIntelligenceData(
     actionNeededCount: sortedItems.filter(isActionNeededItem).length,
     budgetNeededCount: sortedItems.filter(isBudgetNeededItem).length,
     reassessmentDueCount: sortedItems.filter(isReassessmentDueItem).length,
+    tbmShareNeededCount: sortedItems.filter(isTbmShareNeededItem).length,
+    tbmShareNeededItems: sortedItems.filter(isTbmShareNeededItem).slice(0, 3),
     openCount: sortedItems.filter(isRiskItemOpen).length,
     completedCount: sortedItems.filter((item) => item.status === "완료").length,
     unassignedOwnerCount: sortedItems.filter(isOwnerUnassignedItem).length,
