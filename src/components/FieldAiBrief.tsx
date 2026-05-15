@@ -19,11 +19,11 @@ export default function FieldAiBrief() {
   }, []);
 
   return (
-    <div className="order-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 lg:col-start-2 lg:row-start-1">
+    <div className="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">🤖</span>
-        <span className="text-white font-bold text-sm">오늘의 현장 요약</span>
-        <span className="ml-auto rounded-full bg-blue-950 px-2 py-0.5 text-xs text-blue-300">AI 정리</span>
+        <span className="text-white font-bold text-sm">AI 현장 비서 브리핑</span>
+        <span className="ml-auto rounded-full bg-blue-950 px-2 py-0.5 text-xs text-blue-300">GPT-4o-mini</span>
       </div>
 
       {loading ? (
