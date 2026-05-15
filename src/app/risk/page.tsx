@@ -6,10 +6,12 @@ import { getCompanyConfig } from "@/lib/company";
 import {
   filterRiskItems,
   getManagementTerm,
+  getManagementTermReason,
   getRiskIntelligenceData,
   isActionNeededItem,
   isBudgetNeededItem,
   isHighRiskItem,
+  isOwnerUnassignedItem,
   isReassessmentDueItem,
   type RiskFilter,
   type RiskItemDetail,
@@ -24,9 +26,13 @@ type RiskPageProps = {
 const FILTERS: Array<{ key: RiskFilter; label: string }> = [
   { key: "all", label: "전체" },
   { key: "high", label: "고위험" },
+  { key: "short", label: "단기" },
+  { key: "mid", label: "중기" },
+  { key: "long", label: "장기" },
   { key: "action", label: "개선대책" },
   { key: "budget", label: "예산" },
   { key: "reassessment", label: "재평가" },
+  { key: "unassigned", label: "담당 미지정" },
   { key: "open", label: "완료 전" },
 ];
 
@@ -115,7 +121,7 @@ function SummaryCard({
   label: string;
   value: number;
   hint: string;
-  tone: "red" | "yellow" | "orange" | "blue" | "slate";
+  tone: "red" | "yellow" | "orange" | "blue" | "purple" | "slate";
 }) {
   const valueClass =
     tone === "red"
@@ -126,7 +132,9 @@ function SummaryCard({
           ? "text-orange-200"
           : tone === "blue"
             ? "text-blue-200"
-            : "text-slate-100";
+            : tone === "purple"
+              ? "text-purple-200"
+              : "text-slate-100";
 
   const toneClass =
     tone === "red"
@@ -137,7 +145,9 @@ function SummaryCard({
           ? "border-orange-500/35 bg-orange-950/20"
           : tone === "blue"
             ? "border-blue-500/35 bg-blue-950/25"
-            : "border-slate-600/80 bg-slate-900/75";
+            : tone === "purple"
+              ? "border-purple-500/35 bg-purple-950/20"
+              : "border-slate-600/80 bg-slate-900/75";
 
   return (
     <div className={`rounded-2xl border p-4 shadow-lg ${toneClass}`}>
@@ -149,6 +159,8 @@ function SummaryCard({
 }
 
 function RiskItemCard({ item }: { item: RiskItemDetail }) {
+  const term = getManagementTerm(item);
+
   const cardTone =
     item.riskLevel === "상"
       ? "border-l-4 border-l-red-500 bg-red-950/10"
@@ -163,7 +175,8 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
     isActionNeededItem(item) ? "개선대책" : null,
     isBudgetNeededItem(item) ? "예산" : null,
     isReassessmentDueItem(item) ? "재평가" : null,
-  ].filter(Boolean);
+    isOwnerUnassignedItem(item) ? "담당 미지정" : null,
+  ].filter((flag): flag is string => Boolean(flag));
 
   return (
     <article className={`rounded-2xl border border-slate-700 p-4 shadow-lg ${cardTone}`}>
@@ -185,6 +198,15 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
           <RiskLevelBadge level={item.riskLevel} />
           <StatusBadge status={item.status} />
         </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+        <div className="text-xs font-semibold text-slate-500">관리구분</div>
+        <p className="mt-1 text-sm leading-relaxed text-slate-300 [word-break:keep-all]">
+          <span className="font-bold text-white">{term} 관리</span>
+          {" · "}
+          {getManagementTermReason(item)}
+        </p>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -209,9 +231,9 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
           </div>
         </div>
 
-        <div className="rounded-xl bg-slate-950/60 p-3">
+        <div className={`rounded-xl p-3 ${item.owner ? "bg-slate-950/60" : "border border-red-500/30 bg-red-950/20"}`}>
           <div className="text-xs text-slate-500">담당 / 기한</div>
-          <div className="mt-1 text-sm font-semibold text-slate-200 [word-break:keep-all]">
+          <div className={`mt-1 text-sm font-semibold [word-break:keep-all] ${item.owner ? "text-slate-200" : "text-red-200"}`}>
             {item.owner || "담당 미지정"} · {formatDate(item.dueDate)}
           </div>
         </div>
@@ -298,7 +320,13 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
               <SummaryCard label="고위험 관리 항목" value={risk.highRiskCount} hint="위험수준 상 + 완료 전" tone="red" />
               <SummaryCard label="개선대책 관리 필요" value={risk.actionNeededCount} hint="개선대책 있음 + 완료 전" tone="yellow" />
               <SummaryCard label="예산 검토 필요" value={risk.budgetNeededCount} hint="예산 수반 + 완료 전" tone="orange" />
-              <SummaryCard label="재평가 예정" value={risk.reassessmentDueCount} hint="30일 이내 재확인" tone="blue" />
+              <SummaryCard label="담당 미지정" value={risk.unassignedOwnerCount} hint="담당자 지정 필요" tone="purple" />
+            </section>
+
+            <section className="mt-3 grid gap-3 sm:grid-cols-3">
+              <SummaryCard label="단기 관리" value={risk.shortTermCount} hint="고위험·재평가·기한 임박" tone="red" />
+              <SummaryCard label="중기 관리" value={risk.midTermCount} hint="개선대책 담당·기한 관리" tone="blue" />
+              <SummaryCard label="장기 관리" value={risk.longTermCount} hint="예산·설비개선 반영" tone="purple" />
             </section>
 
             <section className="mt-5 rounded-3xl border border-slate-700 bg-slate-900/60 p-4">
