@@ -427,9 +427,12 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
             위험성평가 항목 {risk.total}건 기준 관리 필요 신호입니다.
           </p>
         </div>
-        <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-blue-950 px-3 py-1 text-xs text-blue-300">
+        <Link
+          href="/risk"
+          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-blue-950 px-3 py-1 text-xs text-blue-300 hover:bg-blue-900"
+        >
           Risk Items DB
-        </span>
+        </Link>
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
