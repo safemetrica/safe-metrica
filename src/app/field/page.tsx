@@ -495,20 +495,32 @@ export default async function FieldPage() {
               </div>
             </div>
 
-            {/* 바로가기 */}
-            <div className="grid grid-cols-3 gap-2">
-              <Link href="/tbm" className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-center transition hover:border-blue-500">
-                <div className="mb-1 text-xl">📋</div>
-                <div className="text-xs font-medium text-white">TBM</div>
-              </Link>
-              <Link href="/ebm" className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-center transition hover:border-emerald-500">
-                <div className="mb-1 text-xl">📚</div>
-                <div className="text-xs font-medium text-white">EB</div>
-              </Link>
-              <Link href="/ptw" className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-center transition hover:border-orange-500">
-                <div className="mb-1 text-xl">🧾</div>
-                <div className="text-xs font-medium text-white">PTW</div>
-              </Link>
+            {/* 빠른 이동 */}
+            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🧭</span>
+                  <span className="text-sm font-bold text-white">빠른 이동</span>
+                </div>
+                <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
+                  기록 · 증빙 · 승인
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <Link href="/tbm" className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-center transition hover:border-blue-500">
+                  <div className="mb-1 text-xl">📋</div>
+                  <div className="text-xs font-medium text-white">TBM</div>
+                </Link>
+                <Link href="/ebm" className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-center transition hover:border-emerald-500">
+                  <div className="mb-1 text-xl">📚</div>
+                  <div className="text-xs font-medium text-white">EB</div>
+                </Link>
+                <Link href="/ptw" className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-center transition hover:border-orange-500">
+                  <div className="mb-1 text-xl">🧾</div>
+                  <div className="text-xs font-medium text-white">PTW</div>
+                </Link>
+              </div>
             </div>
           </section>
         </div>
