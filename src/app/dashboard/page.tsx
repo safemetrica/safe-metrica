@@ -427,7 +427,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
             위험성평가 항목 {risk.total}건 기준 관리 필요 신호입니다.
           </p>
         </div>
-        <span className="rounded-full bg-blue-950 px-3 py-1 text-xs text-blue-300">
+        <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-blue-950 px-3 py-1 text-xs text-blue-300">
           Risk Items DB
         </span>
       </div>
@@ -447,11 +447,13 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
 
       {risk.highRiskItems.length > 0 ? (
         <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-4">
-          <div className="mb-2 text-xs font-semibold text-gray-400">고위험 관리 항목 예시</div>
+          <div className="mb-2 text-xs font-semibold text-gray-400 [word-break:keep-all]">
+            고위험 관리 항목 예시
+          </div>
           <div className="space-y-2">
             {risk.highRiskItems.map((item) => (
               <div key={item.id} className="rounded-lg border border-slate-600/70 bg-slate-900/80 p-3">
-                <div className="text-sm font-medium text-white">
+                <div className="text-sm font-medium leading-snug text-white [word-break:keep-all]">
                   {item.no ? `${item.no}. ` : ""}
                   {item.title || item.processName || "위험성평가 항목"}
                 </div>
@@ -491,7 +493,7 @@ export default async function DashboardPage() {
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">📊 대표 대시보드</h1>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-slate-400 [word-break:keep-all]">
               오늘의 운영 상태와 관리 필요 신호를 요약합니다.
             </p>
           </div>
@@ -511,13 +513,13 @@ export default async function DashboardPage() {
                 <span className="text-xs text-slate-400">대표 확인용 요약</span>
               </div>
 
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold leading-tight text-white [word-break:keep-all]">
                 {s.조치필요 > 0 || s.EB누락 > 0 || s.PTW미승인 > 0 || s.risk.highRiskCount > 0
                   ? "관리 필요 항목을 확인하세요."
                   : "현재 주요 관리 신호는 안정적입니다."}
               </h2>
 
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 [word-break:keep-all]">
                 오늘 조치 필요 {s.조치필요}건, EB 누락 {s.EB누락}건, PTW 승인대기 {s.PTW미승인}건,
                 위험성평가 기준 고위험 관리 항목 {s.risk.highRiskCount}건입니다.
               </p>
