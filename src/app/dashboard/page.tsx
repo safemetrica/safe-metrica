@@ -380,6 +380,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
         <div className="mb-2 flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-white">Risk Intelligence</h2>
+          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">위험성평가 관리현황</p>
             <p className="mt-1 text-xs text-gray-400">위험성평가 항목 기반 관리 신호</p>
           </div>
           <span className="rounded-full bg-gray-800 px-3 py-1 text-xs text-gray-400">준비 중</span>
@@ -423,6 +424,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-white">Risk Intelligence</h2>
+          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">위험성평가 관리현황</p>
           <p className="mt-1 text-xs text-gray-400">
             위험성평가 항목 {risk.total}건 기준 관리 필요 신호입니다.
           </p>
