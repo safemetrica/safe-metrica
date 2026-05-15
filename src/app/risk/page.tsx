@@ -442,13 +442,15 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
           </span>
         ))}
         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-800 px-2.5 py-1 font-semibold text-slate-300">
-          예산 {item.budgetRequired ? "필요" : "불필요"} · {formatMoney(item.estimatedCost)}
+          {item.budgetRequired
+            ? `예산 필요 · ${typeof item.estimatedCost === "number" ? formatMoney(item.estimatedCost) : "금액 미정"}`
+            : "예산 불필요"}
         </span>
         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-800 px-2.5 py-1 font-semibold text-slate-300">
           TBM 공유 {item.tbmLinked ? "연계" : "미연계"}
         </span>
         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-800 px-2.5 py-1 font-semibold text-slate-300">
-          재평가 {formatDate(item.reassessmentDate)}
+          재평가 {item.reassessmentDate ? formatDate(item.reassessmentDate) : "미지정"}
         </span>
       </div>
     </article>
