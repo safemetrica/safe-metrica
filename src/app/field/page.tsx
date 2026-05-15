@@ -224,9 +224,9 @@ export default async function FieldPage() {
         <FieldAiBrief />
 
         {/* 오늘 TBM 운영 흐름 / 공유·후속 조치 */}
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
           {/* 왼쪽: 오늘 TBM 운영 흐름 */}
-          <section className="space-y-4">
+          <section className="flex h-full flex-col gap-4">
             {/* 오늘 TBM 현황 */}
             <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
               <div className="mb-3 flex items-center justify-between">
@@ -314,7 +314,7 @@ export default async function FieldPage() {
               </div>
             </div>
             {/* 오늘 TBM 진행 가이드 */}
-            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+            <div className="flex flex-1 flex-col rounded-2xl border border-slate-700 bg-slate-900 p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -387,7 +387,7 @@ export default async function FieldPage() {
           </section>
 
           {/* 오른쪽: 공유·후속 조치 */}
-          <section className="space-y-4">
+          <section className="flex h-full flex-col gap-4">
             {/* TBM 공유 필요 위험요인 */}
             {d.riskTbmShareNeededCount > 0 && (
               <div className="rounded-2xl border border-amber-700/70 bg-amber-950/35 p-4">
