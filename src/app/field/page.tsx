@@ -62,7 +62,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   const PTW미승인 = ptwRows.filter((r: any) => r.승인상태 === "요청");
   const PTW위험 = ptwRows.filter((r: any) => r.허용여부 === "금지" || r.승인상태 === "반려");
 
-  // 작업 전 체크리스트
+  // 오늘 준비 현황
   const checklist = [
     { done: 오늘TBM.length > 0, text: "오늘 TBM 작성", href: "/tbm", urgent: true },
     { done: EB누락.length === 0, text: `EB 누락 없음${EB누락.length > 0 ? ` (${EB누락.length}건 미등록)` : ""}`, href: "/ebm", urgent: true },
@@ -180,44 +180,59 @@ export default async function FieldPage() {
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
       <SafeNav />
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="mx-auto max-w-6xl p-4">
 
         {/* 헤더 */}
         <div className="mb-5 mt-2">
           <h1 className="text-white text-xl font-bold">👷 현장 비서</h1>
           <p className="text-gray-400 text-sm mt-0.5">{dateStr} · {timeStr} · 관리감독자·안전담당자 전용</p>
+
+          <div className="mt-3 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <span className="font-semibold text-white">오늘 상태</span>
+              <span className="rounded-full bg-slate-800 px-2 py-0.5">
+                TBM {d.오늘TBM.length > 0 ? "제출 완료" : "미제출"}
+              </span>
+              <span className={`rounded-full px-2 py-0.5 ${d.EB누락.length + d.조치필요.length > 0 ? "bg-amber-500/15 text-amber-200" : "bg-emerald-500/10 text-emerald-200"}`}>
+                미완료 {d.EB누락.length + d.조치필요.length}건
+              </span>
+              <span className={`rounded-full px-2 py-0.5 ${d.PTW미승인.length > 0 ? "bg-amber-500/15 text-amber-200" : "bg-emerald-500/10 text-emerald-200"}`}>
+                PTW 대기 {d.PTW미승인.length}건
+              </span>
+            </div>
+          </div>
         </div>
-<FieldAiBrief />
+<div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-start">\n        <FieldAiBrief />
 
         {/* TBM 공유 필요 위험요인 */}
         {d.riskTbmShareNeededCount > 0 && (
-          <div className="bg-red-950/60 border border-red-700 rounded-2xl p-4 mb-4">
+          <div className="order-1 rounded-2xl border border-amber-700/70 bg-amber-950/35 p-4 lg:col-start-1 lg:row-start-1">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📣</span>
-                  <span className="text-white font-bold text-sm">오늘 TBM 공유 필요 위험요인</span>
+                  <span className="text-white font-bold text-sm">오늘 TBM 공유 항목</span>
                 </div>
-                <p className="mt-1 text-red-200 text-xs leading-relaxed">
-                  작업 전 근로자에게 반복 공유할 위험요인입니다. TBM에서 공유하고 필요한 경우 증빙을 남겨주세요.
+                <p className="mt-1 text-amber-200 text-xs leading-relaxed">
+                  근로자에게 안내할 내용입니다. TBM에서 짧게 공유하고 필요한 경우 증빙을 남겨주세요.
                 </p>
               </div>
-              <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-red-800 px-2.5 py-1 text-xs font-bold text-red-100">
+              <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-amber-700 px-2.5 py-1 text-xs font-bold text-amber-50">
                 {d.riskTbmShareNeededCount}건
               </span>
             </div>
 
             <div className="space-y-2">
               {d.riskTbmShareNeededItems.map((item: any) => (
-                <div key={item.id} className="rounded-xl bg-red-900/35 border border-red-800/70 p-3">
+                <div key={item.id} className="rounded-xl bg-amber-900/30 border border-amber-800/60 p-3">
                   <div className="text-white text-sm font-semibold [word-break:keep-all]">
                     {item.title || item.taskName || item.processName || "위험성평가 항목"}
                   </div>
-                  <div className="mt-1 text-xs text-red-200 [word-break:keep-all]">
+                  <div className="mt-1 text-xs text-amber-200 [word-break:keep-all]">
                     {item.processName || "공정 미지정"}
                     {item.accidentType ? ` · ${item.accidentType}` : ""}
                   </div>
-                  <div className="mt-2 text-xs text-red-100 leading-relaxed [word-break:keep-all]">
+                  <div className="mt-2 text-xs text-amber-50 leading-relaxed [word-break:keep-all]">
                     공유포인트: {item.hazard || item.improvementPlan || "작업 전 위험요인과 안전조치를 근로자에게 공유하세요."}
                   </div>
                 </div>
@@ -225,8 +240,8 @@ export default async function FieldPage() {
             </div>
 
             <Link href="/risk?filter=tbm-needed">
-              <div className="mt-3 bg-red-800 rounded-lg p-2 text-center text-red-100 text-sm font-bold hover:bg-red-700 transition">
-                TBM 공유 항목 보기 →
+              <div className="mt-3 bg-amber-700 rounded-lg p-2 text-center text-amber-50 text-sm font-bold hover:bg-amber-600 transition">
+                항목 확인하기
               </div>
             </Link>
           </div>
@@ -234,28 +249,28 @@ export default async function FieldPage() {
 
         {/* PTW 긴급 경고 */}
         {d.PTW필요미제출 && (
-          <div className="bg-red-950 border border-red-700 rounded-xl p-4 mb-4">
+          <div className="order-2 rounded-2xl border border-red-700 bg-red-950 p-4 lg:col-start-1">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xl">🚨</span>
-              <span className="text-red-300 font-bold text-sm">PTW 미제출 — 법적 의무 위반 위험</span>
+              <span className="text-red-300 font-bold text-sm">PTW 미제출 — 작업 전 확인 필요</span>
             </div>
-            <p className="text-red-200 text-xs">오늘 TBM에 고위험 작업 태그({d.PTW필요태그.join(", ")})가 있으나 PTW가 제출되지 않았습니다.</p>
+            <p className="text-amber-200 text-xs">오늘 TBM에 고위험 작업 태그({d.PTW필요태그.join(", ")})가 있으나 PTW가 제출되지 않았습니다.</p>
             <Link href="/ptw">
-              <div className="mt-2 bg-red-800 rounded-lg p-2 text-center text-red-100 text-sm font-medium hover:bg-red-700 transition">
+              <div className="mt-2 bg-amber-700 rounded-lg p-2 text-center text-amber-50 text-sm font-medium hover:bg-amber-600 transition">
                 → PTW 제출하기
               </div>
             </Link>
           </div>
         )}
 
-        {/* 작업 전 체크리스트 */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 mb-4">
+        {/* 오늘 준비 현황 */}
+        <div className="order-3 rounded-2xl border border-slate-700 bg-slate-900 p-4 lg:col-start-1">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">📋</span>
-              <span className="text-white font-bold text-sm">작업 전 체크리스트</span>
+              <span className="text-white font-bold text-sm">오늘 준비 현황</span>
             </div>
-            <span className={`text-sm font-bold ${d.전체미완료 > 0 ? "text-red-400" : "text-green-400"}`}>
+            <span className={`text-sm font-bold ${d.전체미완료 > 0 ? "text-red-400" : "text-emerald-300"}`}>
               {d.checklist.filter((c: {done: boolean; text: string; href: string; urgent: boolean}) => c.done).length}/{d.checklist.length} 완료
             </span>
           </div>
@@ -266,7 +281,7 @@ export default async function FieldPage() {
                   c.done ? "bg-gray-800" : c.urgent ? "bg-red-900/40 border border-red-800" : "bg-yellow-900/30 border border-yellow-800"
                 }`}>
                   <span className="text-lg">{c.done ? "✅" : c.urgent ? "🔴" : "🟡"}</span>
-                  <span className={`text-sm ${c.done ? "text-gray-400 line-through" : c.urgent ? "text-red-200 font-medium" : "text-yellow-200"}`}>
+                  <span className={`text-sm ${c.done ? "text-gray-400 line-through" : c.urgent ? "text-amber-200 font-medium" : "text-yellow-200"}`}>
                     {c.text}
                   </span>
                 </div>
@@ -276,7 +291,7 @@ export default async function FieldPage() {
         </div>
 
         {/* 오늘 TBM 현황 */}
-        <div className={`rounded-2xl border p-4 mb-4 ${d.오늘TBM.length > 0 ? "bg-blue-950 border-blue-800" : "bg-orange-950 border-orange-800"}`}>
+        <div className="order-5 rounded-2xl border border-slate-700 bg-slate-900 p-4 lg:col-start-2">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">📝</span>
@@ -295,7 +310,7 @@ export default async function FieldPage() {
                     {r.작업태그.length > 0 && (
                       <div className="flex gap-1 flex-wrap mt-1">
                         {r.작업태그.map((t: string) => (
-                          <span key={t} className={`px-2 py-0.5 rounded-full text-xs ${PTW_REQUIRED_TAGS.includes(t) ? "bg-red-800 text-red-200" : "bg-blue-800 text-blue-200"}`}>
+                          <span key={t} className={`px-2 py-0.5 rounded-full text-xs ${PTW_REQUIRED_TAGS.includes(t) ? "bg-amber-700 text-amber-200" : "bg-blue-800 text-blue-200"}`}>
                             {t}
                           </span>
                         ))}
@@ -324,10 +339,10 @@ export default async function FieldPage() {
 
         {/* 미조치 항목 */}
         {(d.EB누락.length > 0 || d.조치필요.length > 0) && (
-          <div className="bg-yellow-950 border border-yellow-800 rounded-2xl p-4 mb-4">
+          <div className="order-2 rounded-2xl border border-amber-700/70 bg-slate-900 p-4 lg:col-start-1">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">⚡</span>
-              <span className="text-white font-bold text-sm">지금 바로 처리할 것</span>
+              <span className="text-white font-bold text-sm">미완료 조치</span>
             </div>
             <div className="space-y-2">
               {d.EB누락.slice(0, 3).map((r: any) => (
@@ -351,17 +366,17 @@ export default async function FieldPage() {
         )}
 
         {/* 칭찬 멘트 */}
-        <div className="bg-green-950 border border-green-800 rounded-2xl p-4 mb-4">
+        <div className="order-6 rounded-2xl border border-emerald-900/80 bg-slate-900 p-4 lg:col-start-2">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">🏆</span>
-            <span className="text-white font-bold text-sm">현장 안전 현황</span>
+            <span className="text-white font-bold text-sm">이번 주 현장 현황</span>
           </div>
           <div className="space-y-1">
             {d.칭찬멘트.map((m: string, i: number) => (
               <p key={i} className="text-green-200 text-sm">{m}</p>
             ))}
           </div>
-          <div className="mt-3 pt-3 border-t border-green-800 flex justify-between text-xs text-green-400">
+          <div className="mt-3 pt-3 border-t border-slate-700 flex justify-between text-xs text-emerald-300">
             <span>이번 주 TBM: {d.이번주TBM.length}건</span>
             <span>미조치: {d.EB누락.length + d.조치필요.length}건</span>
             <span>PTW 대기: {d.PTW미승인.length}건</span>
@@ -369,21 +384,22 @@ export default async function FieldPage() {
         </div>
 
         {/* 바로가기 */}
-        <div className="grid grid-cols-3 gap-2">
-          <Link href="/tbm" className="bg-gray-900 border border-gray-700 hover:border-blue-600 rounded-xl p-3 text-center transition">
+        <div className="order-7 grid grid-cols-3 gap-2 lg:col-start-2">
+          <Link href="/tbm" className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-center transition hover:border-blue-500">
             <div className="text-xl mb-1">📋</div>
             <div className="text-white text-xs font-medium">TBM</div>
           </Link>
-          <Link href="/ebm" className="bg-gray-900 border border-gray-700 hover:border-emerald-600 rounded-xl p-3 text-center transition">
+          <Link href="/ebm" className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-center transition hover:border-emerald-500">
             <div className="text-xl mb-1">📚</div>
             <div className="text-white text-xs font-medium">EB</div>
           </Link>
-          <Link href="/ptw" className="bg-gray-900 border border-gray-700 hover:border-orange-600 rounded-xl p-3 text-center transition">
+          <Link href="/ptw" className="rounded-xl border border-slate-700 bg-slate-900 p-3 text-center transition hover:border-orange-500">
             <div className="text-xl mb-1">🧾</div>
             <div className="text-white text-xs font-medium">PTW</div>
           </Link>
         </div>
 
+        </div>
       </div>
     </main>
   );
