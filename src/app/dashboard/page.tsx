@@ -497,9 +497,12 @@ export default async function DashboardPage() {
               오늘의 운영 상태와 관리 필요 신호를 요약합니다.
             </p>
           </div>
-          <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300">
-            {new Date().toLocaleDateString("ko-KR")}
-          </span>
+          <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300">
+            {new Date()
+              .toLocaleDateString("ko-KR")
+              .replace(/\.\s*/g, ".")
+              .replace(/\.$/, "")}
+         </span>
         </div>
 
         {/* ZONE 1: 오늘의 결론 */}
