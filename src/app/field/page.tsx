@@ -220,9 +220,99 @@ export default async function FieldPage() {
         {/* AI 브리핑은 최상단 전체폭 */}
         <FieldAiBrief />
 
-        {/* 실행 영역 / 상태 영역 */}
+        {/* 오늘 TBM 운영 흐름 / 공유·후속 조치 */}
         <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-          {/* 왼쪽: 오늘 실행 */}
+          {/* 왼쪽: 오늘 TBM 운영 흐름 */}
+          <section className="space-y-4">
+            {/* 오늘 TBM 현황 */}
+            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📝</span>
+                  <span className="text-sm font-bold text-white">오늘 TBM</span>
+                </div>
+                <span className={`text-sm font-bold ${d.오늘TBM.length > 0 ? "text-blue-300" : "text-orange-300"}`}>
+                  {d.오늘TBM.length > 0 ? `${d.오늘TBM.length}건 제출됨` : "미제출"}
+                </span>
+              </div>
+              {d.오늘TBM.length > 0 ? (
+                <div className="space-y-2">
+                  {d.오늘TBM.map((r: any) => (
+                    <Link key={r.id} href={`/tbm/${r.id}`}>
+                      <div className="cursor-pointer rounded-lg bg-blue-950/55 p-3 transition hover:bg-blue-950/75">
+                        <div className="text-sm font-medium text-white">{r.작업명}</div>
+                        {r.작업태그.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {r.작업태그.map((t: string) => (
+                              <span
+                                key={t}
+                                className={`rounded-full px-2 py-0.5 text-xs ${
+                                  PTW_REQUIRED_TAGS.includes(t)
+                                    ? "bg-amber-700 text-amber-100"
+                                    : "bg-blue-800 text-blue-200"
+                                }`}
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {r.특이사항 && r.연결EB === 0 && (
+                          <p className="mt-1 text-xs text-red-300">⚠️ 특이사항 있음 — EB 등록 필요</p>
+                        )}
+                        {r.조치상태 === "조치 필요" && (
+                          <p className="mt-1 text-xs text-yellow-300">🟡 조치 상태 업데이트 필요</p>
+                        )}
+                        {r.주의사항 && (
+                          <p className="mt-1 text-xs text-blue-300">📌 {r.주의사항}</p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  <p className="mb-2 text-sm text-orange-200">오늘 TBM이 아직 제출되지 않았습니다.</p>
+                  <p className="mt-1 text-xs text-orange-300">Notion 폼에서 TBM을 작성하면 여기에 자동으로 반영됩니다.</p>
+                </div>
+              )}
+            </div>
+
+            {/* 오늘 준비 현황 */}
+            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📋</span>
+                  <span className="text-sm font-bold text-white">오늘 준비 현황</span>
+                </div>
+                <span className={`text-sm font-bold ${d.전체미완료 > 0 ? "text-amber-300" : "text-emerald-300"}`}>
+                  {d.checklist.filter((c: { done: boolean; text: string; href: string; urgent: boolean }) => c.done).length}/{d.checklist.length} 완료
+                </span>
+              </div>
+              <div className="space-y-2">
+                {d.checklist.map((c: { done: boolean; text: string; href: string; urgent: boolean }, i: number) => (
+                  <Link key={i} href={c.href}>
+                    <div
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition hover:opacity-80 ${
+                        c.done
+                          ? "bg-slate-800"
+                          : c.urgent
+                            ? "border border-amber-700 bg-amber-950/35"
+                            : "border border-amber-800 bg-amber-950/25"
+                      }`}
+                    >
+                      <span className="text-lg">{c.done ? "✅" : c.urgent ? "🟡" : "🟠"}</span>
+                      <span className={`text-sm ${c.done ? "text-gray-400 line-through" : "font-medium text-amber-200"}`}>
+                        {c.text}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* 오른쪽: 공유·후속 조치 */}
           <section className="space-y-4">
             {/* TBM 공유 필요 위험요인 */}
             {d.riskTbmShareNeededCount > 0 && (
@@ -234,7 +324,7 @@ export default async function FieldPage() {
                       <span className="text-sm font-bold text-white">오늘 TBM 공유 항목</span>
                     </div>
                     <p className="mt-1 text-xs leading-relaxed text-amber-200">
-                      근로자에게 안내할 내용입니다. TBM에서 짧게 공유하고 필요한 경우 증빙을 남겨주세요.
+                      오늘 TBM 내용과 함께 근로자에게 안내할 위험요인입니다.
                     </p>
                   </div>
                   <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-amber-700 px-2.5 py-1 text-xs font-bold text-amber-50">
@@ -312,96 +402,6 @@ export default async function FieldPage() {
                 </div>
               </div>
             )}
-
-            {/* 오늘 준비 현황 */}
-            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📋</span>
-                  <span className="text-sm font-bold text-white">오늘 준비 현황</span>
-                </div>
-                <span className={`text-sm font-bold ${d.전체미완료 > 0 ? "text-amber-300" : "text-emerald-300"}`}>
-                  {d.checklist.filter((c: { done: boolean; text: string; href: string; urgent: boolean }) => c.done).length}/{d.checklist.length} 완료
-                </span>
-              </div>
-              <div className="space-y-2">
-                {d.checklist.map((c: { done: boolean; text: string; href: string; urgent: boolean }, i: number) => (
-                  <Link key={i} href={c.href}>
-                    <div
-                      className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition hover:opacity-80 ${
-                        c.done
-                          ? "bg-slate-800"
-                          : c.urgent
-                            ? "border border-amber-700 bg-amber-950/35"
-                            : "border border-amber-800 bg-amber-950/25"
-                      }`}
-                    >
-                      <span className="text-lg">{c.done ? "✅" : c.urgent ? "🟡" : "🟠"}</span>
-                      <span className={`text-sm ${c.done ? "text-gray-400 line-through" : "font-medium text-amber-200"}`}>
-                        {c.text}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* 오른쪽: 현장 상태 */}
-          <section className="space-y-4">
-            {/* 오늘 TBM 현황 */}
-            <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📝</span>
-                  <span className="text-sm font-bold text-white">오늘 TBM</span>
-                </div>
-                <span className={`text-sm font-bold ${d.오늘TBM.length > 0 ? "text-blue-300" : "text-orange-300"}`}>
-                  {d.오늘TBM.length > 0 ? `${d.오늘TBM.length}건 제출됨` : "미제출"}
-                </span>
-              </div>
-              {d.오늘TBM.length > 0 ? (
-                <div className="space-y-2">
-                  {d.오늘TBM.map((r: any) => (
-                    <Link key={r.id} href={`/tbm/${r.id}`}>
-                      <div className="cursor-pointer rounded-lg bg-blue-950/55 p-3 transition hover:bg-blue-950/75">
-                        <div className="text-sm font-medium text-white">{r.작업명}</div>
-                        {r.작업태그.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {r.작업태그.map((t: string) => (
-                              <span
-                                key={t}
-                                className={`rounded-full px-2 py-0.5 text-xs ${
-                                  PTW_REQUIRED_TAGS.includes(t)
-                                    ? "bg-amber-700 text-amber-100"
-                                    : "bg-blue-800 text-blue-200"
-                                }`}
-                              >
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {r.특이사항 && r.연결EB === 0 && (
-                          <p className="mt-1 text-xs text-red-300">⚠️ 특이사항 있음 — EB 등록 필요</p>
-                        )}
-                        {r.조치상태 === "조치 필요" && (
-                          <p className="mt-1 text-xs text-yellow-300">🟡 조치 상태 업데이트 필요</p>
-                        )}
-                        {r.주의사항 && (
-                          <p className="mt-1 text-xs text-blue-300">📌 {r.주의사항}</p>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div>
-                  <p className="mb-2 text-sm text-orange-200">오늘 TBM이 아직 제출되지 않았습니다.</p>
-                  <p className="mt-1 text-xs text-orange-300">Notion 폼에서 TBM을 작성하면 여기에 자동으로 반영됩니다.</p>
-                </div>
-              )}
-            </div>
 
             {/* 현장 안전 현황 */}
             <div className="rounded-2xl border border-emerald-900/80 bg-slate-900 p-4">
