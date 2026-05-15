@@ -390,18 +390,18 @@ export default async function FieldPage() {
           <section className="flex h-full flex-col gap-4">
             {/* TBM 공유 필요 위험요인 */}
             {d.riskTbmShareNeededCount > 0 && (
-              <div className="rounded-2xl border border-amber-700/70 bg-amber-950/35 p-4">
+              <div className="rounded-2xl border border-amber-700/60 bg-slate-900 p-4">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg">📣</span>
                       <span className="text-sm font-bold text-white">오늘 TBM 공유 항목</span>
                     </div>
-                    <p className="mt-1 text-xs leading-relaxed text-amber-200">
+                    <p className="mt-1 text-xs leading-relaxed text-slate-400">
                       오늘 TBM 내용과 함께 근로자에게 안내할 위험요인입니다.
                     </p>
                   </div>
-                  <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-amber-700 px-2.5 py-1 text-xs font-bold text-amber-50">
+                  <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-200">
                     {d.riskTbmShareNeededCount}건
                   </span>
                 </div>
@@ -424,7 +424,7 @@ export default async function FieldPage() {
                 </div>
 
                 <Link href="/risk?filter=tbm-needed">
-                  <div className="mt-3 rounded-lg bg-amber-700 p-2 text-center text-sm font-bold text-amber-50 transition hover:bg-amber-600">
+                  <div className="mt-3 rounded-lg border border-amber-700/60 bg-slate-950/60 p-2 text-center text-sm font-bold text-amber-200 transition hover:bg-amber-950/40">
                     항목 확인하기
                   </div>
                 </Link>
