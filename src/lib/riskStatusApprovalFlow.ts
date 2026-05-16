@@ -43,6 +43,11 @@ export interface RiskApprovalInput {
   decision?: RiskApprovalDecision;
   memo?: string;
   approvedAt?: string;
+  existingApprovalStatus?: string;
+  existingApprovalBy?: string;
+  existingApprovalDate?: string;
+  existingApprovalMemo?: string;
+  riskDbReflectionStatus?: string;
 }
 
 export interface RiskDbUpdatePayload {
@@ -114,6 +119,75 @@ export function evaluateRiskStatusApproval(
   const missingEvidence = input.missingEvidence ?? [];
   const allowedRole = isAllowedApprovalRole(input.actorRole);
   const alreadyCompleted = isAlreadyCompleted(input.currentRiskDbStatus);
+  const existingApprovalStatus = normalize(input.existingApprovalStatus);
+
+  if (existingApprovalStatus.includes("승인완료")) {
+    return {
+      approvalStatus: "approved",
+      canApprove: false,
+      canCreateRiskDbUpdatePayload: false,
+      proposedRiskDbStatus: "완료",
+      riskDbUpdatePayload: null,
+      reason: "Notion Risk Items DB에서 반영 승인상태가 승인 완료로 확인되었습니다.",
+      fieldMessage: "관리자 승인 완료 상태입니다.",
+      managerMessage:
+        "Risk Items DB 승인 필드 기준으로 승인 완료가 확인되었습니다. 이 함수는 read-only로 DB를 변경하지 않습니다.",
+      executiveMessage: "개선대책 완료 승인이 확인된 항목입니다.",
+      integrityNote:
+        "승인 완료 표시는 Notion 승인 필드에서 읽은 값이며, 이 단계에서는 Notion DB write를 수행하지 않습니다.",
+    };
+  }
+
+  if (existingApprovalStatus.includes("반려")) {
+    return {
+      approvalStatus: "rejected",
+      canApprove: false,
+      canCreateRiskDbUpdatePayload: false,
+      proposedRiskDbStatus: "진행중",
+      riskDbUpdatePayload: null,
+      reason: input.existingApprovalMemo || "Notion Risk Items DB에서 반영 승인상태가 반려로 확인되었습니다.",
+      fieldMessage: "관리자 반려 상태입니다.",
+      managerMessage:
+        "반려 사유를 확인하고 조치 또는 증빙을 보완하세요.",
+      executiveMessage: "완료 반영이 반려된 항목입니다.",
+      integrityNote:
+        "반려 상태에서는 Risk DB 완료로 반영하지 않습니다.",
+    };
+  }
+
+  if (existingApprovalStatus.includes("보완요청")) {
+    return {
+      approvalStatus: "moreEvidenceRequired",
+      canApprove: false,
+      canCreateRiskDbUpdatePayload: false,
+      proposedRiskDbStatus: "확인필요",
+      riskDbUpdatePayload: null,
+      reason: input.existingApprovalMemo || "Notion Risk Items DB에서 보완 요청 상태로 확인되었습니다.",
+      fieldMessage: "보완 요청 상태입니다.",
+      managerMessage:
+        "추가 증빙 또는 조치내용 보완 후 다시 검토하세요.",
+      executiveMessage: "보완 요청 상태인 항목입니다.",
+      integrityNote:
+        "보완 요청 상태에서는 Risk DB 완료로 반영하지 않습니다.",
+    };
+  }
+
+  if (existingApprovalStatus.includes("승인대기")) {
+    return {
+      approvalStatus: "approvalReady",
+      canApprove: input.isCompletionCandidate && input.completionLevel === "completionCandidate",
+      canCreateRiskDbUpdatePayload: false,
+      proposedRiskDbStatus: "완료",
+      riskDbUpdatePayload: null,
+      reason: "Notion Risk Items DB에서 반영 승인상태가 승인 대기로 확인되었습니다.",
+      fieldMessage: "관리자 승인 대기 상태입니다.",
+      managerMessage:
+        "완료 후보 여부를 확인한 후 승인할 수 있습니다. 현재 단계에서는 Notion DB를 변경하지 않습니다.",
+      executiveMessage: "승인 대기 중인 완료 후보 항목입니다.",
+      integrityNote:
+        "승인 대기는 Risk DB 완료 반영 전 단계입니다.",
+    };
+  }
 
   if (alreadyCompleted) {
     return {

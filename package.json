@@ -18,7 +18,8 @@
     "verify:risk-page-execution-status-ui": "node scripts/verify-risk-page-execution-status-ui.mjs",
     "verify:risk-page-execution-status-panel": "node scripts/verify-risk-page-execution-status-panel.mjs",
     "verify:parking-line-evidence": "node scripts/verify-parking-line-separation-evidence.mjs",
-    "verify:tbm-risk-relation": "node scripts/verify-tbm-risk-relation-connection.mjs"
+    "verify:tbm-risk-relation": "node scripts/verify-tbm-risk-relation-connection.mjs",
+    "verify:risk-approval-fields-read": "node scripts/verify-risk-approval-fields-read.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",

@@ -1,5 +1,6 @@
 import { buildRiskExecutionStatusSummary } from "@/lib/riskExecutionStatusSummary";
 import { attachLinkedTbmsToRiskItems } from "@/lib/tbmRiskRelation";
+import { attachRiskApprovalFieldsToItems } from "@/lib/riskApprovalFields";
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
@@ -278,7 +279,11 @@ function RiskExecutionStatusPanel({
               ? "승인 대기"
               : summary.approval.approvalStatus === "approved"
                 ? "승인 완료"
-                : "관리자 확인 필요"}
+                : summary.approval.approvalStatus === "rejected"
+                  ? "반려"
+                  : summary.approval.approvalStatus === "moreEvidenceRequired"
+                    ? "보완 요청"
+                    : "관리자 확인 필요"}
           </div>
           <div className="mt-1 text-[11px] text-amber-200">
             Risk DB 미반영
@@ -707,9 +712,13 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
     tbmDatabaseId,
     notionApiKey: company.notionApiKey,
   });
+  const approvedRiskItems = await attachRiskApprovalFieldsToItems(linkedRiskItems, {
+    riskDatabaseId: company.riskAssessmentDbId,
+    notionApiKey: company.notionApiKey,
+  });
   const risk = {
     ...riskBase,
-    items: linkedRiskItems,
+    items: approvedRiskItems,
   };
   const visibleItems = filterRiskItems(risk.items, filter);
 

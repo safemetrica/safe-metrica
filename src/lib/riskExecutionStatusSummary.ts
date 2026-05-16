@@ -59,6 +59,11 @@ export interface RiskExecutionStatusSummaryInput {
     riskLevel?: string;
     budgetRequired?: boolean;
     estimatedCost?: number | null;
+    approvalStatus?: string;
+    approvalBy?: string;
+    approvalDate?: string;
+    approvalMemo?: string;
+    riskDbReflectionStatus?: string;
   };
   tbm?: TbmLike;
   photos?: EvidencePhotoLike[];
@@ -207,6 +212,11 @@ export function buildRiskExecutionStatusSummary(
     decision: input.approval?.decision,
     memo: input.approval?.memo,
     approvedAt: input.approval?.approvedAt,
+    existingApprovalStatus: riskItem.approvalStatus,
+    existingApprovalBy: riskItem.approvalBy,
+    existingApprovalDate: riskItem.approvalDate,
+    existingApprovalMemo: riskItem.approvalMemo,
+    riskDbReflectionStatus: riskItem.riskDbReflectionStatus,
   });
 
   const overall = resolveOverallStatus({
