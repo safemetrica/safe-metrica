@@ -4,6 +4,7 @@ import Link from "next/link";
 import { evaluateTbmEvidence } from "@/lib/tbmEvidence";
 import { evaluateActionEvidence } from "@/lib/actionEvidence";
 import { classifyNotionPhotoFields } from "@/lib/photoClassification";
+import { findImprovementEvidence } from "@/lib/improvementEvidenceRules";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -165,6 +166,10 @@ export default async function TbmDetailPage({
     hasIssue: tbm.특이사항,
     actionPhotoCount: tbm.작업대상사진수 + tbm.조치사진수,
   });
+
+  const improvementEvidence = findImprovementEvidence(
+    `${tbm.작업명} ${tbm.오늘주의사항} ${tbm.특이사항내용}`
+  );
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -372,6 +377,51 @@ export default async function TbmDetailPage({
             </div>
           </div>
         </div>
+
+        {improvementEvidence.length > 0 && (
+          <div className="rounded-lg border border-emerald-800 bg-emerald-950/20 p-5 mb-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🧭</span>
+                  <span className="text-sm font-bold text-white">위험성평가 연계 기대 증빙</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  작업명과 주의사항을 기준으로 위험성평가 개선조치에 필요한 증빙을 추천합니다.
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-emerald-100">
+                {improvementEvidence.length}개 연계
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {improvementEvidence.map((rule: any) => (
+                <div key={rule.keyword} className="rounded-lg bg-gray-950/35 p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-sm font-bold text-white">
+                      {rule.keyword} · {rule.riskCategory}
+                    </p>
+                    <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2 py-0.5 text-xs text-emerald-100">
+                      개선조치 증빙
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {rule.expectedEvidence.map((item: string) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2 py-1 text-xs text-emerald-100"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {tbm.사진분류.items.length > 0 && (
           <div className="rounded-lg border border-cyan-800 bg-cyan-950/20 p-5 mb-6">
