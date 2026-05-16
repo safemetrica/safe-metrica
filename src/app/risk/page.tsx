@@ -1,3 +1,4 @@
+import { buildRiskExecutionStatusSummary } from "@/lib/riskExecutionStatusSummary";
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
@@ -187,6 +188,111 @@ function TermBadge({ item }: { item: RiskItemDetail }) {
     </span>
   );
 }
+
+function toOptionalText(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
+  return String(value);
+}
+
+function toOptionalNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function toOptionalBoolean(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.replace(/\s+/g, "").toLowerCase();
+    return ["true", "yes", "y", "1", "필요", "있음", "완료"].some((token) =>
+      normalized.includes(token)
+    );
+  }
+  return Boolean(value);
+}
+
+function RiskExecutionStatusPanel({
+  summary,
+}: {
+  summary: ReturnType<typeof buildRiskExecutionStatusSummary>;
+}) {
+  const toneClassMap = {
+    green: "border-emerald-500/40 bg-emerald-500/10",
+    amber: "border-amber-500/40 bg-amber-500/10",
+    blue: "border-blue-500/40 bg-blue-500/10",
+    red: "border-red-500/40 bg-red-500/10",
+    slate: "border-slate-500/40 bg-slate-500/10",
+  } as const;
+
+  const toneClass = toneClassMap[summary.overallTone] ?? toneClassMap.slate;
+
+  return (
+    <div className={`mt-4 rounded-xl border p-3 ${toneClass}`}>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-slate-950/70 px-2.5 py-1 text-xs font-bold text-white">
+          실행상태
+        </span>
+        <span className="text-sm font-bold text-white">
+          {summary.overallLabel}
+        </span>
+      </div>
+
+      <p className="mb-3 text-xs leading-relaxed text-slate-300">
+        {summary.overallMessage}
+      </p>
+
+      <div className="grid gap-2 md:grid-cols-3">
+        <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+          <div className="text-[11px] font-semibold text-slate-400">
+            TBM 공유상태
+          </div>
+          <div className="mt-1 text-sm font-bold text-white">
+            {summary.tbmShare.label}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-400">
+            연결 TBM {summary.tbmShare.linkedTbmCount}건
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+          <div className="text-[11px] font-semibold text-slate-400">
+            개선대책 판정
+          </div>
+          <div className="mt-1 text-sm font-bold text-white">
+            {summary.completionCandidate.label}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-400">
+            {summary.completionCandidate.missingEvidence.length > 0
+              ? `보완 ${summary.completionCandidate.missingEvidence.length}건`
+              : "보완 항목 없음"}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+          <div className="text-[11px] font-semibold text-slate-400">
+            승인·반영상태
+          </div>
+          <div className="mt-1 text-sm font-bold text-white">
+            {summary.approval.approvalStatus === "approvalReady"
+              ? "승인 대기"
+              : summary.approval.approvalStatus === "approved"
+                ? "승인 완료"
+                : "관리자 확인 필요"}
+          </div>
+          <div className="mt-1 text-[11px] text-amber-200">
+            Risk DB 미반영
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-lg border border-slate-700/70 bg-slate-950/60 px-3 py-2 text-[11px] leading-relaxed text-slate-300">
+        TBM 공유 완료는 교육·공유 이행 근거이며, 개선대책 완료와 구분됩니다.
+        Risk DB 상태는 관리자 승인 전까지 자동 변경되지 않습니다.
+      </div>
+    </div>
+  );
+}
+
 
 function SummaryCard({
   label,
@@ -423,6 +529,33 @@ function RiskChartsSection({ risk }: { risk: RiskIntelligenceData }) {
 function RiskItemCard({ item }: { item: RiskItemDetail }) {
   const term = getManagementTerm(item);
   const dueStatus = formatDueStatus(item.dueDate, item.status);
+  const riskRecord = item as unknown as Record<string, unknown>;
+  const executionSummary = buildRiskExecutionStatusSummary({
+    riskItem: {
+      id: toOptionalText(riskRecord.id),
+      riskItemId: toOptionalText(riskRecord.id),
+      processName: toOptionalText(riskRecord.processName),
+      taskName: toOptionalText(riskRecord.taskName),
+      hazard: toOptionalText(riskRecord.hazard),
+      accidentType: toOptionalText(riskRecord.accidentType),
+      status: toOptionalText(riskRecord.status),
+      actionStatus: toOptionalText(riskRecord.actionStatus),
+      improvementStatus: toOptionalText(riskRecord.improvementStatus),
+      riskLevel: toOptionalText(riskRecord.riskLevel),
+      tbmLinked: toOptionalBoolean(riskRecord.tbmLinked),
+      tbmShared: toOptionalBoolean(riskRecord.tbmShared),
+      tbmSharedDate: toOptionalText(riskRecord.tbmSharedDate),
+      tbmSharedBy: toOptionalText(riskRecord.tbmSharedBy),
+      tbmSharedRole: toOptionalText(riskRecord.tbmSharedRole),
+      linkedTbmId: toOptionalText(riskRecord.linkedTbmId),
+      linkedTbmTitle: toOptionalText(riskRecord.linkedTbmTitle),
+      linkedTbms: Array.isArray(riskRecord.linkedTbms)
+        ? riskRecord.linkedTbms
+        : [],
+      budgetRequired: toOptionalBoolean(riskRecord.budgetRequired),
+      estimatedCost: toOptionalNumber(riskRecord.estimatedCost),
+    },
+  });
 
   const cardTone =
     item.riskLevel === "상"
@@ -528,6 +661,8 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
           </p>
         </div>
       </div>
+
+          <RiskExecutionStatusPanel summary={executionSummary} />
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
         {flags.map((flag) => (
