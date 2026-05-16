@@ -202,7 +202,7 @@ export default async function TbmDetailPage({
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
       <SafeNav />
-      <div className="max-w-2xl mx-auto px-4 py-8 text-white">
+      <div className="max-w-6xl mx-auto px-4 py-8 text-white">
         <div className="flex items-center gap-3 mb-6">
           <Link href="/tbm" className="text-gray-400 hover:text-white text-sm">
             ← TBM 목록
@@ -309,6 +309,7 @@ export default async function TbmDetailPage({
           </div>
         </div>
 
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         <div className={`rounded-lg border p-5 mb-6 ${evidenceTone}`}>
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
@@ -721,6 +722,8 @@ export default async function TbmDetailPage({
             </div>
           </div>
         )}
+
+        </div>
 
         <a
           href={tbm.notionUrl}
