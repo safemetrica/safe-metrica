@@ -245,6 +245,42 @@ export default async function TbmDetailPage({
           )}
         </div>
 
+        <div className="rounded-xl border border-cyan-800 bg-cyan-950/20 p-5 mb-6">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🧠</span>
+                <h2 className="text-lg font-bold text-white">AI 증빙 요약</h2>
+              </div>
+              <p className="mt-1 text-sm text-gray-400">
+                TBM 실시, 작업·조치, 위험성평가 연계, 사진 분류를 한눈에 확인합니다.
+              </p>
+            </div>
+            <span className="rounded-full border border-cyan-700 bg-cyan-950/40 px-3 py-1 text-xs font-bold text-cyan-100">
+              통합 분석
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="rounded-lg bg-gray-950/40 p-3">
+              <p className="text-xs text-gray-400">TBM 증빙</p>
+              <p className="mt-1 text-base font-bold text-white">{evidenceCheck.status}</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/40 p-3">
+              <p className="text-xs text-gray-400">작업·조치</p>
+              <p className="mt-1 text-base font-bold text-white">{actionEvidence.status}</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/40 p-3">
+              <p className="text-xs text-gray-400">위험성평가 연계</p>
+              <p className="mt-1 text-base font-bold text-white">{improvementEvidence.length}건</p>
+            </div>
+            <div className="rounded-lg bg-gray-950/40 p-3">
+              <p className="text-xs text-gray-400">사진 분류</p>
+              <p className="mt-1 text-base font-bold text-white">{tbm.사진분류.items.length}개 필드</p>
+            </div>
+          </div>
+        </div>
+
         <div className={`rounded-lg border p-5 mb-6 ${evidenceTone}`}>
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
