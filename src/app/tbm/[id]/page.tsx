@@ -129,7 +129,7 @@ async function getTbmDetail(id: string) {
     "작업 전 안전활동 사진수": evidencePhotoCounts.safetyActivity,
     작업대상사진수: evidencePhotoCounts.workTarget,
     조치사진수: evidencePhotoCounts.action,
-    기타증빙사진수: evidencePhotoCounts.other,
+    기타사진기록수: evidencePhotoCounts.other,
     사진분류: photoClassification,
   };
 }
@@ -147,7 +147,7 @@ export default async function TbmDetailPage({
     tbm["작업 전 안전활동 사진수"] +
     tbm.작업대상사진수 +
     tbm.조치사진수 +
-    tbm.기타증빙사진수;
+    tbm.기타사진기록수;
   const evidenceCheck = evaluateTbmEvidence({
     hasSignaturePhoto: tbm.참석서명사진수 > 0,
     hasExercisePhoto: tbm["작업 전 안전활동 사진수"] > 0,
@@ -278,10 +278,10 @@ export default async function TbmDetailPage({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🧠</span>
-                <h2 className="text-lg font-bold text-white">AI 증빙 요약</h2>
+                <h2 className="text-lg font-bold text-white">오늘 안전기록 요약</h2>
               </div>
               <p className="mt-1 text-sm text-gray-400">
-                TBM 실시, 작업·조치, 위험성평가 연계, 사진 분류를 한눈에 확인합니다.
+                오늘 교육, 작업사진, 위험요인 연결 상태를 한눈에 확인합니다.
               </p>
             </div>
             <span className="rounded-full border border-cyan-700 bg-cyan-950/40 px-3 py-1 text-xs font-bold text-cyan-100">
@@ -291,11 +291,11 @@ export default async function TbmDetailPage({
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div className="rounded-lg bg-gray-950/40 p-3">
-              <p className="text-xs text-gray-400">TBM 증빙</p>
+              <p className="text-xs text-gray-400">교육 기록</p>
               <p className="mt-1 text-base font-bold text-white">{evidenceCheck.status}</p>
             </div>
             <div className="rounded-lg bg-gray-950/40 p-3">
-              <p className="text-xs text-gray-400">작업·조치</p>
+              <p className="text-xs text-gray-400">작업 확인</p>
               <p className="mt-1 text-base font-bold text-white">{actionEvidence.status}</p>
             </div>
             <div className="rounded-lg bg-gray-950/40 p-3">
@@ -314,10 +314,10 @@ export default async function TbmDetailPage({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🧾</span>
-                <span className="text-sm font-bold text-white">AI TBM 증빙 확인</span>
+                <span className="text-sm font-bold text-white">AI 교육 기록 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                참석 서명사진, 작업 전 안전활동 사진, 오늘의 주의사항 기록을 기준으로 TBM 증빙력을 자동 확인합니다.
+                참석 서명사진, 작업 전 안전활동 사진, 오늘의 주의사항 기록을 기준으로 교육 기록력을 자동 확인합니다.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold">
@@ -327,7 +327,7 @@ export default async function TbmDetailPage({
 
           <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
             <div className="rounded-lg bg-gray-950/40 p-3 text-center">
-              <div className="text-xs text-gray-400">증빙 점수</div>
+              <div className="text-xs text-gray-400">기록 점수</div>
               <div className="mt-1 text-2xl font-black text-white">{evidenceCheck.score}</div>
               <div className="text-xs text-gray-500">/ 100</div>
             </div>
@@ -367,8 +367,8 @@ export default async function TbmDetailPage({
               <p className="mt-1 text-sm font-bold text-white">{tbm.조치사진수}건</p>
             </div>
             <div className="rounded-lg bg-gray-950/35 p-3">
-              <p className="text-xs text-gray-500">기타 증빙사진</p>
-              <p className="mt-1 text-sm font-bold text-white">{tbm.기타증빙사진수}건</p>
+              <p className="text-xs text-gray-500">기타 사진</p>
+              <p className="mt-1 text-sm font-bold text-white">{tbm.기타사진기록수}건</p>
             </div>
           </div>
         </div>
@@ -378,10 +378,10 @@ export default async function TbmDetailPage({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🛠️</span>
-                <span className="text-sm font-bold text-white">AI 작업·조치 증빙 확인</span>
+                <span className="text-sm font-bold text-white">AI 작업 확인 기록 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                오늘 작업 위험도와 조치 필요 여부를 기준으로 작업·조치 증빙 필요성을 확인합니다.
+                오늘 작업 위험도와 조치 필요 여부를 기준으로 작업 확인 기록 필요성을 확인합니다.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-white">
@@ -412,7 +412,7 @@ export default async function TbmDetailPage({
 
           {actionEvidence.expectedEvidence.length > 0 && (
             <div className="rounded-lg bg-gray-950/35 p-3 mb-4">
-              <p className="text-xs text-gray-500 mb-2">기대 증빙</p>
+              <p className="text-xs text-gray-500 mb-2">추가로 남기면 좋은 사진</p>
               <div className="flex flex-wrap gap-2">
                 {actionEvidence.expectedEvidence.map((item) => (
                   <span
@@ -647,10 +647,10 @@ export default async function TbmDetailPage({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg">🧭</span>
-                  <span className="text-sm font-bold text-white">위험성평가 연계 기대 증빙</span>
+                  <span className="text-sm font-bold text-white">위험성평가 연계 추가로 남기면 좋은 사진</span>
                 </div>
                 <p className="mt-1 text-xs text-gray-400">
-                  작업명과 주의사항을 기준으로 위험성평가 개선조치에 필요한 증빙을 추천합니다.
+                  오늘 작업과 관련된 위험요인을 보고, 추가로 찍으면 좋은 사진을 알려줍니다.
                 </p>
               </div>
               <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-emerald-100">
@@ -666,7 +666,7 @@ export default async function TbmDetailPage({
                       {rule.keyword} · {rule.riskCategory}
                     </p>
                     <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2 py-0.5 text-xs text-emerald-100">
-                      개선조치 증빙
+                      안전조치 사진
                     </span>
                   </div>
 
@@ -692,10 +692,10 @@ export default async function TbmDetailPage({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📷</span>
-                  <span className="text-sm font-bold text-white">AI 사진 분류 엔진 v0.1</span>
+                  <span className="text-sm font-bold text-white">등록된 사진 확인</span>
                 </div>
                 <p className="mt-1 text-xs text-gray-400">
-                  현재는 Notion 사진 필드명을 기준으로 사진 역할을 1차 분류합니다. 다음 단계에서 실제 이미지 AI 판별로 확장합니다.
+                  올린 사진이 어떤 용도인지 먼저 구분합니다.
                 </p>
               </div>
               <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-cyan-100">

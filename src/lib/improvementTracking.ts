@@ -25,7 +25,7 @@ export function evaluateImprovementTracking(input: {
 
     let status: ImprovementStatus = "미조치";
     let completionScore = 20;
-    let reason = "연결된 위험성평가 항목은 있으나 조치 증빙이 아직 부족합니다.";
+    let reason = "연결된 위험성평가 항목은 있으나 조치 기록이 아직 부족합니다.";
     let nextAction = "개선대책과 관련된 작업 위치 또는 조치 사진을 추가해 주세요.";
 
     if (input.hasTbmEvidence && !hasActionPhoto && !hasWorkTargetPhoto) {
@@ -45,7 +45,7 @@ export function evaluateImprovementTracking(input: {
     if (hasActionPhoto) {
       status = "완료";
       completionScore = 80;
-      reason = "조치 사진이 확인되어 개선조치 이행 증빙이 확보되었습니다.";
+      reason = "조치 사진이 확인되어 개선조치 이행 기록이 확보되었습니다.";
       nextAction = "필요 시 조치 전 사진과 재평가 결과를 함께 남기면 완료 신뢰도가 높아집니다.";
     }
 
