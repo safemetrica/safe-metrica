@@ -305,6 +305,63 @@ function RiskExecutionStatusPanel({
           : " Risk DB 상태는 관리자 승인 전까지 자동 변경되지 않습니다."}
       </div>
 
+      {summary.postActionReflection ||
+      summary.actionReflectionType ||
+      summary.actionReflectionDate ||
+      summary.actionReflectionEvidence ? (
+        <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs font-bold text-emerald-100">
+              조치 후 반영내용
+            </span>
+            <span className="text-xs text-emerald-200">
+              최초·정기·수시·상시평가 내용과 분리 기록
+            </span>
+          </div>
+
+          {summary.postActionReflection ? (
+            <div className="text-sm font-bold leading-relaxed text-white">
+              {summary.postActionReflection}
+            </div>
+          ) : null}
+
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            {summary.actionReflectionType ? (
+              <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+                <div className="text-[11px] font-semibold text-slate-400">
+                  반영유형
+                </div>
+                <div className="mt-1 text-xs font-bold text-white">
+                  {summary.actionReflectionType}
+                </div>
+              </div>
+            ) : null}
+
+            {summary.actionReflectionDate ? (
+              <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+                <div className="text-[11px] font-semibold text-slate-400">
+                  반영일
+                </div>
+                <div className="mt-1 text-xs font-bold text-white">
+                  {summary.actionReflectionDate}
+                </div>
+              </div>
+            ) : null}
+
+            {summary.actionReflectionEvidence ? (
+              <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+                <div className="text-[11px] font-semibold text-slate-400">
+                  반영 근거
+                </div>
+                <div className="mt-1 text-xs font-bold text-white">
+                  {summary.actionReflectionEvidence}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       <RiskApprovalButtons
         riskItemId={summary.riskItemId}
         canApprove={

@@ -64,6 +64,10 @@ export interface RiskExecutionStatusSummaryInput {
     approvalDate?: string;
     approvalMemo?: string;
     riskDbReflectionStatus?: string;
+    postActionReflection?: string;
+    actionReflectionType?: string;
+    actionReflectionDate?: string;
+    actionReflectionEvidence?: string;
   };
   tbm?: TbmLike;
   photos?: EvidencePhotoLike[];
@@ -297,6 +301,11 @@ export function buildRiskExecutionStatusSummary(
     riskDbReflectionStatus: reflection.status,
     riskDbReflectionLabel: reflection.label,
     riskDbReflectionTone: reflection.tone,
+
+    postActionReflection: riskItem.postActionReflection,
+    actionReflectionType: riskItem.actionReflectionType,
+    actionReflectionDate: riskItem.actionReflectionDate,
+    actionReflectionEvidence: riskItem.actionReflectionEvidence,
 
     integrityNote:
       "통합 실행상태는 TBM 공유, 증빙, 완료 후보, 승인상태를 함께 보여주지만 Risk DB를 직접 변경하지 않습니다.",
