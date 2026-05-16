@@ -8,6 +8,7 @@ import { findImprovementEvidence } from "@/lib/improvementEvidenceRules";
 import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
 import { matchTbmToRiskItems } from "@/lib/tbmRiskLink";
+import { detectVehicleTbmIntent } from "@/lib/vehicleTbmIntent";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -181,10 +182,12 @@ export default async function TbmDetailPage({
     company.notionApiKey
   );
 
-  const linkedRiskItems = matchTbmToRiskItems(
-    `${tbm.작업명} ${tbm.오늘주의사항} ${tbm.특이사항내용}`,
-    riskData.items
-  );
+  const tbmRiskText = `${tbm.작업명} ${tbm.오늘주의사항} ${tbm.특이사항내용}`;
+  const vehicleIntent = detectVehicleTbmIntent(tbmRiskText);
+
+  const linkedRiskItems = vehicleIntent.isAmbiguous
+    ? []
+    : matchTbmToRiskItems(tbmRiskText, riskData.items);
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -428,6 +431,50 @@ export default async function TbmDetailPage({
             </div>
           </div>
         </div>
+
+        {vehicleIntent.isAmbiguous && (
+          <div className="rounded-lg border border-amber-800 bg-amber-950/25 p-5 mb-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🚚</span>
+                  <span className="text-sm font-bold text-white">
+                    차량점검 내용 구분 필요
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  차량점검은 의미가 넓어서 어떤 점검인지 구체화가 필요합니다.
+                </p>
+              </div>
+              <span className="rounded-full border border-amber-700 bg-amber-950/40 px-3 py-1 text-xs font-bold text-amber-100">
+                확인 필요
+              </span>
+            </div>
+
+            <div className="rounded-lg bg-gray-950/35 p-3 mb-3">
+              <p className="text-xs text-gray-500 mb-1">AI 안내</p>
+              <p className="text-sm leading-relaxed text-gray-100 [word-break:keep-all]">
+                {vehicleIntent.guidance}
+              </p>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                "출발 전 차량 안전점검",
+                "후진 전 유도자 확인",
+                "엔진오일·타이어 점검",
+                "차량·보행자 동선 확인",
+              ].map((example) => (
+                <div
+                  key={example}
+                  className="rounded-lg border border-amber-800/60 bg-gray-950/30 px-3 py-2 text-xs text-amber-100"
+                >
+                  예: {example}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {linkedRiskItems.length > 0 && (
           <div className="rounded-lg border border-fuchsia-800 bg-fuchsia-950/20 p-5 mb-6">
