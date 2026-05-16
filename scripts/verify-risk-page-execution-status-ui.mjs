@@ -47,8 +47,8 @@ const checks = [
       source.includes("개선대책 판정"),
   },
   {
-    name: "Risk DB no-update label exists",
-    ok: source.includes("Risk DB 미반영"),
+    name: "Risk DB reflection label exists",
+    ok: source.includes("riskDbReflectionLabel") && source.includes("Risk DB 미반영"),
   },
   {
     name: "Notion write is not introduced",

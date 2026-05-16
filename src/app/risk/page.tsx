@@ -286,15 +286,23 @@ function RiskExecutionStatusPanel({
                     ? "보완 요청"
                     : "관리자 확인 필요"}
           </div>
-          <div className="mt-1 text-[11px] text-amber-200">
-            Risk DB 미반영
+          <div
+            className={
+              summary.riskDbReflectionTone === "green"
+                ? "mt-1 text-[11px] text-emerald-200"
+                : "mt-1 text-[11px] text-amber-200"
+            }
+          >
+            {summary.riskDbReflectionLabel || "Risk DB 미반영"}
           </div>
         </div>
       </div>
 
       <div className="mt-3 rounded-lg border border-slate-700/70 bg-slate-950/60 px-3 py-2 text-[11px] leading-relaxed text-slate-300">
         TBM 공유 완료는 교육·공유 이행 근거이며, 개선대책 완료와 구분됩니다.
-        Risk DB 상태는 관리자 승인 전까지 자동 변경되지 않습니다.
+        {summary.riskDbReflectionStatus === "반영 완료"
+          ? " Risk DB 반영 완료 상태가 Notion 승인 필드에서 확인되었습니다."
+          : " Risk DB 상태는 관리자 승인 전까지 자동 변경되지 않습니다."}
       </div>
 
       <RiskApprovalButtons

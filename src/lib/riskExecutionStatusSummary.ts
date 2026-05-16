@@ -85,9 +85,40 @@ export interface RiskExecutionStatusSummary {
 
   dashboardKpiSourceItem: RiskExecutionKpiSourceItem;
 
+  riskDbReflectionStatus: string | null;
+  riskDbReflectionLabel: string;
+  riskDbReflectionTone: RiskExecutionOverallTone;
+
   integrityNote: string;
   riskDbUpdateAllowed: false;
 }
+
+function normalizeText(value?: string | null): string {
+  return String(value ?? "").replace(/\s+/g, "").toLowerCase();
+}
+
+function resolveRiskDbReflectionStatus(value?: string | null): {
+  status: string | null;
+  label: string;
+  tone: RiskExecutionOverallTone;
+} {
+  const normalized = normalizeText(value);
+
+  if (normalized.includes("반영완료")) {
+    return {
+      status: value ?? "반영 완료",
+      label: "Risk DB 반영 완료",
+      tone: "green",
+    };
+  }
+
+  return {
+    status: value || null,
+    label: "Risk DB 미반영",
+    tone: "amber",
+  };
+}
+
 
 function resolveOverallStatus(params: {
   tbmShare: ReturnType<typeof getRiskTbmShareStatusView>;
@@ -225,6 +256,8 @@ export function buildRiskExecutionStatusSummary(
     approval,
   });
 
+  const reflection = resolveRiskDbReflectionStatus(riskItem.riskDbReflectionStatus);
+
   const dashboardKpiSourceItem: RiskExecutionKpiSourceItem = {
     riskItemId: riskItem.riskItemId ?? riskItem.id,
     riskLevel: riskItem.riskLevel,
@@ -260,6 +293,10 @@ export function buildRiskExecutionStatusSummary(
     approval,
 
     dashboardKpiSourceItem,
+
+    riskDbReflectionStatus: reflection.status,
+    riskDbReflectionLabel: reflection.label,
+    riskDbReflectionTone: reflection.tone,
 
     integrityNote:
       "통합 실행상태는 TBM 공유, 증빙, 완료 후보, 승인상태를 함께 보여주지만 Risk DB를 직접 변경하지 않습니다.",

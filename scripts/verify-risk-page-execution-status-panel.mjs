@@ -31,8 +31,8 @@ const checks = [
     ok: source.includes("승인·반영상태"),
   },
   {
-    name: "Risk DB not reflected label exists",
-    ok: source.includes("Risk DB 미반영"),
+    name: "Risk DB reflection label exists",
+    ok: source.includes("riskDbReflectionLabel") && source.includes("Risk DB 미반영"),
   },
   {
     name: "integrity explanation exists",
