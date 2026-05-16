@@ -14,7 +14,8 @@
     "verify:risk-status-approval-flow": "node scripts/verify-risk-status-approval-flow.mjs",
     "verify:dashboard-risk-execution-kpi": "node scripts/verify-dashboard-risk-execution-kpi.mjs",
     "verify:risk-execution-status-summary": "node scripts/verify-risk-execution-status-summary.mjs",
-    "inspect:risk-page": "node scripts/inspect-risk-page-structure.mjs"
+    "inspect:risk-page": "node scripts/inspect-risk-page-structure.mjs",
+    "verify:risk-page-execution-status-ui": "node scripts/verify-risk-page-execution-status-ui.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
