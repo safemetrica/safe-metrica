@@ -195,6 +195,7 @@ export default async function TbmDetailPage({
     actionPhotoCount: tbm.조치사진수,
     workTargetPhotoCount: tbm.작업대상사진수,
     hasTbmEvidence: evidenceCheck.status === "적합" || evidenceCheck.status === "보완 필요",
+    actionStatus: tbm.조치상태,
   });
 
   const improvementTrackingSummary = summarizeImprovementTracking(improvementTrackingItems);

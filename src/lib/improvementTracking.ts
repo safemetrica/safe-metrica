@@ -17,6 +17,7 @@ export function evaluateImprovementTracking(input: {
   actionPhotoCount: number;
   workTargetPhotoCount: number;
   hasTbmEvidence: boolean;
+  actionStatus?: string;
 }): ImprovementTrackingItem[] {
   return input.linkedRiskItems.map((item) => {
     const hasActionPhoto = input.actionPhotoCount > 0;
@@ -43,10 +44,22 @@ export function evaluateImprovementTracking(input: {
     }
 
     if (hasActionPhoto) {
+      status = "진행중";
+      completionScore = 60;
+      reason = "조치 사진은 확인되었지만 조치상태가 완료로 확인되지는 않았습니다.";
+      nextAction = "조치상태를 완료로 변경하거나 조치 후 상태 사진과 재평가 결과를 함께 남겨주세요.";
+    }
+
+    if (
+      hasActionPhoto &&
+      (input.actionStatus === "즉시 조치 완료" ||
+        input.actionStatus === "조치 완료" ||
+        input.actionStatus === "완료")
+    ) {
       status = "완료";
-      completionScore = 80;
-      reason = "조치 사진이 확인되어 개선조치 이행 기록이 확보되었습니다.";
-      nextAction = "필요 시 조치 전 사진과 재평가 결과를 함께 남기면 완료 신뢰도가 높아집니다.";
+      completionScore = 85;
+      reason = "조치 사진과 완료 상태가 함께 확인되어 안전조치가 완료된 것으로 판단됩니다.";
+      nextAction = "필요 시 재평가 결과를 함께 남기면 완료 신뢰도가 더 높아집니다.";
     }
 
     if (!hasImprovementPlan) {
