@@ -1,4 +1,5 @@
 import type { LinkedRiskItem } from "@/lib/tbmRiskLink";
+import type { VisionEvidenceSummary } from "@/lib/photoVisionEvidence";
 
 export type ImprovementStatus = "미조치" | "진행중" | "완료" | "재확인 필요";
 
@@ -18,10 +19,16 @@ export function evaluateImprovementTracking(input: {
   workTargetPhotoCount: number;
   hasTbmEvidence: boolean;
   actionStatus?: string;
+  visionEvidence?: VisionEvidenceSummary;
 }): ImprovementTrackingItem[] {
   return input.linkedRiskItems.map((item) => {
-    const hasActionPhoto = input.actionPhotoCount > 0;
-    const hasWorkTargetPhoto = input.workTargetPhotoCount > 0;
+    const hasActionPhoto =
+      input.actionPhotoCount > 0 ||
+      Boolean(input.visionEvidence?.canCountAsActionPhoto);
+
+    const hasWorkTargetPhoto =
+      input.workTargetPhotoCount > 0 ||
+      Boolean(input.visionEvidence?.canCountAsWorkTargetPhoto);
     const hasImprovementPlan = item.improvementPlan.trim().length > 0;
 
     let status: ImprovementStatus = "미조치";
@@ -39,14 +46,18 @@ export function evaluateImprovementTracking(input: {
     if (hasWorkTargetPhoto && !hasActionPhoto) {
       status = "진행중";
       completionScore = 60;
-      reason = "작업 대상 사진은 확인되었지만 조치 완료 사진은 아직 부족합니다.";
+      reason = input.visionEvidence?.canCountAsWorkTargetPhoto
+        ? "등록된 사진에서 작업 대상이 일부 확인되지만 조치 완료 사진은 아직 부족합니다."
+        : "작업 대상 사진은 확인되었지만 조치 완료 사진은 아직 부족합니다.";
       nextAction = "조치 후 상태 사진을 추가하면 개선나중에 확인하기 쉬운 정도가 높아집니다.";
     }
 
     if (hasActionPhoto) {
       status = "진행중";
       completionScore = 60;
-      reason = "조치 사진은 확인되었지만 조치상태가 완료로 확인되지는 않았습니다.";
+      reason = input.visionEvidence?.canCountAsActionPhoto
+        ? "등록된 사진에서 안전조치 흔적이 일부 확인되지만 조치상태가 완료로 확인되지는 않았습니다."
+        : "조치 사진은 확인되었지만 조치상태가 완료로 확인되지는 않았습니다.";
       nextAction = "조치상태를 완료로 변경하거나 조치 후 상태 사진과 재평가 결과를 함께 남겨주세요.";
     }
 

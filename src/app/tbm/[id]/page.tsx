@@ -10,6 +10,7 @@ import { getRiskIntelligenceData } from "@/lib/risk";
 import { matchTbmToRiskItems } from "@/lib/tbmRiskLink";
 import { detectVehicleTbmIntent } from "@/lib/vehicleTbmIntent";
 import { evaluateImprovementTracking, summarizeImprovementTracking } from "@/lib/improvementTracking";
+import { inferVisionEvidenceFromPhotoFields } from "@/lib/photoVisionEvidence";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -112,6 +113,7 @@ async function getTbmDetail(id: string) {
   const p = data.properties;
   const evidencePhotoCounts = getNotionFileCountsByPurpose(p);
   const photoClassification = classifyNotionPhotoFields(p);
+  const visionEvidence = inferVisionEvidenceFromPhotoFields(p);
 
   return {
     id: data.id,
@@ -131,6 +133,7 @@ async function getTbmDetail(id: string) {
     조치사진수: evidencePhotoCounts.action,
     기타사진기록수: evidencePhotoCounts.other,
     사진분류: photoClassification,
+    사진판별: visionEvidence,
   };
 }
 
@@ -196,6 +199,7 @@ export default async function TbmDetailPage({
     workTargetPhotoCount: tbm.작업대상사진수,
     hasTbmEvidence: evidenceCheck.status === "적합" || evidenceCheck.status === "보완 필요",
     actionStatus: tbm.조치상태,
+    visionEvidence: tbm.사진판별,
   });
 
   const improvementTrackingSummary = summarizeImprovementTracking(improvementTrackingItems);
