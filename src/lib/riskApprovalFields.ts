@@ -8,6 +8,10 @@ export interface RiskApprovalFields {
   approvalDate?: string;
   approvalMemo?: string;
   riskDbReflectionStatus?: string;
+  postActionReflection?: string;
+  actionReflectionType?: string;
+  actionReflectionDate?: string;
+  actionReflectionEvidence?: string;
 }
 
 export interface AttachRiskApprovalFieldsOptions {
@@ -50,6 +54,10 @@ function getPlainText(property: any): string {
 
   if (property.type === "people") {
     return (property.people ?? []).map((person: any) => person.name ?? "").join(", ");
+  }
+
+  if (property.type === "multi_select") {
+    return (property.multi_select ?? []).map((item: any) => item.name ?? "").join(", ");
   }
 
   if (property.type === "created_by" || property.type === "last_edited_by") {
@@ -143,6 +151,10 @@ function extractApprovalFields(page: NotionPageLike): RiskApprovalFields {
     approvalDate: getPlainText(properties["반영 승인일"]),
     approvalMemo: getPlainText(properties["반영 승인 메모"]),
     riskDbReflectionStatus: getPlainText(properties["Risk DB 반영상태"]),
+    postActionReflection: getPlainText(properties["조치 후 반영내용"]),
+    actionReflectionType: getPlainText(properties["조치 반영유형"]),
+    actionReflectionDate: getPlainText(properties["조치 반영일"]),
+    actionReflectionEvidence: getPlainText(properties["조치 반영 근거"]),
   };
 }
 
