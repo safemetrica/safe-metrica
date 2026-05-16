@@ -80,6 +80,29 @@ function getPhotoText(photo: EvidencePhotoLike): string {
     .join(" ");
 }
 
+
+function inferVisionObjectsFromText(value: string): VisionObject[] {
+  const objects: VisionObject[] = [];
+
+  if (includesAny(value, ["차량", "트럭", "청소차", "수거차", "운반차", "vehicle", "truck"])) {
+    objects.push("vehicle");
+  }
+
+  if (includesAny(value, ["주차라인", "주차 라인", "라인마킹", "라인 마킹", "차선", "구획선"])) {
+    objects.push("parkingLine", "laneMarking");
+  }
+
+  if (includesAny(value, ["차량분리", "차량 분리", "보행자분리", "보행자 분리", "동선분리", "동선 분리", "보행동선", "보행 동선"])) {
+    objects.push("pedestrianVehicleSeparation");
+  }
+
+  if (includesAny(value, ["스토퍼", "휠스토퍼", "차량정지", "바퀴막이", "wheelStopper"])) {
+    objects.push("wheelStopper");
+  }
+
+  return objects;
+}
+
 function isSignaturePhoto(photo: EvidencePhotoLike): boolean {
   const text = getPhotoText(photo);
   return includesAny(text, ["signature", "sign", "서명", "참석", "참석자"]);
@@ -111,6 +134,12 @@ function isWorkTargetPhoto(photo: EvidencePhotoLike): boolean {
     "균열",
     "장비",
     "설비",
+    "주차라인",
+    "라인마킹",
+    "구획선",
+    "차량분리",
+    "보행자분리",
+    "동선분리",
   ]);
 }
 
@@ -126,6 +155,13 @@ function isActionPhoto(photo: EvidencePhotoLike): boolean {
     "작업후",
     "정리",
     "청소",
+    "주차라인",
+    "라인마킹",
+    "구획선",
+    "차량분리",
+    "보행자분리",
+    "동선분리",
+    "완성",
   ]);
 }
 
@@ -152,10 +188,30 @@ export function buildRiskCompletionInput({
   photos = [],
   fallbackVisionObjects = [],
 }: BuildRiskCompletionInputParams): RiskCompletionInput {
+  const sourceText = [
+    riskItem.processName,
+    riskItem.taskName,
+    riskItem.hazard,
+    riskItem.accidentType,
+    tbm?.title,
+    tbm?.taskName,
+    tbm?.workName,
+    tbm?.memo,
+    tbm?.notes,
+    tbm?.specialNote,
+    tbm?.todayNote,
+    ...photos.map(getPhotoText),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const photoVisionObjects = photos.flatMap((photo) => photo.visionObjects ?? []);
+  const inferredVisionObjects = inferVisionObjectsFromText(sourceText);
+
   const visionObjects = uniqueVisionObjects([
     ...fallbackVisionObjects,
     ...photoVisionObjects,
+    ...inferredVisionObjects,
   ]);
 
   const hasSignatureEvidence = photos.some(isSignaturePhoto);

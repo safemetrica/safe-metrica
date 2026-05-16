@@ -125,6 +125,12 @@ function isHighOrManagedRisk(riskItem: RiskItemForTbmShare): boolean {
     "화재",
     "폭발",
     "차량",
+    "차량분리",
+    "보행자분리",
+    "동선분리",
+    "주차라인",
+    "라인마킹",
+    "구획선",
     "압축기",
     "축대",
     "공사",
@@ -155,6 +161,14 @@ function hasTbmShareText(tbm: LinkedTbmLike): boolean {
     "브리핑",
     "조회",
     "체조",
+    "주차라인",
+    "라인마킹",
+    "구획선",
+    "차량분리",
+    "보행자분리",
+    "동선분리",
+    "보행동선",
+    "완성",
   ]);
 }
 

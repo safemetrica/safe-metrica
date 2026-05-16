@@ -11,6 +11,10 @@ export type VisionObject =
   | "afterState"
   | "trafficCone"
   | "flagger"
+  | "parkingLine"
+  | "laneMarking"
+  | "pedestrianVehicleSeparation"
+  | "wheelStopper"
   | "ppe"
   | "guard"
   | "interlock"
@@ -166,12 +170,20 @@ function evaluateVehicleCollision(
   const missingEvidence: string[] = [];
 
   const hasVehicle = objects.has("vehicle") || Boolean(input.hasWorkTargetPhoto);
-  const hasControl = hasObject(objects, ["trafficCone", "flagger", "signage"]);
+  const hasControl = hasObject(objects, [
+    "trafficCone",
+    "flagger",
+    "signage",
+    "parkingLine",
+    "laneMarking",
+    "pedestrianVehicleSeparation",
+    "wheelStopper",
+  ]);
   const hasTbm = Boolean(input.hasTbmRecord);
   const hasActionEvidence = Boolean(input.hasActionPhoto) || hasControl;
 
   if (!hasVehicle) missingEvidence.push("차량 주변 또는 후방 상태 사진");
-  if (!hasControl) missingEvidence.push("유도자·라바콘·표지 등 충돌방지 조치 사진");
+  if (!hasControl) missingEvidence.push("유도자·라바콘·표지·주차라인·동선분리 등 충돌방지 조치 사진");
   if (!hasTbm) missingEvidence.push("TBM 공유 기록");
   if (!hasActionEvidence) missingEvidence.push("조치사진");
 
@@ -194,13 +206,13 @@ function evaluateVehicleCollision(
       : "차량 위험에 대한 TBM 또는 충돌방지 조치 증빙이 부족합니다.",
     fieldMessage: complete
       ? "차량 주변 안전조치가 완료 후보로 확인되었습니다."
-      : "차량 주변, 유도자 또는 라바콘 등 충돌방지 조치가 보이도록 사진을 보완해 주세요.",
+      : "차량 주변, 유도자, 라바콘, 주차라인 또는 동선분리 조치가 보이도록 사진을 보완해 주세요.",
     managerMessage: complete
       ? "차량 충돌 위험에 대한 현장 조치 근거가 확인되었습니다. Risk DB 반영은 승인 후 처리하세요."
-      : "차량 사진만으로는 조치 완료가 아닙니다. 유도·분리·표지 등 조치 근거가 필요합니다.",
+      : "차량 사진만으로는 조치 완료가 아닙니다. 유도·분리·표지·주차라인 등 조치 근거가 필요합니다.",
     recommendedNextAction: complete
       ? "관리자 검토 후 위험관리표 반영 여부를 승인하세요."
-      : "차량 주변 상태와 유도자 또는 라바콘 등 통제조치 사진을 추가하세요.",
+      : "차량 주변 상태와 유도자, 라바콘, 주차라인 또는 차량·보행자 분리 조치 사진을 추가하세요.",
   });
 }
 
@@ -392,6 +404,13 @@ export function evaluateRiskCompletion(
       "차량",
       "유도자",
       "차량계",
+      "주차라인",
+      "라인마킹",
+      "구획선",
+      "동선분리",
+      "차량분리",
+      "보행자분리",
+      "보행동선",
     ])
   ) {
     return evaluateVehicleCollision(input, objects);
