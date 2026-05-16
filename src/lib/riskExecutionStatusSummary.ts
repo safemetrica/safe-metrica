@@ -93,6 +93,11 @@ export interface RiskExecutionStatusSummary {
   riskDbReflectionLabel: string;
   riskDbReflectionTone: RiskExecutionOverallTone;
 
+  postActionReflection?: string;
+  actionReflectionType?: string;
+  actionReflectionDate?: string;
+  actionReflectionEvidence?: string;
+
   integrityNote: string;
   riskDbUpdateAllowed: false;
 }
