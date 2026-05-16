@@ -113,11 +113,46 @@ async function fetchAllPages(notion: Client, databaseId: string): Promise<Notion
   let startCursor: string | undefined;
 
   do {
-    const response = await notion.databases.query({
-      database_id: databaseId,
-      start_cursor: startCursor,
-      page_size: 100,
-    });
+    const notionClient = notion as unknown as {
+      dataSources?: {
+        query?: (args: {
+          data_source_id: string;
+          start_cursor?: string;
+          page_size?: number;
+        }) => Promise<{
+          results: unknown[];
+          has_more: boolean;
+          next_cursor: string | null;
+        }>;
+      };
+      databases?: {
+        query?: (args: {
+          database_id: string;
+          start_cursor?: string;
+          page_size?: number;
+        }) => Promise<{
+          results: unknown[];
+          has_more: boolean;
+          next_cursor: string | null;
+        }>;
+      };
+    };
+
+    const response = notionClient.dataSources?.query
+      ? await notionClient.dataSources.query({
+          data_source_id: databaseId,
+          start_cursor: startCursor,
+          page_size: 100,
+        })
+      : await notionClient.databases?.query?.({
+          database_id: databaseId,
+          start_cursor: startCursor,
+          page_size: 100,
+        });
+
+    if (!response) {
+      throw new Error("Notion query API is not available for TBM relation lookup.");
+    }
 
     pages.push(...(response.results as NotionPageLike[]));
     startCursor = response.has_more ? response.next_cursor ?? undefined : undefined;
