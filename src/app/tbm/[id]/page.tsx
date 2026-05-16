@@ -3,6 +3,7 @@ import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import { evaluateTbmEvidence } from "@/lib/tbmEvidence";
 import { evaluateActionEvidence } from "@/lib/actionEvidence";
+import { classifyNotionPhotoFields } from "@/lib/photoClassification";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -104,6 +105,7 @@ async function getTbmDetail(id: string) {
   if (!res.ok) throw new Error(data.message ?? "Notion API error");
   const p = data.properties;
   const evidencePhotoCounts = getNotionFileCountsByPurpose(p);
+  const photoClassification = classifyNotionPhotoFields(p);
 
   return {
     id: data.id,
@@ -122,6 +124,7 @@ async function getTbmDetail(id: string) {
     작업대상사진수: evidencePhotoCounts.workTarget,
     조치사진수: evidencePhotoCounts.action,
     기타증빙사진수: evidencePhotoCounts.other,
+    사진분류: photoClassification,
   };
 }
 
@@ -369,6 +372,42 @@ export default async function TbmDetailPage({
             </div>
           </div>
         </div>
+
+        {tbm.사진분류.items.length > 0 && (
+          <div className="rounded-lg border border-cyan-800 bg-cyan-950/20 p-5 mb-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📷</span>
+                  <span className="text-sm font-bold text-white">AI 사진 분류 엔진 v0.1</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  현재는 Notion 사진 필드명을 기준으로 사진 역할을 1차 분류합니다. 다음 단계에서 실제 이미지 AI 판별로 확장합니다.
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-cyan-100">
+                {tbm.사진분류.items.length}개 필드
+              </span>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {tbm.사진분류.items.map((item: any) => (
+                <div key={item.fieldName} className="rounded-lg bg-gray-950/35 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-white">{item.purpose}</p>
+                    <span className="rounded-full bg-gray-900 px-2 py-0.5 text-xs text-gray-300">
+                      {item.count}건 · {item.confidence}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">{item.fieldName}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-gray-300 [word-break:keep-all]">
+                    {item.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <a
           href={tbm.notionUrl}
