@@ -108,39 +108,63 @@ function getRelationIds(properties: Record<string, any>, riskIdSet: Set<string>)
   return Array.from(new Set(relationIds));
 }
 
+async function resolveDataSourceId(
+  notion: Client,
+  databaseId: string
+): Promise<string> {
+  const notionClient = notion as unknown as {
+    databases?: {
+      retrieve?: (args: { database_id: string }) => Promise<{
+        id?: string;
+        data_sources?: Array<{ id: string }>;
+      }>;
+    };
+  };
+
+  const database = await notionClient.databases?.retrieve?.({
+    database_id: databaseId,
+  });
+
+  const dataSourceId = database?.data_sources?.[0]?.id;
+
+  return dataSourceId ?? databaseId;
+}
+
 async function fetchAllPages(notion: Client, databaseId: string): Promise<NotionPageLike[]> {
   const pages: NotionPageLike[] = [];
   let startCursor: string | undefined;
 
-  do {
-    const notionClient = notion as unknown as {
-      dataSources?: {
-        query?: (args: {
-          data_source_id: string;
-          start_cursor?: string;
-          page_size?: number;
-        }) => Promise<{
-          results: unknown[];
-          has_more: boolean;
-          next_cursor: string | null;
-        }>;
-      };
-      databases?: {
-        query?: (args: {
-          database_id: string;
-          start_cursor?: string;
-          page_size?: number;
-        }) => Promise<{
-          results: unknown[];
-          has_more: boolean;
-          next_cursor: string | null;
-        }>;
-      };
+  const notionClient = notion as unknown as {
+    dataSources?: {
+      query?: (args: {
+        data_source_id: string;
+        start_cursor?: string;
+        page_size?: number;
+      }) => Promise<{
+        results: unknown[];
+        has_more: boolean;
+        next_cursor: string | null;
+      }>;
     };
+    databases?: {
+      query?: (args: {
+        database_id: string;
+        start_cursor?: string;
+        page_size?: number;
+      }) => Promise<{
+        results: unknown[];
+        has_more: boolean;
+        next_cursor: string | null;
+      }>;
+    };
+  };
 
+  const dataSourceId = await resolveDataSourceId(notion, databaseId);
+
+  do {
     const response = notionClient.dataSources?.query
       ? await notionClient.dataSources.query({
-          data_source_id: databaseId,
+          data_source_id: dataSourceId,
           start_cursor: startCursor,
           page_size: 100,
         })
