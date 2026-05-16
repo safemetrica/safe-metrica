@@ -273,6 +273,55 @@ export default async function TbmDetailPage({
           )}
         </div>
 
+        {improvementTrackingSummary.total > 0 && (
+          <div className="rounded-xl border border-emerald-800 bg-emerald-950/20 p-5 mb-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📈</span>
+                  <h2 className="text-lg font-bold text-white">안전조치 진행 현황</h2>
+                </div>
+                <p className="mt-1 text-sm text-gray-400">
+                  연결된 위험요인의 안전조치가 얼마나 진행됐는지 확인합니다.
+                </p>
+              </div>
+              <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-3 py-1 text-xs font-bold text-emerald-100">
+                완료율 {Math.round((improvementTrackingSummary.completed / improvementTrackingSummary.total) * 100)}%
+              </span>
+            </div>
+
+            <div className="mb-4 h-3 overflow-hidden rounded-full bg-gray-950/50">
+              <div
+                className="h-full rounded-full bg-emerald-500"
+                style={{
+                  width: `${Math.round((improvementTrackingSummary.completed / improvementTrackingSummary.total) * 100)}%`,
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg bg-gray-950/40 p-3">
+                <p className="text-xs text-gray-400">전체</p>
+                <p className="mt-1 text-lg font-bold text-white">{improvementTrackingSummary.total}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/40 p-3">
+                <p className="text-xs text-gray-400">완료</p>
+                <p className="mt-1 text-lg font-bold text-emerald-200">{improvementTrackingSummary.completed}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/40 p-3">
+                <p className="text-xs text-gray-400">진행중</p>
+                <p className="mt-1 text-lg font-bold text-amber-200">{improvementTrackingSummary.inProgress}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/40 p-3">
+                <p className="text-xs text-gray-400">확인 필요</p>
+                <p className="mt-1 text-lg font-bold text-red-200">
+                  {improvementTrackingSummary.notStarted + improvementTrackingSummary.needsReview}건
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-xl border border-cyan-800 bg-cyan-950/20 p-5 mb-6">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
