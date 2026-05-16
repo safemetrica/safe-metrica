@@ -181,10 +181,15 @@ export function buildRiskExecutionStatusSummary(
   const riskItem = input.riskItem;
 
   const tbmShare = getRiskTbmShareStatusView(riskItem);
+  const linkedTbmForCompletion =
+    input.tbm ??
+    (Array.isArray(riskItem.linkedTbms) && riskItem.linkedTbms.length > 0
+      ? riskItem.linkedTbms[0]
+      : undefined);
 
   const completionCandidate = getRiskCompletionCandidateView({
     riskItem,
-    tbm: input.tbm,
+    tbm: linkedTbmForCompletion,
     photos: input.photos ?? [],
     fallbackVisionObjects: input.fallbackVisionObjects ?? [],
   });
