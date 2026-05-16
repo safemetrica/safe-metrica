@@ -5,6 +5,9 @@ import { evaluateTbmEvidence } from "@/lib/tbmEvidence";
 import { evaluateActionEvidence } from "@/lib/actionEvidence";
 import { classifyNotionPhotoFields } from "@/lib/photoClassification";
 import { findImprovementEvidence } from "@/lib/improvementEvidenceRules";
+import { getCompanyConfig } from "@/lib/company";
+import { getRiskIntelligenceData } from "@/lib/risk";
+import { matchTbmToRiskItems } from "@/lib/tbmRiskLink";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -169,6 +172,18 @@ export default async function TbmDetailPage({
 
   const improvementEvidence = findImprovementEvidence(
     `${tbm.작업명} ${tbm.오늘주의사항} ${tbm.특이사항내용}`
+  );
+
+  const company = await getCompanyConfig();
+
+  const riskData = await getRiskIntelligenceData(
+    company.riskAssessmentDbId,
+    company.notionApiKey
+  );
+
+  const linkedRiskItems = matchTbmToRiskItems(
+    `${tbm.작업명} ${tbm.오늘주의사항} ${tbm.특이사항내용}`,
+    riskData.items
   );
 
   return (
@@ -413,6 +428,106 @@ export default async function TbmDetailPage({
             </div>
           </div>
         </div>
+
+        {linkedRiskItems.length > 0 && (
+          <div className="rounded-lg border border-fuchsia-800 bg-fuchsia-950/20 p-5 mb-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔗</span>
+                  <span className="text-sm font-bold text-white">
+                    연결된 위험성평가 항목
+                  </span>
+                </div>
+
+                <p className="mt-1 text-xs text-gray-400">
+                  TBM 작업명 및 주의사항과 실제 위험성평가 DB를 매칭했습니다.
+                </p>
+              </div>
+
+              <span className="rounded-full border border-fuchsia-700 bg-fuchsia-950/40 px-3 py-1 text-xs font-bold text-fuchsia-100">
+                {linkedRiskItems.length}건 연결
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {linkedRiskItems.map((item: any) => (
+                <div
+                  key={item.id}
+                  className="rounded-lg bg-gray-950/35 p-4"
+                >
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="rounded-full bg-red-950/40 border border-red-700 px-2 py-0.5 text-xs text-red-200">
+                      {item.riskLevel || "위험도"}
+                    </span>
+
+                    <span className="rounded-full bg-gray-900 px-2 py-0.5 text-xs text-gray-300">
+                      점수 {item.riskScore ?? "-"}
+                    </span>
+
+                    <span className="rounded-full bg-fuchsia-950/40 border border-fuchsia-700 px-2 py-0.5 text-xs text-fuchsia-100">
+                      매칭 {item.matchScore}
+                    </span>
+                  </div>
+
+                  <p className="text-sm font-bold text-white mb-2">
+                    {item.title || item.taskName}
+                  </p>
+
+                  {item.hazard && (
+                    <p className="text-xs text-gray-400 mb-2">
+                      위험요인: {item.hazard}
+                    </p>
+                  )}
+
+                  {item.improvementPlan && (
+                    <div className="rounded-lg bg-gray-900/60 p-3 mb-2">
+                      <p className="text-xs text-gray-500 mb-1">
+                        개선대책
+                      </p>
+                      <p className="text-xs text-gray-200 leading-relaxed">
+                        {item.improvementPlan}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {item.owner && (
+                      <span className="rounded-full border border-gray-700 px-2 py-1 text-gray-300">
+                        담당: {item.owner}
+                      </span>
+                    )}
+
+                    {item.dueDate && (
+                      <span className="rounded-full border border-gray-700 px-2 py-1 text-gray-300">
+                        기한: {item.dueDate}
+                      </span>
+                    )}
+
+                    {item.status && (
+                      <span className="rounded-full border border-gray-700 px-2 py-1 text-gray-300">
+                        상태: {item.status}
+                      </span>
+                    )}
+                  </div>
+
+                  {item.matchedKeywords.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {item.matchedKeywords.map((keyword: string) => (
+                        <span
+                          key={keyword}
+                          className="rounded-full border border-fuchsia-700 bg-fuchsia-950/40 px-2 py-1 text-[11px] text-fuchsia-100"
+                        >
+                          #{keyword}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {improvementEvidence.length > 0 && (
           <div className="rounded-lg border border-emerald-800 bg-emerald-950/20 p-5 mb-6">
