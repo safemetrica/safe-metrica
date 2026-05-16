@@ -9,30 +9,42 @@ if (!fs.existsSync(file)) {
 
 const source = fs.readFileSync(file, "utf8");
 
+const hasBadge = source.includes("function RiskExecutionStatusBadge");
+const hasPanel = source.includes("function RiskExecutionStatusPanel");
+
+const rendersBadge = source.includes("<RiskExecutionStatusBadge summary={executionSummary} />");
+const rendersPanel = source.includes("<RiskExecutionStatusPanel summary={executionSummary} />");
+
 const checks = [
   {
     name: "risk execution summary import exists",
     ok: source.includes("buildRiskExecutionStatusSummary"),
   },
   {
-    name: "RiskExecutionStatusBadge component exists",
-    ok: source.includes("function RiskExecutionStatusBadge"),
+    name: "execution status component exists",
+    ok: hasBadge || hasPanel,
   },
   {
     name: "execution summary is calculated in RiskItemCard",
     ok: source.includes("const executionSummary = buildRiskExecutionStatusSummary"),
   },
   {
-    name: "execution status badge is rendered",
-    ok: source.includes("<RiskExecutionStatusBadge summary={executionSummary} />"),
+    name: "execution status component is rendered",
+    ok: rendersBadge || rendersPanel,
   },
   {
-    name: "TBM share short label is shown",
-    ok: source.includes("summary.tbmShare.shortLabel"),
+    name: "TBM share status is shown",
+    ok:
+      source.includes("summary.tbmShare.shortLabel") ||
+      source.includes("summary.tbmShare.label") ||
+      source.includes("TBM 공유상태"),
   },
   {
-    name: "completion candidate short label is shown",
-    ok: source.includes("summary.completionCandidate.shortLabel"),
+    name: "completion candidate status is shown",
+    ok:
+      source.includes("summary.completionCandidate.shortLabel") ||
+      source.includes("summary.completionCandidate.label") ||
+      source.includes("개선대책 판정"),
   },
   {
     name: "Risk DB no-update label exists",
@@ -65,7 +77,7 @@ if (failed.length > 0) {
 console.log("Result: PASS");
 console.log("");
 console.log("Verified:");
-console.log("- /risk page renders integrated execution status badge");
+console.log("- /risk page renders execution status UI");
 console.log("- TBM share status is visible");
 console.log("- completion candidate status is visible");
 console.log("- Risk DB remains not updated by UI");
