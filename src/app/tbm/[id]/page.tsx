@@ -314,10 +314,10 @@ export default async function TbmDetailPage({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🧾</span>
-                <span className="text-sm font-bold text-white">AI 교육 기록 확인</span>
+                <span className="text-sm font-bold text-white">TBM 교육 기록 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                참석 서명사진, 작업 전 안전활동 사진, 오늘의 주의사항 기록을 기준으로 교육 기록력을 자동 확인합니다.
+                참석 서명사진, 작업 전 안전활동 사진, 오늘의 주의사항 기록을 기준으로 교육 기록이 잘 남았는지 확인합니다.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold">
@@ -378,10 +378,10 @@ export default async function TbmDetailPage({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🛠️</span>
-                <span className="text-sm font-bold text-white">AI 작업 확인 기록 확인</span>
+                <span className="text-sm font-bold text-white">오늘 작업사진 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                오늘 작업 위험도와 조치 필요 여부를 기준으로 작업 확인 기록 필요성을 확인합니다.
+                오늘 작업에 필요한 사진이 충분한지 확인합니다.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-white">
@@ -495,7 +495,7 @@ export default async function TbmDetailPage({
                   <span className="text-sm font-bold text-white">개선조치 진행현황</span>
                 </div>
                 <p className="mt-1 text-xs text-gray-400">
-                  연결된 위험성평가 개선대책이 TBM과 현장사진으로 얼마나 이행됐는지 추정합니다.
+                  위험요인별 안전조치가 TBM과 현장사진으로 얼마나 진행됐는지 확인합니다.
                 </p>
               </div>
               <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-3 py-1 text-xs font-bold text-emerald-100">
@@ -548,12 +548,12 @@ export default async function TbmDetailPage({
                 <div className="flex items-center gap-2">
                   <span className="text-lg">🔗</span>
                   <span className="text-sm font-bold text-white">
-                    연결된 위험성평가 항목
+                    연결된 위험요인
                   </span>
                 </div>
 
                 <p className="mt-1 text-xs text-gray-400">
-                  TBM 작업명 및 주의사항과 실제 위험성평가 DB를 매칭했습니다.
+                  오늘 작업과 회사 위험관리표를 연결했습니다.
                 </p>
               </div>
 
