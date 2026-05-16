@@ -1,6 +1,7 @@
 import { buildRiskExecutionStatusSummary } from "@/lib/riskExecutionStatusSummary";
 import { attachLinkedTbmsToRiskItems } from "@/lib/tbmRiskRelation";
 import { attachRiskApprovalFieldsToItems } from "@/lib/riskApprovalFields";
+import { RiskApprovalButtons } from "./RiskApprovalButtons";
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
@@ -295,6 +296,15 @@ function RiskExecutionStatusPanel({
         TBM 공유 완료는 교육·공유 이행 근거이며, 개선대책 완료와 구분됩니다.
         Risk DB 상태는 관리자 승인 전까지 자동 변경되지 않습니다.
       </div>
+
+      <RiskApprovalButtons
+        riskItemId={summary.riskItemId}
+        canApprove={
+          summary.completionCandidate.isCompletionCandidate &&
+          summary.approval.approvalStatus === "approvalReady"
+        }
+        isApproved={summary.approval.approvalStatus === "approved"}
+      />
     </div>
   );
 }
