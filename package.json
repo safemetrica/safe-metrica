@@ -10,7 +10,8 @@
     "verify:risk-completion": "node scripts/verify-risk-completion.mjs",
     "verify:tbm-share": "node scripts/verify-tbm-share-tracking.mjs",
     "verify:risk-tbm-share-status": "node scripts/verify-risk-tbm-share-status.mjs",
-    "verify:risk-completion-candidate-view": "node scripts/verify-risk-completion-candidate-view.mjs"
+    "verify:risk-completion-candidate-view": "node scripts/verify-risk-completion-candidate-view.mjs",
+    "verify:risk-status-approval-flow": "node scripts/verify-risk-status-approval-flow.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
