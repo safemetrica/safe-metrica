@@ -12,7 +12,8 @@
     "verify:risk-tbm-share-status": "node scripts/verify-risk-tbm-share-status.mjs",
     "verify:risk-completion-candidate-view": "node scripts/verify-risk-completion-candidate-view.mjs",
     "verify:risk-status-approval-flow": "node scripts/verify-risk-status-approval-flow.mjs",
-    "verify:dashboard-risk-execution-kpi": "node scripts/verify-dashboard-risk-execution-kpi.mjs"
+    "verify:dashboard-risk-execution-kpi": "node scripts/verify-dashboard-risk-execution-kpi.mjs",
+    "verify:risk-execution-status-summary": "node scripts/verify-risk-execution-status-summary.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
