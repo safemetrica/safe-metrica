@@ -338,6 +338,22 @@ export default async function TbmDetailPage({
             </div>
           </div>
 
+          {actionEvidence.expectedEvidence.length > 0 && (
+            <div className="rounded-lg bg-gray-950/35 p-3 mb-4">
+              <p className="text-xs text-gray-500 mb-2">기대 증빙</p>
+              <div className="flex flex-wrap gap-2">
+                {actionEvidence.expectedEvidence.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-blue-700 bg-blue-950/40 px-2 py-1 text-xs text-blue-100"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold text-gray-400 mb-1">판단</p>
