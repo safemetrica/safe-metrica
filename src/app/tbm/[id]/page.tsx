@@ -9,6 +9,7 @@ import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
 import { matchTbmToRiskItems } from "@/lib/tbmRiskLink";
 import { detectVehicleTbmIntent } from "@/lib/vehicleTbmIntent";
+import { evaluateImprovementTracking, summarizeImprovementTracking } from "@/lib/improvementTracking";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -188,6 +189,15 @@ export default async function TbmDetailPage({
   const linkedRiskItems = vehicleIntent.isAmbiguous
     ? []
     : matchTbmToRiskItems(tbmRiskText, riskData.items);
+
+  const improvementTrackingItems = evaluateImprovementTracking({
+    linkedRiskItems,
+    actionPhotoCount: tbm.조치사진수,
+    workTargetPhotoCount: tbm.작업대상사진수,
+    hasTbmEvidence: evidenceCheck.status === "적합" || evidenceCheck.status === "보완 필요",
+  });
+
+  const improvementTrackingSummary = summarizeImprovementTracking(improvementTrackingItems);
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -470,6 +480,61 @@ export default async function TbmDetailPage({
                   className="rounded-lg border border-amber-800/60 bg-gray-950/30 px-3 py-2 text-xs text-amber-100"
                 >
                   예: {example}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {improvementTrackingItems.length > 0 && (
+          <div className="rounded-lg border border-emerald-800 bg-emerald-950/20 p-5 mb-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">✅</span>
+                  <span className="text-sm font-bold text-white">개선조치 진행현황</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  연결된 위험성평가 개선대책이 TBM과 현장사진으로 얼마나 이행됐는지 추정합니다.
+                </p>
+              </div>
+              <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-3 py-1 text-xs font-bold text-emerald-100">
+                {improvementTrackingSummary.completed}완료 · {improvementTrackingSummary.inProgress}진행
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-4">
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">전체</p>
+                <p className="mt-1 text-sm font-bold text-white">{improvementTrackingSummary.total}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">완료</p>
+                <p className="mt-1 text-sm font-bold text-emerald-200">{improvementTrackingSummary.completed}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">진행중</p>
+                <p className="mt-1 text-sm font-bold text-blue-200">{improvementTrackingSummary.inProgress}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">미조치/확인</p>
+                <p className="mt-1 text-sm font-bold text-amber-200">
+                  {improvementTrackingSummary.notStarted + improvementTrackingSummary.needsReview}건
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {improvementTrackingItems.slice(0, 3).map((item) => (
+                <div key={item.riskId} className="rounded-lg bg-gray-950/35 p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-sm font-bold text-white">{item.riskTitle}</p>
+                    <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2 py-0.5 text-xs text-emerald-100">
+                      {item.status} · {item.completionScore}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-2 [word-break:keep-all]">{item.reason}</p>
+                  <p className="text-xs text-gray-200 [word-break:keep-all]">다음: {item.nextAction}</p>
                 </div>
               ))}
             </div>
