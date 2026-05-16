@@ -1,4 +1,5 @@
 import { buildRiskExecutionStatusSummary } from "@/lib/riskExecutionStatusSummary";
+import { attachLinkedTbmsToRiskItems } from "@/lib/tbmRiskRelation";
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
@@ -691,7 +692,25 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
   const filter = normalizeFilter(params.filter);
 
   const company = await getCompanyConfig();
-  const risk = await getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey);
+  const companyRecord = company as unknown as Record<string, unknown>;
+  const tbmDatabaseId = [
+    companyRecord.tbmDatabaseId,
+    companyRecord.tbmDbId,
+    companyRecord.tbmDatabaseID,
+    companyRecord.tbmLogDbId,
+    companyRecord.tbmDatabase,
+    companyRecord.tbmDb,
+  ].find((value) => typeof value === "string" && value.length > 0) as string | undefined;
+
+  const riskBase = await getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey);
+  const linkedRiskItems = await attachLinkedTbmsToRiskItems(riskBase.items, {
+    tbmDatabaseId,
+    notionApiKey: company.notionApiKey,
+  });
+  const risk = {
+    ...riskBase,
+    items: linkedRiskItems,
+  };
   const visibleItems = filterRiskItems(risk.items, filter);
 
   return (

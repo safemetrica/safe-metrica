@@ -17,7 +17,8 @@
     "inspect:risk-page": "node scripts/inspect-risk-page-structure.mjs",
     "verify:risk-page-execution-status-ui": "node scripts/verify-risk-page-execution-status-ui.mjs",
     "verify:risk-page-execution-status-panel": "node scripts/verify-risk-page-execution-status-panel.mjs",
-    "verify:parking-line-evidence": "node scripts/verify-parking-line-separation-evidence.mjs"
+    "verify:parking-line-evidence": "node scripts/verify-parking-line-separation-evidence.mjs",
+    "verify:tbm-risk-relation": "node scripts/verify-tbm-risk-relation-connection.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
