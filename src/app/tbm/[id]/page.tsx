@@ -285,7 +285,7 @@ export default async function TbmDetailPage({
               </p>
             </div>
             <span className="rounded-full border border-cyan-700 bg-cyan-950/40 px-3 py-1 text-xs font-bold text-cyan-100">
-              통합 분석
+              요약
             </span>
           </div>
 
@@ -299,11 +299,11 @@ export default async function TbmDetailPage({
               <p className="mt-1 text-base font-bold text-white">{actionEvidence.status}</p>
             </div>
             <div className="rounded-lg bg-gray-950/40 p-3">
-              <p className="text-xs text-gray-400">위험성평가 연계</p>
+              <p className="text-xs text-gray-400">연결된 위험요인</p>
               <p className="mt-1 text-base font-bold text-white">{improvementEvidence.length}건</p>
             </div>
             <div className="rounded-lg bg-gray-950/40 p-3">
-              <p className="text-xs text-gray-400">사진 분류</p>
+              <p className="text-xs text-gray-400">사진 확인</p>
               <p className="mt-1 text-base font-bold text-white">{tbm.사진분류.items.length}개 필드</p>
             </div>
           </div>
@@ -395,13 +395,13 @@ export default async function TbmDetailPage({
               <p className="mt-1 text-sm font-bold text-white">{actionEvidence.level}</p>
             </div>
             <div className="rounded-lg bg-gray-950/35 p-3">
-              <p className="text-xs text-gray-500">PTW 가능성</p>
+              <p className="text-xs text-gray-500">허가서 필요한 작업 여부</p>
               <p className="mt-1 text-sm font-bold text-white">
                 {actionEvidence.needsPTW ? "확인 권장" : "낮음"}
               </p>
             </div>
             <div className="rounded-lg bg-gray-950/35 p-3">
-              <p className="text-xs text-gray-500">감지 키워드</p>
+              <p className="text-xs text-gray-500">오늘 작업 위험</p>
               <p className="mt-1 text-sm font-bold text-white">
                 {actionEvidence.detectedKeywords.length > 0
                   ? actionEvidence.detectedKeywords.join(", ")
@@ -462,7 +462,7 @@ export default async function TbmDetailPage({
             </div>
 
             <div className="rounded-lg bg-gray-950/35 p-3 mb-3">
-              <p className="text-xs text-gray-500 mb-1">AI 안내</p>
+              <p className="text-xs text-gray-500 mb-1">안내</p>
               <p className="text-sm leading-relaxed text-gray-100 [word-break:keep-all]">
                 {vehicleIntent.guidance}
               </p>
@@ -647,7 +647,7 @@ export default async function TbmDetailPage({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg">🧭</span>
-                  <span className="text-sm font-bold text-white">위험성평가 연계 추가로 남기면 좋은 사진</span>
+                  <span className="text-sm font-bold text-white">연결된 위험요인 추가로 남기면 좋은 사진</span>
                 </div>
                 <p className="mt-1 text-xs text-gray-400">
                   오늘 작업과 관련된 위험요인을 보고, 추가로 찍으면 좋은 사진을 알려줍니다.

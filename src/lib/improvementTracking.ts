@@ -39,7 +39,7 @@ export function evaluateImprovementTracking(input: {
       status = "진행중";
       completionScore = 60;
       reason = "작업 대상 사진은 확인되었지만 조치 완료 사진은 아직 부족합니다.";
-      nextAction = "조치 후 상태 사진을 추가하면 개선조치 이력 신뢰도가 높아집니다.";
+      nextAction = "조치 후 상태 사진을 추가하면 개선나중에 확인하기 쉬운 정도가 높아집니다.";
     }
 
     if (hasActionPhoto) {
