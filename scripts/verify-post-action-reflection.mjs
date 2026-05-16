@@ -39,6 +39,14 @@ const checks = [
     ok: approvalFields.includes('property.type === "multi_select"'),
   },
   {
+    name: "summary interface exposes post action reflection",
+    ok:
+      summary.includes("postActionReflection?: string") &&
+      summary.includes("actionReflectionType?: string") &&
+      summary.includes("actionReflectionDate?: string") &&
+      summary.includes("actionReflectionEvidence?: string"),
+  },
+  {
     name: "summary carries post action reflection",
     ok: summary.includes("postActionReflection: riskItem.postActionReflection"),
   },
