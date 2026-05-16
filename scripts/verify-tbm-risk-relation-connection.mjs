@@ -23,8 +23,12 @@ const checks = [
     ok: relation.includes("export async function attachLinkedTbmsToRiskItems"),
   },
   {
-    name: "TBM database is queried",
-    ok: relation.includes("notion.databases.query"),
+    name: "TBM database or data source is queried",
+    ok: relation.includes("dataSources") && relation.includes("query"),
+  },
+  {
+    name: "database retrieve resolves data source id",
+    ok: relation.includes("resolveDataSourceId") && relation.includes("data_sources"),
   },
   {
     name: "Relation IDs are extracted",
