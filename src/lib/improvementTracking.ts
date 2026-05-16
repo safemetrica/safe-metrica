@@ -51,10 +51,11 @@ export function evaluateImprovementTracking(input: {
     }
 
     if (
-      hasActionPhoto &&
-      (input.actionStatus === "즉시 조치 완료" ||
-        input.actionStatus === "조치 완료" ||
-        input.actionStatus === "완료")
+  hasActionPhoto &&
+  hasWorkTargetPhoto &&
+  (input.actionStatus === "즉시 조치 완료" ||
+    input.actionStatus === "조치 완료" ||
+    input.actionStatus === "완료")
     ) {
       status = "완료";
       completionScore = 85;
