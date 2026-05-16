@@ -11,6 +11,7 @@ import { matchTbmToRiskItems } from "@/lib/tbmRiskLink";
 import { detectVehicleTbmIntent } from "@/lib/vehicleTbmIntent";
 import { evaluateImprovementTracking, summarizeImprovementTracking } from "@/lib/improvementTracking";
 import { inferVisionEvidenceFromPhotoFields } from "@/lib/photoVisionEvidence";
+import { evaluateRiskStatusSync, summarizeRiskStatusSync } from "@/lib/riskStatusSync";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -203,6 +204,13 @@ export default async function TbmDetailPage({
   });
 
   const improvementTrackingSummary = summarizeImprovementTracking(improvementTrackingItems);
+
+  const riskStatusSyncItems = evaluateRiskStatusSync({
+    linkedRiskItems,
+    improvementTrackingItems,
+  });
+
+  const riskStatusSyncSummary = summarizeRiskStatusSync(riskStatusSyncItems);
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -590,6 +598,61 @@ export default async function TbmDetailPage({
                   </div>
                   <p className="text-xs text-gray-400 mb-2 [word-break:keep-all]">{item.reason}</p>
                   <p className="text-xs text-gray-200 [word-break:keep-all]">다음: {item.nextAction}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {riskStatusSyncItems.length > 0 && (
+          <div className="rounded-lg border border-amber-800 bg-amber-950/20 p-5 mb-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔄</span>
+                  <span className="text-sm font-bold text-white">위험관리표 반영 후보</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  TBM 기록과 현장사진 기준으로 위험관리표 상태 변경이 필요한 항목을 확인합니다.
+                </p>
+              </div>
+              <span className="rounded-full border border-amber-700 bg-amber-950/40 px-3 py-1 text-xs font-bold text-amber-100">
+                반영 가능 {riskStatusSyncSummary.readyToSync + riskStatusSyncSummary.progressSync}건
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-4">
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">전체</p>
+                <p className="mt-1 text-sm font-bold text-white">{riskStatusSyncSummary.total}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">완료 반영</p>
+                <p className="mt-1 text-sm font-bold text-emerald-200">{riskStatusSyncSummary.readyToSync}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">진행 반영</p>
+                <p className="mt-1 text-sm font-bold text-amber-200">{riskStatusSyncSummary.progressSync}건</p>
+              </div>
+              <div className="rounded-lg bg-gray-950/35 p-3">
+                <p className="text-xs text-gray-500">확인 필요</p>
+                <p className="mt-1 text-sm font-bold text-red-200">{riskStatusSyncSummary.needsReview + riskStatusSyncSummary.blocked}건</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {riskStatusSyncItems.slice(0, 3).map((item) => (
+                <div key={item.riskId} className="rounded-lg bg-gray-950/35 p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-sm font-bold text-white">{item.riskTitle}</p>
+                    <span className="rounded-full border border-amber-700 bg-amber-950/40 px-2 py-0.5 text-xs text-amber-100">
+                      {item.syncLevel}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-300">
+                    현재: {item.currentRiskStatus} → 제안: {item.suggestedStatus}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-400 [word-break:keep-all]">{item.reason}</p>
                 </div>
               ))}
             </div>
