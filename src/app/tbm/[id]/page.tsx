@@ -215,49 +215,83 @@ export default async function TbmDetailPage({
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
       <SafeNav />
-      <div className="max-w-6xl mx-auto px-4 py-8 text-white">
+      <div className="mx-auto max-w-6xl px-4 py-5 text-white sm:px-6 sm:py-8">
         <div className="flex items-center gap-3 mb-6">
-          <Link href="/tbm" className="text-gray-400 hover:text-white text-sm">
+          <Link href="/tbm" className="inline-flex min-h-11 items-center rounded-xl border border-slate-700 bg-slate-900 px-4 text-base font-bold text-gray-200 hover:border-blue-500 hover:text-white">
             ← TBM 목록
           </Link>
         </div>
 
-        <h1 className="text-2xl font-bold mb-1">{tbm.작업명}</h1>
-        <p className="text-gray-400 text-sm mb-6">{tbm.날짜}</p>
+        <h1 className="mb-2 text-3xl font-black leading-tight text-white sm:text-4xl [word-break:keep-all]">{tbm.작업명}</h1>
+        <p className="mb-5 text-base font-medium text-gray-400">{tbm.날짜}</p>
 
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="mb-5 flex flex-wrap gap-2">
           {tbm.특이사항 ? (
-            <span className="px-3 py-1 rounded-full text-xs bg-yellow-900 text-yellow-300 border border-yellow-700">
+            <span className="px-3 py-2 rounded-full text-sm bg-yellow-900 text-yellow-300 border border-yellow-700">
               ⚠️ 특이사항 있음
             </span>
           ) : (
-            <span className="px-3 py-1 rounded-full text-xs bg-gray-800 text-gray-400 border border-gray-700">
+            <span className="px-3 py-2 rounded-full text-sm bg-gray-800 text-gray-400 border border-gray-700">
               특이사항 없음
             </span>
           )}
           {tbm.조치상태 && (
-            <span className={`px-3 py-1 rounded-full text-xs border ${tbm.조치상태 === "조치 필요" ? "bg-red-900 text-red-300 border-red-700" : "bg-green-900 text-green-300 border-green-700"}`}>
+            <span className={`px-3 py-2 rounded-full text-sm border ${tbm.조치상태 === "조치 필요" ? "bg-red-900 text-red-300 border-red-700" : "bg-green-900 text-green-300 border-green-700"}`}>
               {tbm.조치상태}
             </span>
           )}
-          <span className={`px-3 py-1 rounded-full text-xs border ${tbm.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : tbm.특이사항 ? "bg-red-900 text-red-300 border-red-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>
+          <span className={`px-3 py-2 rounded-full text-sm border ${tbm.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : tbm.특이사항 ? "bg-red-900 text-red-300 border-red-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>
             {tbm.연결EB > 0 ? `✅ EB ${tbm.연결EB}건 연결` : "EB 없음"}
           </span>
         </div>
 
+        <div className="mb-5 rounded-2xl border border-sky-800 bg-sky-950/25 p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-sky-200">오늘 먼저 확인</p>
+              <p className="mt-2 text-xl font-black leading-relaxed text-white [word-break:keep-all]">
+                {needsEB
+                  ? "특이사항 증빙 연결을 먼저 확인하세요."
+                  : evidenceCheck.status !== "적합"
+                    ? "TBM 교육 기록을 보완해 주세요."
+                    : actionEvidence.status !== "적합"
+                      ? "작업사진과 조치 증빙을 확인해 주세요."
+                      : "오늘 TBM 기록 상태가 양호합니다."}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:min-w-[360px]">
+              <Link
+                href={tbm.notionUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex min-h-14 items-center justify-center rounded-xl border border-slate-700 bg-slate-950/60 px-4 text-base font-black text-white hover:border-blue-500"
+              >
+                Notion 원본
+              </Link>
+              <Link
+                href="/ebm"
+                className="flex min-h-14 items-center justify-center rounded-xl border border-emerald-700 bg-emerald-950/50 px-4 text-base font-black text-emerald-100 hover:border-emerald-400"
+              >
+                EB 확인
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {needsEB && (
-          <div className="bg-red-950 border border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-400 text-sm font-medium">
+          <div className="mb-5 rounded-2xl border border-red-700 bg-red-950/35 p-4 sm:p-5">
+            <p className="text-base font-black text-red-200">
               🔴 특이사항 발생 건 — Evidence Book 등록 필요
             </p>
           </div>
         )}
 
-        <div className="bg-gray-900 border border-gray-700 rounded-lg p-5 space-y-4 mb-6">
+        <div className="mb-6 space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 sm:p-6">
           {tbm.작업유형 && (
             <div>
               <p className="text-xs text-gray-500 mb-1">작업 유형</p>
-              <p className="text-sm">{tbm.작업유형}</p>
+              <p className="text-base font-bold">{tbm.작업유형}</p>
             </div>
           )}
           {tbm.작업태그.length > 0 && (
@@ -275,13 +309,13 @@ export default async function TbmDetailPage({
           {tbm.오늘주의사항 && (
             <div>
               <p className="text-xs text-gray-500 mb-1">오늘의 주의사항</p>
-              <p className="text-sm text-gray-300">{tbm.오늘주의사항}</p>
+              <p className="text-base leading-relaxed text-gray-200 [word-break:keep-all]">{tbm.오늘주의사항}</p>
             </div>
           )}
           {tbm.특이사항내용 && (
             <div>
               <p className="text-xs text-gray-500 mb-1">특이사항 내용</p>
-              <p className="text-sm text-gray-300">{tbm.특이사항내용}</p>
+              <p className="text-base leading-relaxed text-gray-200 [word-break:keep-all]">{tbm.특이사항내용}</p>
             </div>
           )}
         </div>
@@ -371,13 +405,13 @@ export default async function TbmDetailPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-2">
         <div className={`rounded-lg border p-5 mb-6 ${evidenceTone}`}>
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🧾</span>
-                <span className="text-sm font-bold text-white">TBM 교육 기록 확인</span>
+                <span className="text-lg font-black text-white">TBM 교육 기록 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
                 참석 서명사진, 작업 전 안전활동 사진, 오늘의 주의사항 기록을 기준으로 교육 기록이 잘 남았는지 확인합니다.
@@ -398,14 +432,14 @@ export default async function TbmDetailPage({
             <div className="space-y-3">
               <div>
                 <p className="text-xs font-semibold text-gray-400 mb-1">판단</p>
-                <p className="text-sm leading-relaxed text-gray-100 [word-break:keep-all]">
+                <p className="text-base leading-relaxed text-gray-100 [word-break:keep-all]">
                   {evidenceCheck.reason}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs font-semibold text-gray-400 mb-1">보완 요청</p>
-                <p className="text-sm leading-relaxed text-gray-200 [word-break:keep-all]">
+                <p className="text-base leading-relaxed text-gray-200 [word-break:keep-all]">
                   {evidenceCheck.suggestion}
                 </p>
               </div>
@@ -436,12 +470,12 @@ export default async function TbmDetailPage({
           </div>
         </div>
 
-        <div className="rounded-lg border border-blue-800 bg-blue-950/30 p-5 mb-6">
+        <div className="mb-6 rounded-2xl border border-blue-800 bg-blue-950/30 p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🛠️</span>
-                <span className="text-sm font-bold text-white">오늘 작업사진 확인</span>
+                <span className="text-lg font-black text-white">오늘 작업사진 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
                 오늘 작업에 필요한 사진이 충분한지 확인합니다.
@@ -492,13 +526,13 @@ export default async function TbmDetailPage({
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold text-gray-400 mb-1">판단</p>
-              <p className="text-sm leading-relaxed text-gray-100 [word-break:keep-all]">
+              <p className="text-base leading-relaxed text-gray-100 [word-break:keep-all]">
                 {actionEvidence.reason}
               </p>
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-400 mb-1">추천</p>
-              <p className="text-sm leading-relaxed text-gray-200 [word-break:keep-all]">
+              <p className="text-base leading-relaxed text-gray-200 [word-break:keep-all]">
                 {actionEvidence.suggestion}
               </p>
             </div>
@@ -526,7 +560,7 @@ export default async function TbmDetailPage({
 
             <div className="rounded-lg bg-gray-950/35 p-3 mb-3">
               <p className="text-xs text-gray-500 mb-1">안내</p>
-              <p className="text-sm leading-relaxed text-gray-100 [word-break:keep-all]">
+              <p className="text-base leading-relaxed text-gray-100 [word-break:keep-all]">
                 {vehicleIntent.guidance}
               </p>
             </div>

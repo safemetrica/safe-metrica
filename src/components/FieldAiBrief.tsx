@@ -111,16 +111,16 @@ export default function FieldAiBrief() {
         <div className="flex min-w-0 items-center gap-2">
           <span className="text-lg">🤖</span>
           <div className="min-w-0">
-            <div className="text-sm font-bold text-white">오늘 현장 요약</div>
+            <div className="text-sm font-bold text-white">AI 현장 비서 브리핑</div>
             <div className="mt-0.5 text-xs text-slate-400 [word-break:keep-all]">
-              관리감독자 · 안전담당자용 핵심 정리
+              TBM · 조치 · 증빙 · PTW 현장 요약
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
           <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-300">
-            자동 요약
+            GPT-4o-mini
           </span>
           {updatedAt && (
             <span className="hidden text-xs text-slate-400 sm:inline">
