@@ -432,8 +432,11 @@ function SummaryCard({
   hint: string;
   tone: "red" | "yellow" | "orange" | "blue" | "purple" | "slate";
 }) {
-  const valueClass =
-    tone === "red"
+  const isTotalRiskCard = label === "전체 위험항목";
+
+  const valueClass = isTotalRiskCard
+    ? "text-emerald-300"
+    : tone === "red"
       ? "text-red-200"
       : tone === "yellow"
         ? "text-yellow-200"
@@ -445,8 +448,9 @@ function SummaryCard({
               ? "text-purple-200"
               : "text-slate-100";
 
-  const toneClass =
-    tone === "red"
+  const toneClass = isTotalRiskCard
+    ? "border-emerald-400/55 bg-emerald-500/15"
+    : tone === "red"
       ? "border-red-500/35 bg-red-950/25"
       : tone === "yellow"
         ? "border-yellow-500/35 bg-yellow-950/20"
