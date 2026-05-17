@@ -163,8 +163,14 @@ export default async function Home() {
     ? "http://localhost:3000"
     : "https://safe-metrica.vercel.app";
 
-const res = await fetch(`${baseUrl}/api/safety-news`, {
-  next: { revalidate: 1800 },
+const safetyNewsParams = new URLSearchParams({
+  companySeed: company.code ?? "",
+  companyName: company.name ?? "",
+  industryTag: company.industryTag ?? "",
+});
+
+const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString()}`, {
+  cache: "no-store",
 });
 
     if (res.ok) {
