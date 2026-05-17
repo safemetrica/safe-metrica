@@ -3,12 +3,54 @@ import { redirect } from "next/navigation";
 import { getCompanyConfig } from "@/lib/company";
 
 const menus = [
-  { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
-  { href: "/ebm", icon: "📚", label: "Evidence Book", sub: "증빙 현황 조회", color: "from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600", border: "border-emerald-500" },
-  { href: "/ptw", icon: "🧾", label: "고위험작업허가서", sub: "PTW 승인 현황", color: "from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600", border: "border-orange-500" },
-  { href: "/dashboard", icon: "📊", label: "대표 대시보드", sub: "통계 & 리스크 요약", color: "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600", border: "border-purple-500" },
-  { href: "/field", icon: "👷", label: "현장 비서", sub: "관리감독자 전용", color: "from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600", border: "border-teal-500" },
-  { href: "/kosha", icon: "🏅", label: "KOSHA 인정심사", sub: "11개 Gate 이행률 자동 산출", color: "from-yellow-700 to-yellow-800 hover:from-yellow-600 hover:to-yellow-700" },
+  {
+    href: "/tbm",
+    icon: "📋",
+    label: "TBM 현황",
+    sub: "오늘 안전회의와 작업 전 공유 기록을 확인합니다.",
+    tone: "border-blue-200 bg-blue-50 text-blue-700",
+    badge: "현장 기록",
+  },
+  {
+    href: "/ebm",
+    icon: "📚",
+    label: "Evidence Book",
+    sub: "사진·서명·조치 증빙을 한곳에서 관리합니다.",
+    tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    badge: "증빙 관리",
+  },
+  {
+    href: "/ptw",
+    icon: "🧾",
+    label: "고위험작업허가서",
+    sub: "PTW 승인 대기와 허가 상태를 확인합니다.",
+    tone: "border-orange-200 bg-orange-50 text-orange-700",
+    badge: "작업허가",
+  },
+  {
+    href: "/dashboard",
+    icon: "📊",
+    label: "대표 대시보드",
+    sub: "오늘 위험, 조치, 증빙 상태를 요약합니다.",
+    tone: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    badge: "대표 보고",
+  },
+  {
+    href: "/field",
+    icon: "👷",
+    label: "현장 비서",
+    sub: "관리감독자가 오늘 할 일을 바로 확인합니다.",
+    tone: "border-teal-200 bg-teal-50 text-teal-700",
+    badge: "현장 실행",
+  },
+  {
+    href: "/kosha",
+    icon: "🏅",
+    label: "KOSHA 인정심사",
+    sub: "인정심사 준비 항목과 이행률을 확인합니다.",
+    tone: "border-amber-200 bg-amber-50 text-amber-700",
+    badge: "점검 준비",
+  },
 ];
 async function getWeather() {
   try {
@@ -70,7 +112,7 @@ const hour = kst.getHours();
     const sky = getFcst("SKY") ?? "1";
 
     const alerts: string[] = [];
-    if (wsd >= 10) alerts.push(`🚨 강풍 ${wsd}m/s — 고소작업 중단 의무`);
+    if (wsd >= 10) alerts.push(`🚨 강풍 ${wsd}m/s — 고소작업 확인 필요`);
     if (tmp >= 33) alerts.push(`☀️ 폭염 ${tmp}°C — 온열질환 주의`);
     if (tmp <= -10) alerts.push(`🥶 한파 ${tmp}°C — 저체온증 위험`);
     if (pty !== "0") alerts.push(`🌧️ 현재 강수 감지 — 야외작업 주의`);
@@ -78,7 +120,7 @@ const hour = kst.getHours();
     else if (pop >= 20) alerts.push(`☁️ 강수확률 ${pop}% — 날씨 변화 주의`);
 
     // 의사결정 티켓 판정
-    const stopRequired = wsd >= 10; // 법적 작업중지 의무 (산안법 기준)
+    const stopRequired = wsd >= 10; // 기상 위험 확인 기준
     const limitRequired = tmp >= 33 || tmp <= -10 || pty !== "0";
     const decision = stopRequired ? "STOP" : limitRequired ? "LIMIT" : "NORMAL";
 
@@ -104,25 +146,25 @@ export default async function Home() {
 
   const decisionConfig = {
     STOP: {
-      bg: "bg-red-950 border-red-700",
-      badge: "bg-red-700 text-white",
+      bg: "bg-red-50 border-red-200",
+      badge: "bg-red-100 text-red-700 ring-1 ring-red-200",
       label: "🚨 작업중지 필요",
-      desc: "풍속 10m/s 이상 — 고소작업 법적 중단 의무 (산안법)",
-      action: "현장 책임자 확인 후 중단 조치 → 대표 사후 보고 필수",
+      desc: "풍속 상승 등 기상 위험 요인을 현장 책임자가 확인해야 합니다.",
+      action: "작업 범위와 진행 여부를 확인하고 관리 이력으로 남기세요.",
     },
     LIMIT: {
-      bg: "bg-yellow-950 border-yellow-700",
-      badge: "bg-yellow-600 text-white",
+      bg: "bg-amber-50 border-amber-200",
+      badge: "bg-amber-100 text-amber-700 ring-1 ring-amber-200",
       label: "🟡 제한 운영",
-      desc: "기상 임계값 도달 — 작업 범위 축소 권고",
-      action: "현장 책임자 판단 → 계속/제한 선택 시 대표 사후 보고",
+      desc: "기상 상황에 따라 작업 범위와 이동 동선을 확인하세요.",
+      action: "현장 확인 후 필요한 경우 작업 범위를 조정하세요.",
     },
     NORMAL: {
-      bg: "bg-gray-900 border-gray-700",
-      badge: "bg-green-700 text-white",
+      bg: "bg-emerald-50 border-emerald-200",
+      badge: "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200",
       label: "🟢 정상 작업",
-      desc: "기상 이상 없음",
-      action: "정상 운영 가능",
+      desc: "기상 특이사항은 없습니다.",
+      action: "작업 전 TBM에서 날씨와 이동 동선을 함께 확인하세요.",
     },
   };
 
@@ -181,191 +223,258 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
     safetyCases = [];
   } 
   return (
-    <main className="min-h-screen bg-gray-950">
-      <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">🛡️</span>
-          <div>
-            <h1 className="text-white font-bold text-xl leading-tight">SafeMetrica™</h1>
-            <p className="text-gray-400 text-xs">산업안전 통합 관리 플랫폼</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-gray-400 text-xs">{today}</div>
-          <div className="text-emerald-400 text-xs font-medium mt-0.5">● 시스템 정상</div>
-        </div>
-      </div>
-
-      <div className="px-4 py-3 bg-blue-950 border-b border-blue-900">
-        <p className="text-blue-300 text-xs text-center">
-  {company.name} · 오늘도 안전한 하루 되세요 👷
-</p>
-      </div>
-
-      {weather.tmp !== null && weather.decision && (() => {
-        const cfg = decisionConfig[weather.decision as keyof typeof decisionConfig];
-        return (
-          <div className={`px-4 py-4 border-b ${cfg.bg}`}>
-            <div className="max-w-2xl mx-auto">
-              {/* 날씨 수치 */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨</span>
-                <span className="text-gray-400 text-xs">기온 {weather.tmp}°C · 체감 {weather.feelsLike}°C · 풍속 {weather.wsd}m/s · 강수확률 {weather.pop}%</span>
-              </div><p className="text-blue-200 text-xs mt-1">기상청 초단기실황 기준 {weather.observedAt}</p>
-
-              {/* 의사결정 티켓 */}
-              <div className={`rounded-xl border p-3 ${cfg.bg}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${cfg.badge}`}>{cfg.label}</span>
-                  <span className="text-xs text-gray-400">현장 책임자 1명 확인 필수</span>
-                </div>
-                <p className="text-white text-xs font-medium mb-1">{cfg.desc}</p>
-                <p className="text-gray-400 text-xs">{cfg.action}</p>
-              </div>
-
-              {/* 경보 목록 */}
-              {weather.alerts.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {weather.alerts.map((a, i) => (
-                    <p key={i} className="text-red-300 text-xs font-medium">{a}</p>
-                  ))}
-                </div>
-              )}
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="border-b border-slate-200 bg-white/95 px-4 py-4 shadow-sm sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-2xl ring-1 ring-blue-100">
+              🛡️
             </div>
-          </div>
-        );
-      })()}
-
-      <div className="p-4 max-w-5xl mx-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-          {menus.map((m) => (
-            <Link key={m.href} href={m.href}
-              className={`bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
-              <div className="text-4xl mb-3">{m.icon}</div>
-              <div className="text-white font-bold text-sm leading-tight">{m.label}</div>
-              <div className="text-white text-xs mt-1 opacity-75">{m.sub}</div>
-            </Link>
-          ))}
-        </div>
-        <div className="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-400">⚠️</span>
-            <span className="text-white text-sm font-semibold">안전 수칙</span>
-          </div>
-          <p className="text-gray-400 text-xs leading-relaxed">특이사항 발생 시 반드시 Evidence Book 등록 · 고위험작업은 PTW 제출 후 시작 · 중대재해 발생 즉시 119 신고</p>
-        </div>
-
-                {/* KOSHA TBM 체크포인트 + 산업안전 동향 */}
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 text-sm">●</span>
-                  <span className="text-white text-sm font-semibold">
-                    오늘 TBM 체크포인트
-                  </span>
-                </div>
-                <p className="text-gray-500 text-xs mt-1">
-                  최근 안전사고 사례를 참고해 오늘 확인할 항목입니다.
-                </p>
-              </div>
-              <span className="text-yellow-400 text-xs shrink-0">KOSHA</span>
-            </div>
-
-            {safetyCases.length === 0 ? (
-              <p className="text-gray-600 text-xs">
-                안전사고 사례를 불러오는 중입니다.
+            <div>
+              <h1 className="text-xl font-black leading-tight text-slate-950">
+                SafeMetrica™
+              </h1>
+              <p className="text-sm font-medium text-slate-500">
+                {company.name} · 산업안전 통합 관리 플랫폼
               </p>
-            ) : (
-              <div className="space-y-2">
-                {safetyCases.slice(0, 2).map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-lg bg-gray-950 border border-gray-800 px-3 py-2"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-red-950 text-red-300 text-[11px] font-bold shrink-0">
-                        {item.accidentType}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-white text-xs font-semibold truncate">
-                          {item.title}
-                        </p>
-                        <p className="text-emerald-300 text-xs mt-1 truncate">
-                          {item.action}
-                        </p>
-                      </div>
-                    </div>
+            </div>
+          </div>
 
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-gray-600 text-[11px]">
-                        출처: {item.source === "KOSHA" ? "KOSHA 안전사례" : "예시 사례"}
-                      </span>
-                      <Link
-                        href={`/tbm?safetyCase=${encodeURIComponent(
-                          item.id
-                        )}&check=${encodeURIComponent(item.action)}`}
-                        className="rounded-full bg-blue-600 hover:bg-blue-500 px-3 py-1 text-[11px] font-semibold text-white transition"
-                      >
-                        TBM 체크
-                      </Link>
+          <div className="hidden text-right sm:block">
+            <div className="text-sm font-semibold text-slate-500">{today}</div>
+            <div className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 ring-1 ring-emerald-100">
+              ● 시스템 정상
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section className="border-b border-slate-200 bg-gradient-to-br from-white via-blue-50/70 to-emerald-50/60 px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-5 lg:grid-cols-[1.35fr_0.9fr] lg:items-stretch">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+              <div className="mb-4 inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-700 ring-1 ring-blue-100">
+                오늘의 안전운영
+              </div>
+              <h2 className="text-2xl font-black leading-tight text-slate-950 sm:text-4xl">
+                위험성평가·TBM·증빙을
+                <br className="hidden sm:block" />
+                한 화면에서 확인합니다.
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600">
+                대표는 오늘 위험을 보고, 현장은 할 일을 확인하고, 담당자는 증빙과 작업허가 상태를 정리합니다.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">TBM</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">Evidence Book</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">PTW</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">Risk Intelligence</span>
+              </div>
+            </div>
+
+            {weather.tmp !== null && weather.decision && (() => {
+              const cfg = decisionConfig[weather.decision as keyof typeof decisionConfig];
+
+              return (
+                <div className={`rounded-3xl border p-5 shadow-sm ${cfg.bg}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-800">{weather.icon} 현재 날씨</p>
+                      <p className="mt-1 text-sm font-medium text-slate-500">
+                        기상청 기준 {weather.observedAt}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-sm font-black ${cfg.badge}`}>
+                      {cfg.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-slate-200">
+                      <p className="text-slate-500">기온</p>
+                      <p className="mt-1 text-xl font-black text-slate-950">{weather.tmp}°C</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-slate-200">
+                      <p className="text-slate-500">체감</p>
+                      <p className="mt-1 text-xl font-black text-slate-950">{weather.feelsLike}°C</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-slate-200">
+                      <p className="text-slate-500">풍속</p>
+                      <p className="mt-1 text-xl font-black text-slate-950">{weather.wsd}m/s</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/80 p-3 ring-1 ring-slate-200">
+                      <p className="text-slate-500">강수확률</p>
+                      <p className="mt-1 text-xl font-black text-slate-950">{weather.pop}%</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 text-sm">●</span>
-                  <span className="text-white text-sm font-semibold">
-                    산업안전 동향
-                  </span>
+                  <div className="mt-4 rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+                    <p className="text-sm font-black text-slate-800">{cfg.desc}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">{cfg.action}</p>
+                  </div>
+
+                  {weather.alerts.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {weather.alerts.map((a, i) => (
+                        <p key={i} className="text-sm font-bold text-red-600">{a}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className="text-gray-500 text-xs mt-1">
-                  현장 안전관리자가 참고할 최신 안전 이슈입니다.
-                </p>
-              </div>
-              <span className="text-gray-600 text-xs shrink-0">뉴스</span>
-            </div>
-
-            {safetyNews.length === 0 ? (
-              <p className="text-gray-600 text-xs">
-                산업안전 동향을 불러오는 중입니다.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {safetyNews.slice(0, 3).map((news, i) => (
-                  <a
-                    key={`${news.link}-${i}`}
-                    href={news.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-lg bg-gray-950 border border-gray-800 px-3 py-2 group"
-                  >
-                    <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${
-                      news.color === "red"
-                        ? "bg-red-950 text-red-400"
-                        : news.color === "orange"
-                        ? "bg-orange-950 text-orange-400"
-                        : "bg-blue-950 text-blue-400"
-                    }`}>
-                      {news.tag}
-                    </span>
-                    <span className="text-gray-400 text-xs group-hover:text-white transition truncate">
-                      {news.title}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black text-slate-950 sm:text-2xl">
+                주요 메뉴
+              </h2>
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                오늘 확인할 업무로 바로 이동합니다.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {menus.map((m) => (
+              <Link
+                key={m.href}
+                href={m.href}
+                className={`group rounded-3xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${m.tone}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm ring-1 ring-slate-200">
+                    {m.icon}
+                  </div>
+                  <span className="rounded-full bg-white/85 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                    {m.badge}
+                  </span>
+                </div>
+                <div className="mt-5">
+                  <div className="text-xl font-black text-slate-950">
+                    {m.label}
+                  </div>
+                  <p className="mt-2 min-h-[44px] text-sm leading-relaxed text-slate-600">
+                    {m.sub}
+                  </p>
+                </div>
+                <div className="mt-4 flex h-11 items-center justify-between rounded-2xl bg-white/85 px-4 text-sm font-black text-slate-700 ring-1 ring-slate-200 group-hover:bg-white">
+                  <span>바로가기</span>
+                  <span>→</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <p className="text-base font-black text-amber-900">안전 수칙</p>
+                <p className="mt-1 text-sm leading-relaxed text-amber-800">
+                  특이사항 발생 시 Evidence Book에 증빙을 연결하고, 고위험 작업은 PTW 상태를 확인한 뒤 작업을 진행하세요.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    <h3 className="text-lg font-black text-slate-950">오늘 TBM 체크포인트</h3>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    최근 안전사고 사례를 참고해 오늘 확인할 항목입니다.
+                  </p>
+                </div>
+                <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-black text-yellow-700 ring-1 ring-yellow-200">
+                  KOSHA
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {safetyCases.length > 0 ? (
+                  safetyCases.slice(0, 2).map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/tbm?safetyCase=${encodeURIComponent(item.id)}&check=${encodeURIComponent(item.action)}`}
+                      className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-300 hover:bg-blue-50"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-black text-red-700 ring-1 ring-red-100">
+                          {item.accidentType}
+                        </span>
+                        <p className="truncate text-sm font-black text-slate-950">{item.title}</p>
+                      </div>
+                      <p className="mt-2 text-sm font-bold text-emerald-700">{item.action}</p>
+                      <p className="mt-3 text-xs text-slate-400">
+                        출처: {item.source === "KOSHA" ? "KOSHA 안전사례" : "예시 사례"}
+                      </p>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="rounded-2xl bg-slate-50 p-4 text-sm font-medium text-slate-500 ring-1 ring-slate-200">
+                    표시할 안전사고 사례가 없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                    <h3 className="text-lg font-black text-slate-950">산업안전 동향</h3>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    현장 안전관리자가 참고할 최신 안전 이슈입니다.
+                  </p>
+                </div>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700 ring-1 ring-blue-100">
+                  뉴스
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {safetyNews.length > 0 ? (
+                  safetyNews.slice(0, 3).map((news, index) => (
+                    <a
+                      key={`${news.link}-${index}`}
+                      href={news.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-300 hover:bg-blue-50"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 rounded-full bg-red-50 px-2 py-1 text-xs font-black text-red-700 ring-1 ring-red-100">
+                          {news.tag}
+                        </span>
+                        <p className="line-clamp-2 text-sm font-bold leading-relaxed text-slate-800">
+                          {news.title}
+                        </p>
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <div className="rounded-2xl bg-slate-50 p-4 text-sm font-medium text-slate-500 ring-1 ring-slate-200">
+                    현재 참고할 최신 안전 이슈가 없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
