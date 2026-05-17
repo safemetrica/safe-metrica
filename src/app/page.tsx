@@ -354,7 +354,7 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                         ? "bg-orange-950 text-orange-400"
                         : "bg-blue-950 text-blue-400"
                     }`}>
-                      {news.tag}
+                      안전 이슈
                     </span>
                     <span className="text-gray-400 text-xs group-hover:text-white transition truncate">
                       {news.title}
