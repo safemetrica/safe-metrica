@@ -438,17 +438,16 @@ async function getDashboardData() {
 function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
   if (!risk.hasDb) {
     return (
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
+      <section className="rounded-2xl border border-slate-600/80 bg-slate-800/70 p-5 shadow-lg">
+        <div className="mb-2 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-black text-slate-950">위험관리 요약</h2>
-            <p className="mt-1 text-sm text-slate-500">위험성평가 항목 기반 관리 신호</p>
+            <h2 className="text-base font-bold text-white">위험관리 요약</h2>
+          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">위험성평가 관리현황</p>
+            <p className="mt-1 text-xs text-gray-400">위험성평가 항목 기반 관리 신호</p>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
-            준비 중
-          </span>
+          <span className="rounded-full bg-gray-800 px-3 py-1 text-xs text-gray-400">준비 중</span>
         </div>
-        <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
+        <div className="rounded-xl bg-gray-800/70 p-4 text-sm text-gray-300">
           위험성평가 항목 등록 후 표시됩니다.
         </div>
       </section>
@@ -460,90 +459,110 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       label: "지금 위험한 항목",
       value: risk.highRiskCount,
       hint: "대표·현장감독자 우선 확인",
-      tone: "border-red-200 bg-red-50 text-red-700",
+      accent: "text-red-200",
       role: "대표 보고",
     },
     {
       label: "조치가 필요한 항목",
       value: risk.actionNeededCount,
       hint: "담당자 조치 계획 확인",
-      tone: "border-amber-200 bg-amber-50 text-amber-700",
+      accent: "text-yellow-200",
       role: "담당자 처리",
     },
     {
       label: "관리자 확인 대기",
       value: risk.approvalReadyCount,
       hint: "완료 후보 승인 필요",
-      tone: "border-sky-200 bg-sky-50 text-sky-700",
+      accent: "text-cyan-200",
       role: "관리자 확인",
     },
     {
       label: "개선 반영 대기",
       value: risk.riskDbPendingCount,
       hint: "조치 후 반영 확인 필요",
-      tone: "border-indigo-200 bg-indigo-50 text-indigo-700",
+      accent: "text-amber-200",
       role: "현장 확인",
     },
   ];
 
   const statusBadges = [
-    { label: "확인 완료", value: risk.approvalCompletedCount, hint: "관리자 승인 완료" },
-    { label: "개선 반영 완료", value: risk.riskDbReflectedCount, hint: "Risk DB 반영 완료" },
-    { label: "다시 확인할 항목", value: risk.reassessmentDueCount, hint: "30일 이내 재확인" },
-    { label: "비용 검토 필요", value: risk.budgetNeededCount, hint: "예산 수반 항목" },
+    {
+      label: "확인 완료",
+      value: risk.approvalCompletedCount,
+      hint: "관리자 승인 완료",
+      accent: "text-emerald-200",
+    },
+    {
+      label: "개선 반영 완료",
+      value: risk.riskDbReflectedCount,
+      hint: "Risk DB 반영 완료",
+      accent: "text-emerald-200",
+    },
+    {
+      label: "다시 확인할 항목",
+      value: risk.reassessmentDueCount,
+      hint: "30일 이내 재확인",
+      accent: "text-blue-200",
+    },
+    {
+      label: "비용 검토 필요",
+      value: risk.budgetNeededCount,
+      hint: "예산 수반 항목",
+      accent: "text-orange-200",
+    },
   ];
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-2xl border border-slate-600/80 bg-slate-800/70 p-5 shadow-lg">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-black text-slate-950">위험관리 요약</h2>
-          <p className="mt-1 text-sm font-semibold text-blue-700">
+          <h2 className="text-base font-bold text-white">위험관리 요약</h2>
+          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">
             대표 · 현장감독자 · 담당자 공통 확인
           </p>
-          <p className="mt-1 text-sm text-slate-500">
-            위험성평가 항목 {risk.total}건 중 오늘 확인할 항목을 정리했습니다.
+          <p className="mt-1 text-xs text-gray-400">
+            위험성평가 항목 {risk.total}건 중 오늘 확인할 항목을 쉽게 정리했습니다.
           </p>
         </div>
         <Link
           href="/risk"
-          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-blue-700"
+          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-blue-400/40 bg-blue-600/90 px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-blue-500"
         >
           Risk 상세 보기 →
         </Link>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {primaryCards.map((card) => (
           <div
             key={card.label}
-            className={`rounded-2xl border p-4 shadow-sm ${card.tone}`}
+            className="rounded-xl border border-slate-600/80 bg-slate-800/80 p-4 shadow-sm"
           >
-            <div className="mb-2 inline-flex rounded-full bg-white/85 px-2.5 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+            <div className="mb-2 inline-flex rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-bold text-slate-300">
               {card.role}
             </div>
-            <div className="text-4xl font-black leading-none">{card.value}</div>
-            <div className="mt-2 text-base font-black text-slate-950 [word-break:keep-all]">{card.label}</div>
-            <div className="mt-1 text-sm leading-relaxed text-slate-600 [word-break:keep-all]">{card.hint}</div>
+            <div className={`text-4xl font-black leading-none ${card.accent}`}>{card.value}</div>
+            <div className="mt-2 text-base font-bold text-white [word-break:keep-all]">{card.label}</div>
+            <div className="mt-1 text-xs leading-relaxed text-slate-300 [word-break:keep-all]">{card.hint}</div>
           </div>
         ))}
       </div>
 
-      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-3 text-sm font-black text-slate-700">처리 현황</div>
+      <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 p-3">
+        <div className="mb-2 text-xs font-bold text-slate-300">처리 현황</div>
         <div className="grid grid-cols-2 gap-2">
           {statusBadges.map((badge) => (
             <div
               key={badge.label}
-              className="rounded-xl border border-slate-200 bg-white p-3"
+              className="rounded-lg border border-slate-700/80 bg-slate-950/40 p-2"
             >
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs font-bold text-slate-500 [word-break:keep-all]">
+                <span className="text-[11px] font-semibold text-slate-400 [word-break:keep-all]">
                   {badge.label}
                 </span>
-                <span className="text-xl font-black text-slate-950">{badge.value}</span>
+                <span className={`text-lg font-black ${badge.accent}`}>{badge.value}</span>
               </div>
-              <div className="mt-1 text-xs leading-relaxed text-slate-500 [word-break:keep-all]">
+              <div className="mt-0.5 text-[10px] leading-relaxed text-slate-500 [word-break:keep-all]">
                 {badge.hint}
               </div>
             </div>
@@ -552,18 +571,18 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       </div>
 
       {risk.highRiskItems.length > 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="mb-2 text-sm font-black text-slate-700 [word-break:keep-all]">
+        <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-4">
+          <div className="mb-2 text-xs font-semibold text-gray-400 [word-break:keep-all]">
             먼저 볼 고위험 항목
           </div>
           <div className="space-y-2">
             {risk.highRiskItems.map((item) => (
-              <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                <div className="text-sm font-black leading-snug text-slate-950 [word-break:keep-all]">
+              <div key={item.id} className="rounded-lg border border-slate-600/70 bg-slate-900/80 p-3">
+                <div className="text-sm font-medium leading-snug text-white [word-break:keep-all]">
                   {item.no ? `${item.no}. ` : ""}
                   {item.title || item.processName || "위험성평가 항목"}
                 </div>
-                <div className="mt-1 text-xs leading-relaxed text-slate-500">
+                <div className="mt-1 text-xs leading-relaxed text-slate-300">
                   {item.processName}
                   {item.hazard ? ` · ${item.hazard}` : ""}
                 </div>
@@ -572,7 +591,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
+        <div className="rounded-xl bg-gray-800/70 p-4 text-sm text-gray-300">
           현재 먼저 볼 고위험 항목이 없습니다.
         </div>
       )}
@@ -584,26 +603,26 @@ export default async function DashboardPage() {
   const s = await getDashboardData();
   const 리스크색 =
     s.리스크점수 >= 60
-      ? "text-red-600"
+      ? "text-red-400"
       : s.리스크점수 >= 30
-        ? "text-amber-600"
-        : "text-emerald-600";
+        ? "text-yellow-400"
+        : "text-green-400";
   const 리스크라벨 =
     s.리스크점수 >= 60 ? "🔴 관리 필요" : s.리스크점수 >= 30 ? "🟡 확인 필요" : "🟢 양호";
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-10 text-slate-900">
+    <main className="min-h-screen bg-slate-950 pb-10 text-slate-100">
       <SafeNav />
 
       <div className="mx-auto max-w-7xl px-5 py-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-950">📊 대표 대시보드</h1>
-            <p className="mt-1 text-base text-slate-500 [word-break:keep-all]">
+            <h1 className="text-2xl font-bold tracking-tight text-white">📊 대표 대시보드</h1>
+            <p className="mt-1 text-sm text-slate-400 [word-break:keep-all]">
               오늘의 운영 상태와 관리 필요 신호를 요약합니다.
             </p>
           </div>
-          <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
+          <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300">
             {new Date()
               .toLocaleDateString("ko-KR")
               .replace(/\.\s*/g, ".")
@@ -612,42 +631,42 @@ export default async function DashboardPage() {
         </div>
 
         {/* ZONE 1: 오늘의 결론 */}
-        <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mb-5 rounded-3xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 p-5 shadow-2xl">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px_240px]">
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
+                <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300">
                   오늘의 결론
                 </span>
-                <span className="text-xs text-slate-500">오늘 확인 요약</span>
+                <span className="text-xs text-slate-400">오늘 확인 요약</span>
               </div>
 
-              <h2 className="text-3xl font-black leading-tight text-slate-950 [word-break:keep-all]">
+              <h2 className="text-2xl font-bold leading-tight text-white [word-break:keep-all]">
                 {s.조치필요 > 0 || s.EB누락 > 0 || s.PTW미승인 > 0 || s.risk.highRiskCount > 0
                   ? "오늘 확인할 항목이 있습니다."
                   : "현재 주요 관리 항목은 안정적입니다."}
               </h2>
 
-              <p className="mt-2 max-w-3xl text-base leading-7 text-slate-600 [word-break:keep-all]">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 [word-break:keep-all]">
                 오늘 조치가 필요한 항목 {s.조치필요}건, 증빙 누락 {s.EB누락}건, PTW 승인 대기 {s.PTW미승인}건,
                 고위험 항목 {s.risk.highRiskCount}건입니다.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-              <div className="text-sm font-black text-emerald-700">오늘 현장 위험도</div>
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+              <div className="text-xs font-medium text-emerald-300">오늘 현장 위험도</div>
               <div className={`mt-2 text-5xl font-black leading-none ${리스크색}`}>{s.리스크점수}점</div>
               <div className={`mt-2 text-sm font-semibold ${리스크색}`}>{리스크라벨}</div>
-              <div className="mt-3 text-xs text-slate-500">미조치·증빙누락 기준</div>
+              <div className="mt-3 text-xs text-slate-400">미조치·증빙누락 기준</div>
             </div>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
-              <div className="text-sm font-black text-blue-700">고위험 항목</div>
+            <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4">
+              <div className="text-xs font-medium text-blue-300">고위험 항목</div>
               <div className="mt-2 flex items-end gap-2">
-                <span className="text-5xl font-black leading-none text-slate-950">{s.risk.highRiskCount}</span>
-                <span className="pb-1 text-sm text-slate-600">고위험</span>
+                <span className="text-5xl font-black leading-none text-white">{s.risk.highRiskCount}</span>
+                <span className="pb-1 text-sm text-slate-300">고위험</span>
               </div>
-              <div className="mt-3 text-xs text-slate-500">
+              <div className="mt-3 text-xs text-slate-400">
                 조치 필요 {s.risk.actionNeededCount}건 · 비용 검토 {s.risk.budgetNeededCount}건
               </div>
             </div>
@@ -658,19 +677,19 @@ export default async function DashboardPage() {
         <section className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(460px,0.95fr)]">
           {/* 좌측: 운영 브리핑 + 오늘 처리할 항목 */}
           <div className="space-y-5">
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-bold text-slate-950">오늘 운영 브리핑</h2>
+                <h2 className="text-base font-bold text-white">오늘 운영 브리핑</h2>
                 <span className="text-xs text-slate-500">TBM · 증빙 · PTW 기준</span>
               </div>
               <AiDiagnosisCard />
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-950">오늘 처리할 항목</h2>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <h2 className="text-lg font-bold text-white">오늘 처리할 항목</h2>
+                  <p className="mt-1 text-xs text-slate-400">
                     조치·증빙·승인 중 오늘 처리할 항목입니다.
                   </p>
                 </div>
@@ -682,56 +701,56 @@ export default async function DashboardPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-950">조치 필요</span>
+                    <span className="text-sm font-semibold text-white">조치 필요</span>
                     <span className="text-2xl font-black text-amber-300">{s.조치필요}</span>
                   </div>
                   {s.조치필요목록[0] ? (
                     <Link href={`/tbm/${s.조치필요목록[0].id}`}>
-                      <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-600 hover:bg-slate-100">
-                        <div className="font-semibold text-slate-950">{s.조치필요목록[0].작업명}</div>
+                      <div className="mt-3 rounded-xl bg-slate-950/60 p-3 text-xs text-slate-300 hover:bg-slate-950">
+                        <div className="font-semibold text-white">{s.조치필요목록[0].작업명}</div>
                         <div className="mt-1 text-amber-300">{s.조치필요목록[0].날짜}</div>
                       </div>
                     </Link>
                   ) : (
-                    <div className="mt-3 text-xs text-slate-500">조치 필요 없음 ✅</div>
+                    <div className="mt-3 text-xs text-slate-400">조치 필요 없음 ✅</div>
                   )}
                 </div>
 
                 <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-950">증빙 누락</span>
+                    <span className="text-sm font-semibold text-white">증빙 누락</span>
                     <span className="text-2xl font-black text-rose-300">{s.EB누락}</span>
                   </div>
                   {s.EB누락목록[0] ? (
                     <Link href={`/tbm/${s.EB누락목록[0].id}`}>
-                      <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-600 hover:bg-slate-100">
-                        <div className="font-semibold text-slate-950">{s.EB누락목록[0].작업명}</div>
+                      <div className="mt-3 rounded-xl bg-slate-950/60 p-3 text-xs text-slate-300 hover:bg-slate-950">
+                        <div className="font-semibold text-white">{s.EB누락목록[0].작업명}</div>
                         <div className="mt-1 text-rose-300">{s.EB누락목록[0].날짜}</div>
                       </div>
                     </Link>
                   ) : (
-                    <div className="mt-3 text-xs text-slate-500">누락 없음 ✅</div>
+                    <div className="mt-3 text-xs text-slate-400">누락 없음 ✅</div>
                   )}
                 </div>
 
                 <div className="rounded-2xl border border-blue-500/25 bg-blue-500/10 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-950">PTW 확인</span>
+                    <span className="text-sm font-semibold text-white">PTW 확인</span>
                     <span className="text-2xl font-black text-blue-300">{s.PTW미승인 + s.PTW위험}</span>
                   </div>
-                  <div className="mt-3 text-xs leading-5 text-slate-600">
+                  <div className="mt-3 text-xs leading-5 text-slate-300">
                     위험 {s.PTW위험}건 · 승인대기 {s.PTW미승인}건
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-2xl border border-slate-600 bg-slate-800/70 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-950">대표 보고</span>
+                    <span className="text-sm font-semibold text-white">대표 보고</span>
                     <span className="text-2xl font-black text-slate-200">
                       {s.최악건 ? `R=${s.최악R}` : "-"}
                     </span>
                   </div>
-                  <div className="mt-3 text-xs leading-5 text-slate-500">
+                  <div className="mt-3 text-xs leading-5 text-slate-400">
                     {s.최악건 ? s.최악건.작업명 : "추가 보고 항목 없음"}
                   </div>
                 </div>
@@ -747,35 +766,35 @@ export default async function DashboardPage() {
 
         {/* ZONE 3: 증빙/운영 상태 */}
         <section className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-950">증거 완결성</h2>
+              <h2 className="text-base font-bold text-white">증거 완결성</h2>
               <span className="text-xs text-slate-500">기록 · 증빙 · 승인</span>
             </div>
             <EvidenceScoreCard score={s.증거점수} breakdown={s.증거분석} />
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-950">운영 KPI</h2>
+              <h2 className="text-base font-bold text-white">운영 KPI</h2>
               <span className="text-xs text-slate-500">TBM · EB · PTW</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
-                <div className="text-3xl font-black text-slate-950">{s.전체}</div>
+                <div className="text-3xl font-black text-white">{s.전체}</div>
                 <div className="mt-1 text-xs text-blue-300">전체 TBM</div>
               </div>
               <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                <div className="text-3xl font-black text-slate-950">{s.이번달}</div>
+                <div className="text-3xl font-black text-white">{s.이번달}</div>
                 <div className="mt-1 text-xs text-emerald-300">이번 달 TBM</div>
               </div>
               <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-                <div className="text-3xl font-black text-slate-950">{s.특이사항}</div>
+                <div className="text-3xl font-black text-white">{s.특이사항}</div>
                 <div className="mt-1 text-xs text-amber-300">특이사항</div>
               </div>
               <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
-                <div className="text-3xl font-black text-slate-950">{s.EB누락}</div>
+                <div className="text-3xl font-black text-white">{s.EB누락}</div>
                 <div className="mt-1 text-xs text-rose-300">증빙 누락</div>
               </div>
             </div>
@@ -783,17 +802,17 @@ export default async function DashboardPage() {
             <div className="mt-4 grid grid-cols-2 gap-3">
               <Link
                 href="/tbm"
-                className="rounded-2xl border border-slate-200 bg-white p-4 text-center transition hover:border-blue-500 hover:bg-white"
+                className="rounded-2xl border border-slate-700 bg-slate-800/80 p-4 text-center transition hover:border-blue-500 hover:bg-slate-800"
               >
                 <div className="text-2xl">📋</div>
-                <div className="mt-1 text-sm font-semibold text-slate-950">TBM 목록</div>
+                <div className="mt-1 text-sm font-semibold text-white">TBM 목록</div>
               </Link>
               <Link
                 href="/ebm"
-                className="rounded-2xl border border-slate-200 bg-white p-4 text-center transition hover:border-emerald-500 hover:bg-white"
+                className="rounded-2xl border border-slate-700 bg-slate-800/80 p-4 text-center transition hover:border-emerald-500 hover:bg-slate-800"
               >
                 <div className="text-2xl">📚</div>
-                <div className="mt-1 text-sm font-semibold text-slate-950">EB 목록</div>
+                <div className="mt-1 text-sm font-semibold text-white">EB 목록</div>
               </Link>
             </div>
           </div>
@@ -801,25 +820,25 @@ export default async function DashboardPage() {
 
         {/* ZONE 4: 상세 상태 */}
         <section className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5">
+          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-950">PTW 현황</h2>
-              <span className="text-xs text-slate-500">
+              <h2 className="text-base font-bold text-white">PTW 현황</h2>
+              <span className="text-xs text-slate-400">
                 {s.PTW위험 === 0 && s.PTW미승인 === 0 ? "이상 없음 ✅" : "확인 필요"}
               </span>
             </div>
 
             {s.PTW위험목록.length === 0 && s.PTW미승인목록.length === 0 ? (
-              <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
+              <div className="rounded-2xl bg-slate-800/70 p-4 text-sm text-slate-400">
                 현재 승인대기 또는 반려 항목이 없습니다.
               </div>
             ) : (
               <div className="space-y-2">
                 {[...s.PTW위험목록, ...s.PTW미승인목록].map((row) => (
                   <Link key={row.id} href={`/ptw/${row.id}`}>
-                    <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-950 hover:bg-white">
+                    <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-3 text-sm text-white hover:bg-slate-800">
                       {row.제목 || "제목 없음"}
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="mt-1 text-xs text-slate-400">
                         {row.작업일} · {row.작업유형} · {row.승인상태 || row.허용여부}
                       </div>
                     </div>
@@ -829,10 +848,10 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5">
+          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-950">오늘 할 일</h2>
-              <span className="text-xs text-slate-500">{s.todayTasks.length}건</span>
+              <h2 className="text-base font-bold text-white">오늘 할 일</h2>
+              <span className="text-xs text-slate-400">{s.todayTasks.length}건</span>
             </div>
             <TodayTasksCard tasks={s.todayTasks} />
           </div>
