@@ -254,7 +254,7 @@ export default async function TbmDetailPage({
                   ? "특이사항 증빙 연결을 먼저 확인하세요."
                   : evidenceCheck.status !== "적합"
                     ? "TBM 교육 기록을 보완해 주세요."
-                    : actionEvidence.status !== "적합"
+                    : actionEvidence.status === "보완 추천"
                       ? "작업사진과 조치 증빙을 확인해 주세요."
                       : "오늘 TBM 기록 상태가 양호합니다."}
               </p>
