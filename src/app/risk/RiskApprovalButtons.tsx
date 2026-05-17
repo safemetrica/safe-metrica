@@ -5,10 +5,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+type PostActionReflectionCandidatePayload = {
+  hasCandidate?: boolean;
+  content?: string;
+  types?: string[];
+  date?: string;
+  evidence?: string;
+};
+
 type Props = {
   riskItemId?: string;
   canApprove: boolean;
   isApproved: boolean;
+  postActionReflectionCandidate?: PostActionReflectionCandidatePayload;
 };
 
 type Decision = "approve" | "reject" | "requestMoreEvidence";
@@ -23,6 +32,7 @@ export function RiskApprovalButtons({
   riskItemId,
   canApprove,
   isApproved,
+  postActionReflectionCandidate,
 }: Props) {
   const router = useRouter();
   const [pendingDecision, setPendingDecision] = useState<Decision | null>(null);
@@ -48,6 +58,10 @@ export function RiskApprovalButtons({
         body: JSON.stringify({
           riskItemId,
           decision,
+          postActionReflectionCandidate:
+            decision === "approve" && postActionReflectionCandidate?.hasCandidate
+              ? postActionReflectionCandidate
+              : undefined,
         }),
       });
 

@@ -8,10 +8,25 @@ type RiskApprovalRequestBody = {
   riskItemId?: string;
   decision?: "approve" | "reject" | "requestMoreEvidence";
   memo?: string;
+  postActionReflectionCandidate?: {
+    hasCandidate?: boolean;
+    content?: string;
+    types?: string[];
+    date?: string;
+    evidence?: string;
+  };
 };
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function toMultiSelectOptions(values?: string[]) {
+  return (values ?? [])
+    .filter(Boolean)
+    .map((name) => ({
+      name,
+    }));
 }
 
 function getDecisionFields(decision: RiskApprovalRequestBody["decision"]) {
@@ -68,35 +83,77 @@ export async function POST(request: Request) {
     const fields = getDecisionFields(decision);
     const notion = new Client({ auth: company.notionApiKey });
 
-    await notion.pages.update({
-      page_id: body.riskItemId,
-      properties: {
-        "반영 승인상태": {
-          select: {
-            name: fields.approvalStatus,
-          },
+    const properties: Record<string, any> = {
+      "반영 승인상태": {
+        select: {
+          name: fields.approvalStatus,
         },
-        "반영 승인일": {
+      },
+      "반영 승인일": {
+        date: {
+          start: todayIsoDate(),
+        },
+      },
+      "반영 승인 메모": {
+        rich_text: [
+          {
+            type: "text",
+            text: {
+              content: body.memo?.trim() || fields.defaultMemo,
+            },
+          },
+        ],
+      },
+      "Risk DB 반영상태": {
+        select: {
+          name: fields.reflectionStatus,
+        },
+      },
+    };
+
+    const candidate = body.postActionReflectionCandidate;
+
+    if (decision === "approve" && candidate?.hasCandidate && candidate.content) {
+      properties["조치 후 반영내용"] = {
+        rich_text: [
+          {
+            type: "text",
+            text: {
+              content: candidate.content,
+            },
+          },
+        ],
+      };
+
+      properties["조치 반영유형"] = {
+        multi_select: toMultiSelectOptions(candidate.types),
+      };
+
+      if (candidate.date) {
+        properties["조치 반영일"] = {
           date: {
-            start: todayIsoDate(),
+            start: candidate.date,
           },
-        },
-        "반영 승인 메모": {
+        };
+      }
+
+      if (candidate.evidence) {
+        properties["조치 반영 근거"] = {
           rich_text: [
             {
               type: "text",
               text: {
-                content: body.memo?.trim() || fields.defaultMemo,
+                content: candidate.evidence,
               },
             },
           ],
-        },
-        "Risk DB 반영상태": {
-          select: {
-            name: fields.reflectionStatus,
-          },
-        },
-      },
+        };
+      }
+    }
+
+    await notion.pages.update({
+      page_id: body.riskItemId,
+      properties,
     });
 
     return NextResponse.json({

@@ -1,3 +1,4 @@
+import { buildPostActionReflectionCandidate, type PostActionReflectionCandidate } from "./postActionReflectionCandidate";
 // src/lib/riskExecutionStatusSummary.ts
 
 import {
@@ -97,6 +98,7 @@ export interface RiskExecutionStatusSummary {
   actionReflectionType?: string;
   actionReflectionDate?: string;
   actionReflectionEvidence?: string;
+  postActionReflectionCandidate: PostActionReflectionCandidate;
 
   integrityNote: string;
   riskDbUpdateAllowed: false;
@@ -239,6 +241,13 @@ export function buildRiskExecutionStatusSummary(
     fallbackVisionObjects: input.fallbackVisionObjects ?? [],
   });
 
+  const postActionReflectionCandidate = buildPostActionReflectionCandidate({
+    riskItem,
+    tbm: linkedTbmForCompletion,
+    completionCandidate,
+    tbmShare,
+  });
+
   const approval = evaluateRiskStatusApproval({
     riskItemId: riskItem.riskItemId ?? riskItem.id,
     currentRiskDbStatus:
@@ -311,6 +320,7 @@ export function buildRiskExecutionStatusSummary(
     actionReflectionType: riskItem.actionReflectionType,
     actionReflectionDate: riskItem.actionReflectionDate,
     actionReflectionEvidence: riskItem.actionReflectionEvidence,
+    postActionReflectionCandidate,
 
     integrityNote:
       "통합 실행상태는 TBM 공유, 증빙, 완료 후보, 승인상태를 함께 보여주지만 Risk DB를 직접 변경하지 않습니다.",

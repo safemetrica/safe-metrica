@@ -362,6 +362,51 @@ function RiskExecutionStatusPanel({
         </div>
       ) : null}
 
+      {!summary.postActionReflection &&
+      summary.postActionReflectionCandidate?.hasCandidate ? (
+        <div className="mt-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-cyan-500/20 px-2.5 py-1 text-xs font-bold text-cyan-100">
+              AI 반영 후보
+            </span>
+            <span className="text-xs text-cyan-200">
+              TBM·사진·조치상태·완료조건 기반 자동 생성
+            </span>
+          </div>
+
+          <div className="text-sm font-bold leading-relaxed text-white">
+            {summary.postActionReflectionCandidate.content}
+          </div>
+
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+              <div className="text-[11px] font-semibold text-slate-400">반영유형 후보</div>
+              <div className="mt-1 text-xs font-bold text-white">
+                {summary.postActionReflectionCandidate.types.join(", ") || "분류 없음"}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+              <div className="text-[11px] font-semibold text-slate-400">반영일 후보</div>
+              <div className="mt-1 text-xs font-bold text-white">
+                {summary.postActionReflectionCandidate.date || "날짜 미확인"}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-700/70 bg-slate-950/50 p-2">
+              <div className="text-[11px] font-semibold text-slate-400">반영 근거 후보</div>
+              <div className="mt-1 text-xs font-bold text-white">
+                {summary.postActionReflectionCandidate.evidence}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 text-[11px] leading-relaxed text-cyan-100/80">
+            이 내용은 자동 후보이며, 승인 완료 처리 시 Risk Items DB의 조치 후 반영내용으로 기록됩니다.
+          </div>
+        </div>
+      ) : null}
+
       <RiskApprovalButtons
         riskItemId={summary.riskItemId}
         canApprove={
@@ -369,6 +414,7 @@ function RiskExecutionStatusPanel({
           summary.approval.approvalStatus === "approvalReady"
         }
         isApproved={summary.approval.approvalStatus === "approved"}
+        postActionReflectionCandidate={summary.postActionReflectionCandidate}
       />
     </div>
   );
