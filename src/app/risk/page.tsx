@@ -681,6 +681,16 @@ function RiskItemCard({ item }: { item: RiskItemDetail }) {
         : [],
       budgetRequired: toOptionalBoolean(riskRecord.budgetRequired),
       estimatedCost: toOptionalNumber(riskRecord.estimatedCost),
+
+      approvalStatus: toOptionalText(riskRecord.approvalStatus),
+      approvalBy: toOptionalText(riskRecord.approvalBy),
+      approvalDate: toOptionalText(riskRecord.approvalDate),
+      approvalMemo: toOptionalText(riskRecord.approvalMemo),
+      riskDbReflectionStatus: toOptionalText(riskRecord.riskDbReflectionStatus),
+      postActionReflection: toOptionalText(riskRecord.postActionReflection),
+      actionReflectionType: toOptionalText(riskRecord.actionReflectionType),
+      actionReflectionDate: toOptionalText(riskRecord.actionReflectionDate),
+      actionReflectionEvidence: toOptionalText(riskRecord.actionReflectionEvidence),
     },
   });
 
