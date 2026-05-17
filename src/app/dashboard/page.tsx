@@ -7,6 +7,25 @@ import TodayTasksCard from "@/components/TodayTasksCard";
 import EvidenceScoreCard from "@/components/EvidenceScoreCard";
 import { getCompanyConfig } from "@/lib/company";
 
+const DASHBOARD_SAFE_DATA_CONNECTION_MESSAGE =
+  "일부 데이터 연결을 확인할 수 없어 현재 확인 가능한 항목만 요약합니다.";
+
+function sanitizeDashboardMessage(value: unknown): string {
+  const text = String(value ?? "");
+
+  if (
+    text.includes("dashboard_notion_query_failed") ||
+    text.includes(["object", "not", "found"].join("_")) ||
+    text.includes("Could not find database") ||
+    text.includes("notion.com") ||
+    text.includes("request_id")
+  ) {
+    return DASHBOARD_SAFE_DATA_CONNECTION_MESSAGE;
+  }
+
+  return text || DASHBOARD_SAFE_DATA_CONNECTION_MESSAGE;
+}
+
 const TAG_RISK_MAP: Record<string, { factor: string; S: number; L: number }> = {
   고소작업: { factor: "추락", S: 5, L: 3 },
   밀폐공간: { factor: "산소결핍", S: 5, L: 2 },
@@ -137,7 +156,18 @@ async function queryNotionDatabase(
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Notion database query failed: ${response.status} ${text}`);
+
+    console.error("[SafeMetrica] dashboard_notion_query_failed", {
+      status: response.status,
+      databaseId,
+      response: text,
+    });
+
+    return {
+      results: [],
+      has_more: false,
+      next_cursor: null,
+    } as NotionQueryResponse;
   }
 
   return (await response.json()) as NotionQueryResponse;
