@@ -366,32 +366,45 @@ async function getTenantSafetyContext(request?: NextRequest): Promise<{
   safetyCaseEnabled: boolean;
   companySeed: string;
 }> {
-  try {
-    const queryIndustryTag = request?.nextUrl.searchParams.get("industryTag") ?? "";
-    const queryCompanySeed = request?.nextUrl.searchParams.get("companySeed") ?? "";
-    const queryCompanyName = request?.nextUrl.searchParams.get("companyName") ?? "";
+  const queryIndustryTag = request?.nextUrl.searchParams.get("industryTag") ?? "";
+  const queryCompanySeed = request?.nextUrl.searchParams.get("companySeed") ?? "";
+  const queryCompanyName = request?.nextUrl.searchParams.get("companyName") ?? "";
 
-    const company = await getCompanyConfig();
+  const inferIndustryTag = (rawIndustryTag: string, identity: string): IndustryTag => {
+    if (/폐기물|waste|환경/i.test(`${rawIndustryTag} ${identity}`)) {
+      return "폐기물";
+    }
 
-    const rawIndustryTag = queryIndustryTag || company.industryTag || "";
-    const normalizedIndustryTag =
-      /폐기물|waste|환경/i.test(rawIndustryTag)
-        ? "폐기물"
-        : normalizeIndustryTag(rawIndustryTag);
+    const normalized = normalizeIndustryTag(rawIndustryTag);
 
-    const companyIdentity = `${queryCompanySeed || company.code || ""} ${queryCompanyName || company.name || ""}`;
+    if (normalized !== "공통") {
+      return normalized;
+    }
 
-    const inferredIndustryTag =
-      normalizedIndustryTag !== "공통"
-        ? normalizedIndustryTag
-        : /대도환경|동우환경|한국그린환경|daedo|dongwoo|greenkorea|waste|폐기물/i.test(companyIdentity)
-          ? "폐기물"
-          : "공통";
+    return /대도환경|동우환경|한국그린환경|daedo|dongwoo|greenkorea/i.test(identity)
+      ? "폐기물"
+      : "공통";
+  };
+
+  // Query context가 있으면 API route 내부 company lookup 실패와 무관하게 우선 적용한다.
+  if (queryIndustryTag || queryCompanySeed || queryCompanyName) {
+    const identity = `${queryCompanySeed} ${queryCompanyName}`;
 
     return {
-      industryTag: inferredIndustryTag,
+      industryTag: inferIndustryTag(queryIndustryTag, identity),
+      safetyCaseEnabled: true,
+      companySeed: queryCompanySeed || queryCompanyName || "query-tenant",
+    };
+  }
+
+  try {
+    const company = await getCompanyConfig();
+    const identity = `${company.code ?? ""} ${company.name ?? ""}`;
+
+    return {
+      industryTag: inferIndustryTag(company.industryTag ?? "", identity),
       safetyCaseEnabled: company.safetyCaseEnabled ?? true,
-      companySeed: queryCompanySeed || company.code,
+      companySeed: company.code,
     };
   } catch (error) {
     console.error("[safety-news] tenant context fallback", error);
