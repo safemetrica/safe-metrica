@@ -220,7 +220,7 @@ function RiskExecutionStatusPanel({
   summary: ReturnType<typeof buildRiskExecutionStatusSummary>;
 }) {
   const toneClassMap = {
-    green: "border-lime-300/70 bg-lime-500/20 text-lime-50 shadow-lg",
+    green: "border-emerald-500/40 bg-emerald-500/10",
     amber: "border-amber-500/40 bg-amber-500/10",
     blue: "border-blue-500/40 bg-blue-500/10",
     red: "border-red-500/40 bg-red-500/10",
@@ -886,7 +886,7 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
         ) : (
           <>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <SummaryCard label="전체 위험항목" value={risk.total} hint="위험성평가 기준 전체 항목" tone="green" />
+              <SummaryCard label="전체 위험항목" value={risk.total} hint="위험성평가 기준 전체 항목" tone="blue" />
               <SummaryCard label="고위험 관리 항목" value={risk.highRiskCount} hint="대표·현장감독자 우선 확인" tone="red" />
               <SummaryCard label="개선대책 관리 필요" value={risk.actionNeededCount} hint="담당자 조치 계획 확인" tone="yellow" />
               <SummaryCard label="예산 검토 필요" value={risk.budgetNeededCount} hint="비용·설비개선 검토" tone="orange" />
