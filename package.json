@@ -22,7 +22,8 @@
     "verify:risk-approval-fields-read": "node scripts/verify-risk-approval-fields-read.mjs",
     "verify:risk-approval-button": "node scripts/verify-risk-approval-button.mjs",
     "verify:risk-db-reflection-status": "node scripts/verify-risk-db-reflection-status.mjs",
-    "verify:post-action-reflection": "node scripts/verify-post-action-reflection.mjs"
+    "verify:post-action-reflection": "node scripts/verify-post-action-reflection.mjs",
+    "verify:auto-post-action-reflection": "node scripts/verify-auto-post-action-reflection.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
