@@ -441,7 +441,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       <section className="rounded-2xl border border-slate-600/80 bg-slate-800/70 p-5 shadow-lg">
         <div className="mb-2 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-white">Risk Intelligence</h2>
+            <h2 className="text-base font-bold text-white">위험관리 요약</h2>
           <p className="mt-0.5 text-[11px] font-semibold text-blue-200">위험성평가 관리현황</p>
             <p className="mt-1 text-xs text-gray-400">위험성평가 항목 기반 관리 신호</p>
           </div>
@@ -454,65 +454,74 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
     );
   }
 
-  const cards = [
-  {
-    label: "고위험 관리 항목",
-    value: risk.highRiskCount,
-    hint: "위험수준 상 + 완료 전",
-    accent: "text-red-200",
-  },
-  {
-    label: "개선대책 관리 필요",
-    value: risk.actionNeededCount,
-    hint: "개선대책 있음 + 완료 전",
-    accent: "text-yellow-200",
-  },
-  {
-    label: "예산 검토 필요",
-    value: risk.budgetNeededCount,
-    hint: "예산 수반 + 완료 전",
-    accent: "text-orange-200",
-  },
-  {
-    label: "재평가 예정",
-    value: risk.reassessmentDueCount,
-    hint: "30일 이내 재확인",
-    accent: "text-blue-200",
-  },
-  {
-    label: "승인 대기",
-    value: risk.approvalReadyCount,
-    hint: "관리자 승인 필요",
-    accent: "text-cyan-200",
-  },
-  {
-    label: "승인 완료",
-    value: risk.approvalCompletedCount,
-    hint: "반영 승인상태 기준",
-    accent: "text-emerald-200",
-  },
-  {
-    label: "Risk DB 반영 완료",
-    value: risk.riskDbReflectedCount,
-    hint: "Risk DB 반영상태 기준",
-    accent: "text-emerald-200",
-  },
-  {
-    label: "Risk DB 미반영",
-    value: risk.riskDbPendingCount,
-    hint: "반영 완료 전 항목",
-    accent: "text-amber-200",
-  },
-];
+  const primaryCards = [
+    {
+      label: "지금 위험한 항목",
+      value: risk.highRiskCount,
+      hint: "대표·현장감독자 우선 확인",
+      accent: "text-red-200",
+      role: "대표 확인",
+    },
+    {
+      label: "조치가 필요한 항목",
+      value: risk.actionNeededCount,
+      hint: "담당자 조치 계획 확인",
+      accent: "text-yellow-200",
+      role: "담당자 처리",
+    },
+    {
+      label: "관리자 확인 대기",
+      value: risk.approvalReadyCount,
+      hint: "완료 후보 승인 필요",
+      accent: "text-cyan-200",
+      role: "관리자 확인",
+    },
+    {
+      label: "개선 반영 대기",
+      value: risk.riskDbPendingCount,
+      hint: "조치 후 반영 확인 필요",
+      accent: "text-amber-200",
+      role: "현장 확인",
+    },
+  ];
+
+  const statusBadges = [
+    {
+      label: "확인 완료",
+      value: risk.approvalCompletedCount,
+      hint: "관리자 승인 완료",
+      accent: "text-emerald-200",
+    },
+    {
+      label: "개선 반영 완료",
+      value: risk.riskDbReflectedCount,
+      hint: "Risk DB 반영 완료",
+      accent: "text-emerald-200",
+    },
+    {
+      label: "다시 확인할 항목",
+      value: risk.reassessmentDueCount,
+      hint: "30일 이내 재확인",
+      accent: "text-blue-200",
+    },
+    {
+      label: "비용 검토 필요",
+      value: risk.budgetNeededCount,
+      hint: "예산 수반 항목",
+      accent: "text-orange-200",
+    },
+  ];
 
   return (
     <section className="rounded-2xl border border-slate-600/80 bg-slate-800/70 p-5 shadow-lg">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-white">Risk Intelligence</h2>
-          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">위험성평가 관리현황</p>
+          <h2 className="text-base font-bold text-white">위험관리 요약</h2>
+          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">
+            대표 · 현장감독자 · 담당자 공통 확인
+          </p>
           <p className="mt-1 text-xs text-gray-400">
-            위험성평가 항목 {risk.total}건 기준 관리 필요 신호입니다.
+            위험성평가 항목 {risk.total}건 중 오늘 확인할 항목을 쉽게 정리했습니다.
           </p>
         </div>
         <Link
@@ -523,17 +532,42 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
         </Link>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {cards.map((card) => (
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {primaryCards.map((card) => (
           <div
             key={card.label}
             className="rounded-xl border border-slate-600/80 bg-slate-800/80 p-4 shadow-sm"
-      >
-            <div className={`text-4xl font-bold leading-none ${card.accent}`}>{card.value}</div>
-            <div className="mt-3 text-base font-semibold text-white">{card.label}</div>
-            <div className="mt-1 text-xs leading-relaxed text-slate-300">{card.hint}</div>
-      </div>
+          >
+            <div className="mb-2 inline-flex rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-bold text-slate-300">
+              {card.role}
+            </div>
+            <div className={`text-4xl font-black leading-none ${card.accent}`}>{card.value}</div>
+            <div className="mt-2 text-base font-bold text-white [word-break:keep-all]">{card.label}</div>
+            <div className="mt-1 text-xs leading-relaxed text-slate-300 [word-break:keep-all]">{card.hint}</div>
+          </div>
         ))}
+      </div>
+
+      <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 p-3">
+        <div className="mb-2 text-xs font-bold text-slate-300">처리 현황</div>
+        <div className="grid grid-cols-2 gap-2">
+          {statusBadges.map((badge) => (
+            <div
+              key={badge.label}
+              className="rounded-lg border border-slate-700/80 bg-slate-950/40 p-2"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[11px] font-semibold text-slate-400 [word-break:keep-all]">
+                  {badge.label}
+                </span>
+                <span className={`text-lg font-black ${badge.accent}`}>{badge.value}</span>
+              </div>
+              <div className="mt-0.5 text-[10px] leading-relaxed text-slate-500 [word-break:keep-all]">
+                {badge.hint}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {risk.highRiskItems.length > 0 ? (
