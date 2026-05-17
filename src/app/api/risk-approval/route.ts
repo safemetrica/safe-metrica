@@ -4,9 +4,11 @@ import { NextResponse } from "next/server";
 import { Client } from "@notionhq/client";
 import { getCompanyConfig } from "@/lib/company";
 
+type Decision = "approve" | "reject" | "requestMoreEvidence";
+
 type RiskApprovalRequestBody = {
   riskItemId?: string;
-  decision?: "approve" | "reject" | "requestMoreEvidence";
+  decision?: Decision;
   memo?: string;
   postActionReflectionCandidate?: {
     hasCandidate?: boolean;
@@ -17,19 +19,17 @@ type RiskApprovalRequestBody = {
   };
 };
 
+type NotionPropertyLike = {
+  id?: string;
+  type?: string;
+  [key: string]: any;
+};
+
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function toMultiSelectOptions(values?: string[]) {
-  return (values ?? [])
-    .filter(Boolean)
-    .map((name) => ({
-      name,
-    }));
-}
-
-function getDecisionFields(decision: RiskApprovalRequestBody["decision"]) {
+function getDecisionFields(decision: Decision) {
   if (decision === "reject") {
     return {
       approvalStatus: "반려",
@@ -51,6 +51,147 @@ function getDecisionFields(decision: RiskApprovalRequestBody["decision"]) {
     reflectionStatus: "반영 완료",
     defaultMemo: "SafeMetrica 관리자 승인",
   };
+}
+
+function toRichText(content: string) {
+  return {
+    rich_text: [
+      {
+        type: "text",
+        text: {
+          content,
+        },
+      },
+    ],
+  };
+}
+
+function toMultiSelectOptions(values?: string[]) {
+  return (values ?? [])
+    .filter(Boolean)
+    .map((name) => ({
+      name,
+    }));
+}
+
+function buildMemoWithCandidate(
+  baseMemo: string,
+  candidate?: RiskApprovalRequestBody["postActionReflectionCandidate"]
+): string {
+  if (!candidate?.hasCandidate) return baseMemo;
+
+  const lines = [
+    baseMemo,
+    "",
+    "[AI 반영 후보]",
+    candidate.content ? `조치 후 반영내용: ${candidate.content}` : "",
+    candidate.types?.length ? `조치 반영유형: ${candidate.types.join(", ")}` : "",
+    candidate.date ? `조치 반영일: ${candidate.date}` : "",
+    candidate.evidence ? `조치 반영 근거: ${candidate.evidence}` : "",
+  ].filter(Boolean);
+
+  return lines.join("\n");
+}
+
+function setSelectOrStatus(
+  properties: Record<string, any>,
+  pageProperties: Record<string, NotionPropertyLike>,
+  fieldName: string,
+  value: string
+) {
+  const field = pageProperties[fieldName];
+  if (!field) return;
+
+  if (field.type === "status") {
+    properties[fieldName] = {
+      status: {
+        name: value,
+      },
+    };
+    return;
+  }
+
+  if (field.type === "select") {
+    properties[fieldName] = {
+      select: {
+        name: value,
+      },
+    };
+  }
+}
+
+function setRichTextIfPossible(
+  properties: Record<string, any>,
+  pageProperties: Record<string, NotionPropertyLike>,
+  fieldName: string,
+  value?: string
+) {
+  if (!value) return;
+
+  const field = pageProperties[fieldName];
+  if (!field) return;
+
+  if (field.type === "rich_text") {
+    properties[fieldName] = toRichText(value);
+  }
+}
+
+function setDateIfPossible(
+  properties: Record<string, any>,
+  pageProperties: Record<string, NotionPropertyLike>,
+  fieldName: string,
+  value?: string
+) {
+  if (!value) return;
+
+  const field = pageProperties[fieldName];
+  if (!field) return;
+
+  if (field.type === "date") {
+    properties[fieldName] = {
+      date: {
+        start: value,
+      },
+    };
+  }
+}
+
+function setReflectionTypeIfPossible(
+  properties: Record<string, any>,
+  pageProperties: Record<string, NotionPropertyLike>,
+  fieldName: string,
+  values?: string[]
+) {
+  const field = pageProperties[fieldName];
+  const cleanValues = values?.filter(Boolean) ?? [];
+
+  if (!field || cleanValues.length === 0) return;
+
+  if (field.type === "multi_select") {
+    properties[fieldName] = {
+      multi_select: toMultiSelectOptions(cleanValues),
+    };
+    return;
+  }
+
+  if (field.type === "rich_text") {
+    properties[fieldName] = toRichText(cleanValues.join(", "));
+  }
+}
+
+function getNotionErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return String((error as { message: string }).message);
+  }
+
+  return "Risk approval update failed.";
 }
 
 export async function POST(request: Request) {
@@ -80,75 +221,100 @@ export async function POST(request: Request) {
     }
 
     const decision = body.decision ?? "approve";
-    const fields = getDecisionFields(decision);
+    const decisionFields = getDecisionFields(decision);
     const notion = new Client({ auth: company.notionApiKey });
 
-    const properties: Record<string, any> = {
-      "반영 승인상태": {
-        select: {
-          name: fields.approvalStatus,
-        },
-      },
-      "반영 승인일": {
-        date: {
-          start: todayIsoDate(),
-        },
-      },
-      "반영 승인 메모": {
-        rich_text: [
-          {
-            type: "text",
-            text: {
-              content: body.memo?.trim() || fields.defaultMemo,
-            },
-          },
-        ],
-      },
-      "Risk DB 반영상태": {
-        select: {
-          name: fields.reflectionStatus,
-        },
-      },
-    };
+    const page = await notion.pages.retrieve({
+      page_id: body.riskItemId,
+    });
+
+    const pageProperties = ("properties" in page ? page.properties : {}) as Record<
+      string,
+      NotionPropertyLike
+    >;
+
+    const properties: Record<string, any> = {};
+
+    setSelectOrStatus(
+      properties,
+      pageProperties,
+      "반영 승인상태",
+      decisionFields.approvalStatus
+    );
+
+    setDateIfPossible(
+      properties,
+      pageProperties,
+      "반영 승인일",
+      todayIsoDate()
+    );
+
+    const memoContent = buildMemoWithCandidate(
+      body.memo?.trim() || decisionFields.defaultMemo,
+      decision === "approve" ? body.postActionReflectionCandidate : undefined
+    );
+
+    setRichTextIfPossible(
+      properties,
+      pageProperties,
+      "반영 승인 메모",
+      memoContent
+    );
+
+    setSelectOrStatus(
+      properties,
+      pageProperties,
+      "Risk DB 반영상태",
+      decisionFields.reflectionStatus
+    );
 
     const candidate = body.postActionReflectionCandidate;
 
     if (decision === "approve" && candidate?.hasCandidate && candidate.content) {
-      properties["조치 후 반영내용"] = {
-        rich_text: [
-          {
-            type: "text",
-            text: {
-              content: candidate.content,
-            },
-          },
-        ],
-      };
+      setRichTextIfPossible(
+        properties,
+        pageProperties,
+        "조치 후 반영내용",
+        candidate.content
+      );
 
-      properties["조치 반영유형"] = {
-        multi_select: toMultiSelectOptions(candidate.types),
-      };
+      setReflectionTypeIfPossible(
+        properties,
+        pageProperties,
+        "조치 반영유형",
+        candidate.types
+      );
 
-      if (candidate.date) {
-        properties["조치 반영일"] = {
-          date: {
-            start: candidate.date,
-          },
-        };
-      }
+      setDateIfPossible(
+        properties,
+        pageProperties,
+        "조치 반영일",
+        candidate.date
+      );
 
-      if (candidate.evidence) {
-        properties["조치 반영 근거"] = {
-          rich_text: [
-            {
-              type: "text",
-              text: {
-                content: candidate.evidence,
-              },
-            },
-          ],
-        };
-      }
+      setRichTextIfPossible(
+        properties,
+        pageProperties,
+        "조치 반영 근거",
+        candidate.evidence
+      );
+    }
+
+    if (Object.keys(properties).length === 0) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "업데이트 가능한 승인 필드를 찾지 못했습니다. Risk Items DB 필드명과 타입을 확인하세요.",
+          availableFields: Object.fromEntries(
+            Object.entries(pageProperties).map(([name, property]) => [
+              name,
+              property.type,
+            ])
+          ),
+        },
+        { status: 400 }
+      );
     }
 
     await notion.pages.update({
@@ -160,16 +326,25 @@ export async function POST(request: Request) {
       ok: true,
       riskItemId: body.riskItemId,
       decision,
-      approvalStatus: fields.approvalStatus,
-      reflectionStatus: fields.reflectionStatus,
+      approvalStatus: decisionFields.approvalStatus,
+      reflectionStatus: decisionFields.reflectionStatus,
+      updatedFields: Object.keys(properties),
+      skippedPostActionFields: [
+        "조치 후 반영내용",
+        "조치 반영유형",
+        "조치 반영일",
+        "조치 반영 근거",
+      ].filter((fieldName) => !Object.keys(properties).includes(fieldName)),
     });
   } catch (error) {
+    const message = getNotionErrorMessage(error);
+
     console.error("[SafeMetrica] Risk approval API failed", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Risk approval update failed.",
+        message,
       },
       { status: 500 }
     );
