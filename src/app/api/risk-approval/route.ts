@@ -300,6 +300,32 @@ export async function POST(request: Request) {
       );
     }
 
+    const updatedFieldNames = Object.keys(properties);
+    const hasRequiredApprovalStatus = updatedFieldNames.includes("반영 승인상태");
+    const hasRequiredReflectionStatus = updatedFieldNames.includes("Risk DB 반영상태");
+
+    if (!hasRequiredApprovalStatus || !hasRequiredReflectionStatus) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "승인 필수 필드를 업데이트할 수 없습니다. Risk Items DB의 반영 승인상태 / Risk DB 반영상태 필드명과 타입을 확인하세요.",
+          requiredFields: {
+            "반영 승인상태": hasRequiredApprovalStatus ? "ready" : "missing-or-type-mismatch",
+            "Risk DB 반영상태": hasRequiredReflectionStatus ? "ready" : "missing-or-type-mismatch",
+          },
+          availableFields: Object.fromEntries(
+            Object.entries(pageProperties).map(([name, property]) => [
+              name,
+              property.type,
+            ])
+          ),
+          preparedFields: updatedFieldNames,
+        },
+        { status: 400 }
+      );
+    }
+
     if (Object.keys(properties).length === 0) {
       return NextResponse.json(
         {
@@ -328,7 +354,7 @@ export async function POST(request: Request) {
       decision,
       approvalStatus: decisionFields.approvalStatus,
       reflectionStatus: decisionFields.reflectionStatus,
-      updatedFields: Object.keys(properties),
+      updatedFields: updatedFieldNames,
       skippedPostActionFields: [
         "조치 후 반영내용",
         "조치 반영유형",

@@ -71,7 +71,15 @@ export function RiskApprovalButtons({
         throw new Error(data.message || "승인 처리에 실패했습니다.");
       }
 
-      setMessage("처리 완료");
+      const updatedFields = Array.isArray(data.updatedFields)
+        ? data.updatedFields.join(", ")
+        : "";
+
+      setMessage(
+        updatedFields
+          ? `처리 완료: ${updatedFields}`
+          : "처리 완료"
+      );
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "처리 실패");
