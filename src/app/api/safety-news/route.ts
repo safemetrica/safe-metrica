@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getCompanyConfig } from "@/lib/company";
 import { getKstDateKey, pickDailyItem } from "@/lib/dailySafetyCase";
 import {
@@ -361,18 +361,37 @@ async function fetchKoshaCases(): Promise<SafetyCaseCard[]> {
   return normalizeKoshaItems(items);
 }
 
-async function getTenantSafetyContext(): Promise<{
+async function getTenantSafetyContext(request?: NextRequest): Promise<{
   industryTag: IndustryTag;
   safetyCaseEnabled: boolean;
   companySeed: string;
 }> {
   try {
+    const queryIndustryTag = request?.nextUrl.searchParams.get("industryTag") ?? "";
+    const queryCompanySeed = request?.nextUrl.searchParams.get("companySeed") ?? "";
+    const queryCompanyName = request?.nextUrl.searchParams.get("companyName") ?? "";
+
     const company = await getCompanyConfig();
 
+    const rawIndustryTag = queryIndustryTag || company.industryTag || "";
+    const normalizedIndustryTag =
+      /폐기물|waste|환경/i.test(rawIndustryTag)
+        ? "폐기물"
+        : normalizeIndustryTag(rawIndustryTag);
+
+    const companyIdentity = `${queryCompanySeed || company.code || ""} ${queryCompanyName || company.name || ""}`;
+
+    const inferredIndustryTag =
+      normalizedIndustryTag !== "공통"
+        ? normalizedIndustryTag
+        : /대도환경|동우환경|한국그린환경|daedo|dongwoo|greenkorea|waste|폐기물/i.test(companyIdentity)
+          ? "폐기물"
+          : "공통";
+
     return {
-      industryTag: normalizeIndustryTag(company.industryTag),
+      industryTag: inferredIndustryTag,
       safetyCaseEnabled: company.safetyCaseEnabled ?? true,
-      companySeed: company.code,
+      companySeed: queryCompanySeed || company.code,
     };
   } catch (error) {
     console.error("[safety-news] tenant context fallback", error);
@@ -385,8 +404,8 @@ async function getTenantSafetyContext(): Promise<{
   }
 }
 
-export async function GET() {
-  const tenantContext = await getTenantSafetyContext();
+export async function GET(request: NextRequest) {
+  const tenantContext = await getTenantSafetyContext(request);
 
   if (!tenantContext.safetyCaseEnabled) {
     return NextResponse.json({
@@ -402,7 +421,13 @@ export async function GET() {
 
   try {
     const koshaCards = await fetchKoshaCases();
-    const sourceCards = koshaCards.length > 0 ? koshaCards : sampleCases();
+
+    // KOSHA 결과가 있더라도 업종 유사 사례가 부족할 수 있으므로
+    // 기존 tenant-aware 선별 로직은 유지하되, SAMPLE은 보조 후보로만 포함한다.
+    const sourceCards =
+      koshaCards.length > 0
+        ? [...koshaCards, ...sampleCases()]
+        : sampleCases();
 
     const cards = selectCards(
       sourceCards,
@@ -410,13 +435,18 @@ export async function GET() {
       tenantContext.companySeed
     );
 
+    const responseSource = cards.some((card) => card.source === "KOSHA")
+      ? "KOSHA"
+      : "SAMPLE";
+
     return NextResponse.json({
       ok: true,
       title: "최근 안전사고 사례",
       subtitle: "유사 사고를 확인하고 오늘 TBM에 반영하세요.",
-      source: koshaCards.length > 0 ? "KOSHA" : "SAMPLE",
+      source: responseSource,
       mode: "tenant-aware",
       dateKey: getKstDateKey(),
+      industryTag: tenantContext.industryTag,
       cards,
     });
   } catch (error) {
