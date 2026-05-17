@@ -196,8 +196,14 @@ export async function attachRiskApprovalFieldsToItems<T extends RiskItemWithId>(
     }
 
     return items.map((item) => {
-      const riskId = item.riskItemId ?? item.id ?? "";
-      const fields = approvalMap.get(normalizeNotionPageId(riskId)) ?? {};
+      const candidateRiskIds = [item.id, item.riskItemId].filter(
+        (value): value is string => Boolean(value)
+      );
+
+      const fields =
+        candidateRiskIds
+          .map((riskId) => approvalMap.get(normalizeNotionPageId(riskId)))
+          .find((matchedFields): matchedFields is RiskApprovalFields => Boolean(matchedFields)) ?? {};
 
       return {
         ...item,
