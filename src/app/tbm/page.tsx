@@ -3,9 +3,11 @@ export const dynamic = "force-dynamic";
 import { SafeNav, StatusBadge } from "@/components/SafeLayout";
 import Link from "next/link";
 import { getCompanyConfig } from "@/lib/company";
+
 async function getTbmRows() {
   const apiBase = "https://api.notion.com/v1/databases";
   const company = await getCompanyConfig();
+
   const res = await fetch(`${apiBase}/${company.tbmDbId}/query`, {
     method: "POST",
     headers: {
@@ -13,11 +15,16 @@ async function getTbmRows() {
       "Notion-Version": "2022-06-28",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ page_size: 100, sorts: [{ property: "날짜", direction: "descending" }] }),
+    body: JSON.stringify({
+      page_size: 100,
+      sorts: [{ property: "날짜", direction: "descending" }],
+    }),
     cache: "no-store",
   });
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.message ?? "Notion API error");
+
   return data.results.map((page: any) => ({
     id: page.id,
     작업명: page.properties["작업명"]?.title?.[0]?.plain_text ?? "",
@@ -32,53 +39,127 @@ export default async function TbmPage() {
   const rows = await getTbmRows();
   const 특이사항건수 = rows.filter((r: any) => r.특이사항).length;
   const EB누락 = rows.filter((r: any) => r.특이사항 && r.연결EB === 0).length;
+  const 조치필요 = rows.filter((r: any) => r.조치상태 === "조치 필요").length;
+
   return (
-    <main className="min-h-screen bg-gray-950 pb-10">
+    <main className="min-h-screen bg-gray-950 pb-12">
       <SafeNav />
-      <div className="p-4 max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-4 mt-2">
-          <h1 className="text-white text-xl font-bold">📋 TBM 현황</h1>
-          <span className="text-gray-400 text-sm">{rows.length}건</span>
-        </div>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-blue-950 border border-blue-800 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-white">{rows.length}</div>
-            <div className="text-blue-400 text-xs mt-0.5">전체</div>
+
+      <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 sm:py-8">
+        <div className="mb-5 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-blue-300">TBM · 현장 안전기록</p>
+            <h1 className="mt-1 text-2xl font-black text-white sm:text-3xl">
+              📋 TBM 현황
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
+              오늘 작성된 TBM과 특이사항, 증빙 연결 상태를 확인합니다.
+            </p>
           </div>
-          <div className="bg-yellow-950 border border-yellow-800 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-white">{특이사항건수}</div>
-            <div className="text-yellow-400 text-xs mt-0.5">특이사항</div>
-          </div>
-          <div className={`rounded-xl p-3 text-center border ${EB누락 > 0 ? "bg-red-950 border-red-800" : "bg-gray-800 border-gray-700"}`}>
-            <div className="text-2xl font-bold text-white">{EB누락}</div>
-            <div className={`text-xs mt-0.5 ${EB누락 > 0 ? "text-red-400" : "text-gray-400"}`}>EB 누락</div>
+
+          <div className="rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-slate-200">
+            {rows.length}건
           </div>
         </div>
-        {EB누락 > 0 && (
-          <div className="bg-red-950 border border-red-700 rounded-xl p-3 mb-4 flex items-center gap-2">
-            <span className="text-red-400 text-lg">🔴</span>
-            <p className="text-red-300 text-sm font-medium">특이사항 발생 건 중 Evidence Book 미등록 {EB누락}건 — 즉시 등록 필요</p>
+
+        <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-blue-700 bg-blue-950/35 p-5">
+            <p className="text-sm font-bold text-blue-200">전체 TBM</p>
+            <div className="mt-3 text-4xl font-black text-white">{rows.length}</div>
+            <p className="mt-1 text-sm text-blue-200/80">등록된 안전기록</p>
+          </div>
+
+          <div className={`rounded-2xl border p-5 ${특이사항건수 > 0 ? "border-amber-700 bg-amber-950/30" : "border-slate-700 bg-slate-900"}`}>
+            <p className="text-sm font-bold text-amber-200">특이사항</p>
+            <div className="mt-3 text-4xl font-black text-white">{특이사항건수}</div>
+            <p className="mt-1 text-sm text-amber-100/80">
+              {특이사항건수 > 0 ? "확인 필요 항목" : "특이사항 없음"}
+            </p>
+          </div>
+
+          <div className={`rounded-2xl border p-5 ${EB누락 > 0 ? "border-red-700 bg-red-950/35" : "border-emerald-700 bg-emerald-950/25"}`}>
+            <p className={`text-sm font-bold ${EB누락 > 0 ? "text-red-200" : "text-emerald-200"}`}>
+              EB 증빙 연결
+            </p>
+            <div className="mt-3 text-4xl font-black text-white">{EB누락}</div>
+            <p className={`mt-1 text-sm ${EB누락 > 0 ? "text-red-100/80" : "text-emerald-100/80"}`}>
+              {EB누락 > 0 ? "증빙 연결 필요" : "누락 없음"}
+            </p>
+          </div>
+        </div>
+
+        {(EB누락 > 0 || 조치필요 > 0) && (
+          <div className="mb-5 rounded-2xl border border-red-700 bg-red-950/30 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🔴</span>
+              <div>
+                <p className="text-base font-black text-red-100">오늘 먼저 확인할 항목이 있습니다.</p>
+                <p className="mt-1 text-sm leading-relaxed text-red-200">
+                  EB 증빙 연결 필요 {EB누락}건, 조치 필요 {조치필요}건입니다.
+                </p>
+              </div>
+            </div>
           </div>
         )}
-        <div className="space-y-2">
+
+        <div className="space-y-3">
           {rows.map((row: any) => {
             const needsEb = row.특이사항 && row.연결EB === 0;
+            const needsAction = row.조치상태 === "조치 필요";
+
             return (
-              <Link key={row.id} href={`/tbm/${row.id}`}>
-                <div className={`rounded-xl border p-4 cursor-pointer hover:opacity-80 transition ${needsEb ? "bg-red-950 border-red-800" : "bg-gray-900 border-gray-700"}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium text-sm truncate">{row.작업명 || "작업명 없음"}</div>
-                      <div className="text-gray-400 text-xs mt-1">{row.날짜}</div>
+              <Link key={row.id} href={`/tbm/${row.id}`} className="block">
+                <div
+                  className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-blue-500 sm:p-5 ${
+                    needsEb || needsAction
+                      ? "border-red-800 bg-red-950/25"
+                      : row.특이사항
+                        ? "border-amber-800 bg-amber-950/20"
+                        : "border-slate-700 bg-slate-900"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-lg font-black text-white sm:text-xl">
+                        {row.작업명 || "작업명 없음"}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-slate-400">{row.날짜}</p>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {row.특이사항 ? (
+                          <span className={`rounded-full border px-3 py-1 text-sm font-bold ${
+                            row.연결EB > 0
+                              ? "border-emerald-700 bg-emerald-950/40 text-emerald-200"
+                              : "border-red-700 bg-red-950/50 text-red-200"
+                          }`}>
+                            {row.연결EB > 0 ? `EB ${row.연결EB}건 연결` : "EB 등록 필요"}
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1 text-sm font-bold text-slate-300">
+                            특이사항 없음
+                          </span>
+                        )}
+
+                        {row.조치상태 && (
+                          <span className={`rounded-full border px-3 py-1 text-sm font-bold ${
+                            needsAction
+                              ? "border-red-700 bg-red-950/50 text-red-200"
+                              : "border-emerald-700 bg-emerald-950/40 text-emerald-200"
+                          }`}>
+                            {row.조치상태}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
+
+                    <div className="hidden shrink-0 sm:block">
                       {row.조치상태 && <StatusBadge status={row.조치상태} />}
-                      {row.특이사항 && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${row.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : "bg-red-900 text-red-300 border-red-700"}`}>
-                          {row.연결EB > 0 ? `✅ EB ${row.연결EB}건` : "🔴 EB 없음"}
-                        </span>
-                      )}
                     </div>
+                  </div>
+
+                  <div className="mt-4 h-12 rounded-xl border border-slate-700 bg-slate-950/40 px-4 text-sm font-bold text-slate-300 flex items-center justify-between sm:hidden">
+                    <span>상세 확인</span>
+                    <span>→</span>
                   </div>
                 </div>
               </Link>
