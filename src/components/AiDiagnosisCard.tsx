@@ -103,24 +103,26 @@ export default function AiDiagnosisCard() {
   const briefing = getBriefingView(diagnosis);
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="text-lg">🤖</span>
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-xl ring-1 ring-blue-100">
+            🤖
+          </span>
           <div className="min-w-0">
-            <div className="text-sm font-bold text-white">AI 운영 비서 브리핑</div>
-            <div className="mt-0.5 text-xs text-slate-400 [word-break:keep-all]">
+            <div className="text-base font-black text-slate-950">AI 운영 비서 브리핑</div>
+            <div className="mt-0.5 text-sm text-slate-500 [word-break:keep-all]">
               TBM · EB · PTW · 위험성평가 관리신호 요약
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-300">
+          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
             GPT-4o-mini
           </span>
           {updatedAt && (
-            <span className="hidden text-xs text-slate-400 sm:inline">
+            <span className="hidden text-xs font-medium text-slate-400 sm:inline">
               {updatedAt} 기준
             </span>
           )}
@@ -128,34 +130,34 @@ export default function AiDiagnosisCard() {
       </div>
 
       {loading ? (
-        <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-3 text-sm text-slate-300">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-medium text-slate-500">
           브리핑 생성 중입니다...
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
-            <div className="mb-1 text-[11px] font-bold text-blue-200">핵심 요약</div>
-            <p className="text-sm font-semibold leading-relaxed text-white [word-break:keep-all]">
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+            <div className="mb-1 text-xs font-black text-blue-700">핵심 요약</div>
+            <p className="text-base font-black leading-relaxed text-slate-950 [word-break:keep-all]">
               {briefing.headline}
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
-            <div className="mb-2 text-[11px] font-bold text-slate-300">확인할 내용</div>
-            <ul className="space-y-1.5">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-3 text-xs font-black text-slate-600">확인할 내용</div>
+            <ul className="space-y-2">
               {briefing.bullets.map((line, index) => (
                 <li
                   key={`${line}-${index}`}
-                  className="flex gap-2 text-sm leading-relaxed text-slate-100 [word-break:keep-all]"
+                  className="flex gap-2 text-sm leading-relaxed text-slate-700 [word-break:keep-all]"
                 >
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                   <span>{line}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-bold text-amber-100 [word-break:keep-all]">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-800 [word-break:keep-all]">
             {briefing.action}
           </div>
         </div>
