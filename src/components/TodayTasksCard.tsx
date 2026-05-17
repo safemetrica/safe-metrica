@@ -14,56 +14,31 @@ interface Props {
 export default function TodayTasksCard({ tasks }: Props) {
   if (tasks.length === 0) {
     return (
-      <div className="mb-4 rounded-3xl border border-emerald-200 bg-white p-5 shadow-sm">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-xl ring-1 ring-emerald-100">
-            ✅
-          </span>
-          <div>
-            <h3 className="text-base font-black text-slate-950">오늘 할 일</h3>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">조치·증빙·승인 확인</p>
-          </div>
+      <div className="rounded-2xl border border-green-700 bg-green-950 p-4 mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-lg">✅</span>
+          <span className="text-white font-bold text-sm">오늘 할 일</span>
         </div>
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-          모든 항목 완료 — 오늘도 안전한 하루!
-        </div>
+        <p className="text-green-300 text-sm">모든 항목 완료 — 오늘도 안전한 하루!</p>
       </div>
     );
   }
 
   return (
-    <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <div className="rounded-2xl border border-orange-700 bg-orange-950 p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-50 text-xl ring-1 ring-red-100">
-            📌
-          </span>
-          <div>
-            <h3 className="text-base font-black text-slate-950">오늘 할 일</h3>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">오늘 처리해야 할 관리 항목</p>
-          </div>
+          <span className="text-lg">📌</span>
+          <span className="text-white font-bold text-sm">오늘 할 일</span>
         </div>
-        <span className="rounded-full bg-red-50 px-3 py-1 text-sm font-black text-red-700 ring-1 ring-red-100">
-          {tasks.length}건
-        </span>
+        <span className="text-orange-400 text-sm font-bold">{tasks.length}건</span>
       </div>
-
       <div className="space-y-2">
         {tasks.map((t, i) => (
-          <Link key={i} href={t.href} className="block">
-            <div
-              className={`flex min-h-12 items-center gap-3 rounded-2xl border px-4 py-3 transition hover:-translate-y-0.5 hover:shadow-sm ${
-                t.urgent
-                  ? "border-red-200 bg-red-50"
-                  : "border-amber-200 bg-amber-50"
-              }`}
-            >
-              <span className="text-lg">{t.icon}</span>
-              <span className={`text-sm font-black [word-break:keep-all] ${
-                t.urgent ? "text-red-800" : "text-amber-800"
-              }`}>
-                {t.text}
-              </span>
+          <Link key={i} href={t.href}>
+            <div className={`rounded-lg p-3 flex items-center gap-2 hover:opacity-80 transition cursor-pointer ${t.urgent ? "bg-red-900/50 border border-red-700" : "bg-orange-900/40"}`}>
+              <span>{t.icon}</span>
+              <span className={`text-sm ${t.urgent ? "text-red-200 font-medium" : "text-orange-100"}`}>{t.text}</span>
             </div>
           </Link>
         ))}

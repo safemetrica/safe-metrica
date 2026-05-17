@@ -257,12 +257,12 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                 오늘의 안전운영
               </div>
               <h2 className="text-2xl font-black leading-tight text-slate-950 sm:text-4xl">
-                오늘 확인할 안전관리 항목을
+                위험성평가·TBM·증빙을
                 <br className="hidden sm:block" />
-                한눈에 봅니다.
+                한 화면에서 확인합니다.
               </h2>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600">
-                위험성평가, TBM, 증빙, 작업허가 상태를 한 화면에서 확인하고 관리합니다.
+                대표는 오늘 위험을 보고, 현장은 할 일을 확인하고, 담당자는 증빙과 작업허가 상태를 정리합니다.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-2">
@@ -390,10 +390,10 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    <h3 className="text-lg font-black text-slate-950">오늘 예방 체크포인트</h3>
+                    <h3 className="text-lg font-black text-slate-950">오늘 TBM 체크포인트</h3>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
-                    유사 작업 사례를 참고해 오늘 TBM에서 확인할 항목입니다.
+                    최근 안전사고 사례를 참고해 오늘 확인할 항목입니다.
                   </p>
                 </div>
                 <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-black text-yellow-700 ring-1 ring-yellow-200">
@@ -410,14 +410,14 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                       className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-300 hover:bg-blue-50"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="shrink-0 whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
+                        <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-black text-red-700 ring-1 ring-red-100">
                           {item.accidentType}
                         </span>
                         <p className="truncate text-sm font-black text-slate-950">{item.title}</p>
                       </div>
                       <p className="mt-2 text-sm font-bold text-emerald-700">{item.action}</p>
                       <p className="mt-3 text-xs text-slate-400">
-                        {item.source === "KOSHA" ? "KOSHA 안전사례" : "참고 사례"}
+                        출처: {item.source === "KOSHA" ? "KOSHA 안전사례" : "예시 사례"}
                       </p>
                     </Link>
                   ))
@@ -434,10 +434,10 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                    <h3 className="text-lg font-black text-slate-950">안전관리 동향</h3>
+                    <h3 className="text-lg font-black text-slate-950">산업안전 동향</h3>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
-                    현장 관리자가 참고할 주요 안전관리 소식입니다.
+                    현장 안전관리자가 참고할 최신 안전 이슈입니다.
                   </p>
                 </div>
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700 ring-1 ring-blue-100">
@@ -456,8 +456,8 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                       className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-300 hover:bg-blue-50"
                     >
                       <div className="flex items-start gap-2">
-                        <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-700 ring-1 ring-blue-100">
-                          안전 이슈
+                        <span className="mt-0.5 rounded-full bg-red-50 px-2 py-1 text-xs font-black text-red-700 ring-1 ring-red-100">
+                          {news.tag}
                         </span>
                         <p className="line-clamp-2 text-sm font-bold leading-relaxed text-slate-800">
                           {news.title}
@@ -467,7 +467,7 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                   ))
                 ) : (
                   <div className="rounded-2xl bg-slate-50 p-4 text-sm font-medium text-slate-500 ring-1 ring-slate-200">
-                    현재 참고할 최신 안전관리 소식이 없습니다.
+                    현재 참고할 최신 안전 이슈가 없습니다.
                   </div>
                 )}
               </div>
