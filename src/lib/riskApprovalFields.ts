@@ -23,6 +23,7 @@ export interface AttachRiskApprovalFieldsOptions {
 type RiskItemWithId = {
   id?: string;
   riskItemId?: string;
+  [key: string]: unknown;
 };
 
 type NotionPageLike = {
@@ -147,6 +148,156 @@ async function fetchAllPages(notion: Client, databaseId: string): Promise<Notion
   return pages;
 }
 
+
+function normalizeApprovalMatchKey(value?: unknown): string {
+  return String(value ?? "")
+    .replace(/-/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[—–]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function getAllPlainTextsFromProperty(property: any): string[] {
+  if (!property) return [];
+
+  const value = getPlainText(property);
+  return value ? [value] : [];
+}
+
+function collectPageApprovalMatchKeys(page: NotionPageLike): string[] {
+  const properties = page.properties ?? {};
+  const keys = new Set<string>();
+
+  keys.add(normalizeNotionPageId(page.id));
+  keys.add(normalizeApprovalMatchKey(page.id));
+
+  const preferredPropertyNames = [
+    "No",
+    "No.",
+    "번호",
+    "관리번호",
+    "assessmentNo",
+    "assessmentNumber",
+    "riskItemId",
+    "Risk Item ID",
+    "제목",
+    "이름",
+    "Name",
+    "작업명",
+    "공정",
+    "세부공정",
+    "유해위험요인",
+    "유해·위험요인",
+    "위험요인",
+    "hazard",
+    "memo",
+    "메모",
+  ];
+
+  for (const propertyName of preferredPropertyNames) {
+    const property = properties[propertyName];
+    for (const text of getAllPlainTextsFromProperty(property)) {
+      const normalized = normalizeApprovalMatchKey(text);
+      if (normalized.length >= 2) {
+        keys.add(normalized);
+      }
+    }
+  }
+
+  for (const [propertyName, property] of Object.entries(properties)) {
+    const lowerName = propertyName.toLowerCase();
+    const isLikelyIdentityField =
+      lowerName.includes("no") ||
+      propertyName.includes("번호") ||
+      propertyName.includes("제목") ||
+      propertyName.includes("이름") ||
+      propertyName.includes("작업") ||
+      propertyName.includes("공정") ||
+      propertyName.includes("위험") ||
+      propertyName.includes("요인");
+
+    if (!isLikelyIdentityField) continue;
+
+    for (const text of getAllPlainTextsFromProperty(property)) {
+      const normalized = normalizeApprovalMatchKey(text);
+      if (normalized.length >= 2) {
+        keys.add(normalized);
+      }
+    }
+  }
+
+  return [...keys].filter(Boolean);
+}
+
+function collectRiskItemApprovalMatchKeys(item: RiskItemWithId): string[] {
+  const keys = new Set<string>();
+
+  const preferredItemFields = [
+    "id",
+    "riskItemId",
+    "no",
+    "No",
+    "number",
+    "managementNo",
+    "assessmentNo",
+    "assessmentNumber",
+    "title",
+    "name",
+    "workName",
+    "taskName",
+    "processName",
+    "subProcessName",
+    "hazard",
+    "hazardName",
+    "riskFactor",
+    "riskName",
+    "memo",
+  ];
+
+  for (const fieldName of preferredItemFields) {
+    const value = item[fieldName];
+    if (typeof value === "string" || typeof value === "number") {
+      const normalized = normalizeApprovalMatchKey(value);
+      if (normalized.length >= 2) {
+        keys.add(normalized);
+      }
+    }
+  }
+
+  for (const [fieldName, value] of Object.entries(item)) {
+    if (!(typeof value === "string" || typeof value === "number")) continue;
+
+    const lowerName = fieldName.toLowerCase();
+    const isLikelyIdentityField =
+      lowerName.includes("id") ||
+      lowerName.includes("no") ||
+      lowerName.includes("number") ||
+      lowerName.includes("title") ||
+      lowerName.includes("name") ||
+      lowerName.includes("process") ||
+      lowerName.includes("hazard") ||
+      lowerName.includes("risk") ||
+      fieldName.includes("번호") ||
+      fieldName.includes("제목") ||
+      fieldName.includes("이름") ||
+      fieldName.includes("작업") ||
+      fieldName.includes("공정") ||
+      fieldName.includes("위험") ||
+      fieldName.includes("요인");
+
+    if (!isLikelyIdentityField) continue;
+
+    const normalized = normalizeApprovalMatchKey(value);
+    if (normalized.length >= 2) {
+      keys.add(normalized);
+    }
+  }
+
+  return [...keys].filter(Boolean);
+}
+
+
 function extractApprovalFields(page: NotionPageLike): RiskApprovalFields {
   const properties = page.properties ?? {};
   const readback = readRiskApprovalReadbackFromPage(page);
@@ -192,17 +343,17 @@ export async function attachRiskApprovalFieldsToItems<T extends RiskItemWithId>(
     const approvalMap = new Map<string, RiskApprovalFields>();
 
     for (const page of pages) {
-      approvalMap.set(normalizeNotionPageId(page.id), extractApprovalFields(page));
+      const fields = extractApprovalFields(page);
+
+      for (const key of collectPageApprovalMatchKeys(page)) {
+        approvalMap.set(key, fields);
+      }
     }
 
     return items.map((item) => {
-      const candidateRiskIds = [item.id, item.riskItemId].filter(
-        (value): value is string => Boolean(value)
-      );
-
       const fields =
-        candidateRiskIds
-          .map((riskId) => approvalMap.get(normalizeNotionPageId(riskId)))
+        collectRiskItemApprovalMatchKeys(item)
+          .map((key) => approvalMap.get(key))
           .find((matchedFields): matchedFields is RiskApprovalFields => Boolean(matchedFields)) ?? {};
 
       return {
