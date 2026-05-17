@@ -279,7 +279,7 @@ function RiskExecutionStatusPanel({
             {summary.approval.approvalStatus === "approvalReady"
               ? "승인 대기"
               : summary.approval.approvalStatus === "approved"
-                ? "승인 완료"
+                ? "승인 완료됨"
                 : summary.approval.approvalStatus === "rejected"
                   ? "반려"
                   : summary.approval.approvalStatus === "moreEvidenceRequired"
@@ -300,7 +300,7 @@ function RiskExecutionStatusPanel({
 
       <div className="mt-3 rounded-lg border border-slate-700/70 bg-slate-950/60 px-3 py-2 text-[11px] leading-relaxed text-slate-300">
         TBM 공유 완료는 교육·공유 이행 근거이며, 개선대책 완료와 구분됩니다.
-        {summary.riskDbReflectionStatus === "반영 완료"
+        {summary.riskDbReflectionTone === "green"
           ? " Risk DB 반영 완료 상태가 Notion 승인 필드에서 확인되었습니다."
           : " Risk DB 상태는 관리자 승인 전까지 자동 변경되지 않습니다."}
       </div>

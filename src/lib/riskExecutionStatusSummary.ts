@@ -30,6 +30,8 @@ import type {
   RiskExecutionKpiSourceItem,
 } from "./dashboardRiskExecutionKpi";
 
+import { isRiskApprovalCompleted } from "./riskApprovalReadback";
+
 export type RiskExecutionOverallStatus =
   | "tbmShareRequired"
   | "tbmShared"
@@ -268,10 +270,24 @@ export function buildRiskExecutionStatusSummary(
     riskDbReflectionStatus: riskItem.riskDbReflectionStatus,
   });
 
+  const readbackApprovalCompleted = isRiskApprovalCompleted(riskItem.approvalStatus);
+
+  const approvalForDisplay = readbackApprovalCompleted
+    ? {
+        ...approval,
+        approvalStatus: "approved" as const,
+        canApprove: false,
+        label: "승인 완료됨",
+        message:
+          riskItem.approvalMemo ||
+          "Notion 승인 readback 기준으로 승인 완료된 상태입니다.",
+      }
+    : approval;
+
   const overall = resolveOverallStatus({
     tbmShare,
     completionCandidate,
-    approval,
+    approval: approvalForDisplay,
   });
 
   const reflection = resolveRiskDbReflectionStatus(riskItem.riskDbReflectionStatus);
@@ -290,7 +306,7 @@ export function buildRiskExecutionStatusSummary(
     isCompletionCandidate: completionCandidate.isCompletionCandidate,
     missingEvidence: completionCandidate.missingEvidence,
 
-    approvalStatus: approval.approvalStatus,
+    approvalStatus: approvalForDisplay.approvalStatus,
     canApprove: approval.canApprove,
     canCreateRiskDbUpdatePayload: approval.canCreateRiskDbUpdatePayload,
 
@@ -308,7 +324,7 @@ export function buildRiskExecutionStatusSummary(
 
     tbmShare,
     completionCandidate,
-    approval,
+    approval: approvalForDisplay,
 
     dashboardKpiSourceItem,
 
