@@ -29,6 +29,10 @@ type NotionPageLike = {
   properties?: Record<string, any>;
 };
 
+function normalizeNotionPageId(value?: string): string {
+  return String(value ?? "").replace(/-/g, "").trim().toLowerCase();
+}
+
 function getPlainText(property: any): string {
   if (!property) return "";
 
@@ -177,12 +181,12 @@ export async function attachRiskApprovalFieldsToItems<T extends RiskItemWithId>(
     const approvalMap = new Map<string, RiskApprovalFields>();
 
     for (const page of pages) {
-      approvalMap.set(page.id, extractApprovalFields(page));
+      approvalMap.set(normalizeNotionPageId(page.id), extractApprovalFields(page));
     }
 
     return items.map((item) => {
       const riskId = item.riskItemId ?? item.id ?? "";
-      const fields = approvalMap.get(riskId) ?? {};
+      const fields = approvalMap.get(normalizeNotionPageId(riskId)) ?? {};
 
       return {
         ...item,
