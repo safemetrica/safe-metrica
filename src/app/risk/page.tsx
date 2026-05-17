@@ -220,7 +220,7 @@ function RiskExecutionStatusPanel({
   summary: ReturnType<typeof buildRiskExecutionStatusSummary>;
 }) {
   const toneClassMap = {
-    green: "border-lime-300/75 bg-gradient-to-br from-lime-400/30 via-emerald-500/20 to-slate-950 text-lime-50 shadow-[0_0_32px_rgba(132,204,22,0.22)]",
+    green: "border-lime-300/70 bg-lime-500/20 text-lime-50 shadow-lg",
     amber: "border-amber-500/40 bg-amber-500/10",
     blue: "border-blue-500/40 bg-blue-500/10",
     red: "border-red-500/40 bg-red-500/10",
