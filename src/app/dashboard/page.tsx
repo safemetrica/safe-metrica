@@ -349,7 +349,7 @@ async function getDashboardData() {
   }
 
   if (EB누락목록.length > 0) {
-    todayTasks.push({ icon: "🔴", text: `EB 누락 ${EB누락목록.length}건 — 등록 필요`, href: "/ebm", urgent: true });
+    todayTasks.push({ icon: "🔴", text: `증빙 누락 ${EB누락목록.length}건 — 등록 필요`, href: "/ebm", urgent: true });
   }
 
   if (조치필요목록.length > 0) {
@@ -460,7 +460,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       value: risk.highRiskCount,
       hint: "대표·현장감독자 우선 확인",
       accent: "text-red-200",
-      role: "대표 확인",
+      role: "대표 보고",
     },
     {
       label: "조치가 필요한 항목",
@@ -573,7 +573,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       {risk.highRiskItems.length > 0 ? (
         <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-4">
           <div className="mb-2 text-xs font-semibold text-gray-400 [word-break:keep-all]">
-            고위험 관리 항목 예시
+            먼저 볼 고위험 항목
           </div>
           <div className="space-y-2">
             {risk.highRiskItems.map((item) => (
@@ -592,7 +592,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
         </div>
       ) : (
         <div className="rounded-xl bg-gray-800/70 p-4 text-sm text-gray-300">
-          현재 표시할 고위험 관리 항목이 없습니다.
+          현재 먼저 볼 고위험 항목이 없습니다.
         </div>
       )}
     </section>
@@ -638,36 +638,36 @@ export default async function DashboardPage() {
                 <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300">
                   오늘의 결론
                 </span>
-                <span className="text-xs text-slate-400">대표 확인용 요약</span>
+                <span className="text-xs text-slate-400">오늘 확인 요약</span>
               </div>
 
               <h2 className="text-2xl font-bold leading-tight text-white [word-break:keep-all]">
                 {s.조치필요 > 0 || s.EB누락 > 0 || s.PTW미승인 > 0 || s.risk.highRiskCount > 0
-                  ? "관리 필요 항목을 확인하세요."
-                  : "현재 주요 관리 신호는 안정적입니다."}
+                  ? "오늘 확인할 항목이 있습니다."
+                  : "현재 주요 관리 항목은 안정적입니다."}
               </h2>
 
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 [word-break:keep-all]">
-                오늘 조치 필요 {s.조치필요}건, EB 누락 {s.EB누락}건, PTW 승인대기 {s.PTW미승인}건,
-                위험성평가 기준 고위험 관리 항목 {s.risk.highRiskCount}건입니다.
+                오늘 조치가 필요한 항목 {s.조치필요}건, 증빙 누락 {s.EB누락}건, PTW 승인 대기 {s.PTW미승인}건,
+                고위험 항목 {s.risk.highRiskCount}건입니다.
               </p>
             </div>
 
             <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <div className="text-xs font-medium text-emerald-300">현장 리스크 지수</div>
+              <div className="text-xs font-medium text-emerald-300">오늘 현장 위험도</div>
               <div className={`mt-2 text-5xl font-black leading-none ${리스크색}`}>{s.리스크점수}점</div>
               <div className={`mt-2 text-sm font-semibold ${리스크색}`}>{리스크라벨}</div>
-              <div className="mt-3 text-xs text-slate-400">EB누락 ×20 + 조치필요 ×10</div>
+              <div className="mt-3 text-xs text-slate-400">미조치·증빙누락 기준</div>
             </div>
 
             <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4">
-              <div className="text-xs font-medium text-blue-300">Risk Intelligence</div>
+              <div className="text-xs font-medium text-blue-300">고위험 항목</div>
               <div className="mt-2 flex items-end gap-2">
                 <span className="text-5xl font-black leading-none text-white">{s.risk.highRiskCount}</span>
                 <span className="pb-1 text-sm text-slate-300">고위험</span>
               </div>
               <div className="mt-3 text-xs text-slate-400">
-                개선대책 {s.risk.actionNeededCount}건 · 예산 {s.risk.budgetNeededCount}건
+                조치 필요 {s.risk.actionNeededCount}건 · 비용 검토 {s.risk.budgetNeededCount}건
               </div>
             </div>
           </div>
@@ -675,12 +675,12 @@ export default async function DashboardPage() {
 
         {/* ZONE 2: 핵심 의사결정 영역 */}
         <section className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(460px,0.95fr)]">
-          {/* 좌측: 운영 브리핑 + 오늘 관리 필요 */}
+          {/* 좌측: 운영 브리핑 + 오늘 처리할 항목 */}
           <div className="space-y-5">
             <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-bold text-white">AI 운영 브리핑</h2>
-                <span className="text-xs text-slate-500">TBM · EB · PTW 기준</span>
+                <h2 className="text-base font-bold text-white">오늘 운영 브리핑</h2>
+                <span className="text-xs text-slate-500">TBM · 증빙 · PTW 기준</span>
               </div>
               <AiDiagnosisCard />
             </div>
@@ -688,9 +688,9 @@ export default async function DashboardPage() {
             <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-white">오늘 관리 필요</h2>
+                  <h2 className="text-lg font-bold text-white">오늘 처리할 항목</h2>
                   <p className="mt-1 text-xs text-slate-400">
-                    조치, 증빙, 승인 상태 중 대표가 확인할 항목입니다.
+                    조치·증빙·승인 중 오늘 처리할 항목입니다.
                   </p>
                 </div>
                 <span className="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-amber-500/15 px-3 py-1 text-sm font-bold leading-none text-amber-300">
@@ -718,7 +718,7 @@ export default async function DashboardPage() {
 
                 <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">EB 누락</span>
+                    <span className="text-sm font-semibold text-white">증빙 누락</span>
                     <span className="text-2xl font-black text-rose-300">{s.EB누락}</span>
                   </div>
                   {s.EB누락목록[0] ? (
@@ -745,20 +745,20 @@ export default async function DashboardPage() {
 
                 <div className="rounded-2xl border border-slate-600 bg-slate-800/70 p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">대표 확인</span>
+                    <span className="text-sm font-semibold text-white">대표 보고</span>
                     <span className="text-2xl font-black text-slate-200">
                       {s.최악건 ? `R=${s.최악R}` : "-"}
                     </span>
                   </div>
                   <div className="mt-3 text-xs leading-5 text-slate-400">
-                    {s.최악건 ? s.최악건.작업명 : "작업 태그 매핑 없음"}
+                    {s.최악건 ? s.최악건.작업명 : "추가 보고 항목 없음"}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 우측: Risk Intelligence */}
+          {/* 우측: 위험관리 요약 */}
           <div className="space-y-5">
             <RiskIntelligenceSection risk={s.risk} />
           </div>
@@ -795,7 +795,7 @@ export default async function DashboardPage() {
               </div>
               <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
                 <div className="text-3xl font-black text-white">{s.EB누락}</div>
-                <div className="mt-1 text-xs text-rose-300">EB 누락</div>
+                <div className="mt-1 text-xs text-rose-300">증빙 누락</div>
               </div>
             </div>
 
