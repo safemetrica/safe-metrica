@@ -1,6 +1,7 @@
 // src/lib/riskApprovalFields.ts
 
 import { Client } from "@notionhq/client";
+import { normalizeNotionId, readRiskApprovalReadbackFromPage } from "./riskApprovalReadback";
 
 export interface RiskApprovalFields {
   approvalStatus?: string;
@@ -30,7 +31,7 @@ type NotionPageLike = {
 };
 
 function normalizeNotionPageId(value?: string): string {
-  return String(value ?? "").replace(/-/g, "").trim().toLowerCase();
+  return normalizeNotionId(value).toLowerCase();
 }
 
 function getPlainText(property: any): string {
@@ -148,17 +149,27 @@ async function fetchAllPages(notion: Client, databaseId: string): Promise<Notion
 
 function extractApprovalFields(page: NotionPageLike): RiskApprovalFields {
   const properties = page.properties ?? {};
+  const readback = readRiskApprovalReadbackFromPage(page);
 
   return {
-    approvalStatus: getPlainText(properties["반영 승인상태"]),
-    approvalBy: getPlainText(properties["반영 승인자"]),
-    approvalDate: getPlainText(properties["반영 승인일"]),
-    approvalMemo: getPlainText(properties["반영 승인 메모"]),
-    riskDbReflectionStatus: getPlainText(properties["Risk DB 반영상태"]),
-    postActionReflection: getPlainText(properties["조치 후 반영내용"]),
-    actionReflectionType: getPlainText(properties["조치 반영유형"]),
-    actionReflectionDate: getPlainText(properties["조치 반영일"]),
-    actionReflectionEvidence: getPlainText(properties["조치 반영 근거"]),
+    approvalStatus:
+      readback.approvalStatus || getPlainText(properties["반영 승인상태"]),
+    approvalBy:
+      readback.approvalReviewer || getPlainText(properties["반영 승인자"]),
+    approvalDate:
+      readback.approvalApprovedAt || getPlainText(properties["반영 승인일"]),
+    approvalMemo:
+      readback.approvalMemo || getPlainText(properties["반영 승인 메모"]),
+    riskDbReflectionStatus:
+      readback.riskDbReflectionStatus || getPlainText(properties["Risk DB 반영상태"]),
+    postActionReflection:
+      readback.postActionReflection || getPlainText(properties["조치 후 반영내용"]),
+    actionReflectionType:
+      readback.actionReflectionType || getPlainText(properties["조치 반영유형"]),
+    actionReflectionDate:
+      readback.actionReflectionDate || getPlainText(properties["조치 반영일"]),
+    actionReflectionEvidence:
+      readback.actionReflectionEvidence || getPlainText(properties["조치 반영 근거"]),
   };
 }
 
