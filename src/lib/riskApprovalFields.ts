@@ -149,15 +149,6 @@ async function fetchAllPages(notion: Client, databaseId: string): Promise<Notion
 }
 
 
-function normalizeApprovalMatchKey(value?: unknown): string {
-  return String(value ?? "")
-    .replace(/-/g, "")
-    .replace(/\s+/g, "")
-    .replace(/[—–]/g, "")
-    .trim()
-    .toLowerCase();
-}
-
 function getAllPlainTextsFromProperty(property: any): string[] {
   if (!property) return [];
 
@@ -298,6 +289,147 @@ function collectRiskItemApprovalMatchKeys(item: RiskItemWithId): string[] {
 }
 
 
+
+function normalizeApprovalMatchKey(value?: unknown): string {
+  return String(value ?? "")
+    .replace(/-/g, "")
+    .replace(/[—–]/g, "")
+    .replace(/\s+/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function isUsefulApprovalMatchKey(value?: unknown): boolean {
+  const key = normalizeApprovalMatchKey(value);
+
+  if (key.length < 2) return false;
+
+  const genericKeys = new Set([
+    "상",
+    "중",
+    "하",
+    "정기",
+    "수시",
+    "최초",
+    "상시",
+    "단기",
+    "중기",
+    "장기",
+    "완료",
+    "미완료",
+    "미착수",
+    "진행중",
+    "승인대기",
+    "승인완료",
+    "반영완료",
+    "미반영",
+    "보완요청",
+    "반려",
+    "필요",
+    "있음",
+    "없음",
+  ]);
+
+  if (genericKeys.has(key)) return false;
+
+  // 날짜 단독값은 매칭키로 쓰지 않음
+  if (/^\d{4}\d{2}\d{2}$/.test(key)) return false;
+
+  return true;
+}
+
+function getPropertyTextCandidates(property: any): string[] {
+  const text = getPlainText(property);
+  return text ? [text] : [];
+}
+
+function collectApprovalPageMatchKeys(page: NotionPageLike): string[] {
+  const properties = page.properties ?? {};
+  const keys = new Set<string>();
+
+  keys.add(normalizeNotionPageId(page.id));
+  keys.add(normalizeApprovalMatchKey(page.id));
+
+  for (const [, property] of Object.entries(properties)) {
+    for (const text of getPropertyTextCandidates(property)) {
+      if (isUsefulApprovalMatchKey(text)) {
+        keys.add(normalizeApprovalMatchKey(text));
+      }
+    }
+  }
+
+  return [...keys].filter(Boolean);
+}
+
+function collectApprovalPageSearchText(page: NotionPageLike): string {
+  const properties = page.properties ?? {};
+  const parts: string[] = [page.id];
+
+  for (const [propertyName, property] of Object.entries(properties)) {
+    parts.push(propertyName);
+
+    for (const text of getPropertyTextCandidates(property)) {
+      parts.push(text);
+    }
+  }
+
+  return normalizeApprovalMatchKey(parts.join(" "));
+}
+
+function collectApprovalItemMatchKeys(item: RiskItemWithId): string[] {
+  const keys = new Set<string>();
+
+  for (const [, value] of Object.entries(item)) {
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      if (isUsefulApprovalMatchKey(value)) {
+        keys.add(normalizeApprovalMatchKey(value));
+      }
+    }
+  }
+
+  return [...keys].filter(Boolean);
+}
+
+function collectApprovalItemSearchText(item: RiskItemWithId): string {
+  const parts: string[] = [];
+
+  for (const [fieldName, value] of Object.entries(item)) {
+    parts.push(fieldName);
+
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      parts.push(String(value));
+    }
+  }
+
+  return normalizeApprovalMatchKey(parts.join(" "));
+}
+
+function findApprovalFieldsByTextFallback(
+  item: RiskItemWithId,
+  entries: Array<{
+    pageId: string;
+    keys: string[];
+    searchText: string;
+    fields: RiskApprovalFields;
+  }>
+): RiskApprovalFields | undefined {
+  const itemText = collectApprovalItemSearchText(item);
+  const itemKeys = collectApprovalItemMatchKeys(item).filter((key) => key.length >= 4);
+
+  return entries.find((entry) =>
+    itemKeys.some((key) => entry.searchText.includes(key) || itemText.includes(key))
+  )?.fields;
+}
+
+
 function extractApprovalFields(page: NotionPageLike): RiskApprovalFields {
   const properties = page.properties ?? {};
   const readback = readRiskApprovalReadbackFromPage(page);
@@ -341,20 +473,38 @@ export async function attachRiskApprovalFieldsToItems<T extends RiskItemWithId>(
     const pages = await fetchAllPages(notion, riskDatabaseId);
 
     const approvalMap = new Map<string, RiskApprovalFields>();
+    const approvalEntries: Array<{
+      pageId: string;
+      keys: string[];
+      searchText: string;
+      fields: RiskApprovalFields;
+    }> = [];
 
     for (const page of pages) {
       const fields = extractApprovalFields(page);
+      const keys = collectApprovalPageMatchKeys(page);
 
-      for (const key of collectPageApprovalMatchKeys(page)) {
+      approvalEntries.push({
+        pageId: page.id,
+        keys,
+        searchText: collectApprovalPageSearchText(page),
+        fields,
+      });
+
+      for (const key of keys) {
         approvalMap.set(key, fields);
       }
     }
 
     return items.map((item) => {
+      const itemKeys = collectApprovalItemMatchKeys(item);
+
       const fields =
-        collectRiskItemApprovalMatchKeys(item)
+        itemKeys
           .map((key) => approvalMap.get(key))
-          .find((matchedFields): matchedFields is RiskApprovalFields => Boolean(matchedFields)) ?? {};
+          .find((matchedFields): matchedFields is RiskApprovalFields => Boolean(matchedFields)) ??
+        findApprovalFieldsByTextFallback(item, approvalEntries) ??
+        {};
 
       return {
         ...item,
