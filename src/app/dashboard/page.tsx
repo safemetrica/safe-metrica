@@ -460,28 +460,28 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       label: "지금 위험한 항목",
       value: risk.highRiskCount,
       hint: "대표·현장감독자 우선 확인",
-      tone: "border-red-200 bg-red-50 text-red-700",
+      tone: "border-slate-200 bg-white text-red-700 border-l-4 border-l-red-500",
       role: "대표 보고",
     },
     {
       label: "조치가 필요한 항목",
       value: risk.actionNeededCount,
       hint: "담당자 조치 계획 확인",
-      tone: "border-amber-200 bg-amber-50 text-amber-700",
+      tone: "border-slate-200 bg-white text-amber-700 border-l-4 border-l-amber-500",
       role: "담당자 처리",
     },
     {
       label: "관리자 확인 대기",
       value: risk.approvalReadyCount,
       hint: "완료 후보 승인 필요",
-      tone: "border-sky-200 bg-sky-50 text-sky-700",
+      tone: "border-slate-200 bg-white text-sky-700 border-l-4 border-l-sky-500",
       role: "관리자 확인",
     },
     {
       label: "개선 반영 대기",
       value: risk.riskDbPendingCount,
       hint: "조치 후 반영 확인 필요",
-      tone: "border-indigo-200 bg-indigo-50 text-indigo-700",
+      tone: "border-slate-200 bg-white text-indigo-700 border-l-4 border-l-indigo-500",
       role: "현장 확인",
     },
   ];
@@ -498,7 +498,7 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-black text-slate-950">위험관리 요약</h2>
-          <p className="mt-1 text-sm font-semibold text-blue-700">
+          <p className="mt-1 text-sm font-semibold text-blue-300">
             대표 · 현장감독자 · 담당자 공통 확인
           </p>
           <p className="mt-1 text-sm text-slate-500">
@@ -592,7 +592,7 @@ export default async function DashboardPage() {
     s.리스크점수 >= 60 ? "🔴 관리 필요" : s.리스크점수 >= 30 ? "🟡 확인 필요" : "🟢 양호";
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-10 text-slate-900">
+    <main className="min-h-screen bg-[#EEF3F8] pb-10 text-slate-900">
       <SafeNav />
 
       <div className="mx-auto max-w-7xl px-5 py-6">
@@ -612,14 +612,14 @@ export default async function DashboardPage() {
         </div>
 
         {/* ZONE 1: 오늘의 결론 */}
-        <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mb-6 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-6 text-white shadow-sm">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px_240px]">
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
                   오늘의 결론
                 </span>
-                <span className="text-xs text-slate-500">오늘 확인 요약</span>
+                <span className="text-xs text-slate-400">오늘 확인 요약</span>
               </div>
 
               <h2 className="text-3xl font-black leading-tight text-slate-950 [word-break:keep-all]">
@@ -634,15 +634,15 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-              <div className="text-sm font-black text-emerald-700">오늘 현장 위험도</div>
+            <div className="rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-5 shadow-sm">
+              <div className="text-sm font-black text-emerald-300">오늘 현장 위험도</div>
               <div className={`mt-2 text-5xl font-black leading-none ${리스크색}`}>{s.리스크점수}점</div>
               <div className={`mt-2 text-sm font-semibold ${리스크색}`}>{리스크라벨}</div>
               <div className="mt-3 text-xs text-slate-500">미조치·증빙누락 기준</div>
             </div>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
-              <div className="text-sm font-black text-blue-700">고위험 항목</div>
+            <div className="rounded-2xl border border-blue-400/40 bg-blue-400/10 p-5 shadow-sm">
+              <div className="text-sm font-black text-blue-300">고위험 항목</div>
               <div className="mt-2 flex items-end gap-2">
                 <span className="text-5xl font-black leading-none text-slate-950">{s.risk.highRiskCount}</span>
                 <span className="pb-1 text-sm text-slate-600">고위험</span>
@@ -680,7 +680,7 @@ export default async function DashboardPage() {
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4">
+                <div className="rounded-2xl border border-amber-200 border-l-4 border-l-amber-500 bg-white p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-slate-950">조치 필요</span>
                     <span className="text-2xl font-black text-amber-300">{s.조치필요}</span>
@@ -697,7 +697,7 @@ export default async function DashboardPage() {
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4">
+                <div className="rounded-2xl border border-rose-200 border-l-4 border-l-rose-500 bg-white p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-slate-950">증빙 누락</span>
                     <span className="text-2xl font-black text-rose-300">{s.EB누락}</span>
@@ -714,7 +714,7 @@ export default async function DashboardPage() {
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-blue-500/25 bg-blue-500/10 p-4">
+                <div className="rounded-2xl border border-blue-200 border-l-4 border-l-blue-500 bg-white p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-slate-950">PTW 확인</span>
                     <span className="text-2xl font-black text-blue-300">{s.PTW미승인 + s.PTW위험}</span>
@@ -762,19 +762,19 @@ export default async function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
+              <div className="rounded-2xl border border-blue-200 border-l-4 border-l-blue-500 bg-white p-4">
                 <div className="text-3xl font-black text-slate-950">{s.전체}</div>
                 <div className="mt-1 text-xs text-blue-300">전체 TBM</div>
               </div>
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+              <div className="rounded-2xl border border-emerald-200 border-l-4 border-l-emerald-500 bg-white p-4">
                 <div className="text-3xl font-black text-slate-950">{s.이번달}</div>
                 <div className="mt-1 text-xs text-emerald-300">이번 달 TBM</div>
               </div>
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
+              <div className="rounded-2xl border border-amber-200 border-l-4 border-l-amber-500 bg-white p-4">
                 <div className="text-3xl font-black text-slate-950">{s.특이사항}</div>
                 <div className="mt-1 text-xs text-amber-300">특이사항</div>
               </div>
-              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
+              <div className="rounded-2xl border border-rose-200 border-l-4 border-l-rose-500 bg-white p-4">
                 <div className="text-3xl font-black text-slate-950">{s.EB누락}</div>
                 <div className="mt-1 text-xs text-rose-300">증빙 누락</div>
               </div>
