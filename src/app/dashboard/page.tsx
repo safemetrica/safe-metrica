@@ -93,6 +93,8 @@ type RiskItem = {
   status: string;
   budgetRequired: boolean;
   reassessmentDate: string;
+  approvalStatus: string;
+  riskDbReflectionStatus: string;
 };
 
 type RiskSummary = {
@@ -102,6 +104,10 @@ type RiskSummary = {
   actionNeededCount: number;
   budgetNeededCount: number;
   reassessmentDueCount: number;
+  approvalReadyCount: number;
+  approvalCompletedCount: number;
+  riskDbReflectedCount: number;
+  riskDbPendingCount: number;
   highRiskItems: RiskItem[];
 };
 
@@ -185,6 +191,10 @@ async function getRiskSummary(
       actionNeededCount: 0,
       budgetNeededCount: 0,
       reassessmentDueCount: 0,
+      approvalReadyCount: 0,
+      approvalCompletedCount: 0,
+      riskDbReflectedCount: 0,
+      riskDbPendingCount: 0,
       highRiskItems: [],
     };
   }
@@ -207,6 +217,8 @@ async function getRiskSummary(
       status: getSelectPropName(props["status"]),
       budgetRequired: getCheckboxPropValue(props["budgetRequired"]),
       reassessmentDate: getDatePropStart(props["reassessmentDate"]),
+      approvalStatus: getSelectPropName(props["반영 승인상태"]),
+      riskDbReflectionStatus: getSelectPropName(props["Risk DB 반영상태"]),
     };
   });
 
@@ -231,6 +243,22 @@ async function getRiskSummary(
       item.status !== "완료"
   );
 
+  const approvalReadyItems = items.filter(
+    (item) => item.approvalStatus === "승인 대기"
+  );
+
+  const approvalCompletedItems = items.filter(
+    (item) => item.approvalStatus === "승인 완료"
+  );
+
+  const riskDbReflectedItems = items.filter(
+    (item) => item.riskDbReflectionStatus === "반영 완료"
+  );
+
+  const riskDbPendingItems = items.filter(
+    (item) => item.riskDbReflectionStatus !== "반영 완료"
+  );
+
   return {
     hasDb: true,
     total: items.length,
@@ -238,6 +266,10 @@ async function getRiskSummary(
     actionNeededCount: actionNeededItems.length,
     budgetNeededCount: budgetNeededItems.length,
     reassessmentDueCount: reassessmentDueItems.length,
+    approvalReadyCount: approvalReadyItems.length,
+    approvalCompletedCount: approvalCompletedItems.length,
+    riskDbReflectedCount: riskDbReflectedItems.length,
+    riskDbPendingCount: riskDbPendingItems.length,
     highRiskItems: highRiskItems.slice(0, 3),
   };
 }
@@ -446,6 +478,30 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
     value: risk.reassessmentDueCount,
     hint: "30일 이내 재확인",
     accent: "text-blue-200",
+  },
+  {
+    label: "승인 대기",
+    value: risk.approvalReadyCount,
+    hint: "관리자 승인 필요",
+    accent: "text-cyan-200",
+  },
+  {
+    label: "승인 완료",
+    value: risk.approvalCompletedCount,
+    hint: "반영 승인상태 기준",
+    accent: "text-emerald-200",
+  },
+  {
+    label: "Risk DB 반영 완료",
+    value: risk.riskDbReflectedCount,
+    hint: "Risk DB 반영상태 기준",
+    accent: "text-emerald-200",
+  },
+  {
+    label: "Risk DB 미반영",
+    value: risk.riskDbPendingCount,
+    hint: "반영 완료 전 항목",
+    accent: "text-amber-200",
   },
 ];
 
