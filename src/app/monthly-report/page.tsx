@@ -98,7 +98,7 @@ function needsEvidenceBook(row: NotionPage): boolean {
 
   return Boolean(
     special ||
-      /조치 필요|즉시 조치 완료|조치완료|보완 필요/i.test(actionStatus)
+      /조치 필요|보완 필요|미조치|미완료/i.test(actionStatus)
   );
 }
 
@@ -192,7 +192,7 @@ function buildExpertOpinion(input: {
   const legalChecks: { label: string; done: boolean; note: string }[] = [];
 
   if (input.tbmCount >= 15) {
-    good.push(`이번 달 TBM은 ${input.tbmCount}건 작성되어 현장 안전활동 입력 흐름이 비교적 안정적으로 운영되었습니다.`);
+    good.push(`이번 달 TBM은 ${input.tbmCount}건 작성되어 현장 안전활동 기록이 확인됩니다.`);
   } else if (input.tbmCount > 0) {
     improvements.push(`이번 달 TBM 작성은 ${input.tbmCount}건으로 확인됩니다. 월 20건 이상을 목표로 작업 전 TBM 작성 습관을 더 강화할 필요가 있습니다.`);
   } else {
@@ -200,11 +200,11 @@ function buildExpertOpinion(input: {
   }
 
   if (input.specialCount > 0) {
-    good.push(`특이사항 또는 보완 필요 항목이 ${input.specialCount}건 기록되어 현장의 이상 신호를 남기는 체계가 작동하고 있습니다.`);
+    good.push(`특이사항 또는 보완 필요 항목이 ${input.specialCount}건 기록되어 특이사항 기록이 확인됩니다.`);
   }
 
   if (input.actionPhotoCount > 0) {
-    good.push(`조치사진이 ${input.actionPhotoCount}건 확인되어 일부 개선·조치 이력이 사진으로 남고 있습니다.`);
+    good.push(`조치사진이 ${input.actionPhotoCount}건 확인되어 조치사진 등록이 확인됩니다.`);
   }
 
   if (input.ebMissingCount > 0) {
@@ -215,20 +215,20 @@ function buildExpertOpinion(input: {
   }
 
   if (input.ptwCount === 0 || input.ptwApproved === 0) {
-    improvements.push("PTW 승인 운영 실적이 낮습니다. 차량 상부작업, 유압장치 정비, 밀폐공간, 용접·용단 등 고위험작업 대상 목록을 확정하고 최소 1건 이상 승인 절차를 운영하는 것이 필요합니다.");
-    nextMonth.push("관리감독자와 현장책임자가 PTW 대상 작업 3~5개를 확정하고, 실제 작업 발생 시 승인 기록을 남깁니다.");
+    improvements.push("PTW 승인 완료 건이 확인되지 않습니다. 고위험작업 발생 시 승인 기록 여부를 확인해야 합니다.");
+    nextMonth.push("PTW 대상 작업과 승인 기록 여부를 확인합니다.");
   } else {
     good.push(`PTW가 ${input.ptwCount}건 운영되었고, 승인 완료 ${input.ptwApproved}건이 확인됩니다.`);
   }
 
   if (input.highRiskCount > 0) {
     improvements.push(`고위험 항목이 ${input.highRiskCount}건 확인됩니다. 해당 항목은 TBM에서 반복 공유하고, 조치사진·PTW·개선대책과 연결해 관리해야 합니다.`);
-    nextMonth.push("고위험 항목은 월간 TBM 주제로 반복 편성하고, 개선대책 담당자와 기한을 확인합니다.");
+    nextMonth.push("고위험 항목의 TBM 공유 여부와 개선대책 담당자·기한을 확인합니다.");
   }
 
   if (input.actionNeededCount > 0) {
     improvements.push(`개선대책 관리 필요 항목이 ${input.actionNeededCount}건입니다. 담당자, 기한, 예산 필요 여부를 정리해 다음 달 관리 항목으로 이월해야 합니다.`);
-    nextMonth.push("개선대책 관리 필요 항목의 담당자·기한·예산 검토 여부를 정리합니다.");
+    nextMonth.push("개선대책 관리 필요 항목의 담당자·기한·예산 검토 여부를 확인합니다.");
   }
 
   legalChecks.push({
