@@ -222,13 +222,11 @@ function buildExpertOpinion(input: {
   }
 
   if (input.highRiskCount > 0) {
-    improvements.push(`위험성평가표상 고위험 관리항목이 ${input.highRiskCount}건 확인됩니다. 해당 항목은 TBM에서 반복 공유하고, 조치사진·PTW·개선대책과 연결해 관리해야 합니다.`);
-    nextMonth.push("위험성평가표상 고위험 관리항목의 TBM 공유 여부와 개선대책 담당자·기한을 확인합니다.");
-  }
-
-  if (input.actionNeededCount > 0) {
-    improvements.push(`위험성평가표상 개선대책 관리항목이 ${input.actionNeededCount}건입니다. 담당자, 기한, 예산 필요 여부를 정리해 다음 달 관리 항목으로 이월해야 합니다.`);
-    nextMonth.push("위험성평가표상 개선대책 관리항목의 담당자·기한·예산 검토 여부를 확인합니다.");
+    input.tbmCount >= 15 && input.ebMissingCount === 0
+      ? `이번 달 TBM 기록은 ${input.tbmCount}건이며, EB 연결 필요 항목의 보완 필요 건은 확인되지 않습니다.`
+      : input.tbmCount >= 15
+        ? `이번 달 TBM 기록은 ${input.tbmCount}건이며, EB 연결 보완 필요 ${input.ebMissingCount}건, 위험성평가표상 고위험 관리항목 ${input.highRiskCount}건이 확인됩니다.`
+        : `이번 달 TBM 기록은 ${input.tbmCount}건입니다. 월간 기록 수와 증빙 연결 상태를 추가 확인해야 합니다.`;
   }
 
   legalChecks.push({
