@@ -79,6 +79,29 @@ function getTitleFromPage(page: NotionPage): string {
   );
 }
 
+function hasLinkedEvidenceBook(row: NotionPage): boolean {
+  const props = row.properties ?? {};
+  return getRelationCount(props["연결EB"]) > 0 || getRelationCount(props["관련 EB"]) > 0;
+}
+
+function needsEvidenceBook(row: NotionPage): boolean {
+  const props = row.properties ?? {};
+
+  const special =
+    getTextPropPlainText(props["특이사항"]) ||
+    getTextPropPlainText(props["특이사항내용"]) ||
+    getTextPropPlainText(props["특이사항 내용"]);
+
+  const actionStatus =
+    getTextPropPlainText(props["조치상태"]) ||
+    getTextPropPlainText(props["조치 상태"]);
+
+  return Boolean(
+    special ||
+      /조치 필요|즉시 조치 완료|조치완료|보완 필요/i.test(actionStatus)
+  );
+}
+
 function inMonth(dateValue: string, monthKey: string): boolean {
   if (!dateValue || !monthKey) return false;
   return dateValue.startsWith(monthKey);
@@ -153,6 +176,7 @@ function buildExpertOpinion(input: {
   tbmCount: number;
   specialCount: number;
   ebLinkedCount: number;
+  ebRequiredCount: number;
   ebMissingCount: number;
   ptwCount: number;
   ptwApproved: number;
@@ -184,10 +208,10 @@ function buildExpertOpinion(input: {
   }
 
   if (input.ebMissingCount > 0) {
-    improvements.push(`TBM 대비 EB 연결 누락이 ${input.ebMissingCount}건으로 추정됩니다. 특이사항, 즉시 조치, 조치 필요 항목은 Evidence Book에 사진 또는 파일 증빙을 연결해야 합니다.`);
-    nextMonth.push("EB 연결 누락 항목을 우선 확인하고, 특이사항·조치완료 건은 사진 1건 이상을 소급 연결합니다.");
+    improvements.push(`EB 연결 필요 항목 ${input.ebRequiredCount}건 중 ${input.ebLinkedCount}건이 연결되어 있으며, 보완 필요 항목은 ${input.ebMissingCount}건입니다.`);
+    nextMonth.push("특이사항 또는 조치 필요 항목의 EB 연결 여부를 확인하고, 필요한 경우 사진·파일 증빙을 연결합니다.");
   } else if (input.tbmCount > 0) {
-    good.push("TBM과 EB 연결 누락이 확인되지 않아 증빙 관리 흐름이 양호합니다.");
+    good.push(`EB 연결 필요 항목 ${input.ebRequiredCount}건 중 보완 필요 항목은 확인되지 않았습니다.`);
   }
 
   if (input.ptwCount === 0 || input.ptwApproved === 0) {
@@ -216,7 +240,7 @@ function buildExpertOpinion(input: {
   legalChecks.push({
     label: "증빙자료 EB 연결",
     done: input.ebMissingCount === 0 && input.tbmCount > 0,
-    note: input.ebMissingCount > 0 ? `누락 추정 ${input.ebMissingCount}건` : "양호",
+    note: input.ebMissingCount > 0 ? `보완 필요 ${input.ebMissingCount}건` : "보완 필요 없음",
   });
 
   legalChecks.push({
@@ -237,10 +261,10 @@ function buildExpertOpinion(input: {
 
   const summary =
     input.tbmCount >= 15 && input.ebMissingCount === 0
-      ? "이번 달 안전운영은 TBM 작성과 증빙 관리가 비교적 안정적으로 운영된 것으로 판단됩니다."
+      ? `이번 달 TBM 기록은 ${input.tbmCount}건이며, EB 연결 필요 항목의 보완 필요 건은 확인되지 않습니다.`
       : input.tbmCount >= 15
-        ? "이번 달 안전운영은 TBM 입력은 안정적으로 정착되고 있으나, 증빙 연결과 고위험작업 관리의 보완이 필요합니다."
-        : "이번 달 안전운영은 기본 입력 체계 정착이 우선 과제로 판단됩니다.";
+        ? `이번 달 TBM 기록은 ${input.tbmCount}건이며, EB 연결 보완 필요 ${input.ebMissingCount}건, 고위험 항목 ${input.highRiskCount}건이 확인됩니다.`
+        : `이번 달 TBM 기록은 ${input.tbmCount}건입니다. 월간 기록 수와 증빙 연결 상태를 추가 확인해야 합니다.`;
 
   return {
     summary,
@@ -288,12 +312,9 @@ export default async function MonthlySafetyReportPage({
     );
   }).length;
 
-  const tbmEbLinkedCount = tbmRows.filter((row) => {
-    const props = row.properties ?? {};
-    return getRelationCount(props["연결EB"]) > 0 || getRelationCount(props["관련 EB"]) > 0;
-  }).length;
-
-  const tbmEbMissingCount = Math.max(0, tbmRows.length - tbmEbLinkedCount);
+  const tbmEvidenceRequiredRows = tbmRows.filter(needsEvidenceBook);
+  const tbmEbLinkedCount = tbmEvidenceRequiredRows.filter(hasLinkedEvidenceBook).length;
+  const tbmEbMissingCount = Math.max(0, tbmEvidenceRequiredRows.length - tbmEbLinkedCount);
 
   const actionPhotoCount = tbmRows.reduce((sum, row) => {
     const props = row.properties ?? {};
@@ -327,6 +348,7 @@ export default async function MonthlySafetyReportPage({
     tbmCount: tbmRows.length,
     specialCount: tbmSpecialCount,
     ebLinkedCount: tbmEbLinkedCount,
+    ebRequiredCount: tbmEvidenceRequiredRows.length,
     ebMissingCount: tbmEbMissingCount,
     ptwCount: ptwRows.length,
     ptwApproved,
@@ -372,14 +394,14 @@ export default async function MonthlySafetyReportPage({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="월간 TBM" value={`${tbmRows.length}건`} hint="해당 월 작성된 TBM 기록" tone="border-blue-800" />
           <StatCard label="특이사항" value={`${tbmSpecialCount}건`} hint="특이사항 또는 보완 내용 포함" tone="border-amber-800" />
-          <StatCard label="EB 연결" value={`${tbmEbLinkedCount}건`} hint={`누락 추정 ${tbmEbMissingCount}건`} tone="border-emerald-800" />
+          <StatCard label="EB 필요/연결" value={`${tbmEbLinkedCount}/${tbmEvidenceRequiredRows.length}건`} hint={`보완 필요 ${tbmEbMissingCount}건`} tone="border-emerald-800" />
           <StatCard label="PTW" value={`${ptwRows.length}건`} hint={`승인 ${ptwApproved} · 대기 ${ptwPending}`} tone="border-orange-800" />
         </div>
 
-        <Section title="기술지원 의견" desc="월간 운영 데이터를 기준으로 자동 정리한 관리 의견입니다.">
+        <Section title="운영 데이터 점검" desc="월간 운영 DB 수치를 기준으로 확인된 항목입니다.">
           <div className="space-y-5">
             <div className="rounded-2xl border border-blue-900/70 bg-blue-950/30 p-4 print:border-blue-200 print:bg-blue-50">
-              <p className="text-sm font-bold text-blue-200 print:text-blue-900">종합 판단</p>
+              <p className="text-sm font-bold text-blue-200 print:text-blue-900">데이터 기반 종합 확인</p>
               <p className="mt-2 text-base font-black leading-relaxed text-white print:text-slate-950">
                 {expertOpinion.summary}
               </p>
@@ -387,7 +409,7 @@ export default async function MonthlySafetyReportPage({
 
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl border border-emerald-900/70 bg-emerald-950/20 p-4 print:border-emerald-200 print:bg-white">
-                <h3 className="text-base font-black text-emerald-200 print:text-emerald-900">잘 되고 있는 부분</h3>
+                <h3 className="text-base font-black text-emerald-200 print:text-emerald-900">데이터상 확인된 사항</h3>
                 {expertOpinion.good.length > 0 ? (
                   <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
                     {expertOpinion.good.map((item, index) => (
@@ -400,12 +422,12 @@ export default async function MonthlySafetyReportPage({
               </div>
 
               <div className="rounded-2xl border border-rose-900/70 bg-rose-950/20 p-4 print:border-rose-200 print:bg-white">
-                <h3 className="text-base font-black text-rose-200 print:text-rose-900">개선 필요 사항</h3>
+                <h3 className="text-base font-black text-rose-200 print:text-rose-900">데이터상 보완 필요 항목</h3>
                 <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
                   {expertOpinion.improvements.length > 0 ? (
                     expertOpinion.improvements.map((item, index) => <li key={index}>• {item}</li>)
                   ) : (
-                    <li>• 주요 개선 필요 사항은 확인되지 않았습니다. 현재 운영 수준을 유지하면서 월간 점검을 지속합니다.</li>
+                    <li>• 주요 데이터상 보완 필요 항목은 확인되지 않았습니다. 현재 운영 수준을 유지하면서 월간 점검을 지속합니다.</li>
                   )}
                 </ul>
               </div>
@@ -421,7 +443,7 @@ export default async function MonthlySafetyReportPage({
             </div>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
-              <h3 className="text-base font-black text-white print:text-slate-950">법적 점검 체크리스트</h3>
+              <h3 className="text-base font-black text-white print:text-slate-950">운영 체크리스트</h3>
               <div className="mt-3 overflow-hidden rounded-xl border border-slate-800 print:border-slate-300">
                 <table className="w-full border-collapse text-left text-sm">
                   <thead className="bg-slate-950 text-slate-300 print:bg-slate-100 print:text-slate-800">
@@ -447,7 +469,7 @@ export default async function MonthlySafetyReportPage({
                 </table>
               </div>
               <p className="mt-3 text-xs leading-relaxed text-slate-500 print:text-slate-600">
-                본 체크리스트는 운영 현황 파악을 위한 기술지원 참고자료이며, 최종 법적 판단 및 조치 책임은 사업장 관리 기준과 관계 법령에 따라 확인해야 합니다.
+                본 체크리스트는 세메앱 운영 DB 기준의 데이터 확인표입니다. 최종 법적 판단 및 조치 책임은 사업장 관리 기준과 관계 법령에 따라 별도로 확인해야 합니다.
               </p>
             </div>
           </div>
