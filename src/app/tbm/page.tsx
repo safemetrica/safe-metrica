@@ -57,7 +57,7 @@ export default async function TbmPage() {
             </p>
           </div>
 
-          <div className="rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-slate-200">
+          <div className="whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-slate-200">
             {rows.length}건
           </div>
         </div>
@@ -135,7 +135,7 @@ export default async function TbmPage() {
                             {row.연결EB > 0 ? `EB ${row.연결EB}건 연결` : "EB 등록 필요"}
                           </span>
                         ) : (
-                          <span className="rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1 text-sm font-bold text-slate-300">
+                          <span className="whitespace-nowrap rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1 text-sm font-bold text-slate-300">
                             특이사항 없음
                           </span>
                         )}

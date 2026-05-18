@@ -35,31 +35,31 @@ export async function SafeNav({ company }: { company?: string }) {
           href="/tbm"
           className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
-          📋 TBM
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold sm:text-[15px]"><span className="text-base">📋</span><span>TBM</span></span>
         </Link>
         <Link
           href="/ebm"
           className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
-          📚 EB
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold sm:text-[15px]"><span className="text-base">📚</span><span>EB</span></span>
         </Link>
         <Link
           href="/ptw"
           className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
-          🧾 PTW
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold sm:text-[15px]"><span className="text-base">🧾</span><span>PTW</span></span>
         </Link>
         <Link
           href="/dashboard"
           className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
-          📊 대시
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold sm:text-[15px]"><span className="text-base">📊</span><span className="hidden sm:inline">대시보드</span><span className="sm:hidden">대시</span></span>
         </Link>
         <Link
           href="/field"
           className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
         >
-          👷 현장
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold sm:text-[15px]"><span className="text-base">👷</span><span className="hidden sm:inline">현장비서</span><span className="sm:hidden">현장</span></span>
         </Link>
       </div>
     </nav>
