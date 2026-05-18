@@ -480,7 +480,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
-        <Section title="EB 연결 보완 필요 항목" desc="조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다.">
+조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다.
           <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-slate-900 text-slate-300 print:bg-slate-100 print:text-slate-800">
