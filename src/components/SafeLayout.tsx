@@ -16,7 +16,7 @@ export async function SafeNav({ company }: { company?: string }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sticky top-0 z-50">
       <Link
-        href="/"
+        href="/home"
         className="flex min-w-0 shrink items-center gap-1.5 sm:gap-3 hover:opacity-80 transition cursor-pointer"
       >
         <span className="text-xl sm:text-2xl shrink-0">🛡️</span>

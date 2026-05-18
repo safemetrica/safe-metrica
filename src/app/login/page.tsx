@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 
-const TENANTS = [
-  { code: "daedo", name: "㈜대도환경", emoji: "🟦" },
-  { code: "dongwoo", name: "㈜동우환경", emoji: "🟩" },
+const TENANTS = [  { code: "dongwoo", name: "㈜동우환경", emoji: "🟩" },
   { code: "hankookgreen", name: "㈜한국그린환경", emoji: "🟨" },
 ] as const;
 
