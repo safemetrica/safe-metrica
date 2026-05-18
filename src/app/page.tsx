@@ -209,8 +209,13 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
             <div className="max-w-2xl mx-auto">
               {/* 날씨 수치 */}
               <div className="flex items-center justify-between mb-3">
-                <span className="text-white text-sm font-medium">{weather.icon} 현재 날씨</span>
-                <span className="text-gray-400 text-xs">기온 {weather.tmp}°C · 체감 {weather.feelsLike}°C · 풍속 {weather.wsd}m/s · 강수확률 {weather.pop}%</span>
+                <span className="whitespace-nowrap text-base font-black text-white sm:text-sm">{weather.icon} 현재 날씨</span>
+                <span className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-300 sm:text-xs">
+                  <span className="whitespace-nowrap">기온 {weather.tmp}°C</span>
+                  <span className="whitespace-nowrap">체감 {weather.feelsLike}°C</span>
+                  <span className="whitespace-nowrap">풍속 {weather.wsd}m/s</span>
+                  <span className="whitespace-nowrap">강수확률 {weather.pop}%</span>
+                </span>
               </div><p className="text-blue-200 text-xs mt-1">기상청 초단기실황 기준 {weather.observedAt}</p>
 
               {/* 의사결정 티켓 */}
