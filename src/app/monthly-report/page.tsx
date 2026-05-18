@@ -79,26 +79,41 @@ function getTitleFromPage(page: NotionPage): string {
   );
 }
 
+function hasSpecialIssue(row: NotionPage): boolean {
+  const props = row.properties ?? {};
+
+  const raw =
+    getTextPropPlainText(props["특이사항"]) ||
+    getTextPropPlainText(props["특이사항내용"]) ||
+    getTextPropPlainText(props["특이사항 내용"]);
+
+  const value = String(raw ?? "").trim();
+
+  if (!value) return false;
+
+  return !/없음|무|false|no|n\/a|해당 없음/i.test(value);
+}
+
+function getActionStatus(row: NotionPage): string {
+  const props = row.properties ?? {};
+  return String(
+    getTextPropPlainText(props["조치상태"]) ||
+      getTextPropPlainText(props["조치 상태"]) ||
+      ""
+  ).trim();
+}
+
 function hasLinkedEvidenceBook(row: NotionPage): boolean {
   const props = row.properties ?? {};
   return getRelationCount(props["연결EB"]) > 0 || getRelationCount(props["관련 EB"]) > 0;
 }
 
 function needsEvidenceBook(row: NotionPage): boolean {
-  const props = row.properties ?? {};
-
-  const special =
-    getTextPropPlainText(props["특이사항"]) ||
-    getTextPropPlainText(props["특이사항내용"]) ||
-    getTextPropPlainText(props["특이사항 내용"]);
-
-  const actionStatus =
-    getTextPropPlainText(props["조치상태"]) ||
-    getTextPropPlainText(props["조치 상태"]);
+  const actionStatus = getActionStatus(row);
 
   return Boolean(
-    special ||
-      /조치 필요|보완 필요|미조치|미완료/i.test(actionStatus)
+    hasSpecialIssue(row) ||
+      ["조치 필요", "보완 필요", "미조치", "미완료"].includes(actionStatus)
   );
 }
 
@@ -301,14 +316,7 @@ export default async function MonthlySafetyReportPage({
     return date ? inMonth(date, monthKey) : true;
   });
 
-  const tbmSpecialCount = tbmRows.filter((row) => {
-    const props = row.properties ?? {};
-    return (
-      getTextPropPlainText(props["특이사항"]) ||
-      getTextPropPlainText(props["특이사항내용"]) ||
-      getTextPropPlainText(props["특이사항 내용"])
-    );
-  }).length;
+  const tbmSpecialCount = tbmRows.filter(hasSpecialIssue).length;
 
   const tbmEvidenceRequiredRows = tbmRows.filter(needsEvidenceBook);
   const tbmEbLinkedCount = tbmEvidenceRequiredRows.filter(hasLinkedEvidenceBook).length;
