@@ -27,8 +27,40 @@ async function getPtwRows() {
 
 const 유형아이콘: Record<string, string> = { "화기작업": "🔥", "밀폐공간작업": "⚠️", "고소작업": "🪜", "정비작업": "🔧", "전기작업": "⚡", "기타": "📋" };
 
+
+function isValidPtwRow(row: any): boolean {
+  const title =
+    row.title ||
+    row.작업명 ||
+    row.name ||
+    row.제목 ||
+    "";
+
+  const date =
+    row.date ||
+    row.날짜 ||
+    row.작업일 ||
+    "";
+
+  const status =
+    row.승인상태 ||
+    row["승인 상태"] ||
+    row.상태 ||
+    "";
+
+  const workType =
+    row.작업유형 ||
+    row["작업 유형"] ||
+    row.작업종류 ||
+    row["작업 종류"] ||
+    "";
+
+  return Boolean(title && title !== "제목 없음" && date && (status || workType));
+}
+
 export default async function PtwPage() {
   const rows = await getPtwRows();
+  const validRows = rows.filter(isValidPtwRow);
   const 위험건수 = rows.filter((r: any) => r.허용여부 === "금지" || r.승인상태 === "반려").length;
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -36,7 +68,7 @@ export default async function PtwPage() {
       <div className="p-4 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-4 mt-2">
           <h1 className="text-white text-xl font-bold">🧾 고위험작업허가서</h1>
-          <span className="text-gray-400 text-sm">{rows.length}건</span>
+          <span className="text-gray-400 text-sm">{validRows.length}건</span>
         </div>
         {위험건수 > 0 && (
           <div className="bg-red-950 border border-red-700 rounded-xl p-3 mb-4 flex items-center gap-2">
@@ -45,7 +77,7 @@ export default async function PtwPage() {
           </div>
         )}
         <div className="space-y-2">
-          {rows.map((row: any) => {
+          {validRows.map((row: any) => {
             const isDanger = row.허용여부 === "금지" || row.승인상태 === "반려";
             return (
               <Link key={row.id} href={`/ptw/${row.id}`}>
@@ -71,7 +103,7 @@ export default async function PtwPage() {
               </Link>
             );
           })}
-          {rows.length === 0 && <div className="text-center text-gray-500 py-10">등록된 PTW 없음</div>}
+          {validRows.length === 0 && <div className="text-center text-gray-500 py-10">등록된 PTW 없음</div>}
         </div>
       </div>
     </main>
