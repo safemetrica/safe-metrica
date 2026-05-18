@@ -89,8 +89,8 @@ export function classifyTbmRiskLink(input: {
   if ((input.linkedRiskCount ?? 0) > 0 || direct.length > 0) {
     return {
       type: "direct-risk",
-      label: "위험성평가 연결",
-      description: "이 TBM은 위험성평가표의 유사 위험요인과 연결되는 항목입니다.",
+      label: "위험성평가 연동 항목",
+      description: "이 TBM은 위험성평가표의 관련 위험요인과 함께 확인됩니다.",
       confidence: (input.linkedRiskCount ?? 0) > 0 ? "high" : "medium",
       matchedKeywords: direct,
     };
@@ -99,8 +99,8 @@ export function classifyTbmRiskLink(input: {
   if (education.length > 0) {
     return {
       type: "education-management",
-      label: "교육·관리 항목",
-      description: "이 TBM은 특정 개선조치보다는 근로자 교육·관리 공유 기록으로 분류됩니다.",
+      label: "교육·관리 TBM",
+      description: "이 항목은 특정 개선공사보다 근로자 교육·주의사항 공유 기록으로 관리됩니다.",
       confidence: "medium",
       matchedKeywords: education,
     };
@@ -109,8 +109,8 @@ export function classifyTbmRiskLink(input: {
   if (common.length > 0) {
     return {
       type: "common-safety",
-      label: "공통 안전수칙",
-      description: "공통 안전수칙으로 관리됩니다. 필요 시 위험성평가 항목과 연결할 수 있습니다.",
+      label: "공통 안전수칙 TBM",
+      description: "공통 안전수칙으로 관리됩니다. 필요하면 관련 위험요인과 추가 연결할 수 있습니다.",
       confidence: "low",
       matchedKeywords: common,
     };
@@ -118,8 +118,8 @@ export function classifyTbmRiskLink(input: {
 
   return {
     type: "unmatched",
-    label: "연결 후보 없음",
-    description: "현재 기준으로는 연결할 위험요인이나 관리분류가 명확하지 않습니다.",
+    label: "연결 항목 없음",
+    description: "현재 기준으로는 별도 위험요인 연결 없이 일반 TBM 기록으로 관리됩니다.",
     confidence: "low",
     matchedKeywords: [],
   };
