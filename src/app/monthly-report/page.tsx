@@ -111,10 +111,7 @@ function hasLinkedEvidenceBook(row: NotionPage): boolean {
 function needsEvidenceBook(row: NotionPage): boolean {
   const actionStatus = getActionStatus(row);
 
-  return Boolean(
-    hasSpecialIssue(row) ||
-      ["조치 필요", "보완 필요", "미조치", "미완료"].includes(actionStatus)
-  );
+  return ["조치 필요", "보완 필요", "미조치", "미완료"].includes(actionStatus);
 }
 
 function inMonth(dateValue: string, monthKey: string): boolean {
@@ -224,7 +221,7 @@ function buildExpertOpinion(input: {
 
   if (input.ebMissingCount > 0) {
     improvements.push(`EB 연결 필요 항목 ${input.ebRequiredCount}건 중 ${input.ebLinkedCount}건이 연결되어 있으며, 보완 필요 항목은 ${input.ebMissingCount}건입니다.`);
-    nextMonth.push("특이사항 또는 조치 필요 항목의 EB 연결 여부를 확인하고, 필요한 경우 사진·파일 증빙을 연결합니다.");
+    nextMonth.push("조치 필요 또는 보완 필요 항목의 EB 연결 여부를 확인하고, 필요한 경우 사진·파일 증빙을 연결합니다.");
   } else if (input.tbmCount > 0) {
     good.push(`EB 연결 필요 항목 ${input.ebRequiredCount}건 중 보완 필요 항목은 확인되지 않았습니다.`);
   }
@@ -483,7 +480,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
-        <Section title="EB 연결 보완 필요 항목" desc="EB 연결 필요 조건에 해당하지만 연결EB relation이 비어 있는 TBM입니다.">
+        <Section title="EB 연결 보완 필요 항목" desc="조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다.">
           <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-slate-900 text-slate-300 print:bg-slate-100 print:text-slate-800">
