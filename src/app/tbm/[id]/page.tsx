@@ -12,6 +12,7 @@ import { detectVehicleTbmIntent } from "@/lib/vehicleTbmIntent";
 import { evaluateImprovementTracking, summarizeImprovementTracking } from "@/lib/improvementTracking";
 import { inferVisionEvidenceFromPhotoFields } from "@/lib/photoVisionEvidence";
 import { evaluateRiskStatusSync, summarizeRiskStatusSync } from "@/lib/riskStatusSync";
+import { classifyTbmRiskLink, getTbmRiskLinkTone } from "@/lib/tbmRiskSmartLink";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -193,6 +194,13 @@ export default async function TbmDetailPage({
   const linkedRiskItems = vehicleIntent.isAmbiguous
     ? []
     : matchTbmToRiskItems(tbmRiskText, riskData.items);
+  const smartLink = classifyTbmRiskLink({
+    taskName: tbm.작업명,
+    cautionText: tbm.오늘주의사항 ?? tbm.특이사항내용,
+    actionStatus: tbm.조치상태,
+    linkedRiskCount: linkedRiskItems.length,
+  });
+
 
   const improvementTrackingItems = evaluateImprovementTracking({
     linkedRiskItems,
@@ -692,6 +700,20 @@ export default async function TbmDetailPage({
             </div>
           </div>
         )}
+
+        <div className={`mb-4 rounded-xl border px-4 py-3 ${getTbmRiskLinkTone(smartLink.type)}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-black">{smartLink.label}</p>
+              <p className="mt-1 text-xs opacity-90">{smartLink.description}</p>
+            </div>
+            {smartLink.matchedKeywords.length > 0 && (
+              <span className="shrink-0 whitespace-nowrap rounded-full border border-white/10 px-2 py-1 text-[11px] font-bold">
+                {smartLink.matchedKeywords.slice(0, 2).join(", ")}
+              </span>
+            )}
+          </div>
+        </div>
 
         {linkedRiskItems.length > 0 && (
           <div className="rounded-lg border border-fuchsia-800 bg-fuchsia-950/20 p-5 mb-6">
