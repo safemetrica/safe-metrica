@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PrintReportButton from "@/components/PrintReportButton";
 import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
 
@@ -240,9 +241,7 @@ export default async function MonthlySafetyReportPage({
               <Link href="/" className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-800">
                 홈
               </Link>
-              <span className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">
-                Ctrl/Cmd+P로 PDF 저장
-              </span>
+              <PrintReportButton />
             </div>
           </div>
 

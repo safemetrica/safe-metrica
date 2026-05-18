@@ -61,6 +61,15 @@ export async function SafeNav({ company }: { company?: string }) {
         >
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold sm:text-[15px]"><span className="text-base">👷</span><span className="hidden sm:inline">현장비서</span><span className="sm:hidden">현장</span></span>
         </Link>
+
+        <Link
+          href="/monthly-report"
+          className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-slate-200 hover:text-white sm:text-[15px]"
+        >
+          <span className="text-base">📑</span>
+          <span className="hidden sm:inline">월간보고서</span>
+          <span className="sm:hidden">보고서</span>
+        </Link>
       </div>
     </nav>
   );
