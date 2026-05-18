@@ -350,6 +350,8 @@ export default async function MonthlySafetyReportPage({
   const actionNeededCount = riskAny?.actionNeededCount ?? 0;
 
   const recentTbm = tbmRows.slice(0, 8);
+  const ebMissingRows = tbmEvidenceRequiredRows.filter((row) => !hasLinkedEvidenceBook(row));
+
   const expertOpinion = buildExpertOpinion({
     tbmCount: tbmRows.length,
     specialCount: tbmSpecialCount,
@@ -478,6 +480,51 @@ export default async function MonthlySafetyReportPage({
                 본 체크리스트는 세메앱 운영 DB 기준의 데이터 확인표입니다. 최종 법적 판단 및 조치 책임은 사업장 관리 기준과 관계 법령에 따라 별도로 확인해야 합니다.
               </p>
             </div>
+          </div>
+        </Section>
+
+        <Section title="EB 연결 보완 필요 항목" desc="EB 연결 필요 조건에 해당하지만 연결EB relation이 비어 있는 TBM입니다.">
+          <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-slate-900 text-slate-300 print:bg-slate-100 print:text-slate-800">
+                <tr>
+                  <th className="px-3 py-3">날짜</th>
+                  <th className="px-3 py-3">작업명</th>
+                  <th className="px-3 py-3">조치상태</th>
+                  <th className="px-3 py-3">특이사항</th>
+                  <th className="px-3 py-3">EB</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ebMissingRows.length > 0 ? (
+                  ebMissingRows.map((row) => {
+                    const props = row.properties ?? {};
+                    const ebCount = getRelationCount(props["연결EB"]) + getRelationCount(props["관련 EB"]);
+                    const specialValue =
+                      getTextPropPlainText(props["특이사항"]) ||
+                      getTextPropPlainText(props["특이사항내용"]) ||
+                      getTextPropPlainText(props["특이사항 내용"]) ||
+                      "-";
+
+                    return (
+                      <tr key={row.id} className="border-t border-slate-800 print:border-slate-200">
+                        <td className="px-3 py-3 text-slate-300 print:text-slate-700">{getDateFromPage(row) || "-"}</td>
+                        <td className="px-3 py-3 font-bold text-white print:text-slate-950">{getTitleFromPage(row)}</td>
+                        <td className="px-3 py-3 text-slate-300 print:text-slate-700">{getActionStatus(row) || "-"}</td>
+                        <td className="px-3 py-3 text-slate-300 print:text-slate-700">{specialValue}</td>
+                        <td className="px-3 py-3 text-slate-300 print:text-slate-700">{ebCount}건</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-6 text-center text-slate-400">
+                      EB 연결 보완 필요 항목이 없습니다.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </Section>
 
