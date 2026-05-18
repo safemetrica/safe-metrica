@@ -222,13 +222,13 @@ function buildExpertOpinion(input: {
   }
 
   if (input.highRiskCount > 0) {
-    improvements.push(`고위험 항목이 ${input.highRiskCount}건 확인됩니다. 해당 항목은 TBM에서 반복 공유하고, 조치사진·PTW·개선대책과 연결해 관리해야 합니다.`);
-    nextMonth.push("고위험 항목의 TBM 공유 여부와 개선대책 담당자·기한을 확인합니다.");
+    improvements.push(`위험성평가표상 고위험 관리항목이 ${input.highRiskCount}건 확인됩니다. 해당 항목은 TBM에서 반복 공유하고, 조치사진·PTW·개선대책과 연결해 관리해야 합니다.`);
+    nextMonth.push("위험성평가표상 고위험 관리항목의 TBM 공유 여부와 개선대책 담당자·기한을 확인합니다.");
   }
 
   if (input.actionNeededCount > 0) {
-    improvements.push(`개선대책 관리 필요 항목이 ${input.actionNeededCount}건입니다. 담당자, 기한, 예산 필요 여부를 정리해 다음 달 관리 항목으로 이월해야 합니다.`);
-    nextMonth.push("개선대책 관리 필요 항목의 담당자·기한·예산 검토 여부를 확인합니다.");
+    improvements.push(`위험성평가표상 개선대책 관리항목이 ${input.actionNeededCount}건입니다. 담당자, 기한, 예산 필요 여부를 정리해 다음 달 관리 항목으로 이월해야 합니다.`);
+    nextMonth.push("위험성평가표상 개선대책 관리항목의 담당자·기한·예산 검토 여부를 확인합니다.");
   }
 
   legalChecks.push({
@@ -244,9 +244,9 @@ function buildExpertOpinion(input: {
   });
 
   legalChecks.push({
-    label: "고위험작업 PTW 운영",
+    label: "PTW 승인 운영",
     done: input.ptwApproved > 0,
-    note: input.ptwApproved > 0 ? `승인 ${input.ptwApproved}건` : "실질 승인 운영 보완 필요",
+    note: input.ptwApproved > 0 ? `승인 ${input.ptwApproved}건` : "승인 완료 기록 없음",
   });
 
   legalChecks.push({
@@ -263,7 +263,7 @@ function buildExpertOpinion(input: {
     input.tbmCount >= 15 && input.ebMissingCount === 0
       ? `이번 달 TBM 기록은 ${input.tbmCount}건이며, EB 연결 필요 항목의 보완 필요 건은 확인되지 않습니다.`
       : input.tbmCount >= 15
-        ? `이번 달 TBM 기록은 ${input.tbmCount}건이며, EB 연결 보완 필요 ${input.ebMissingCount}건, 고위험 항목 ${input.highRiskCount}건이 확인됩니다.`
+        ? `이번 달 TBM 기록은 ${input.tbmCount}건이며, EB 연결 보완 필요 ${input.ebMissingCount}건, 위험성평가표상 고위험 관리항목 ${input.highRiskCount}건이 확인됩니다.`
         : `이번 달 TBM 기록은 ${input.tbmCount}건입니다. 월간 기록 수와 증빙 연결 상태를 추가 확인해야 합니다.`;
 
   return {
@@ -484,7 +484,7 @@ export default async function MonthlySafetyReportPage({
             </div>
           </Section>
 
-          <Section title="위험성평가 관리 현황" desc="Risk Intelligence 기준 관리 신호입니다.">
+          <Section title="위험성평가 관리 현황" desc="위험성평가표 DB 기준의 상시 관리 항목입니다.">
             <div className="grid gap-3 sm:grid-cols-3">
               <StatCard label="전체 위험항목" value={riskTotal} />
               <StatCard label="고위험" value={highRiskCount} />
@@ -537,8 +537,8 @@ export default async function MonthlySafetyReportPage({
         <Section title="운영 참고사항">
           <ul className="space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
             <li>• EB 연결 누락 TBM은 증빙 연결 여부를 확인합니다.</li>
-            <li>• 고위험 관리 항목은 TBM에서 반복 공유하고, 필요한 경우 PTW 또는 조치사진을 연결합니다.</li>
-            <li>• 개선대책 관리 필요 항목은 담당자, 기한, 증빙자료를 확인합니다.</li>
+            <li>• 위험성평가표상 고위험 관리항목은 월간 TBM 공유 여부와 관련 조치 기록을 확인합니다.</li>
+            <li>• 위험성평가표상 개선대책 관리항목은 담당자, 기한, 증빙자료를 확인합니다.</li>
             <li>• 본 보고서는 운영 참고자료이며 최종 조치 판단은 사업장 관리 기준에 따릅니다.</li>
           </ul>
         </Section>
