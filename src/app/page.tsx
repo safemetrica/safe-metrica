@@ -205,7 +205,7 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
         <p className="text-blue-300 text-xs text-center">
   {company.name} · 오늘도 안전한 하루 되세요 👷
 </p>
-              <TbmFormAction tbmFormUrl={tbmFormUrl} className="mt-4" />
+              <TbmFormAction tbmFormUrl={tbmFormUrl} className="mt-3" />
 
       </div>
 
