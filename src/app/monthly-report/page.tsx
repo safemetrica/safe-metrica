@@ -114,6 +114,29 @@ function needsEvidenceBook(row: NotionPage): boolean {
   return ["조치 필요", "보완 필요", "미조치", "미완료"].includes(actionStatus);
 }
 
+function isValidPtwRow(row: NotionPage): boolean {
+  const title = getTitleFromPage(row);
+  const date = getDateFromPage(row);
+  const props = row.properties ?? {};
+
+  const approvalStatus =
+    getTextPropPlainText(props["승인상태"]) ||
+    getTextPropPlainText(props["승인 상태"]) ||
+    getTextPropPlainText(props["상태"]);
+
+  const workType =
+    getTextPropPlainText(props["작업유형"]) ||
+    getTextPropPlainText(props["작업 유형"]) ||
+    getTextPropPlainText(props["작업종류"]) ||
+    getTextPropPlainText(props["작업 종류"]);
+
+  const hasTitle = Boolean(title && title !== "제목 없음");
+  const hasDate = Boolean(date);
+  const hasMeaningfulData = Boolean(approvalStatus || workType);
+
+  return hasTitle && hasDate && hasMeaningfulData;
+}
+
 function inMonth(dateValue: string, monthKey: string): boolean {
   if (!dateValue || !monthKey) return false;
   return dateValue.startsWith(monthKey);
@@ -329,13 +352,13 @@ export default async function MonthlySafetyReportPage({
     );
   }, 0);
 
-  const ptwApproved = ptwRows.filter((row) => {
+  const ptwApproved = validPtwRows.filter((row) => {
     const props = row.properties ?? {};
     const status = `${getTextPropPlainText(props["상태"])} ${getTextPropPlainText(props["승인상태"])} ${getTextPropPlainText(props["approvalStatus"])}`;
     return /승인|완료|approved/i.test(status);
   }).length;
 
-  const ptwPending = ptwRows.filter((row) => {
+  const ptwPending = validPtwRows.filter((row) => {
     const props = row.properties ?? {};
     const status = `${getTextPropPlainText(props["상태"])} ${getTextPropPlainText(props["승인상태"])} ${getTextPropPlainText(props["approvalStatus"])}`;
     return /대기|검토|pending|요청/i.test(status);
@@ -355,7 +378,7 @@ export default async function MonthlySafetyReportPage({
     ebLinkedCount: tbmEbLinkedCount,
     ebRequiredCount: tbmEvidenceRequiredRows.length,
     ebMissingCount: tbmEbMissingCount,
-    ptwCount: ptwRows.length,
+    ptwCount: validPtwRows.length,
     ptwApproved,
     ptwPending,
     riskTotal,
@@ -400,7 +423,7 @@ export default async function MonthlySafetyReportPage({
           <StatCard label="월간 TBM" value={`${tbmRows.length}건`} hint="해당 월 작성된 TBM 기록" tone="border-blue-800" />
           <StatCard label="특이사항" value={`${tbmSpecialCount}건`} hint="특이사항 또는 보완 내용 포함" tone="border-amber-800" />
           <StatCard label="EB 필요/연결" value={`${tbmEbLinkedCount}/${tbmEvidenceRequiredRows.length}건`} hint={`보완 필요 ${tbmEbMissingCount}건`} tone="border-emerald-800" />
-          <StatCard label="PTW" value={`${ptwRows.length}건`} hint={`승인 ${ptwApproved} · 대기 ${ptwPending}`} tone="border-orange-800" />
+          <StatCard label="PTW" value={`${validPtwRows.length}건`} hint={`승인 ${ptwApproved} · 대기 ${ptwPending}`} tone="border-orange-800" />
         </div>
 
         <Section title="운영 데이터 점검" desc="월간 운영 DB 수치를 기준으로 확인된 항목입니다.">
