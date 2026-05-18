@@ -11,17 +11,30 @@ function redirectToLogin(req: NextRequest, error: string) {
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = (url.searchParams.get("code") ?? "").trim().toLowerCase();
+  const token = url.searchParams.get("token");
 
   if (!code) {
     const res = redirectToLogin(req, "missing_company");
     res.cookies.delete("sm_company_code");
+    res.cookies.delete("sm_tenant_token");
     return res;
+  }
+
+  if (code === "daedo") {
+    const expectedToken = process.env.DAEDO_TENANT_TOKEN;
+
+    if (!expectedToken || token !== expectedToken) {
+      const res = redirectToLogin(req, "invalid_tenant_token");
+      res.cookies.delete("sm_company_code");
+      res.cookies.delete("sm_tenant_token");
+      return res;
+    }
   }
 
   try {
     const company = await getCompanyConfigByCode(code);
 
-    const res = NextResponse.redirect(new URL("/", req.url));
+    const res = NextResponse.redirect(new URL("/home", req.url));
 
     res.cookies.set("sm_company_code", company.code, {
       path: "/",
@@ -31,10 +44,23 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
 
+    if (company.code === "daedo" && token) {
+      res.cookies.set("sm_tenant_token", token, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    } else {
+      res.cookies.delete("sm_tenant_token");
+    }
+
     return res;
   } catch {
     const res = redirectToLogin(req, "invalid_company");
     res.cookies.delete("sm_company_code");
+    res.cookies.delete("sm_tenant_token");
     return res;
   }
 }
