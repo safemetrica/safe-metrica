@@ -3,7 +3,9 @@ export const dynamic = "force-dynamic";
 import { SafeNav, StatusBadge } from "@/components/SafeLayout";
 import Link from "next/link";
 import { getCompanyConfig } from "@/lib/company";
+import TbmFormAction from "@/components/TbmFormAction";
 
+import { getTbmFormUrl } from "@/lib/tenantLinks";
 async function getTbmRows() {
   const apiBase = "https://api.notion.com/v1/databases";
   const company = await getCompanyConfig();
@@ -37,6 +39,8 @@ async function getTbmRows() {
 
 export default async function TbmPage() {
   const rows = await getTbmRows();
+  const company = await getCompanyConfig();
+  const tbmFormUrl = getTbmFormUrl(company);
   const 특이사항건수 = rows.filter((r: any) => r.특이사항).length;
   const EB누락 = rows.filter((r: any) => r.특이사항 && r.연결EB === 0).length;
   const 조치필요 = rows.filter((r: any) => r.조치상태 === "조치 필요").length;
@@ -55,6 +59,8 @@ export default async function TbmPage() {
             <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
               오늘 작성된 TBM과 특이사항, 증빙 연결 상태를 확인합니다.
             </p>
+              <TbmFormAction tbmFormUrl={tbmFormUrl} compact className="mt-4" />
+
           </div>
 
           <div className="whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-slate-200">
