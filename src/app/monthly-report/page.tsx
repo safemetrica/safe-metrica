@@ -149,6 +149,108 @@ function Section(props: { title: string; children: React.ReactNode; desc?: strin
   );
 }
 
+function buildExpertOpinion(input: {
+  tbmCount: number;
+  specialCount: number;
+  ebLinkedCount: number;
+  ebMissingCount: number;
+  ptwCount: number;
+  ptwApproved: number;
+  ptwPending: number;
+  riskTotal: number;
+  highRiskCount: number;
+  actionNeededCount: number;
+  actionPhotoCount: number;
+}) {
+  const good: string[] = [];
+  const improvements: string[] = [];
+  const nextMonth: string[] = [];
+  const legalChecks: { label: string; done: boolean; note: string }[] = [];
+
+  if (input.tbmCount >= 15) {
+    good.push(`이번 달 TBM은 ${input.tbmCount}건 작성되어 현장 안전활동 입력 흐름이 비교적 안정적으로 운영되었습니다.`);
+  } else if (input.tbmCount > 0) {
+    improvements.push(`이번 달 TBM 작성은 ${input.tbmCount}건으로 확인됩니다. 월 20건 이상을 목표로 작업 전 TBM 작성 습관을 더 강화할 필요가 있습니다.`);
+  } else {
+    improvements.push("이번 달 TBM 작성 기록이 확인되지 않습니다. 작업 전 TBM 작성 체계부터 우선 정착시켜야 합니다.");
+  }
+
+  if (input.specialCount > 0) {
+    good.push(`특이사항 또는 보완 필요 항목이 ${input.specialCount}건 기록되어 현장의 이상 신호를 남기는 체계가 작동하고 있습니다.`);
+  }
+
+  if (input.actionPhotoCount > 0) {
+    good.push(`조치사진이 ${input.actionPhotoCount}건 확인되어 일부 개선·조치 이력이 사진으로 남고 있습니다.`);
+  }
+
+  if (input.ebMissingCount > 0) {
+    improvements.push(`TBM 대비 EB 연결 누락이 ${input.ebMissingCount}건으로 추정됩니다. 특이사항, 즉시 조치, 조치 필요 항목은 Evidence Book에 사진 또는 파일 증빙을 연결해야 합니다.`);
+    nextMonth.push("EB 연결 누락 항목을 우선 확인하고, 특이사항·조치완료 건은 사진 1건 이상을 소급 연결합니다.");
+  } else if (input.tbmCount > 0) {
+    good.push("TBM과 EB 연결 누락이 확인되지 않아 증빙 관리 흐름이 양호합니다.");
+  }
+
+  if (input.ptwCount === 0 || input.ptwApproved === 0) {
+    improvements.push("PTW 승인 운영 실적이 낮습니다. 차량 상부작업, 유압장치 정비, 밀폐공간, 용접·용단 등 고위험작업 대상 목록을 확정하고 최소 1건 이상 승인 절차를 운영하는 것이 필요합니다.");
+    nextMonth.push("관리감독자와 현장책임자가 PTW 대상 작업 3~5개를 확정하고, 실제 작업 발생 시 승인 기록을 남깁니다.");
+  } else {
+    good.push(`PTW가 ${input.ptwCount}건 운영되었고, 승인 완료 ${input.ptwApproved}건이 확인됩니다.`);
+  }
+
+  if (input.highRiskCount > 0) {
+    improvements.push(`고위험 항목이 ${input.highRiskCount}건 확인됩니다. 해당 항목은 TBM에서 반복 공유하고, 조치사진·PTW·개선대책과 연결해 관리해야 합니다.`);
+    nextMonth.push("고위험 항목은 월간 TBM 주제로 반복 편성하고, 개선대책 담당자와 기한을 확인합니다.");
+  }
+
+  if (input.actionNeededCount > 0) {
+    improvements.push(`개선대책 관리 필요 항목이 ${input.actionNeededCount}건입니다. 담당자, 기한, 예산 필요 여부를 정리해 다음 달 관리 항목으로 이월해야 합니다.`);
+    nextMonth.push("개선대책 관리 필요 항목의 담당자·기한·예산 검토 여부를 정리합니다.");
+  }
+
+  legalChecks.push({
+    label: "TBM 운영 기록",
+    done: input.tbmCount > 0,
+    note: input.tbmCount > 0 ? `${input.tbmCount}건 확인` : "기록 없음",
+  });
+
+  legalChecks.push({
+    label: "증빙자료 EB 연결",
+    done: input.ebMissingCount === 0 && input.tbmCount > 0,
+    note: input.ebMissingCount > 0 ? `누락 추정 ${input.ebMissingCount}건` : "양호",
+  });
+
+  legalChecks.push({
+    label: "고위험작업 PTW 운영",
+    done: input.ptwApproved > 0,
+    note: input.ptwApproved > 0 ? `승인 ${input.ptwApproved}건` : "실질 승인 운영 보완 필요",
+  });
+
+  legalChecks.push({
+    label: "위험성평가 개선대책 관리",
+    done: input.actionNeededCount === 0,
+    note: input.actionNeededCount > 0 ? `관리 필요 ${input.actionNeededCount}건` : "관리 필요 항목 없음",
+  });
+
+  if (nextMonth.length === 0) {
+    nextMonth.push("현재 운영 상태를 유지하면서 월간 TBM, EB, PTW, 위험성평가 기록의 정합성을 주기적으로 확인합니다.");
+  }
+
+  const summary =
+    input.tbmCount >= 15 && input.ebMissingCount === 0
+      ? "이번 달 안전운영은 TBM 작성과 증빙 관리가 비교적 안정적으로 운영된 것으로 판단됩니다."
+      : input.tbmCount >= 15
+        ? "이번 달 안전운영은 TBM 입력은 안정적으로 정착되고 있으나, 증빙 연결과 고위험작업 관리의 보완이 필요합니다."
+        : "이번 달 안전운영은 기본 입력 체계 정착이 우선 과제로 판단됩니다.";
+
+  return {
+    summary,
+    good,
+    improvements,
+    nextMonth,
+    legalChecks,
+  };
+}
+
 export default async function MonthlySafetyReportPage({
   searchParams,
 }: {
@@ -221,6 +323,20 @@ export default async function MonthlySafetyReportPage({
   const actionNeededCount = riskAny?.actionNeededCount ?? 0;
 
   const recentTbm = tbmRows.slice(0, 8);
+  const expertOpinion = buildExpertOpinion({
+    tbmCount: tbmRows.length,
+    specialCount: tbmSpecialCount,
+    ebLinkedCount: tbmEbLinkedCount,
+    ebMissingCount: tbmEbMissingCount,
+    ptwCount: ptwRows.length,
+    ptwApproved,
+    ptwPending,
+    riskTotal,
+    highRiskCount,
+    actionNeededCount,
+    actionPhotoCount,
+  });
+
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 print:bg-white print:text-slate-950">
@@ -259,6 +375,83 @@ export default async function MonthlySafetyReportPage({
           <StatCard label="EB 연결" value={`${tbmEbLinkedCount}건`} hint={`누락 추정 ${tbmEbMissingCount}건`} tone="border-emerald-800" />
           <StatCard label="PTW" value={`${ptwRows.length}건`} hint={`승인 ${ptwApproved} · 대기 ${ptwPending}`} tone="border-orange-800" />
         </div>
+
+        <Section title="기술지원 의견" desc="월간 운영 데이터를 기준으로 자동 정리한 관리 의견입니다.">
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-blue-900/70 bg-blue-950/30 p-4 print:border-blue-200 print:bg-blue-50">
+              <p className="text-sm font-bold text-blue-200 print:text-blue-900">종합 판단</p>
+              <p className="mt-2 text-base font-black leading-relaxed text-white print:text-slate-950">
+                {expertOpinion.summary}
+              </p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-900/70 bg-emerald-950/20 p-4 print:border-emerald-200 print:bg-white">
+                <h3 className="text-base font-black text-emerald-200 print:text-emerald-900">잘 되고 있는 부분</h3>
+                {expertOpinion.good.length > 0 ? (
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
+                    {expertOpinion.good.map((item, index) => (
+                      <li key={index}>• {item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-400 print:text-slate-600">이번 달에는 우선 개선이 필요한 항목이 더 크게 확인됩니다.</p>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-rose-900/70 bg-rose-950/20 p-4 print:border-rose-200 print:bg-white">
+                <h3 className="text-base font-black text-rose-200 print:text-rose-900">개선 필요 사항</h3>
+                <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
+                  {expertOpinion.improvements.length > 0 ? (
+                    expertOpinion.improvements.map((item, index) => <li key={index}>• {item}</li>)
+                  ) : (
+                    <li>• 주요 개선 필요 사항은 확인되지 않았습니다. 현재 운영 수준을 유지하면서 월간 점검을 지속합니다.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-amber-900/70 bg-amber-950/20 p-4 print:border-amber-200 print:bg-white">
+              <h3 className="text-base font-black text-amber-200 print:text-amber-900">다음 달 운영계획</h3>
+              <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
+                {expertOpinion.nextMonth.map((item, index) => (
+                  <li key={index}>• {item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+              <h3 className="text-base font-black text-white print:text-slate-950">법적 점검 체크리스트</h3>
+              <div className="mt-3 overflow-hidden rounded-xl border border-slate-800 print:border-slate-300">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead className="bg-slate-950 text-slate-300 print:bg-slate-100 print:text-slate-800">
+                    <tr>
+                      <th className="px-3 py-2">항목</th>
+                      <th className="px-3 py-2">상태</th>
+                      <th className="px-3 py-2">비고</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expertOpinion.legalChecks.map((item, index) => (
+                      <tr key={index} className="border-t border-slate-800 print:border-slate-200">
+                        <td className="px-3 py-2 font-bold text-white print:text-slate-950">{item.label}</td>
+                        <td className="px-3 py-2">
+                          <span className={item.done ? "font-black text-emerald-300 print:text-emerald-700" : "font-black text-rose-300 print:text-rose-700"}>
+                            {item.done ? "확인" : "보완 필요"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-slate-300 print:text-slate-700">{item.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-slate-500 print:text-slate-600">
+                본 체크리스트는 운영 현황 파악을 위한 기술지원 참고자료이며, 최종 법적 판단 및 조치 책임은 사업장 관리 기준과 관계 법령에 따라 확인해야 합니다.
+              </p>
+            </div>
+          </div>
+        </Section>
 
         <div className="grid gap-5 lg:grid-cols-2">
           <Section title="TBM 운영 현황" desc="월간 TBM 작성, 특이사항, 증빙 연결 상태입니다.">
@@ -319,7 +512,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
-        <Section title="다음 달 확인사항">
+        <Section title="운영 참고사항">
           <ul className="space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
             <li>• EB 연결 누락 TBM은 증빙 연결 여부를 확인합니다.</li>
             <li>• 고위험 관리 항목은 TBM에서 반복 공유하고, 필요한 경우 PTW 또는 조치사진을 연결합니다.</li>
