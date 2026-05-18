@@ -8,38 +8,40 @@ type Props = {
 
 export default function TbmFormAction({ tbmFormUrl, compact = false, className = "" }: Props) {
   return (
-    <div
-      className={`rounded-2xl border border-blue-700/60 bg-blue-950/30 px-4 py-3 ${className}`}
-    >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className={`rounded-xl border border-blue-700/60 bg-blue-950/30 px-4 py-2 ${className}`}>
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <p className="text-base font-black text-white">오늘 TBM 작성</p>
-          {!compact && (
-            <p className="mt-1 text-sm leading-relaxed text-blue-100">
-              모바일 폼으로 작성하고, 세메앱에서 작성 내역과 증빙·조치상태를 확인합니다.
+          <div className="flex flex-col gap-0.5 md:flex-row md:items-center md:gap-3">
+            <p className="whitespace-nowrap text-sm font-black text-white sm:text-base">
+              오늘 TBM 작성
             </p>
-          )}
+            {!compact && (
+              <p className="truncate text-xs font-medium text-blue-100 sm:text-sm">
+                모바일 폼 작성 후 세메앱에서 작성 내역과 증빙·조치상태를 확인합니다.
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+        <div className="flex shrink-0 gap-2">
           {tbmFormUrl ? (
             <a
               href={tbmFormUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-blue-500"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white shadow-sm hover:bg-blue-500 sm:px-4 sm:text-sm"
             >
               오늘 TBM 작성하기
             </a>
           ) : (
-            <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-bold text-slate-400">
+            <span className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-3 text-xs font-bold text-slate-400 sm:px-4 sm:text-sm">
               TBM 작성 링크 준비 중
             </span>
           )}
 
           <Link
             href="/tbm"
-            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-900"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs font-bold text-slate-200 hover:bg-slate-900 sm:px-4 sm:text-sm"
           >
             작성 내역 확인
           </Link>
