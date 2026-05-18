@@ -335,6 +335,7 @@ export default async function MonthlySafetyReportPage({
     const date = getDateFromPage(row);
     return date ? inMonth(date, monthKey) : true;
   });
+  const validPtwRows = ptwRows.filter(isValidPtwRow);
 
   const tbmSpecialCount = tbmRows.filter(hasSpecialIssue).length;
 
