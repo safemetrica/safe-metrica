@@ -61,7 +61,18 @@ export async function getCompanyCodeFromRequest(): Promise<string> {
   const fromCookie = c.get("sm_company_code")?.value;
 
   if (fromCookie) {
-    return assertSafeCompanyCode(fromCookie);
+    const companyCode = assertSafeCompanyCode(fromCookie);
+
+    if (companyCode === "daedo") {
+      const tenantToken = c.get("sm_tenant_token")?.value;
+      const expectedToken = process.env.DAEDO_TENANT_TOKEN;
+
+      if (!expectedToken || tenantToken !== expectedToken) {
+        throw new TenantRequiredError();
+      }
+    }
+
+    return companyCode;
   }
 
   // 운영 환경에서는 절대 daedo fallback 금지.
