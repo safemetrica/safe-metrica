@@ -405,7 +405,7 @@ export default async function MonthlySafetyReportPage({
             </div>
 
             <div className="flex flex-wrap gap-2 print:hidden">
-              <Link href="/" className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-800">
+              <Link href="/home" className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-800">
                 홈
               </Link>
               <PrintReportButton />
