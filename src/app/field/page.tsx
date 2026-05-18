@@ -4,10 +4,13 @@ import Link from "next/link";
 import FieldAiBrief from "@/components/FieldAiBrief";
 import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
+import TbmFormAction from "@/components/TbmFormAction";
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
+import { getTbmFormUrl } from "@/lib/tenantLinks";
 
 async function getFieldData(): Promise<Record<string, any>> {
   const company = await getCompanyConfig();
+  const tbmFormUrl = getTbmFormUrl(company);
   
   const headers = {
     Authorization: `Bearer ${company.notionApiKey}`,
@@ -163,7 +166,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   } catch { safetyNews = []; }
 
   return {
-    today, 오늘TBM, 이번주TBM, EB누락, 조치필요, PTW미승인, PTW위험,
+    today, tbmFormUrl, 오늘TBM, 이번주TBM, EB누락, 조치필요, PTW미승인, PTW위험,
     checklist, PTW필요태그, PTW필요미제출, 칭찬멘트, safetyNews, 오늘할일, weatherAlert,
     riskTbmShareNeededCount: risk.tbmShareNeededCount,
     riskTbmShareNeededItems: risk.tbmShareNeededItems,
@@ -188,6 +191,8 @@ export default async function FieldPage() {
         {/* 헤더 */}
         <div className="mb-4">
           <h1 className="text-xl font-bold text-white">👷 현장 비서</h1>
+          <TbmFormAction tbmFormUrl={d.tbmFormUrl} compact className="mt-4" />
+
           <p className="mt-0.5 text-sm text-gray-400">
             {dateStr} · {timeStr} · 관리감독자·안전담당자 전용
           </p>

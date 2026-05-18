@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCompanyConfig } from "@/lib/company";
+import TbmFormAction from "@/components/TbmFormAction";
 
+import { getTbmFormUrl } from "@/lib/tenantLinks";
 const menus = [
   { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
   { href: "/ebm", icon: "📚", label: "Evidence Book", sub: "증빙 현황 조회", color: "from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600", border: "border-emerald-500" },
@@ -98,6 +100,8 @@ export default async function Home() {
   if (!company) {
     redirect("/login?error=tenant_required");
   }
+
+  const tbmFormUrl = getTbmFormUrl(company);
 
   const weather = await getWeather();
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
@@ -200,6 +204,8 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
         <p className="text-blue-300 text-xs text-center">
   {company.name} · 오늘도 안전한 하루 되세요 👷
 </p>
+              <TbmFormAction tbmFormUrl={tbmFormUrl} className="mt-4" />
+
       </div>
 
       {weather.tmp !== null && weather.decision && (() => {
