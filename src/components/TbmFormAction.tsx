@@ -8,9 +8,7 @@ type Props = {
 
 export default function TbmFormAction({ tbmFormUrl, compact = false, className = "" }: Props) {
   return (
-    <div
-      className={`rounded-xl border border-blue-700/60 bg-blue-950/30 px-4 py-2 ${className}`}
-    >
+    <div className={`rounded-xl border border-blue-700/60 bg-blue-950/30 px-4 py-2 ${className}`}>
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <div className="flex flex-col gap-0.5 md:flex-row md:items-center md:gap-3">
