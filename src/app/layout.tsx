@@ -41,7 +41,7 @@ export default function RootLayout({
               © 2026 SafeMetrica™. All rights reserved.
             </p>
             <p className="mt-1 text-xs font-bold text-blue-100">
-              등록 저작물 기반 보고서·프로세스 구조 적용 · O-2026-003550 · C-2026-013731
+              등록 저작물 기반 보고서·프로세스 구조 적용 · C-2026-003550 · C-2026-013731
             </p>
           </div>
 								사업자명: 레인보우비즈컨설팅 | 대표: 김진형 | 사업자등록번호:
