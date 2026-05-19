@@ -1,12 +1,19 @@
 export default function SafeMetricaFooter() {
   return (
-    <footer className="border-t border-slate-800 bg-slate-950 px-5 py-4 text-center print:border-slate-300 print:bg-white">
-      <p className="text-[11px] leading-5 text-slate-500 print:text-slate-600">
-        © 2026 SafeMetrica™. All rights reserved.
-      </p>
-      <p className="text-[10px] leading-5 text-slate-600 print:text-slate-500">
-        Registered copyrighted report/process structures: O-2026-003550 · C-2026-013731
-      </p>
+    <footer className="bg-neutral-700 px-6 py-5 text-white print:border-t print:border-slate-300 print:bg-white print:text-slate-900">
+      <div className="mx-auto max-w-6xl text-center">
+        <p className="text-sm font-black tracking-wide">
+          SafeMetrica™
+        </p>
+
+        <p className="mt-1 text-xs font-semibold text-neutral-100 print:text-slate-700">
+          © 2026 SafeMetrica™. All rights reserved.
+        </p>
+
+        <p className="mt-1 text-xs font-bold text-blue-100 print:text-slate-700">
+          등록 저작물 기반 보고서·프로세스 구조 적용 · O-2026-003550 · C-2026-013731
+        </p>
+      </div>
     </footer>
   );
 }
