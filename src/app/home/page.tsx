@@ -10,8 +10,10 @@ const menus = [
   { href: "/field", icon: "👷", label: "현장 비서", sub: "관리감독자 전용", color: "from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600", border: "border-teal-500" },
   { href: "/monthly-report", icon: "📑", label: "월간보고서", sub: "월별 안전운영 요약", color: "from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600", border: "border-sky-500" },
   { href: "/dashboard", icon: "📊", label: "대표 대시보드", sub: "통계 & 리스크 요약", color: "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600", border: "border-purple-500" },
+  { href: "/risk", icon: "⚠️", label: "위험성평가표", sub: "상시 위험요인·개선대책", color: "from-red-600 to-red-700 hover:from-red-500 hover:to-red-600", border: "border-red-500" },
   { href: "/ptw", icon: "🧾", label: "고위험작업허가서", sub: "PTW 승인 현황", color: "from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600", border: "border-orange-500" },
-  { href: "/kosha", icon: "🏅", label: "KOSHA 인정심사", sub: "11개 Gate 이행률 자동 산출", color: "from-yellow-700 to-yellow-800 hover:from-yellow-600 hover:to-yellow-700" },
+  { href: "/inspection-education", icon: "✅", label: "점검·교육", sub: "순회·차량·교육기록", color: "from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600", border: "border-cyan-500" },
+  { href: "/kosha", icon: "🏅", label: "KOSHA 인정심사", sub: "11개 Gate 이행률", color: "from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600", border: "border-amber-500" },
 ];
 async function getWeather() {
   try {
