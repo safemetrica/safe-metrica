@@ -249,8 +249,11 @@ function buildExpertOpinion(input: {
     good.push(`EB 연결 필요 항목 ${input.ebRequiredCount}건 중 보완 필요 항목은 확인되지 않았습니다.`);
   }
 
-  if (input.ptwCount === 0 || input.ptwApproved === 0) {
-    improvements.push("PTW 승인 완료 건이 확인되지 않습니다. 고위험작업 발생 시 승인 기록 여부를 확인해야 합니다.");
+  if (input.ptwCount === 0) {
+    good.push("이번 달 PTW 유효 운영 건은 확인되지 않았습니다. 고위험작업이 발생하지 않은 경우 정상 운영으로 볼 수 있습니다.");
+    nextMonth.push("고위험작업 발생 시 PTW 대상 여부와 승인 기록을 확인합니다.");
+  } else if (input.ptwApproved === 0) {
+    improvements.push("PTW 운영 건은 있으나 승인 완료 건이 확인되지 않습니다. 승인상태 또는 작업허가 기록을 확인해야 합니다.");
     nextMonth.push("PTW 대상 작업과 승인 기록 여부를 확인합니다.");
   } else {
     good.push(`PTW가 ${input.ptwCount}건 운영되었고, 승인 완료 ${input.ptwApproved}건이 확인됩니다.`);
@@ -278,8 +281,13 @@ function buildExpertOpinion(input: {
 
   legalChecks.push({
     label: "PTW 승인 운영",
-    done: input.ptwApproved > 0,
-    note: input.ptwApproved > 0 ? `승인 ${input.ptwApproved}건` : "승인 완료 기록 없음",
+    done: input.ptwCount === 0 || input.ptwApproved > 0,
+    note:
+      input.ptwCount === 0
+        ? "PTW 대상 작업 없음"
+        : input.ptwApproved > 0
+          ? `승인 ${input.ptwApproved}건`
+          : "승인 완료 기록 없음",
   });
 
   legalChecks.push({
