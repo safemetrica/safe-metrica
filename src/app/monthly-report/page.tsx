@@ -2,6 +2,7 @@ import Link from "next/link";
 import PrintReportButton from "@/components/PrintReportButton";
 import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
+import { hasTbmSpecialIssue, needsTbmEvidenceBook, hasLinkedEvidenceBook as hasLinkedEvidenceBookByProps } from "@/lib/tbmStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -345,10 +346,10 @@ export default async function MonthlySafetyReportPage({
   });
   const validPtwRows = ptwRows.filter(isValidPtwRow);
 
-  const tbmSpecialCount = tbmRows.filter(hasSpecialIssue).length;
+  const tbmSpecialCount = tbmRows.filter((row) => hasTbmSpecialIssue(row.properties ?? {})).length;
 
-  const tbmEvidenceRequiredRows = tbmRows.filter(needsEvidenceBook);
-  const tbmEbLinkedCount = tbmEvidenceRequiredRows.filter(hasLinkedEvidenceBook).length;
+  const tbmEvidenceRequiredRows = tbmRows.filter((row) => needsTbmEvidenceBook(row.properties ?? {}));
+  const tbmEbLinkedCount = tbmEvidenceRequiredRows.filter((row) => hasLinkedEvidenceBookByProps(row.properties ?? {})).length;
   const tbmEbMissingCount = Math.max(0, tbmEvidenceRequiredRows.length - tbmEbLinkedCount);
 
   const actionPhotoCount = tbmRows.reduce((sum, row) => {
