@@ -6,6 +6,7 @@ import AiDiagnosisCard from "@/components/AiDiagnosisCard";
 import TodayTasksCard from "@/components/TodayTasksCard";
 import EvidenceScoreCard from "@/components/EvidenceScoreCard";
 import { getCompanyConfig } from "@/lib/company";
+import { hasTbmSpecialIssue, needsTbmEvidenceBook, hasLinkedEvidenceBook } from "@/lib/tbmStatus";
 
 const DASHBOARD_SAFE_DATA_CONNECTION_MESSAGE =
   "일부 데이터 연결을 확인할 수 없어 현재 확인 가능한 항목만 요약합니다.";
@@ -66,6 +67,7 @@ type TbmRow = {
   id: string;
   작업명: string;
   날짜: string;
+  rawProps?: Record<string, any>;
   특이사항: boolean;
   조치상태: string;
   연결EB: number;
@@ -307,7 +309,8 @@ async function getDashboardData() {
       id: page.id,
       작업명: getTitlePropPlainText(props["작업명"]),
       날짜: getDatePropStart(props["날짜"]),
-      특이사항: getCheckboxPropValue(props["특이사항"]),
+      rawProps: props,
+      특이사항: hasTbmSpecialIssue(props),
       조치상태: getSelectPropName(props["조치 상태"]),
       연결EB: getRelationPropCount(props["연결 EB"]),
       실시자: getPeopleFirstName(props["실시자(현장총괄)"]),
@@ -328,7 +331,7 @@ async function getDashboardData() {
     };
   });
 
-  const EB누락목록 = rows.filter((row) => row.특이사항 && row.연결EB === 0);
+  const EB누락목록 = rows.filter((row) => needsTbmEvidenceBook(row.rawProps ?? {}) && row.연결EB === 0);
   const 조치필요목록 = rows.filter((row) => row.조치상태 === "조치 필요");
   const 오늘TBM = rows.filter((row) => row.날짜 === today).length;
   const PTW위험목록 = ptwRows.filter(
@@ -366,7 +369,7 @@ async function getDashboardData() {
 
   const tbm전체 = rows.length;
   const 특이사항건 = rows.filter((row) => row.특이사항).length;
-  const EB연결건 = rows.filter((row) => row.특이사항 && row.연결EB > 0).length;
+  const EB연결건 = rows.filter((row) => needsTbmEvidenceBook(row.rawProps ?? {}) && row.연결EB > 0).length;
   const PTW승인건 = ptwRows.filter(
     (row) => row.승인상태 === "승인" || row.승인상태 === "완료"
   ).length;
@@ -791,7 +794,7 @@ export default async function DashboardPage() {
               </div>
               <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
                 <div className="text-3xl font-black text-white">{s.특이사항}</div>
-                <div className="mt-1 text-xs text-amber-300">특이사항</div>
+                <div className="mt-1 text-xs text-amber-300">이번 달 특이사항</div>
               </div>
               <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
                 <div className="text-3xl font-black text-white">{s.EB누락}</div>

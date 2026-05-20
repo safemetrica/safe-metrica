@@ -1,3 +1,5 @@
+import { hasTbmSpecialIssue, needsTbmEvidenceBook, hasLinkedEvidenceBook } from "@/lib/tbmStatus";
+
 export const dynamic = "force-dynamic";
 
 import { SafeNav, StatusBadge } from "@/components/SafeLayout";
@@ -31,7 +33,7 @@ async function getTbmRows() {
     id: page.id,
     작업명: page.properties["작업명"]?.title?.[0]?.plain_text ?? "",
     날짜: page.properties["날짜"]?.date?.start ?? "",
-    특이사항: page.properties["특이사항"]?.checkbox ?? false,
+    특이사항: hasTbmSpecialIssue(page.properties ?? {}),
     조치상태: page.properties["조치 상태"]?.select?.name ?? "",
     연결EB: page.properties["연결 EB"]?.relation?.length ?? 0,
   }));
@@ -42,7 +44,7 @@ export default async function TbmPage() {
   const company = await getCompanyConfig();
   const tbmFormUrl = getTbmFormUrl(company);
   const 특이사항건수 = rows.filter((r: any) => r.특이사항).length;
-  const EB누락 = rows.filter((r: any) => r.특이사항 && r.연결EB === 0).length;
+  const EB누락 = rows.filter((r: any) => r.EB필요 && r.연결EB === 0).length;
   const 조치필요 = rows.filter((r: any) => r.조치상태 === "조치 필요").length;
 
   return (
@@ -57,7 +59,7 @@ export default async function TbmPage() {
               📋 TBM 현황
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
-              오늘 작성된 TBM과 특이사항, 증빙 연결 상태를 확인합니다.
+              등록된 TBM과 특이사항, 증빙 연결 상태를 확인합니다.
             </p>
               <TbmFormAction tbmFormUrl={tbmFormUrl} compact className="mt-4" />
 
@@ -110,7 +112,7 @@ export default async function TbmPage() {
 
         <div className="space-y-3">
           {rows.map((row: any) => {
-            const needsEb = row.특이사항 && row.연결EB === 0;
+            const needsEb = row.EB필요 && row.연결EB === 0;
             const needsAction = row.조치상태 === "조치 필요";
 
             return (
