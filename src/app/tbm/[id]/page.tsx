@@ -13,6 +13,7 @@ import { evaluateImprovementTracking, summarizeImprovementTracking } from "@/lib
 import { inferVisionEvidenceFromPhotoFields } from "@/lib/photoVisionEvidence";
 import { evaluateRiskStatusSync, summarizeRiskStatusSync } from "@/lib/riskStatusSync";
 import { classifyTbmRiskLink, getTbmRiskLinkTone } from "@/lib/tbmRiskSmartLink";
+import { evaluateEvidenceSufficiency } from "@/lib/evidenceSufficiency";
 import { needsTbmEvidenceBook } from "@/lib/tbmStatus";
 
 function getNotionFileCountsByPurpose(props: any) {
@@ -180,6 +181,28 @@ export default async function TbmDetailPage({
     actionPhotoCount: tbm.작업대상사진수 + tbm.조치사진수,
   });
 
+  const tbmEvidenceSufficiency = evaluateEvidenceSufficiency({
+    title: tbm.작업명,
+    evidenceType: tbm.작업유형 || tbm.조치상태,
+    note: `${tbm.오늘주의사항 ?? ""} ${tbm.특이사항내용 ?? ""}`,
+    relatedTbmCount: tbm.연결EB,
+  });
+
+  const actionEvidenceDisplayStatus =
+    tbmEvidenceSufficiency.status === "needs_supplement"
+      ? "보완 필요"
+      : actionEvidence.status;
+
+  const actionEvidenceDisplayReason =
+    tbmEvidenceSufficiency.status === "needs_supplement"
+      ? tbmEvidenceSufficiency.reason
+      : actionEvidence.reason;
+
+  const actionEvidenceDisplaySuggestion =
+    tbmEvidenceSufficiency.status === "needs_supplement"
+      ? `${tbmEvidenceSufficiency.recommendedEvidence.join(", ")}을(를) 추가해 주세요. TBM 활동사진이나 서명사진만으로는 작업 성격에 맞는 증빙이 충분하다고 보지 않습니다.`
+      : actionEvidence.suggestion;
+
   const improvementEvidence = findImprovementEvidence(
     `${tbm.작업명} ${tbm.오늘주의사항} ${tbm.특이사항내용}`
   );
@@ -248,7 +271,7 @@ export default async function TbmDetailPage({
           )}
           {tbm.조치상태 && (
             <span className={`px-3 py-2 rounded-full text-sm border ${tbm.조치상태 === "조치 필요" ? "bg-red-900 text-red-300 border-red-700" : "bg-green-900 text-green-300 border-green-700"}`}>
-              {tbm.조치상태}
+              조치상태: {tbm.조치상태}
             </span>
           )}
           <span className={`px-3 py-2 rounded-full text-sm border ${tbm.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : evidenceBookRequired ? "bg-red-900 text-red-300 border-red-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>
@@ -263,11 +286,13 @@ export default async function TbmDetailPage({
               <p className="mt-2 text-xl font-black leading-relaxed text-white [word-break:keep-all]">
                 {needsEB
                   ? "조치 필요 항목의 EB 연결을 먼저 확인하세요."
-                  : evidenceCheck.status !== "적합"
-                    ? "TBM 교육 기록을 보완해 주세요."
-                    : actionEvidence.status === "보완 추천"
-                      ? "작업사진과 조치 증빙을 확인해 주세요."
-                      : "오늘 TBM 기록 상태가 양호합니다."}
+                  : tbmEvidenceSufficiency.status === "needs_supplement"
+                    ? "TBM 기록은 확인되지만, 작업 성격에 맞는 증빙은 보완이 필요합니다."
+                    : evidenceCheck.status !== "적합"
+                      ? "TBM 교육 기록을 보완해 주세요."
+                      : actionEvidence.status !== "양호"
+                        ? "작업사진과 조치 증빙을 확인해 주세요."
+                        : "오늘 TBM 기록 상태가 양호합니다."}
               </p>
             </div>
 
@@ -403,7 +428,7 @@ export default async function TbmDetailPage({
             </div>
             <div className="rounded-lg bg-gray-950/40 p-3">
               <p className="text-xs text-gray-400">작업 확인</p>
-              <p className="mt-1 text-base font-bold text-white">{actionEvidence.status}</p>
+              <p className="mt-1 text-base font-bold text-white">{actionEvidenceDisplayStatus}</p>
             </div>
             <div className="rounded-lg bg-gray-950/40 p-3">
               <p className="text-xs text-gray-400">연결된 위험요인</p>
@@ -486,14 +511,14 @@ export default async function TbmDetailPage({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg">🛠️</span>
-                <span className="text-lg font-black text-white">오늘 작업사진 확인</span>
+                <span className="text-lg font-black text-white">오늘 작업·조치 증빙 확인</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
                 오늘 작업에 필요한 사진이 충분한지 확인합니다.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-gray-950/50 px-3 py-1 text-xs font-bold text-white">
-              {actionEvidence.status}
+              {actionEvidenceDisplayStatus}
             </span>
           </div>
 
@@ -538,13 +563,13 @@ export default async function TbmDetailPage({
             <div>
               <p className="text-xs font-semibold text-gray-400 mb-1">판단</p>
               <p className="text-base leading-relaxed text-gray-100 [word-break:keep-all]">
-                {actionEvidence.reason}
+                {actionEvidenceDisplayReason}
               </p>
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-400 mb-1">추천</p>
               <p className="text-base leading-relaxed text-gray-200 [word-break:keep-all]">
-                {actionEvidence.suggestion}
+                {actionEvidenceDisplaySuggestion}
               </p>
             </div>
           </div>
