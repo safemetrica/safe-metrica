@@ -57,18 +57,20 @@ export function getTbmSpecialText(props: NotionProperties): string {
 }
 
 export function hasTbmSpecialIssue(props: NotionProperties): boolean {
+  // 특이사항 카운트는 체크박스 기준만 사용한다.
+  // 특이사항 내용/보완 내용/오늘주의사항은 참고 텍스트이며 카운트에 포함하지 않는다.
   return (
     getCheckboxPropValue(props["특이사항"]) ||
-    getCheckboxPropValue(props["특이사항 있음"]) ||
-    getTbmSpecialText(props).length > 0
+    getCheckboxPropValue(props["특이사항 있음"])
   );
 }
 
 export function getTbmActionStatus(props: NotionProperties): string {
+  // EB 필요 여부는 반드시 조치상태 전용 필드만 본다.
+  // 일반 "상태" 필드는 교육/진단/화면 상태와 섞일 수 있으므로 사용하지 않는다.
   return (
     getTextPropPlainText(props["조치상태"]) ||
     getTextPropPlainText(props["조치 상태"]) ||
-    getTextPropPlainText(props["상태"]) ||
     ""
   ).trim();
 }
