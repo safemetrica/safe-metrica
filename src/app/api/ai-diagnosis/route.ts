@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getCompanyConfig } from "@/lib/company";
+import { needsTbmEvidenceBook } from "@/lib/tbmStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -195,6 +196,7 @@ export async function GET() {
     ]);
 
     const tbmRows = (tbmData.results ?? []).map((page: any) => ({
+      rawProps: page.properties ?? {},
       작업명: page.properties["작업명"]?.title?.[0]?.plain_text ?? "",
       날짜: page.properties["날짜"]?.date?.start ?? "",
       특이사항: page.properties["특이사항"]?.checkbox ?? false,
@@ -246,12 +248,12 @@ export async function GET() {
 
     // =========================
     // EB 룰 엔진 - GPT 판정 금지
-    // EB 누락 = (특이사항 OR 조치 필요) AND (연결 EB 비어있음)
+    // EB 누락 = 조치상태 기준 EB 필요 AND 연결 EB 비어있음
     // =========================
     const ebCandidateTbms = tbmRows.filter((row: any) => {
-      const hasException = !!row.특이사항 || row.조치상태 === "조치 필요";
+      const ebRequired = needsTbmEvidenceBook(row.rawProps ?? {});
       const ebEmpty = (row.연결EB ?? 0) === 0;
-      return hasException && ebEmpty;
+      return ebRequired && ebEmpty;
     });
 
     const ebMissing = ebCandidateTbms.length > 0;

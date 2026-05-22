@@ -7,6 +7,7 @@ import { getRiskIntelligenceData } from "@/lib/risk";
 import TbmFormAction from "@/components/TbmFormAction";
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
 import { getTbmFormUrl } from "@/lib/tenantLinks";
+import { needsTbmEvidenceBook } from "@/lib/tbmStatus";
 
 async function getFieldData(): Promise<Record<string, any>> {
   const company = await getCompanyConfig();
@@ -39,6 +40,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   const risk = await getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey);
 
   const tbmRows = (tbmData.results ?? []).map((p: any) => ({
+    rawProps: p.properties ?? {},
     id: p.id,
     작업명: p.properties["작업명"]?.title?.[0]?.plain_text ?? "",
     날짜: p.properties["날짜"]?.date?.start ?? "",
@@ -60,7 +62,7 @@ async function getFieldData(): Promise<Record<string, any>> {
 
   const 오늘TBM = tbmRows.filter((r: any) => r.날짜 === today);
   const 이번주TBM = tbmRows.filter((r: any) => r.날짜 >= thisWeek);
-  const EB누락 = tbmRows.filter((r: any) => r.특이사항 && r.연결EB === 0);
+  const EB누락 = tbmRows.filter((r: any) => needsTbmEvidenceBook(r.rawProps ?? {}) && r.연결EB === 0);
   const 조치필요 = tbmRows.filter((r: any) => r.조치상태 === "조치 필요");
   const PTW미승인 = ptwRows.filter((r: any) => r.승인상태 === "요청");
   const PTW위험 = ptwRows.filter((r: any) => r.허용여부 === "금지" || r.승인상태 === "반려");
@@ -68,7 +70,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   // 오늘 준비 현황
   const checklist = [
     { done: 오늘TBM.length > 0, text: "오늘 TBM 작성", href: "/tbm", urgent: true },
-    { done: EB누락.length === 0, text: `EB 누락 없음${EB누락.length > 0 ? ` (${EB누락.length}건 미등록)` : ""}`, href: "/ebm", urgent: true },
+    { done: EB누락.length === 0, text: `EB 연결 필요 없음${EB누락.length > 0 ? ` (${EB누락.length}건 미연결)` : ""}`, href: "/ebm", urgent: true },
     { done: 조치필요.length === 0, text: `조치 미완료 없음${조치필요.length > 0 ? ` (${조치필요.length}건)` : ""}`, href: "/tbm", urgent: false },
     { done: PTW미승인.length === 0, text: `PTW 승인 대기 없음${PTW미승인.length > 0 ? ` (${PTW미승인.length}건)` : ""}`, href: "/ptw", urgent: false },
     { done: PTW위험.length === 0, text: `PTW 금지/반려 없음${PTW위험.length > 0 ? ` (${PTW위험.length}건 위험)` : ""}`, href: "/ptw", urgent: true },
@@ -114,7 +116,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   if (오늘TBM.length === 0)
     오늘할일.push({ priority: 'urgent', icon: '🔴', title: 'TBM 미작성', desc: '오늘 TBM을 작성하세요', href: '/tbm' });
   if (EB누락.length > 0)
-    오늘할일.push({ priority: 'urgent', icon: '🔴', title: `EB 누락 ${EB누락.length}건`, desc: '특이사항 발생 건에 증빙 등록 필요', href: '/ebm' });
+    오늘할일.push({ priority: 'urgent', icon: '🔴', title: `EB 연결 필요 ${EB누락.length}건`, desc: '조치 필요 항목의 증빙 연결이 필요합니다', href: '/ebm' });
   if (PTW위험.length > 0)
     오늘할일.push({ priority: 'urgent', icon: '🚨', title: `PTW 금지/반려 ${PTW위험.length}건`, desc: '작업 즉시 중단 또는 재제출 필요', href: '/ptw' });
   if (PTW필요미제출)
@@ -133,7 +135,7 @@ async function getFieldData(): Promise<Record<string, any>> {
   // 잘된 점 멘트
   const 칭찬멘트: string[] = [];
   if (이번주TBM.length >= 5) 칭찬멘트.push(`📅 이번 주 TBM ${이번주TBM.length}건 제출 — 꾸준한 안전 기록 수고하셨습니다!`);
-  if (EB누락.length === 0 && tbmRows.filter((r: any) => r.특이사항).length > 0) 칭찬멘트.push("✅ 특이사항 발생 건 모두 EB 연결 완료 — 증거 완결성 우수!");
+  if (EB누락.length === 0 && tbmRows.filter((r: any) => needsTbmEvidenceBook(r.rawProps ?? {})).length > 0) 칭찬멘트.push("✅ 조치 필요 항목 모두 EB 연결 완료 — 증거 완결성 우수!");
   if (조치필요.length === 0) 칭찬멘트.push("🟢 미조치 건 없음 — 현장 조치 대응 우수!");
   if (칭찬멘트.length === 0) 칭찬멘트.push("💪 오늘도 현장 안전 관리 함께 해주셔서 감사합니다!");
 
@@ -265,8 +267,8 @@ export default async function FieldPage() {
                             ))}
                           </div>
                         )}
-                        {r.특이사항 && r.연결EB === 0 && (
-                          <p className="mt-1 text-xs text-red-300">⚠️ 특이사항 있음 — EB 등록 필요</p>
+                        {needsTbmEvidenceBook(r.rawProps ?? {}) && r.연결EB === 0 && (
+                          <p className="mt-1 text-xs text-red-300">⚠️ 조치 필요 항목 — EB 연결 필요</p>
                         )}
                         {r.조치상태 === "조치 필요" && (
                           <p className="mt-1 text-xs text-yellow-300">🟡 조치 상태 업데이트 필요</p>
