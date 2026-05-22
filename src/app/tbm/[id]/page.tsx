@@ -13,6 +13,7 @@ import { evaluateImprovementTracking, summarizeImprovementTracking } from "@/lib
 import { inferVisionEvidenceFromPhotoFields } from "@/lib/photoVisionEvidence";
 import { evaluateRiskStatusSync, summarizeRiskStatusSync } from "@/lib/riskStatusSync";
 import { classifyTbmRiskLink, getTbmRiskLinkTone } from "@/lib/tbmRiskSmartLink";
+import { needsTbmEvidenceBook } from "@/lib/tbmStatus";
 
 function getNotionFileCountsByPurpose(props: any) {
   let signature = 0;
@@ -118,6 +119,7 @@ async function getTbmDetail(id: string) {
   const visionEvidence = inferVisionEvidenceFromPhotoFields(p);
 
   return {
+    rawProps: p,
     id: data.id,
     notionUrl: data.url,
     작업명: p["작업명"]?.title?.[0]?.plain_text ?? "(작업명 없음)",
@@ -146,7 +148,8 @@ export default async function TbmDetailPage({
 }) {
   const { id } = await Promise.resolve(params);
   const tbm = await getTbmDetail(id);
-  const needsEB = tbm.특이사항 && tbm.연결EB === 0;
+  const evidenceBookRequired = needsTbmEvidenceBook(tbm.rawProps ?? {});
+  const needsEB = evidenceBookRequired && tbm.연결EB === 0;
   const totalEvidencePhotoCount =
     tbm.참석서명사진수 +
     tbm["작업 전 안전활동 사진수"] +
@@ -248,8 +251,8 @@ export default async function TbmDetailPage({
               {tbm.조치상태}
             </span>
           )}
-          <span className={`px-3 py-2 rounded-full text-sm border ${tbm.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : tbm.특이사항 ? "bg-red-900 text-red-300 border-red-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>
-            {tbm.연결EB > 0 ? `✅ EB ${tbm.연결EB}건 연결` : "EB 없음"}
+          <span className={`px-3 py-2 rounded-full text-sm border ${tbm.연결EB > 0 ? "bg-green-900 text-green-300 border-green-700" : evidenceBookRequired ? "bg-red-900 text-red-300 border-red-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>
+            {tbm.연결EB > 0 ? `✅ EB ${tbm.연결EB}건 연결` : evidenceBookRequired ? "EB 연결 필요" : "EB 없음"}
           </span>
         </div>
 
@@ -259,7 +262,7 @@ export default async function TbmDetailPage({
               <p className="text-sm font-bold text-sky-200">오늘 먼저 확인</p>
               <p className="mt-2 text-xl font-black leading-relaxed text-white [word-break:keep-all]">
                 {needsEB
-                  ? "특이사항 증빙 연결을 먼저 확인하세요."
+                  ? "조치 필요 항목의 EB 연결을 먼저 확인하세요."
                   : evidenceCheck.status !== "적합"
                     ? "TBM 교육 기록을 보완해 주세요."
                     : actionEvidence.status === "보완 추천"
@@ -290,7 +293,7 @@ export default async function TbmDetailPage({
         {needsEB && (
           <div className="mb-5 rounded-2xl border border-red-700 bg-red-950/35 p-4 sm:p-5">
             <p className="text-base font-black text-red-200">
-              🔴 특이사항 발생 건 — Evidence Book 등록 필요
+              🔴 조치 필요 항목 — Evidence Book 연결 필요
             </p>
           </div>
         )}

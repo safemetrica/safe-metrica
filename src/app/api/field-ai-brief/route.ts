@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
+import { needsTbmEvidenceBook } from "@/lib/tbmStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,7 @@ export async function GET() {
     const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 
     const tbmRows = (tbmData.results ?? []).map((p: any) => ({
+      rawProps: p.properties ?? {},
       작업명: p.properties["작업명"]?.title?.[0]?.plain_text ?? "",
       날짜: p.properties["날짜"]?.date?.start ?? "",
       특이사항: p.properties["특이사항"]?.checkbox ?? false,
@@ -81,13 +83,13 @@ export async function GET() {
     }));
 
     const 오늘TBM = tbmRows.filter((r: any) => r.날짜 === today);
-    const EB누락 = tbmRows.filter((r: any) => r.특이사항 && r.연결EB === 0);
+    const EB누락 = tbmRows.filter((r: any) => needsTbmEvidenceBook(r.rawProps ?? {}) && r.연결EB === 0);
     const 조치필요 = tbmRows.filter((r: any) => r.조치상태 === "조치 필요");
     const PTW위험 = ptwRows.filter((r: any) => r.허용여부 === "금지" || r.승인상태 === "반려");
 
     const context = `오늘 날짜: ${today}
 오늘 TBM 제출: ${오늘TBM.length}건 (${오늘TBM.map((r: any) => r.작업명).join(", ") || "없음"})
-EB 누락(특이사항 있으나 미등록): ${EB누락.length}건 (${EB누락.map((r: any) => r.작업명).join(", ") || "없음"})
+EB 연결 필요(조치상태 기준 미연결): ${EB누락.length}건 (${EB누락.map((r: any) => r.작업명).join(", ") || "없음"})
 조치 미완료: ${조치필요.length}건
 PTW 금지/반려: ${PTW위험.length}건
 TBM 공유 필요 위험요인: ${risk.tbmShareNeededCount}건 (${tbmShareNames || "없음"})
