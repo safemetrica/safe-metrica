@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
+import { evaluateEvidenceSufficiency } from "@/lib/evidenceSufficiency";
 
 async function getEbDetail(id: string) {
   const res = await fetch(`https://api.notion.com/v1/pages/${id}`, {
@@ -40,6 +41,13 @@ export default async function EbDetailPage({
 }) {
   const { id } = await Promise.resolve(params);
   const eb = await getEbDetail(id);
+  const sufficiency = evaluateEvidenceSufficiency({
+    title: eb.증빙명,
+    evidenceType: eb.증빙유형,
+    note: eb.비고,
+    relatedTbmCount: eb.관련TBM,
+    relatedPtwCount: eb.관련PTW,
+  });
 
   return (
     <main className="min-h-screen bg-gray-950 pb-10">
@@ -70,7 +78,36 @@ export default async function EbDetailPage({
               ✅ PTW {eb.관련PTW}건 연결
             </span>
           )}
+          {sufficiency.status === "needs_supplement" && (
+            <span className="px-3 py-1 rounded-full text-xs border bg-amber-950 text-amber-300 border-amber-700">
+              ⚠️ 증빙 보완 필요
+            </span>
+          )}
+          {sufficiency.status === "sufficient" && (
+            <span className="px-3 py-1 rounded-full text-xs border bg-emerald-950 text-emerald-300 border-emerald-700">
+              ✅ 증빙 적정
+            </span>
+          )}
         </div>
+
+        {sufficiency.status === "needs_supplement" && (
+          <div className="bg-amber-950/40 border border-amber-800 rounded-lg p-5 mb-6">
+            <p className="text-sm font-bold text-amber-200 mb-2">증빙 보완 필요</p>
+            <p className="text-sm leading-relaxed text-amber-100">{sufficiency.reason}</p>
+            <div className="mt-4">
+              <p className="text-xs font-bold text-amber-300 mb-2">추가하면 좋은 증빙</p>
+              <ul className="space-y-1 text-xs text-amber-100">
+                {sufficiency.recommendedEvidence.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-amber-300">
+              EB가 연결되어 있어도 작업 성격에 맞는 증빙이 부족하면 보완 필요로 표시합니다.
+              이 표시는 EB 누락 판정이 아니라 증빙 적정성 보조 판단입니다.
+            </p>
+          </div>
+        )}
 
         {eb.비고 && (
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-5 mb-6">
