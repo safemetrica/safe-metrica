@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import { getCompanyConfig } from "@/lib/company";
+import { evaluateEvidenceSufficiency } from "@/lib/evidenceSufficiency";
 
 async function getEbRows() {
   const apiBase = "https://api.notion.com/v1/databases";
@@ -21,6 +22,16 @@ async function getEbRows() {
     증빙유형: page.properties["증빙유형"]?.select?.name ?? "",
     관련TBM: page.properties["관련 TBM"]?.relation?.length ?? 0,
     관련PTW: page.properties["관련 PTW"]?.relation?.length ?? 0,
+    비고: page.properties["비고"]?.rich_text?.map((t: any) => t.plain_text).join("") ?? "",
+  })).map((row: any) => ({
+    ...row,
+    증빙적정성: evaluateEvidenceSufficiency({
+      title: row.증빙명,
+      evidenceType: row.증빙유형,
+      note: row.비고,
+      relatedTbmCount: row.관련TBM,
+      relatedPtwCount: row.관련PTW,
+    }),
   }));
 }
 
@@ -53,7 +64,17 @@ export default async function EbmPage() {
                     <div className="flex gap-2 mt-2 flex-wrap">
                       {row.관련TBM > 0 && <span className="px-2 py-0.5 bg-blue-900 text-blue-300 border border-blue-700 rounded-full text-xs">TBM {row.관련TBM}건</span>}
                       {row.관련PTW > 0 && <span className="px-2 py-0.5 bg-orange-900 text-orange-300 border border-orange-700 rounded-full text-xs">PTW {row.관련PTW}건</span>}
+                      {row.증빙적정성?.status === "needs_supplement" && (
+                        <span className="px-2 py-0.5 bg-amber-950 text-amber-300 border border-amber-700 rounded-full text-xs">
+                          증빙 보완 필요
+                        </span>
+                      )}
                     </div>
+                    {row.증빙적정성?.status === "needs_supplement" && (
+                      <p className="mt-2 text-xs leading-relaxed text-amber-200">
+                        {row.증빙적정성.reason}
+                      </p>
+                    )}
                   </div>
                   {row.증빙유형 && (
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium border shrink-0 ${유형색[row.증빙유형] ?? "bg-gray-700 text-gray-300 border-gray-600"}`}>
