@@ -1,6 +1,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import {
+  CUSTOMER_SETUP_PIPELINE_STAGES,
+  SAMPLE_CUSTOMER_SETUP_PIPELINE_RECORDS,
+  getCustomerSetupPipelineSummary,
+} from "@/lib/customerSetupPipeline";
+
+const setupPipelineSummary = getCustomerSetupPipelineSummary(SAMPLE_CUSTOMER_SETUP_PIPELINE_RECORDS);
+
 const onboardingSections = [
   {
     title: "1. 고객사 기본정보",
@@ -119,6 +127,87 @@ export default async function GaonEduLinkOnboardingPage() {
             <li>• SafeMetrica는 교육기관을 대체하지 않고, 교육 이후 증빙관리와 월간보고를 지원합니다.</li>
             <li>• 위험성평가는 “이수”가 아니라 실시·근로자 참여·결과 공유 기록으로 관리합니다.</li>
           </ul>
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-blue-700">Setup Pipeline</p>
+              <h2 className="text-xl font-black">고객사 세팅 파이프라인</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                고객사 접수부터 자료확인, 테넌트 세팅, 보안링크 발급, 월간보고서 발행까지 내부 진행 상태를 관리합니다.
+              </p>
+            </div>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+              내부 운영용
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-bold text-slate-500">접수 고객사</p>
+              <p className="mt-2 text-3xl font-black">{setupPipelineSummary.total}</p>
+            </article>
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-bold text-slate-500">세팅 가능 후보</p>
+              <p className="mt-2 text-3xl font-black">{setupPipelineSummary.readyForTenantSetupCount}</p>
+            </article>
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-bold text-slate-500">보완 필요</p>
+              <p className="mt-2 text-3xl font-black">{setupPipelineSummary.blockedCount}</p>
+            </article>
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-bold text-slate-500">보안링크 발급</p>
+              <p className="mt-2 text-3xl font-black">{setupPipelineSummary.secureLinkIssuedCount}</p>
+            </article>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black">진행 단계</h3>
+              <div className="mt-3 space-y-2">
+                {CUSTOMER_SETUP_PIPELINE_STAGES.map((item, index) => (
+                  <div key={item.stage} className="rounded-xl bg-white p-3 text-sm shadow-sm">
+                    <p className="font-black text-slate-900">
+                      {index + 1}. {item.stage}
+                    </p>
+                    <p className="mt-1 text-slate-600">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black">파일럿 후보 현황</h3>
+              <div className="mt-3 space-y-3">
+                {SAMPLE_CUSTOMER_SETUP_PIPELINE_RECORDS.map((record) => (
+                  <div key={record.id} className="rounded-xl bg-white p-3 text-sm shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black text-slate-900">{record.customerName}</p>
+                        <p className="mt-1 text-slate-600">
+                          {record.industry} · 근로자 {record.workerCount ?? 0}명
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                        {record.currentStage}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-slate-700">다음 조치: {record.nextAction}</p>
+                    {record.blockedReasons.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {record.blockedReasons.map((reason) => (
+                          <span key={reason} className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+                            {reason}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
         </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
