@@ -59,6 +59,32 @@ export default function GaonEduLinkPartnerPage() {
           </p>
         </section>
 
+        <section className="mb-6 grid gap-4 md:grid-cols-4">
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">운영 고객사</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">준비중</p>
+            <p className="mt-2 text-sm text-slate-600">지사별 고객사 연결 예정</p>
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">교육증빙 항목</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">v1</p>
+            <p className="mt-2 text-sm text-slate-600">수료증·출석부·서명·사진</p>
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">위험성평가 공유</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">설계중</p>
+            <p className="mt-2 text-sm text-slate-600">근로자 참여·TBM 연결</p>
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">월간보고서</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">예정</p>
+            <p className="mt-2 text-sm text-slate-600">교육·참여·증빙 요약</p>
+          </article>
+        </section>
+
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {partnerCards.map((card) => (
             <article
