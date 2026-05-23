@@ -146,3 +146,33 @@ export function getCustomerIntakeFormSummary(fields: CustomerIntakeField[]) {
     optional: fields.filter((field) => field.requirement === "선택").length,
   };
 }
+
+
+export const CUSTOMER_INTAKE_REQUEST_TEMPLATES = {
+  partnerMessage: `대표님, 파일럿 고객사 세팅을 위해 아래 기본정보와 기존 안전자료 보유 여부를 확인 부탁드립니다.
+
+이 정보는 고객사별 SafeMetrica 전용 운영환경 세팅, 교육·이수증빙 관리, 위험성평가 공유기록, 월간보고서 발행 준비에 사용됩니다.
+
+확인 항목:
+- 회사명
+- 사업자등록번호
+- 업종
+- 현장 주소
+- 근로자 수
+- 담당자 / 연락처 / 이메일
+- 기존 위험성평가 자료 보유 여부
+- 법정교육 이수증 또는 수료증 보유 여부
+- 출석부 보유 여부
+- TBM 운영 여부
+- 희망 운영 시작일
+- 비고`,
+
+  customerMessage: `SafeMetrica 파일럿 운영을 위해 고객사 기본정보와 기존 안전자료 보유 여부를 확인합니다.
+
+제출된 자료는 고객사별 전용 운영환경 세팅, 교육·이수증빙 관리, 위험성평가 공유기록, TBM 기록관리, 월간보고서 발행 준비 목적으로만 사용됩니다.
+
+아래 항목을 확인해 주세요.
+회사명 / 사업자등록번호 / 업종 / 현장 주소 / 근로자 수 / 담당자 / 연락처 / 이메일 / 기존 위험성평가 자료 여부 / 법정교육 이수증·수료증 여부 / 출석부 여부 / TBM 운영 여부 / 희망 운영 시작일 / 비고`,
+
+  csvHeaderLine: CUSTOMER_INTAKE_CSV_HEADERS.join(","),
+};

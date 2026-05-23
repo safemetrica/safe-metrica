@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   CUSTOMER_INTAKE_CSV_HEADERS,
   CUSTOMER_INTAKE_FORM_FIELDS,
+  CUSTOMER_INTAKE_REQUEST_TEMPLATES,
   CUSTOMER_INTAKE_SAMPLE_ROW,
   getCustomerIntakeFormSummary,
 } from "@/lib/customerIntakeForm";
@@ -193,6 +194,44 @@ export default async function GaonEduLinkOnboardingPage() {
                 ))}
               </div>
             </article>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-blue-700">Request Template</p>
+              <h2 className="text-xl font-black">고객사 접수 요청문</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                이 섹션은 링크 공유용이 아니라, 가온에듀 지사 또는 고객사에 보낼 요청 문구를 내부에서 복사하기 위한 영역입니다.
+              </p>
+            </div>
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+              외부 링크 공유 금지
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black">가온에듀 전달용 문구</h3>
+              <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm">
+                {CUSTOMER_INTAKE_REQUEST_TEMPLATES.partnerMessage}
+              </pre>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black">고객사 전달용 문구</h3>
+              <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm">
+                {CUSTOMER_INTAKE_REQUEST_TEMPLATES.customerMessage}
+              </pre>
+            </article>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="text-base font-black">CSV 헤더 복사용</h3>
+            <p className="mt-2 break-words rounded-xl bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm">
+              {CUSTOMER_INTAKE_REQUEST_TEMPLATES.csvHeaderLine}
+            </p>
           </div>
         </section>
 
