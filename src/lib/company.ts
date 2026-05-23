@@ -47,6 +47,20 @@ function assertSafeCompanyCode(code: string): string {
   return normalized;
 }
 
+const TENANT_TOKEN_ENV_BY_COMPANY: Record<string, string> = {
+  daedo: "DAEDO_TENANT_TOKEN",
+  bubblemon: "BUBBLEMON_TENANT_TOKEN",
+};
+
+function getExpectedTenantToken(companyCode: string) {
+  const envName = TENANT_TOKEN_ENV_BY_COMPANY[companyCode];
+  return envName ? process.env[envName] : undefined;
+}
+
+function requiresTenantToken(companyCode: string) {
+  return companyCode in TENANT_TOKEN_ENV_BY_COMPANY;
+}
+
 export async function getCompanyCodeFromRequest(): Promise<string> {
   if (process.env.NODE_ENV !== "production") {
     const h = await headers();
@@ -63,9 +77,9 @@ export async function getCompanyCodeFromRequest(): Promise<string> {
   if (fromCookie) {
     const companyCode = assertSafeCompanyCode(fromCookie);
 
-    if (companyCode === "daedo") {
+    if (requiresTenantToken(companyCode)) {
       const tenantToken = c.get("sm_tenant_token")?.value;
-      const expectedToken = process.env.DAEDO_TENANT_TOKEN;
+      const expectedToken = getExpectedTenantToken(companyCode);
 
       if (!expectedToken || tenantToken !== expectedToken) {
         throw new TenantRequiredError();

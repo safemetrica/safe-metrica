@@ -8,6 +8,20 @@ function redirectToLogin(req: NextRequest, error: string) {
   return NextResponse.redirect(url);
 }
 
+const TENANT_TOKEN_ENV_BY_COMPANY: Record<string, string> = {
+  daedo: "DAEDO_TENANT_TOKEN",
+  bubblemon: "BUBBLEMON_TENANT_TOKEN",
+};
+
+function getExpectedTenantToken(companyCode: string) {
+  const envName = TENANT_TOKEN_ENV_BY_COMPANY[companyCode];
+  return envName ? process.env[envName] : undefined;
+}
+
+function requiresTenantToken(companyCode: string) {
+  return companyCode in TENANT_TOKEN_ENV_BY_COMPANY;
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = (url.searchParams.get("code") ?? "").trim().toLowerCase();
@@ -20,8 +34,8 @@ export async function GET(req: NextRequest) {
     return res;
   }
 
-  if (code === "daedo") {
-    const expectedToken = process.env.DAEDO_TENANT_TOKEN;
+  if (requiresTenantToken(code)) {
+    const expectedToken = getExpectedTenantToken(code);
 
     if (!expectedToken || token !== expectedToken) {
       const res = redirectToLogin(req, "invalid_tenant_token");
@@ -44,7 +58,7 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
 
-    if (company.code === "daedo" && token) {
+    if (requiresTenantToken(company.code) && token) {
       res.cookies.set("sm_tenant_token", token, {
         path: "/",
         httpOnly: true,
