@@ -2,12 +2,19 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
+  CUSTOMER_INTAKE_CSV_HEADERS,
+  CUSTOMER_INTAKE_FORM_FIELDS,
+  CUSTOMER_INTAKE_SAMPLE_ROW,
+  getCustomerIntakeFormSummary,
+} from "@/lib/customerIntakeForm";
+import {
   CUSTOMER_SETUP_PIPELINE_STAGES,
   SAMPLE_CUSTOMER_SETUP_PIPELINE_RECORDS,
   getCustomerSetupPipelineSummary,
 } from "@/lib/customerSetupPipeline";
 
 const setupPipelineSummary = getCustomerSetupPipelineSummary(SAMPLE_CUSTOMER_SETUP_PIPELINE_RECORDS);
+const intakeFormSummary = getCustomerIntakeFormSummary(CUSTOMER_INTAKE_FORM_FIELDS);
 
 const onboardingSections = [
   {
@@ -127,6 +134,66 @@ export default async function GaonEduLinkOnboardingPage() {
             <li>• SafeMetrica는 교육기관을 대체하지 않고, 교육 이후 증빙관리와 월간보고를 지원합니다.</li>
             <li>• 위험성평가는 “이수”가 아니라 실시·근로자 참여·결과 공유 기록으로 관리합니다.</li>
           </ul>
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-blue-700">Customer Intake</p>
+              <h2 className="text-xl font-black">고객사 접수 양식 v1</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                가온에듀 지사 또는 내부 영업을 통해 고객사 후보가 들어왔을 때, 테넌트 세팅 전에 반드시 확인할 접수 항목입니다.
+              </p>
+            </div>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+              필수 {intakeFormSummary.required} · 권장 {intakeFormSummary.recommended} · 선택 {intakeFormSummary.optional}
+            </span>
+          </div>
+
+          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-slate-50 text-slate-700">
+                <tr>
+                  <th className="px-3 py-3">항목</th>
+                  <th className="px-3 py-3">구분</th>
+                  <th className="px-3 py-3">설명</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CUSTOMER_INTAKE_FORM_FIELDS.map((field) => (
+                  <tr key={field.key} className="border-t border-slate-200">
+                    <td className="px-3 py-3 font-black text-slate-900">{field.label}</td>
+                    <td className="px-3 py-3">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                        {field.requirement}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-slate-600">{field.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black">CSV 헤더 예시</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {CUSTOMER_INTAKE_CSV_HEADERS.join(", ")}
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black">샘플 입력값</h3>
+              <div className="mt-2 space-y-1 text-sm leading-6 text-slate-600">
+                {Object.entries(CUSTOMER_INTAKE_SAMPLE_ROW).slice(0, 6).map(([key, value]) => (
+                  <p key={key}>
+                    <span className="font-bold text-slate-900">{key}</span>: {value}
+                  </p>
+                ))}
+              </div>
+            </article>
+          </div>
         </section>
 
         <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
