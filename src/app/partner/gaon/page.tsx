@@ -1,3 +1,6 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 import {
   SAMPLE_EDUCATION_EVIDENCE_RECORDS,
   summarizeEducationEvidenceStatus,
@@ -37,7 +40,19 @@ const partnerCards = [
   },
 ];
 
-export default function GaonEduLinkPartnerPage() {
+function isOwnerTokenValid(ownerToken?: string) {
+  const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
+  return Boolean(expectedToken && ownerToken === expectedToken);
+}
+
+export default async function GaonEduLinkPartnerPage() {
+  const c = await cookies();
+  const ownerToken = c.get("sm_owner_token")?.value;
+
+  if (!isOwnerTokenValid(ownerToken)) {
+    redirect("/login?error=owner_required");
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
       <div className="mx-auto max-w-6xl">
