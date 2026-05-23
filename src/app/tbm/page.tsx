@@ -47,6 +47,7 @@ export default async function TbmPage() {
   const 특이사항건수 = rows.filter((r: any) => r.특이사항).length;
   const EB누락 = rows.filter((r: any) => r.EB필요 && r.연결EB === 0).length;
   const 조치필요 = rows.filter((r: any) => r.조치상태 === "조치 필요").length;
+  const hasTodayActionItems = EB누락 > 0 || 조치필요 > 0;
 
   return (
     <main className="min-h-screen bg-gray-950 pb-12">
@@ -96,20 +97,35 @@ export default async function TbmPage() {
             </p>
           </div>
         </div>
-
-        {(EB누락 > 0 || 조치필요 > 0) && (
-          <div className="mb-5 rounded-2xl border border-red-700 bg-red-950/30 p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🔴</span>
-              <div>
-                <p className="text-base font-black text-red-100">오늘 먼저 확인할 항목이 있습니다.</p>
-                <p className="mt-1 text-sm leading-relaxed text-red-200">
-                  EB 연결 필요 {EB누락}건, 조치 필요 {조치필요}건입니다.
-                </p>
-              </div>
+        <div
+          className={`mb-5 rounded-2xl border p-4 sm:p-5 ${
+            hasTodayActionItems
+              ? "border-red-700 bg-red-950/30"
+              : "border-emerald-700 bg-emerald-950/20"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">{hasTodayActionItems ? "🔴" : "✅"}</span>
+            <div>
+              <p
+                className={`text-base font-black ${
+                  hasTodayActionItems ? "text-red-100" : "text-emerald-100"
+                }`}
+              >
+                {hasTodayActionItems
+                  ? "오늘 먼저 확인할 항목이 있습니다."
+                  : "현재 조치 필요 항목은 없습니다."}
+              </p>
+              <p
+                className={`mt-1 text-sm leading-relaxed ${
+                  hasTodayActionItems ? "text-red-200" : "text-emerald-200"
+                }`}
+              >
+                EB 연결 필요 {EB누락}건, 조치 필요 {조치필요}건입니다.
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         <div className="space-y-3">
           {rows.map((row: any) => {
