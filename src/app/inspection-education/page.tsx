@@ -18,6 +18,29 @@ const modules = [
   },
 ];
 
+const educationEvidenceStatusCards = [
+  {
+    title: "법정교육",
+    desc: "정기교육, 신규채용교육, 특별교육 등 이수현황과 수료증을 확인합니다.",
+    status: "준비 중",
+  },
+  {
+    title: "TBM 교육기록",
+    desc: "작업 전 위험요인 공유, 참석 확인, 오늘의 주의사항 기록을 확인합니다.",
+    status: "준비 중",
+  },
+  {
+    title: "위험성평가 공유교육",
+    desc: "위험성평가 결과가 근로자에게 공유되었는지 확인합니다.",
+    status: "준비 중",
+  },
+  {
+    title: "증빙 보완",
+    desc: "수료증, 출석부, 서명, 사진 등 누락된 증빙을 확인합니다.",
+    status: "준비 중",
+  },
+];
+
 export default function InspectionEducationPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-6 text-white">
@@ -61,6 +84,20 @@ export default function InspectionEducationPage() {
             <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
               준비 중
             </span>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            {educationEvidenceStatusCards.map((item) => (
+              <article key={item.title} className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base font-bold">{item.title}</h3>
+                  <span className="rounded-full bg-cyan-500/10 px-2 py-1 text-[11px] font-bold text-cyan-200">
+                    {item.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-300">{item.desc}</p>
+              </article>
+            ))}
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-2">
