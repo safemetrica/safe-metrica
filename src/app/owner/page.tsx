@@ -86,6 +86,23 @@ export default async function OwnerConsolePage({
           ))}
         </section>
 
+        <section className="mt-6 rounded-2xl border border-blue-500/30 bg-slate-900 p-5">
+          <p className="text-sm font-bold text-blue-300">Partner Console</p>
+          <h2 className="mt-2 text-2xl font-black text-white">SafeMetrica EduLink™</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+            교육기관 제휴형 파트너 콘솔입니다. 가온에듀 본사·지사·고객사 교육이수증빙 운영 현황을 확인합니다.
+            이 메뉴는 관리자 전체앱에만 표시되며 고객사 홈에는 노출되지 않습니다.
+          </p>
+          <div className="mt-5">
+            <a
+              href="/partner/gaon"
+              className="inline-flex rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
+            >
+              가온에듀 파트너 콘솔 열기
+            </a>
+          </div>
+        </section>
+
         <section className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5">
           <h2 className="text-lg font-black text-amber-200">운영 원칙</h2>
           <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
