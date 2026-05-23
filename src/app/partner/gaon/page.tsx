@@ -77,6 +77,15 @@ export default async function GaonEduLinkPartnerPage() {
             SafeMetrica EduLink™는 고객사의 위험성평가, TBM, 근로자 참여기록,
             교육 이수증빙, Evidence Book, 월간보고서까지 이어지도록 관리합니다.
           </p>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a
+              href="/partner/gaon/onboarding"
+              className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
+            >
+              고객사 온보딩 체크리스트 열기
+            </a>
+          </div>
         </section>
 
         <section className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-5">
