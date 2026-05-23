@@ -95,10 +95,19 @@ export default async function GaonEduLinkOnboardingPage() {
 
         <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-bold text-blue-700">EduLink Onboarding</p>
-          <h1 className="mt-2 text-3xl font-black">고객사 온보딩 체크리스트</h1>
+          <h1 className="mt-2 text-3xl font-black">내부 고객사 세팅 체크리스트</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            가온에듀 지사 파일럿 고객사가 들어왔을 때, SafeMetrica 고객사 테넌트 세팅과
-            교육·위험성평가·TBM·증빙관리 운영을 시작하기 위한 확인 항목입니다.
+            가온에듀 지사 파일럿 고객사를 세팅할 때, SafeMetrica 내부 운영자가 고객사 테넌트 세팅과
+            교육·위험성평가·TBM·증빙관리 운영을 시작하기 위해 확인하는 내부 운영 항목입니다.
+          </p>
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-blue-200 bg-blue-50 p-5">
+          <h2 className="text-lg font-black text-blue-950">내부 사용 기준</h2>
+          <p className="mt-2 text-sm leading-6 text-blue-950">
+            이 화면은 SafeMetrica 내부 운영자가 사용하는 세팅 체크리스트입니다.
+            고객사 및 외부 파트너에게 상시 공유하는 화면이 아니며,
+            파일럿 고객사 자료 수집과 초기 세팅 확인 목적으로 사용합니다.
           </p>
         </section>
 

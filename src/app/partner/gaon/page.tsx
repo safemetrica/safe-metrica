@@ -83,7 +83,7 @@ export default async function GaonEduLinkPartnerPage() {
               href="/partner/gaon/onboarding"
               className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
             >
-              고객사 온보딩 체크리스트 열기
+              내부 고객사 세팅 체크리스트
             </a>
           </div>
         </section>
