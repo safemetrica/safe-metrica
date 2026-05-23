@@ -513,6 +513,28 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
+        <Section
+          title="위험성평가 및 근로자 참여·교육 이행 현황"
+          desc="위험성평가 결과가 근로자에게 공유되고, 교육·TBM·증빙으로 관리되는지 확인하는 운영 섹션입니다."
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="교육 이수현황" value="준비 중" hint="교육명·교육일·참석자·수료증 확인" tone="border-cyan-800" />
+            <StatCard label="위험성평가 공유교육" value="예정" hint="위험성평가 결과 공유 여부 확인" tone="border-blue-800" />
+            <StatCard label="TBM 교육기록" value={`${tbmRows.length}건`} hint="월간 TBM 공유·교육 기록 기준" tone="border-indigo-800" />
+            <StatCard label="증빙 보완" value="확인 필요" hint="출석부·서명·사진 누락 확인" tone="border-amber-800" />
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+            <h3 className="text-base font-black text-white print:text-slate-950">운영 확인 기준</h3>
+            <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
+              <li>• 법정교육은 교육기관 또는 사업장 교육기록의 이수현황과 증빙 누락 여부를 구분하여 관리합니다.</li>
+              <li>• 위험성평가 결과 공유는 근로자 참여, TBM 교육기록, 서명·사진 증빙과 연결하여 확인합니다.</li>
+              <li>• TBM 교육기록은 개선대책 완료 증빙이 아니라 위험요인 공유·교육 이행 기록으로 관리합니다.</li>
+              <li>• 수료증, 출석부, 서명, 사진 등 증빙자료가 부족한 경우 월간 보완사항으로 관리합니다.</li>
+            </ul>
+          </div>
+        </Section>
+
         <Section title="EB 연결 보완 필요 항목" desc="조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다.">
           <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
             <table className="w-full border-collapse text-left text-sm">
