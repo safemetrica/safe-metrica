@@ -303,6 +303,10 @@ function buildExpertOpinion(input: {
     note: input.tbmCount > 0 ? `TBM 교육·공유 기록 ${input.tbmCount}건 기준` : "교육·참여 기록 확인 필요",
   });
 
+  nextMonth.push("교육 이수현황 및 수료증 누락 여부를 확인합니다.");
+  nextMonth.push("위험성평가 결과 공유교육 기록과 근로자 참여 증빙을 확인합니다.");
+  nextMonth.push("TBM 교육기록과 서명·사진 증빙의 정합성을 확인합니다.");
+
   if (nextMonth.length === 0) {
     nextMonth.push("현재 운영 상태를 유지하면서 월간 TBM, EB, PTW, 위험성평가 기록의 정합성을 주기적으로 확인합니다.");
   }
