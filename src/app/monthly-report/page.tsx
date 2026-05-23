@@ -297,6 +297,12 @@ function buildExpertOpinion(input: {
     note: input.actionNeededCount > 0 ? `관리 필요 ${input.actionNeededCount}건` : "관리 필요 항목 없음",
   });
 
+  legalChecks.push({
+    label: "교육·참여 증빙 관리",
+    done: input.tbmCount > 0,
+    note: input.tbmCount > 0 ? `TBM 교육·공유 기록 ${input.tbmCount}건 기준` : "교육·참여 기록 확인 필요",
+  });
+
   if (nextMonth.length === 0) {
     nextMonth.push("현재 운영 상태를 유지하면서 월간 TBM, EB, PTW, 위험성평가 기록의 정합성을 주기적으로 확인합니다.");
   }
