@@ -49,6 +49,41 @@ export default function InspectionEducationPage() {
           ))}
         </section>
 
+        <section className="mt-6 rounded-2xl border border-cyan-500/30 bg-slate-900 p-5">
+          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-cyan-300">Education Evidence</p>
+              <h2 className="mt-1 text-xl font-black">교육·이수증빙</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                법정교육, TBM 교육기록, 위험성평가 공유교육, 수료증·출석부·서명·사진 증빙을 구분 관리합니다.
+              </p>
+            </div>
+            <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
+              준비 중
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <article className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+              <h3 className="text-base font-bold">교육 이수현황</h3>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+                <li>• 교육명, 교육일, 교육구분 관리</li>
+                <li>• 교육대상 및 참석자 현황 관리</li>
+                <li>• 수료증·출석부 등록 여부 확인</li>
+              </ul>
+            </article>
+
+            <article className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+              <h3 className="text-base font-bold">위험성평가 공유기록</h3>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+                <li>• 위험성평가 결과 공유 여부 확인</li>
+                <li>• TBM 교육기록과 연결</li>
+                <li>• 서명·사진 증빙 누락 여부 확인</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
         <section className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-5">
           <h2 className="text-lg font-bold">운영 기준</h2>
           <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
