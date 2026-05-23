@@ -16,6 +16,13 @@ const tenants = [
     status: "데모",
     desc: "SafeMetrica 기본 화면 확인용",
   },
+  {
+    code: "bubblemon",
+    name: "버블몬코리아",
+    industry: "물류업 · 원청",
+    status: "계약예정",
+    desc: "원청·하청 안전운영, TBM, 점검·교육, 위험성평가, 월간보고서 운영",
+  },
 ];
 
 function isOwnerTokenValid(ownerToken?: string) {
