@@ -6,6 +6,15 @@ import {
   summarizeEducationEvidenceStatus,
 } from "@/lib/educationEvidence";
 
+import {
+  SAMPLE_EDULINK_BRANCHES,
+  SAMPLE_EDULINK_CUSTOMER_MAPPINGS,
+  SAMPLE_EDULINK_PARTNER,
+  getEduLinkPartnerSummary,
+} from "@/lib/edulinkPartner";
+
+const edulinkSummary = getEduLinkPartnerSummary(SAMPLE_EDULINK_CUSTOMER_MAPPINGS);
+
 const partnerCards = [
   {
     title: "본사 대시보드",
@@ -82,8 +91,10 @@ export default async function GaonEduLinkPartnerPage() {
         <section className="mb-6 grid gap-4 md:grid-cols-4">
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-bold text-slate-500">운영 고객사</p>
-            <p className="mt-2 text-3xl font-black text-slate-900">준비중</p>
-            <p className="mt-2 text-sm text-slate-600">지사별 고객사 연결 예정</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">
+              {edulinkSummary.operatingCustomerCount}/{edulinkSummary.totalCustomers}
+            </p>
+            <p className="mt-2 text-sm text-slate-600">파일럿 고객사 기준</p>
           </article>
 
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -94,14 +105,18 @@ export default async function GaonEduLinkPartnerPage() {
 
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-bold text-slate-500">위험성평가 공유</p>
-            <p className="mt-2 text-3xl font-black text-slate-900">설계중</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">
+              {edulinkSummary.sharedRiskAssessmentCount}
+            </p>
             <p className="mt-2 text-sm text-slate-600">근로자 참여·TBM 연결</p>
           </article>
 
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-bold text-slate-500">월간보고서</p>
-            <p className="mt-2 text-3xl font-black text-slate-900">예정</p>
-            <p className="mt-2 text-sm text-slate-600">교육·참여·증빙 요약</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">
+              {edulinkSummary.reportActiveCount}
+            </p>
+            <p className="mt-2 text-sm text-slate-600">작성중·발행 완료 기준</p>
           </article>
         </section>
 
@@ -185,6 +200,69 @@ export default async function GaonEduLinkPartnerPage() {
                 </article>
               );
             })}
+          </div>
+        </section>
+
+        <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-blue-700">Partner Data</p>
+              <h2 className="text-xl font-bold">{SAMPLE_EDULINK_PARTNER.name} 파일럿 운영 구조</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                지사, 고객사, 교육증빙, 위험성평가 공유, 월간보고서 발행 상태를 파트너 단위로 관리합니다.
+              </p>
+            </div>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+              {SAMPLE_EDULINK_PARTNER.status}
+            </span>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black text-slate-900">지사 현황</h3>
+              <div className="mt-3 space-y-3">
+                {SAMPLE_EDULINK_BRANCHES.map((branch) => (
+                  <div key={branch.code} className="rounded-xl bg-white p-3 text-sm shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black text-slate-900">{branch.name}</p>
+                        <p className="mt-1 text-slate-600">
+                          {branch.region} · {branch.managerName}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                        {branch.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-slate-600">연결 고객사 {branch.customerCount}개</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-base font-black text-slate-900">고객사 매핑</h3>
+              <div className="mt-3 space-y-3">
+                {SAMPLE_EDULINK_CUSTOMER_MAPPINGS.map((customer) => (
+                  <div key={customer.customerCode} className="rounded-xl bg-white p-3 text-sm shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black text-slate-900">{customer.customerName}</p>
+                        <p className="mt-1 text-slate-600">
+                          교육증빙 {customer.educationEvidenceCount}건 · 보완 {customer.followUpCount}건
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                        {customer.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-slate-600">
+                      위험성평가 공유: {customer.riskAssessmentShared ? "확인" : "예정"} · 월간보고서: {customer.monthlyReportStatus}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </article>
           </div>
         </section>
 
