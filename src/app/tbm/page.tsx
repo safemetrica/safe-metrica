@@ -2,7 +2,7 @@ import { hasTbmSpecialIssue, needsTbmEvidenceBook, hasLinkedEvidenceBook } from 
 
 export const dynamic = "force-dynamic";
 
-import { SafeNav, StatusBadge } from "@/components/SafeLayout";
+import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import { getCompanyConfig } from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
@@ -36,6 +36,7 @@ async function getTbmRows() {
     특이사항: hasTbmSpecialIssue(page.properties ?? {}),
     조치상태: page.properties["조치 상태"]?.select?.name ?? "",
     연결EB: page.properties["연결 EB"]?.relation?.length ?? 0,
+    EB필요: needsTbmEvidenceBook(page.properties ?? {}),
   }));
 }
 
@@ -87,11 +88,11 @@ export default async function TbmPage() {
 
           <div className={`rounded-2xl border p-5 ${EB누락 > 0 ? "border-red-700 bg-red-950/35" : "border-emerald-700 bg-emerald-950/25"}`}>
             <p className={`text-sm font-bold ${EB누락 > 0 ? "text-red-200" : "text-emerald-200"}`}>
-              EB 증빙 연결
+              EB 연결 필요
             </p>
             <div className="mt-3 text-4xl font-black text-white">{EB누락}</div>
             <p className={`mt-1 text-sm ${EB누락 > 0 ? "text-red-100/80" : "text-emerald-100/80"}`}>
-              {EB누락 > 0 ? "증빙 연결 필요" : "누락 없음"}
+              {EB누락 > 0 ? "조치상태 기준 미연결" : "누락 없음"}
             </p>
           </div>
         </div>
@@ -103,7 +104,7 @@ export default async function TbmPage() {
               <div>
                 <p className="text-base font-black text-red-100">오늘 먼저 확인할 항목이 있습니다.</p>
                 <p className="mt-1 text-sm leading-relaxed text-red-200">
-                  EB 증빙 연결 필요 {EB누락}건, 조치 필요 {조치필요}건입니다.
+                  EB 연결 필요 {EB누락}건, 조치 필요 {조치필요}건입니다.
                 </p>
               </div>
             </div>
@@ -135,12 +136,8 @@ export default async function TbmPage() {
 
                       <div className="mt-3 flex flex-wrap gap-2">
                         {row.특이사항 ? (
-                          <span className={`rounded-full border px-3 py-1 text-sm font-bold ${
-                            row.연결EB > 0
-                              ? "border-emerald-700 bg-emerald-950/40 text-emerald-200"
-                              : "border-red-700 bg-red-950/50 text-red-200"
-                          }`}>
-                            {row.연결EB > 0 ? `EB ${row.연결EB}건 연결` : "EB 등록 필요"}
+                          <span className="rounded-full border border-amber-700 bg-amber-950/40 px-3 py-1 text-sm font-bold text-amber-200">
+                            특이사항 있음
                           </span>
                         ) : (
                           <span className="whitespace-nowrap rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1 text-sm font-bold text-slate-300">
@@ -157,11 +154,19 @@ export default async function TbmPage() {
                             {row.조치상태}
                           </span>
                         )}
-                      </div>
-                    </div>
 
-                    <div className="hidden shrink-0 sm:block">
-                      {row.조치상태 && <StatusBadge status={row.조치상태} />}
+                        {needsEb && (
+                          <span className="rounded-full border border-red-700 bg-red-950/50 px-3 py-1 text-sm font-bold text-red-200">
+                            EB 연결 필요
+                          </span>
+                        )}
+
+                        {!needsEb && row.연결EB > 0 && (
+                          <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-3 py-1 text-sm font-bold text-emerald-200">
+                            EB {row.연결EB}건 연결
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
