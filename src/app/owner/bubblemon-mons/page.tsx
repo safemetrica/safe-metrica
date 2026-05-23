@@ -44,11 +44,35 @@ export default async function BubblemonMonsOwnerPage() {
 
         <section className="mt-4 rounded-3xl border border-blue-500/30 bg-slate-900 p-6 shadow-2xl">
           <p className="text-sm font-bold text-blue-300">Principal · Contractor</p>
-          <h1 className="mt-2 text-3xl font-black">버블몬 × 몬스 원청·하청 계약 준비</h1>
+          <h1 className="mt-2 text-3xl font-black">버블몬 × 몬스 물류업 안전운영 계약 준비</h1>
           <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-300">
             버블몬코리아를 원청 고객사로, 몬스를 하청·협력업체로 두고 TBM, 점검·교육,
             위험성평가 공유기록, 교육·이수증빙, 조치 증빙, 월간보고서 운영 범위를 확인합니다.
           </p>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-5">
+          <h2 className="text-lg font-black text-emerald-200">계약 구조 기준</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-sm font-black text-white">일반 고객사 계약</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                대도환경·동우환경·한국그린환경과 같은 SafeMetrica 고객사 운영 계약 구조입니다.
+              </p>
+            </article>
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-sm font-black text-white">물류업 원청·하청</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                버블몬은 원청, 몬스는 하청·협력업체로 두고 물류업 안전운영 기록을 관리합니다.
+              </p>
+            </article>
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-sm font-black text-white">EduLink와 별도</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                교육기관 제휴형 EduLink가 아니라, 모든 고객사 공통 기능을 적용하는 일반 SaaS 계약입니다.
+              </p>
+            </article>
+          </div>
         </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-3">
@@ -133,6 +157,18 @@ export default async function BubblemonMonsOwnerPage() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-5">
+          <h2 className="text-xl font-black">모든 고객사 공통 적용 기능</h2>
+          <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-300">
+            <li>• 점검·교육 기록관리</li>
+            <li>• 위험성평가 실시·근로자 참여·결과 공유 기록</li>
+            <li>• 법정교육 이수증·수료증·출석부 증빙관리</li>
+            <li>• TBM 교육기록 및 작업 전 위험요인 공유 기록</li>
+            <li>• Evidence Book 및 조치 전·후 사진 증빙</li>
+            <li>• 월간 안전운영 보고서</li>
+          </ul>
         </section>
 
         <section className="mt-6 rounded-2xl border border-blue-500/30 bg-blue-950/20 p-5">
