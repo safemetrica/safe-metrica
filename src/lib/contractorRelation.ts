@@ -60,14 +60,14 @@ export const SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON: PrincipalCompany = {
   code: "bubblemon",
   name: "버블몬코리아",
   role: "원청",
-  description: "협력업체 안전운영 현황을 확인하고 월간보고서를 통해 관리하는 원청 고객사",
+  description: "대도환경·동우환경·한국그린환경과 같은 일반 SafeMetrica 고객사 계약 구조로 운영되는 물류업 원청 고객사",
 };
 
 export const SAMPLE_CONTRACTOR_COMPANY_MONS: ContractorCompany = {
   code: "mons",
   name: "몬스",
   role: "하청",
-  description: "원청 사업장 내 작업 수행, TBM, 점검·교육, 위험성평가 공유기록, 증빙자료를 관리해야 하는 협력업체",
+  description: "물류업 원청 고객사와 연결된 하청·협력업체로, TBM, 점검·교육, 위험성평가 공유기록, 증빙자료를 관리해야 하는 작업 수행 주체",
 };
 
 export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
@@ -83,7 +83,7 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   contractExpectedDate: "2026-05-26",
 
   workScope: [
-    "원청 사업장 내 협력업체 작업관리",
+    "물류업 원청·하청 작업관리",
     "작업 전 TBM 운영",
     "점검·교육 기록관리",
     "위험성평가 결과 공유기록 관리",
@@ -108,8 +108,8 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   actionEvidenceStatus: "대기",
   monthlyReportStatus: "대기",
 
-  nextAction: "화요일 계약 전 원청·하청 운영 범위와 고객사 테넌트 세팅 기준 확정",
-  note: "SafeMetrica는 원청과 협력업체의 안전운영 기록과 증빙관리 체계화를 지원한다.",
+  nextAction: "화요일 계약 전 일반 고객사 계약 범위, 원청·하청 운영 범위, 고객사 테넌트 세팅 기준 확정",
+  note: "SafeMetrica는 EduLink와 별도로, 일반 고객사 계약 구조에서 원청과 협력업체의 안전운영 기록과 증빙관리 체계화를 지원한다.",
 };
 
 export function getContractorRelationSummary(relation: ContractorRelation) {

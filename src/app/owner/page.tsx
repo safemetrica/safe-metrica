@@ -90,7 +90,7 @@ export default async function OwnerConsolePage({
           <p className="text-sm font-bold text-amber-200">Principal · Contractor</p>
           <h2 className="mt-2 text-2xl font-black text-white">버블몬 × 몬스 원청·하청</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-            화요일 계약 준비용 내부 화면입니다. 버블몬을 원청, 몬스를 하청·협력업체로 두고
+            화요일 계약 준비용 내부 화면입니다. EduLink와 별도인 일반 고객사 계약 구조로, 버블몬을 원청, 몬스를 하청·협력업체로 두고
             TBM, 점검·교육, 위험성평가 공유, 교육증빙, 월간보고서 관리 범위를 확인합니다.
           </p>
           <div className="mt-5">
@@ -98,7 +98,7 @@ export default async function OwnerConsolePage({
               href="/owner/bubblemon-mons"
               className="inline-flex rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-400"
             >
-              원청·하청 계약 준비 화면 열기
+              물류업 계약 준비 화면 열기
             </a>
           </div>
         </section>
