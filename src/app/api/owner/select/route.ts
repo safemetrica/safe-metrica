@@ -15,6 +15,20 @@ function isOwner(req: NextRequest) {
   return Boolean(expectedToken && ownerToken === expectedToken);
 }
 
+const TENANT_TOKEN_ENV_BY_COMPANY: Record<string, string> = {
+  daedo: "DAEDO_TENANT_TOKEN",
+  bubblemon: "BUBBLEMON_TENANT_TOKEN",
+};
+
+function getExpectedTenantToken(companyCode: string) {
+  const envName = TENANT_TOKEN_ENV_BY_COMPANY[companyCode];
+  return envName ? process.env[envName] : undefined;
+}
+
+function requiresTenantToken(companyCode: string) {
+  return companyCode in TENANT_TOKEN_ENV_BY_COMPANY;
+}
+
 export async function GET(req: NextRequest) {
   if (!isOwner(req)) {
     const res = redirectToLogin(req, "owner_required");
@@ -42,14 +56,14 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
 
-    if (company.code === "daedo") {
-      const daedoToken = process.env.DAEDO_TENANT_TOKEN;
+    if (requiresTenantToken(company.code)) {
+      const tenantToken = getExpectedTenantToken(company.code);
 
-      if (!daedoToken) {
+      if (!tenantToken) {
         return redirectToLogin(req, "missing_tenant_token");
       }
 
-      res.cookies.set("sm_tenant_token", daedoToken, {
+      res.cookies.set("sm_tenant_token", tenantToken, {
         path: "/",
         httpOnly: true,
         sameSite: "lax",
