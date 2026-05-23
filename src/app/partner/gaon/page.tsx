@@ -1,3 +1,8 @@
+import {
+  SAMPLE_EDUCATION_EVIDENCE_RECORDS,
+  summarizeEducationEvidenceStatus,
+} from "@/lib/educationEvidence";
+
 const partnerCards = [
   {
     title: "본사 대시보드",
@@ -83,6 +88,89 @@ export default function GaonEduLinkPartnerPage() {
             <p className="mt-2 text-3xl font-black text-slate-900">예정</p>
             <p className="mt-2 text-sm text-slate-600">교육·참여·증빙 요약</p>
           </article>
+        </section>
+
+        <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-blue-700">Education Evidence</p>
+              <h2 className="text-xl font-bold">교육·이수증빙 샘플 현황</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                교육기관 수료증과 사업장 자체 위험성평가 공유·TBM 교육기록을 구분하여 관리합니다.
+              </p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+              모델 v1 샘플
+            </span>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {SAMPLE_EDUCATION_EVIDENCE_RECORDS.map((record) => {
+              const summary = summarizeEducationEvidenceStatus(record);
+              const isFollowUp = summary.status === "보완 필요";
+
+              return (
+                <article
+                  key={record.id}
+                  className={`rounded-2xl border p-4 ${
+                    isFollowUp
+                      ? "border-amber-200 bg-amber-50"
+                      : "border-emerald-200 bg-emerald-50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-slate-500">{record.educationCategory}</p>
+                      <h3 className="mt-1 text-lg font-black text-slate-900">{record.educationTitle}</h3>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-black ${
+                        isFollowUp
+                          ? "bg-amber-200 text-amber-900"
+                          : "bg-emerald-200 text-emerald-900"
+                      }`}
+                    >
+                      {summary.status}
+                    </span>
+                  </div>
+
+                  <dl className="mt-4 grid gap-2 text-sm text-slate-700">
+                    <div className="flex justify-between gap-3">
+                      <dt className="font-bold text-slate-500">교육일</dt>
+                      <dd>{record.educationDate}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="font-bold text-slate-500">교육기관</dt>
+                      <dd>{record.providerName ?? record.providerType}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="font-bold text-slate-500">대상</dt>
+                      <dd>{record.targetGroup}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="font-bold text-slate-500">참석자</dt>
+                      <dd>{record.participantCount ?? 0}명</dd>
+                    </div>
+                  </dl>
+
+                  <p className="mt-4 text-sm leading-6 text-slate-700">{summary.message}</p>
+
+                  {summary.reasons.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {summary.reasons.map((reason) => (
+                        <span
+                          key={reason}
+                          className="rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-800"
+                        >
+                          {reason}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
