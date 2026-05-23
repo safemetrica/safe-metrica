@@ -65,8 +65,8 @@ export const SAMPLE_EDULINK_BRANCHES: EduLinkBranch[] = [
   {
     code: "gaon-incheon",
     partnerCode: "gaonedu",
-    name: "가온에듀 인천지사",
-    region: "인천",
+    name: "가온에듀 파일럿 채널",
+    region: "가온에듀",
     managerName: "지사 담당자",
     status: "파일럿",
     customerCount: 2,
@@ -74,8 +74,8 @@ export const SAMPLE_EDULINK_BRANCHES: EduLinkBranch[] = [
   {
     code: "gaon-seoul",
     partnerCode: "gaonedu",
-    name: "가온에듀 서울지사",
-    region: "서울",
+    name: "추가 채널 준비",
+    region: "준비중",
     managerName: "지사 담당자",
     status: "준비중",
     customerCount: 0,

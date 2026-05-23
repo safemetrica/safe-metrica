@@ -17,14 +17,14 @@ const edulinkSummary = getEduLinkPartnerSummary(SAMPLE_EDULINK_CUSTOMER_MAPPINGS
 
 const partnerCards = [
   {
-    title: "본사 대시보드",
-    description: "가온에듀 본사가 지사별 고객사 운영 현황을 확인합니다.",
-    items: ["지사별 고객사 현황", "교육 진행 현황", "증빙 누락 현황", "월간보고서 발행 현황"],
+    title: "파트너 운영 대시보드",
+    description: "가온에듀 지사가 고객사 교육·증빙 운영 현황을 확인합니다.",
+    items: ["파일럿 고객사 현황", "교육 진행 현황", "증빙 누락 현황", "월간보고서 발행 현황"],
   },
   {
-    title: "지사 관리",
-    description: "지사별 담당자와 고객사 운영 상태를 관리합니다.",
-    items: ["지사명", "담당자", "거래처 수", "운영 상태"],
+    title: "채널 관리",
+    description: "가온에듀 지사 담당자와 고객사 운영 상태를 관리합니다.",
+    items: ["채널명", "담당자", "거래처 수", "운영 상태"],
   },
   {
     title: "고객사 교육·이수증빙",
@@ -73,7 +73,7 @@ export default async function GaonEduLinkPartnerPage() {
           </p>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
             교육기관 제휴형 안전운영·교육이수증빙 관리 플랫폼입니다.
-            가온에듀는 교육 콘텐츠와 수료증 발급을 담당하고,
+            가온에듀 지사는 교육 콘텐츠와 수료증 발급 연계를 담당하고,
             SafeMetrica EduLink™는 고객사의 위험성평가, TBM, 근로자 참여기록,
             교육 이수증빙, Evidence Book, 월간보고서까지 이어지도록 관리합니다.
           </p>
@@ -209,7 +209,7 @@ export default async function GaonEduLinkPartnerPage() {
               <p className="text-sm font-bold text-blue-700">Partner Data</p>
               <h2 className="text-xl font-bold">{SAMPLE_EDULINK_PARTNER.name} 파일럿 운영 구조</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                지사, 고객사, 교육증빙, 위험성평가 공유, 월간보고서 발행 상태를 파트너 단위로 관리합니다.
+                가온에듀 지사와 파일럿 고객사의 교육증빙, 위험성평가 공유, 월간보고서 발행 상태를 관리합니다.
               </p>
             </div>
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
@@ -219,7 +219,7 @@ export default async function GaonEduLinkPartnerPage() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-base font-black text-slate-900">지사 현황</h3>
+              <h3 className="text-base font-black text-slate-900">채널 현황</h3>
               <div className="mt-3 space-y-3">
                 {SAMPLE_EDULINK_BRANCHES.map((branch) => (
                   <div key={branch.code} className="rounded-xl bg-white p-3 text-sm shadow-sm">
