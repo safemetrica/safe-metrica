@@ -14,6 +14,9 @@ type UploadedEvidenceFile = {
   type: string;
 };
 
+const MAX_EVIDENCE_FILES = 5;
+const MAX_SERVER_FILE_SIZE_BYTES = 4 * 1024 * 1024;
+
 function isMonsContractorTokenValid(token?: string) {
   const expectedToken = process.env.MONS_CONTRACTOR_TOKEN;
   return Boolean(expectedToken && token === expectedToken);
@@ -89,7 +92,7 @@ async function uploadEvidenceFiles(files: File[], itemId: string) {
     return uploadedFiles;
   }
 
-  for (const file of files.slice(0, 10)) {
+  for (const file of files.slice(0, MAX_EVIDENCE_FILES)) {
     const fileName = sanitizeFileName(file.name);
     const blob = await put(
       `contractor-submissions/bubblemon/mons/${itemId}/${Date.now()}-${fileName}`,
@@ -166,6 +169,15 @@ export async function POST(req: NextRequest) {
   const submissionContent = getFormText(formData, "submissionContent");
   const evidenceMemo = getFormText(formData, "evidenceMemo");
   const evidenceFiles = formData.getAll("evidenceFiles").filter(isFile);
+  const oversizedFile = evidenceFiles.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
+
+  if (oversizedFile) {
+    return redirectTo(req, "/contractor/mons/submit", {
+      token,
+      item: item.id,
+      error: "file_too_large",
+    });
+  }
 
   if (!workDate || !workName || !siteArea || !submitterName || !contact || !submissionContent) {
     return redirectTo(req, "/contractor/mons/submit", {
