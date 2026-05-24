@@ -8,6 +8,7 @@ import EvidenceScoreCard from "@/components/EvidenceScoreCard";
 import { getCompanyConfig } from "@/lib/company";
 import { fetchContractorSubmissionRecords, getContractorSubmissionRecordSummary } from "@/lib/contractorSubmissionRecords";
 import { hasTbmSpecialIssue, needsTbmEvidenceBook, hasLinkedEvidenceBook } from "@/lib/tbmStatus";
+import { buildDailySafetyBriefing } from "@/lib/dailySafetyBriefing";
 
 const DASHBOARD_SAFE_DATA_CONNECTION_MESSAGE =
   "일부 데이터 연결을 확인할 수 없어 현재 확인 가능한 항목만 요약합니다.";
@@ -351,6 +352,21 @@ async function getDashboardData() {
       ptwRows.filter((ptw) => ptw.작업일 === row.날짜).length === 0
   );
 
+  const dailySafetyBriefing = buildDailySafetyBriefing({
+    companyName: company.name,
+    todayTbmCount: 오늘TBM,
+    ebMissingCount: EB누락목록.length,
+    actionNeededCount: 조치필요목록.length,
+    ptwPendingCount: PTW미승인목록.length,
+    ptwBlockedCount: PTW위험목록.length,
+    ptwRequiredMissingCount: PTW필요미제출.length,
+    highRiskCount: risk.highRiskCount,
+    riskActionNeededCount: risk.actionNeededCount,
+    budgetNeededCount: risk.budgetNeededCount,
+    partnerFollowUpCount: contractorSubmissionSummary.followUpCount,
+    partnerPendingCount: contractorSubmissionSummary.principalPendingCount,
+  });
+
   const todayTasks: { icon: string; text: string; href: string; urgent: boolean }[] = [];
 
   if (오늘TBM === 0) {
@@ -386,6 +402,15 @@ async function getDashboardData() {
       text: `협력사 미검토 제출자료 ${contractorSubmissionSummary.principalPendingCount}건 — 원청 검토 필요`,
       href: "/contractor-status",
       urgent: false,
+    });
+  }
+
+  if (dailySafetyBriefing.priority !== "normal") {
+    todayTasks.unshift({
+      icon: "🧭",
+      text: dailySafetyBriefing.executiveHeadline,
+      href: "/dashboard",
+      urgent: dailySafetyBriefing.priority === "critical" || dailySafetyBriefing.priority === "warning",
     });
   }
 
