@@ -59,7 +59,7 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
         </Link>
 
         <section className="mt-4 rounded-3xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">
-          <p className="text-xs font-bold text-cyan-300">MONS Submit Form</p>
+          <p className="text-xs font-bold text-cyan-300">㈜몬스 제출 양식</p>
           <h1 className="mt-2 text-2xl font-black">{item.title}</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
 

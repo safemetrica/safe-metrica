@@ -31,7 +31,7 @@ export default async function MonsContractorSubmittedPage({ searchParams }: Page
     <main className="min-h-screen bg-slate-950 px-4 py-5 text-white">
       <div className="mx-auto max-w-2xl">
         <section className="rounded-3xl border border-emerald-500/30 bg-slate-900 p-6 shadow-2xl">
-          <p className="text-xs font-bold text-emerald-300">MONS Submit Result</p>
+          <p className="text-xs font-bold text-emerald-300">㈜몬스 제출 결과</p>
           <h1 className="mt-2 text-2xl font-black">
             {params.status === "notion_error" ? "제출 저장 확인 필요" : "제출 접수 완료"}
           </h1>

@@ -54,7 +54,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
         </Link>
 
         <section className="mt-4 rounded-3xl border border-cyan-500/30 bg-gray-900 p-5 shadow-2xl">
-          <p className="text-xs font-bold text-cyan-300">Principal · Partner Status</p>
+          <p className="text-xs font-bold text-cyan-300">Principal · 협력사 현황</p>
           <h1 className="mt-2 text-2xl font-black">협력사 제출현황</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-300">
             {principal.name} 원청 운영 화면에서 {contractor.name}의 TBM·사진·교육증빙·조치사진 제출상태를 확인합니다.
