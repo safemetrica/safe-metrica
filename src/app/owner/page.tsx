@@ -17,7 +17,7 @@ const tenants = [
     description: "TBM, EB, PTW, 위험성평가, 현장참여, 월간보고서 운영",
   },
   {
-    code: "korea-green",
+    code: "greenkorea",
     name: "한국그린환경",
     category: "생활폐기물",
     status: "운영중",
