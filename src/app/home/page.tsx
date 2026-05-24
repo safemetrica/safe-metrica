@@ -7,6 +7,7 @@ import { getTbmFormUrl } from "@/lib/tenantLinks";
 import PartnerCompanyStatusCard from "@/components/PartnerCompanyStatusCard";
 const menus = [
   { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
+  { href: "/field/participation", icon: "🗣️", label: "현장참여", sub: "위험요인 확인·의견제보", color: "from-lime-600 to-emerald-700 hover:from-lime-500 hover:to-emerald-600", border: "border-lime-500" },
   { href: "/ebm", icon: "📚", label: "Evidence Book", sub: "증빙 현황 조회", color: "from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600", border: "border-emerald-500" },
   { href: "/field", icon: "👷", label: "현장 비서", sub: "관리감독자 전용", color: "from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600", border: "border-teal-500" },
   { href: "/monthly-report", icon: "📑", label: "월간보고서", sub: "월별 안전운영 요약", color: "from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600", border: "border-sky-500" },
