@@ -736,22 +736,34 @@ export default async function DashboardPage() {
                 </span>
                 <span className="text-xs text-slate-500">TBM · 증빙 · PTW 기준</span>
               </div>
-              <div className="mb-3 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4">
-                  <p className="text-xs font-black text-cyan-200">공통 안전브리핑 엔진</p>
-                  <p className="mt-2 text-sm font-bold leading-6 text-cyan-50">
-                    {s.dailySafetyBriefing.executiveHeadline}
-                  </p>
-                  <ul className="mt-3 space-y-1.5 text-xs leading-5 text-slate-200">
-                    {s.dailySafetyBriefing.executiveMessages.slice(0, 4).map((message: string) => (
-                      <li key={message}>• {message}</li>
+              <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-950/20 px-4 py-3">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <p className="text-xs font-black text-cyan-200">오늘 먼저 볼 신호</p>
+                      <p className="mt-1 text-sm font-bold leading-6 text-cyan-50">
+                        {s.dailySafetyBriefing.executiveHeadline}
+                      </p>
+                    </div>
+                    <span className="w-fit rounded-full border border-cyan-400/40 px-2 py-0.5 text-[11px] font-black text-cyan-200">
+                      {s.dailySafetyBriefing.statusLabel}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {s.dailySafetyBriefing.executiveMessages.slice(0, 3).map((message: string) => (
+                      <span key={message} className="rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-xs text-slate-200">
+                        {message}
+                      </span>
                     ))}
                     {s.dailySafetyBriefing.partnerMessages
                       .filter((message: string) => !message.includes("신호 없음"))
-                      .slice(0, 2)
+                      .slice(0, 1)
                       .map((message: string) => (
-                        <li key={message}>• {message}</li>
+                        <span key={message} className="rounded-full border border-rose-400/40 bg-rose-950/30 px-3 py-1 text-xs font-bold text-rose-200">
+                          {message}
+                        </span>
                       ))}
-                  </ul>
+                  </div>
                 </div>
 
                 <AiDiagnosisCard />
