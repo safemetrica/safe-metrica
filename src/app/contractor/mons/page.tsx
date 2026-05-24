@@ -207,139 +207,109 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
           </div>
         </section>
 
-        <section className="mt-4 rounded-3xl border border-slate-700 bg-slate-900 p-4 sm:p-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-lg font-black">보완요청 먼저 확인</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-400">
-                보완요청이 있으면 먼저 보완 제출하고, 없으면 오늘 제출할 항목으로 이동하세요.
-              </p>
-            </div>
-            {hasFollowUpRequest ? (
-              <span className="w-fit rounded-full border border-rose-400/40 bg-rose-950/30 px-3 py-1 text-xs font-black text-rose-200">
-                보완 필요
-              </span>
-            ) : (
-              <span className="w-fit rounded-full border border-emerald-400/40 bg-emerald-950/30 px-3 py-1 text-xs font-black text-emerald-200">
-                보완 없음
-              </span>
-            )}
-          </div>
-
-          {!submissionStore.configured ? (
-            <div className="mt-3 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3">
-              <p className="text-sm font-bold text-amber-200">
-                제출자료 연결 전입니다. 제출 후 원청 확인 결과가 이곳에 표시됩니다.
-              </p>
-            </div>
-          ) : submissionStore.errorMessage ? (
-            <div className="mt-3 rounded-2xl border border-red-500/30 bg-red-950/20 p-3">
-              <p className="text-sm font-bold text-red-200">원청 확인 결과 조회 확인 필요</p>
-              <p className="mt-2 text-xs leading-5 text-slate-400">{submissionStore.errorMessage}</p>
-            </div>
-          ) : hasFollowUpRequest ? (
-            <div className="mt-3 space-y-3">
-              {followUpReviewRecords.map((record) => (
-                <article key={record.id} className="rounded-2xl border border-rose-400/40 bg-rose-950/20 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-base font-black text-white">{record.title}</p>
-                      <p className="mt-1 text-sm leading-6 text-slate-400">
-                        {record.workDate || "작업일 미입력"} · {record.siteArea || "구역 미입력"}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-300">
-                        {getPrincipalReviewMessage(record.principalReviewStatus)}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                        <span className="rounded-full border border-emerald-400/30 px-2 py-1 text-emerald-200">
-                          제출: {record.submissionStatus}
-                        </span>
-                        <span className={`rounded-full border px-2 py-1 ${getPrincipalReviewBadgeClass(record.principalReviewStatus)}`}>
-                          원청 확인: {record.principalReviewStatus}
-                        </span>
-                        <span className="rounded-full border border-blue-400/30 px-2 py-1 text-blue-200">
-                          {record.itemType || "제출항목"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <Link
-                      href={`/contractor/mons/submit?item=${encodeURIComponent(record.submissionItemId)}&token=${encodeURIComponent(params.token ?? "")}`}
-                      className="flex min-h-14 items-center justify-center rounded-2xl bg-rose-500 px-5 py-4 text-center text-base font-black text-white shadow-lg shadow-rose-950/30 transition active:scale-95 sm:w-48"
-                    >
-                      보완 제출하기
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-3 rounded-2xl border border-emerald-400/30 bg-emerald-950/10 p-3">
-              <p className="text-sm font-black text-emerald-200">현재 보완요청은 없습니다.</p>
-              <p className="mt-1 text-xs leading-5 text-slate-400">
-                오늘 필요한 항목만 아래에서 제출하세요. 확인 완료된 자료는 원청 화면에서 관리됩니다.
-              </p>
-            </div>
-          )}
-        </section>
-
         <section className="mt-4">
           <div className="rounded-3xl border border-slate-700 bg-slate-900 p-4 sm:p-5">
-            <p className="text-xs font-black text-cyan-300">오늘 할 일</p>
-            <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">오늘 제출할 항목</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              해당되는 항목만 선택해 사진·서명·교육·조치 증빙을 제출하세요.
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black text-cyan-300">오늘 할 일</p>
+                <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">오늘 제출할 항목</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  해당되는 항목만 선택해 증빙을 제출하세요.
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-cyan-400/40 px-3 py-1 text-xs font-black text-cyan-200">
+                5개 항목
+              </span>
+            </div>
+
+            <div className="mt-4 divide-y divide-slate-700/70 overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+              {submissionItems.map((item, index) => {
+                const contractorStatus = formatContractorSubmissionStatus(item.contractorSubmissionStatus);
+                const principalStatus = formatPrincipalReviewStatus(item.principalReviewStatus);
+                const needsAttention =
+                  item.contractorSubmissionStatus !== "제출완료" ||
+                  item.principalReviewStatus === "보완요청";
+                const evidenceSummary = item.requiredEvidence.slice(0, 2).join(", ");
+                const remainingEvidenceCount = item.requiredEvidence.length - 2;
+
+                return (
+                  <article
+                    key={item.id}
+                    className={`p-4 ${needsAttention ? "bg-slate-900/40" : "bg-slate-950"}`}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
+                              needsAttention
+                                ? "bg-cyan-500/20 text-cyan-200"
+                                : "bg-emerald-500/20 text-emerald-200"
+                            }`}
+                          >
+                            {needsAttention ? index + 1 : "✓"}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="text-base font-black leading-6 text-white">
+                                {item.title.replace("㈜몬스 ", "")}
+                              </p>
+                              <div className="flex flex-wrap gap-2 text-xs font-bold">
+                                <span
+                                  className={`rounded-full border px-2 py-1 ${
+                                    needsAttention
+                                      ? "border-amber-400/30 text-amber-200"
+                                      : "border-emerald-400/30 text-emerald-200"
+                                  }`}
+                                >
+                                  상태: {contractorStatus}
+                                </span>
+                                <span className="rounded-full border border-slate-500/40 px-2 py-1 text-slate-300">
+                                  원청: {principalStatus}
+                                </span>
+                                {item.evidenceBookRequired ? (
+                                  <span className="rounded-full border border-blue-400/30 px-2 py-1 text-blue-200">
+                                    증빙 보관
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <p className="mt-1 text-sm leading-5 text-slate-400">
+                              {evidenceSummary}
+                              {remainingEvidenceCount > 0 ? ` 외 ${remainingEvidenceCount}개` : ""}
+                            </p>
+
+                            <details className="mt-2 text-sm text-slate-300">
+                              <summary className="cursor-pointer text-xs font-black text-cyan-200">
+                                필요 증빙 보기
+                              </summary>
+                              <ul className="mt-2 grid gap-1 leading-5">
+                                {item.requiredEvidence.map((evidence) => (
+                                  <li key={evidence}>• {evidence}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/contractor/mons/submit?item=${encodeURIComponent(item.id)}&token=${encodeURIComponent(params.token ?? "")}`}
+                        className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-cyan-500 px-4 py-3 text-center text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition active:scale-95 sm:w-40"
+                      >
+                        {getSubmitButtonLabel(item.itemType)}
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              제출자료는 ㈜버블몬코리아 원청 또는 SafeMetrica 관리자가 확인합니다.
             </p>
-          </div>
-
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            {submissionItems.map((item, index) => (
-              <article key={item.id} className="rounded-3xl border border-slate-700 bg-slate-900 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-500/20 text-sm font-black text-cyan-200">
-                    {index + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-base font-black leading-6 text-white">{item.title.replace("㈜몬스 ", "")}</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-300">{item.description}</p>
-
-                    <div className="mt-3 rounded-2xl border border-slate-700 bg-slate-950 p-3">
-                      <p className="text-xs font-bold text-slate-400">필요 증빙</p>
-                      <ul className="mt-2 grid gap-1 text-sm leading-5 text-slate-300">
-                        {item.requiredEvidence.map((evidence) => (
-                          <li key={evidence}>• {evidence}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                      <span className="rounded-full border border-amber-400/30 px-2 py-1 text-amber-200">
-                        상태: {formatContractorSubmissionStatus(item.contractorSubmissionStatus)}
-                      </span>
-                      <span className="rounded-full border border-slate-500/40 px-2 py-1 text-slate-300">
-                        원청: {formatPrincipalReviewStatus(item.principalReviewStatus)}
-                      </span>
-                      {item.evidenceBookRequired ? (
-                        <span className="rounded-full border border-blue-400/30 px-2 py-1 text-blue-200">
-                          증빙 보관
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <Link
-                      href={`/contractor/mons/submit?item=${encodeURIComponent(item.id)}&token=${encodeURIComponent(params.token ?? "")}`}
-                      className="mt-3 flex min-h-12 w-full items-center justify-center rounded-2xl bg-cyan-500 px-4 py-3 text-center text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition active:scale-95"
-                    >
-                      {getSubmitButtonLabel(item.itemType)}
-                    </Link>
-
-                    <p className="mt-2 text-xs leading-5 text-slate-500">
-                      제출 화면에서 작업일·구역·제출자와 사진을 입력합니다.
-                    </p>
-                  </div>
-                </div>
-              </article>
-            ))}
           </div>
         </section>
 
