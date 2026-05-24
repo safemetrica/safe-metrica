@@ -7,6 +7,10 @@ import {
   SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON,
   getContractorSubmissionSummary,
 } from "@/lib/contractorRelation";
+import {
+  fetchContractorSubmissionRecords,
+  getContractorSubmissionRecordSummary,
+} from "@/lib/contractorSubmissionRecords";
 
 type PageProps = {
   searchParams: Promise<{
@@ -24,6 +28,39 @@ const contractor = SAMPLE_CONTRACTOR_COMPANY_MONS;
 const submissionItems = SAMPLE_MONS_CONTRACTOR_SUBMISSIONS;
 const submissionSummary = getContractorSubmissionSummary(submissionItems);
 
+
+function getPrincipalReviewBadgeClass(status: string) {
+  if (status === "확인") {
+    return "border-emerald-400/40 bg-emerald-950/30 text-emerald-200";
+  }
+
+  if (status === "보완요청") {
+    return "border-rose-400/40 bg-rose-950/30 text-rose-200";
+  }
+
+  if (status === "검토중") {
+    return "border-blue-400/40 bg-blue-950/30 text-blue-200";
+  }
+
+  return "border-amber-400/40 bg-amber-950/30 text-amber-200";
+}
+
+function getPrincipalReviewMessage(status: string) {
+  if (status === "확인") {
+    return "버블몬 원청 확인이 완료되었습니다.";
+  }
+
+  if (status === "보완요청") {
+    return "버블몬 원청에서 보완요청한 자료입니다. 같은 항목으로 보완 제출해 주세요.";
+  }
+
+  if (status === "검토중") {
+    return "버블몬 원청 검토가 진행 중입니다.";
+  }
+
+  return "버블몬 원청 검토 대기 중입니다.";
+}
+
 function getSubmitButtonLabel(itemType: string) {
   if (itemType === "TBM") return "TBM 제출";
   if (itemType === "작업 전후 사진") return "사진 제출";
@@ -35,6 +72,9 @@ function getSubmitButtonLabel(itemType: string) {
 
 export default async function MonsContractorSubmitPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const submissionStore = await fetchContractorSubmissionRecords();
+  const recordSummary = getContractorSubmissionRecordSummary(submissionStore.records);
+  const hasFollowUpRequest = recordSummary.followUpCount > 0;
 
   if (!isMonsContractorTokenValid(params.token)) {
     redirect("/login?error=invalid_contractor_token");
@@ -51,22 +91,112 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
             교육·서명·출석, 위험성평가 공유 확인, 조치 전후 사진만 제출합니다.
           </p>
           <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950 p-4">
-            <p className="text-sm font-bold text-slate-300">오늘 제출 현황</p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+            <p className="text-sm font-bold text-slate-300">제출·검토 현황</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-4">
               <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
-                <p className="text-xs text-slate-400">전체</p>
+                <p className="text-xs text-slate-400">기준항목</p>
                 <p className="mt-1 text-2xl font-black">{submissionSummary.totalItems}</p>
               </div>
               <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
-                <p className="text-xs text-slate-400">완료</p>
-                <p className="mt-1 text-2xl font-black text-emerald-300">{submissionSummary.submittedCount}</p>
+                <p className="text-xs text-slate-400">최근 제출</p>
+                <p className="mt-1 text-2xl font-black text-emerald-300">{recordSummary.total}</p>
               </div>
               <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
-                <p className="text-xs text-slate-400">대기</p>
-                <p className="mt-1 text-2xl font-black text-amber-300">{submissionSummary.pendingCount}</p>
+                <p className="text-xs text-slate-400">원청 확인</p>
+                <p className="mt-1 text-2xl font-black text-emerald-300">{recordSummary.principalConfirmedCount}</p>
+              </div>
+              <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
+                <p className="text-xs text-slate-400">보완요청</p>
+                <p className="mt-1 text-2xl font-black text-rose-300">{recordSummary.followUpCount}</p>
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="mt-5 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="text-lg font-black">원청 검토 결과</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                버블몬 현장관리감독자의 확인 또는 보완요청 상태를 확인합니다.
+              </p>
+            </div>
+            {hasFollowUpRequest ? (
+              <span className="rounded-full border border-rose-400/40 bg-rose-950/30 px-3 py-1 text-xs font-black text-rose-200">
+                보완 필요
+              </span>
+            ) : (
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-950/30 px-3 py-1 text-xs font-black text-emerald-200">
+                확인 중
+              </span>
+            )}
+          </div>
+
+          {!submissionStore.configured ? (
+            <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
+              <p className="text-sm font-bold text-amber-200">
+                제출 DB 연결 전입니다. 제출 후 원청 검토 결과가 이 영역에 표시됩니다.
+              </p>
+            </div>
+          ) : submissionStore.errorMessage ? (
+            <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-950/20 p-4">
+              <p className="text-sm font-bold text-red-200">원청 검토 결과 조회 확인 필요</p>
+              <p className="mt-2 text-xs leading-5 text-slate-400">{submissionStore.errorMessage}</p>
+            </div>
+          ) : submissionStore.records.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950 p-4">
+              <p className="text-sm font-bold text-slate-300">아직 제출자료가 없습니다.</p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                아래 제출 항목에서 자료를 제출하면 원청 검토 결과가 이곳에 표시됩니다.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {submissionStore.records.slice(0, 5).map((record) => (
+                <article key={record.id} className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-base font-black text-white">{record.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-400">
+                        {record.workDate || "작업일 미입력"} · {record.siteArea || "구역 미입력"}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-300">
+                        {getPrincipalReviewMessage(record.principalReviewStatus)}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                        <span className="rounded-full border border-emerald-400/30 px-2 py-1 text-emerald-200">
+                          제출: {record.submissionStatus}
+                        </span>
+                        <span className={`rounded-full border px-2 py-1 ${getPrincipalReviewBadgeClass(record.principalReviewStatus)}`}>
+                          원청 검토: {record.principalReviewStatus}
+                        </span>
+                        <span className="rounded-full border border-blue-400/30 px-2 py-1 text-blue-200">
+                          {record.itemType || "제출항목"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {record.principalReviewStatus === "보완요청" ? (
+                      <Link
+                        href={`/contractor/mons/submit?item=${encodeURIComponent(record.submissionItemId)}&token=${encodeURIComponent(params.token ?? "")}`}
+                        className="rounded-xl bg-rose-500 px-4 py-4 text-center text-sm font-black text-white shadow-lg shadow-rose-950/30 transition active:scale-95 md:w-44"
+                      >
+                        보완 제출하기
+                      </Link>
+                    ) : record.principalReviewStatus === "확인" ? (
+                      <div className="rounded-xl border border-emerald-400/40 bg-emerald-950/20 px-4 py-4 text-center text-sm font-black text-emerald-200 md:w-44">
+                        확인 완료
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-amber-400/40 bg-amber-950/20 px-4 py-4 text-center text-sm font-black text-amber-200 md:w-44">
+                        검토 대기
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mt-5 space-y-3">
