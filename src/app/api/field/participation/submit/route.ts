@@ -1,0 +1,223 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import {
+  TenantRequiredError,
+  UnknownCompanyError,
+  getCompanyConfig,
+  getCompanyConfigByCode,
+} from "@/lib/company";
+
+const FIELD_VOICE_TYPES = new Set(["위험 제보", "아차사고", "개선 제안", "기타"]);
+
+function getFormText(formData: FormData, key: string) {
+  return String(formData.get(key) ?? "").trim();
+}
+
+function getFormChecked(formData: FormData, key: string) {
+  return formData.get(key) === "on" || formData.get(key) === "true";
+}
+
+function normalizeNotionId(rawId: string) {
+  return rawId.trim().replace(/^collection:\/\//, "").replace(/-/g, "");
+}
+
+function formatNotionUuid(rawId: string) {
+  const normalized = normalizeNotionId(rawId);
+
+  if (/^[0-9a-fA-F]{32}$/.test(normalized)) {
+    return [
+      normalized.slice(0, 8),
+      normalized.slice(8, 12),
+      normalized.slice(12, 16),
+      normalized.slice(16, 20),
+      normalized.slice(20),
+    ].join("-");
+  }
+
+  return rawId.trim();
+}
+
+function getTodayDateValue() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+}
+
+function richText(content: string) {
+  return {
+    rich_text: [
+      {
+        text: {
+          content: content.slice(0, 1900),
+        },
+      },
+    ],
+  };
+}
+
+function titleText(content: string) {
+  return {
+    title: [
+      {
+        text: {
+          content: content.slice(0, 1900),
+        },
+      },
+    ],
+  };
+}
+
+function redirectTo(req: NextRequest, pathname: string, params: Record<string, string>) {
+  const url = new URL(pathname, req.url);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) url.searchParams.set(key, value);
+  });
+  return NextResponse.redirect(url, { status: 303 });
+}
+
+async function resolveCompanyConfig(formData: FormData) {
+  const companyCode = getFormText(formData, "companyCode");
+
+  if (companyCode) {
+    return getCompanyConfigByCode(companyCode);
+  }
+
+  return getCompanyConfig();
+}
+
+function buildContentWithConfirmation(params: {
+  content: string;
+  riskCheck: boolean;
+  riskAssessmentCheck: boolean;
+  safetyMeasureCheck: boolean;
+}) {
+  const lines: string[] = [];
+
+  lines.push(params.content);
+
+  const confirmations: string[] = [];
+
+  if (params.riskCheck) {
+    confirmations.push("오늘 작업의 주요 위험요인을 확인했습니다.");
+  }
+
+  if (params.riskAssessmentCheck) {
+    confirmations.push("위험성평가 주요 내용을 공유받았습니다.");
+  }
+
+  if (params.safetyMeasureCheck) {
+    confirmations.push("필요한 안전조치와 주의사항을 확인했습니다.");
+  }
+
+  if (confirmations.length > 0) {
+    lines.push("");
+    lines.push("[위험성평가 공유 확인]");
+    confirmations.forEach((confirmation) => lines.push(`- ${confirmation}`));
+  }
+
+  return lines.join("\n").slice(0, 1900);
+}
+
+export async function POST(req: NextRequest) {
+  const formData = await req.formData();
+
+  let company;
+
+  try {
+    company = await resolveCompanyConfig(formData);
+  } catch (error) {
+    if (error instanceof TenantRequiredError) {
+      return redirectTo(req, "/field/participation/submitted", {
+        status: "tenant_required",
+      });
+    }
+
+    if (error instanceof UnknownCompanyError) {
+      return redirectTo(req, "/field/participation/submitted", {
+        status: "unknown_company",
+      });
+    }
+
+    return redirectTo(req, "/field/participation/submitted", {
+      status: "company_error",
+    });
+  }
+
+  const title = getFormText(formData, "title");
+  const rawType = getFormText(formData, "type");
+  const type = FIELD_VOICE_TYPES.has(rawType) ? rawType : "기타";
+  const reportedDate = getFormText(formData, "reportedDate") || getTodayDateValue();
+  const location = getFormText(formData, "location");
+  const anonymous = getFormChecked(formData, "anonymous");
+  const submitterInput = getFormText(formData, "submitter");
+  const submitter = anonymous ? "익명" : submitterInput || "미입력";
+  const content = getFormText(formData, "content");
+
+  const riskCheck = getFormChecked(formData, "riskCheck");
+  const riskAssessmentCheck = getFormChecked(formData, "riskAssessmentCheck");
+  const safetyMeasureCheck = getFormChecked(formData, "safetyMeasureCheck");
+
+  if (!title || !content) {
+    return redirectTo(req, "/field/participation/submitted", {
+      status: "missing_required",
+      company: company.code,
+    });
+  }
+
+  if (!company.fieldVoiceDbId) {
+    return redirectTo(req, "/field/participation/submitted", {
+      status: "missing_field_voice_db",
+      company: company.code,
+    });
+  }
+
+  const dataSourceId = formatNotionUuid(company.fieldVoiceDbId);
+  const finalContent = buildContentWithConfirmation({
+    content,
+    riskCheck,
+    riskAssessmentCheck,
+    safetyMeasureCheck,
+  });
+
+  const response = await fetch("https://api.notion.com/v1/pages", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${company.notionApiKey}`,
+      "Notion-Version": "2025-09-03",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      parent: {
+        type: "data_source_id",
+        data_source_id: dataSourceId,
+      },
+      properties: {
+        "의견 제목": titleText(title),
+        "의견 유형": { select: { name: type } },
+        등록일: { date: { start: reportedDate } },
+        "위치/구역": richText(location),
+        제출자: richText(submitter),
+        익명: { checkbox: anonymous },
+        내용: richText(finalContent),
+        처리상태: { select: { name: "접수" } },
+      },
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+
+    return redirectTo(req, "/field/participation/submitted", {
+      status: "notion_error",
+      company: company.code,
+      message: String(response.status),
+      detail: text.slice(0, 120),
+    });
+  }
+
+  return redirectTo(req, "/field/participation/submitted", {
+    status: "saved",
+    company: company.code,
+  });
+}
