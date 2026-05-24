@@ -173,7 +173,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
             type="submit"
             className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-blue-700 px-5 py-4 text-center text-base font-black text-white shadow-sm transition active:scale-95"
           >
-            현장참여 제출하기
+            현장 의견·사진 제출하기
           </button>
         </form>
 

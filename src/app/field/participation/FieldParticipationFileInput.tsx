@@ -39,9 +39,7 @@ function readAsDataUrl(file: File) {
 }
 
 async function compressImageFile(file: File) {
-  if (!file.type.startsWith("image/")) {
-    return file;
-  }
+  if (!file.type.startsWith("image/")) return file;
 
   try {
     const dataUrl = await readAsDataUrl(file);
@@ -56,10 +54,7 @@ async function compressImageFile(file: File) {
     canvas.height = height;
 
     const context = canvas.getContext("2d");
-
-    if (!context) {
-      return file;
-    }
+    if (!context) return file;
 
     context.drawImage(image, 0, 0, width, height);
 
@@ -67,9 +62,7 @@ async function compressImageFile(file: File) {
       canvas.toBlob(resolve, "image/jpeg", IMAGE_QUALITY);
     });
 
-    if (!blob || blob.size >= file.size) {
-      return file;
-    }
+    if (!blob || blob.size >= file.size) return file;
 
     return new File([blob], getCompressedFileName(file.name), {
       type: "image/jpeg",
@@ -128,23 +121,20 @@ export default function FieldParticipationFileInput() {
 
   return (
     <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-black text-blue-700">사진 촬영·파일 첨부</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-600">
-            사진은 업로드 전에 자동으로 용량을 줄입니다. 최대 5장까지 권장합니다.
+          <h2 className="text-base font-black text-blue-700">사진 촬영·파일 첨부</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            위험 위치나 조치 상태를 사진으로 남겨주세요. 사진은 자동으로 용량을 줄여 저장합니다.
           </p>
         </div>
-        <span className="w-fit rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-black text-blue-700">
+        <span className="shrink-0 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-black text-blue-700">
           자동 압축
         </span>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="text-sm font-bold text-slate-700" htmlFor="cameraFiles">
-            카메라로 바로 촬영
-          </label>
           <input
             ref={cameraInputRef}
             id="cameraFiles"
@@ -154,14 +144,20 @@ export default function FieldParticipationFileInput() {
             capture="environment"
             multiple
             onChange={() => handleFileChange(cameraInputRef.current, setCameraFiles)}
-            className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-sm text-slate-900 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-700 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+            className="sr-only"
           />
+          <label
+            htmlFor="cameraFiles"
+            className="flex min-h-24 cursor-pointer flex-col justify-center rounded-2xl border border-blue-300 bg-white px-4 py-4 shadow-sm transition active:scale-95"
+          >
+            <span className="text-lg font-black text-slate-950">📷 바로 촬영하기</span>
+            <span className="mt-1 text-sm font-bold text-slate-500">
+              현장에서 카메라로 촬영
+            </span>
+          </label>
         </div>
 
         <div>
-          <label className="text-sm font-bold text-slate-700" htmlFor="galleryFiles">
-            갤러리·파일에서 선택
-          </label>
           <input
             ref={galleryInputRef}
             id="galleryFiles"
@@ -170,23 +166,32 @@ export default function FieldParticipationFileInput() {
             accept="image/*"
             multiple
             onChange={() => handleFileChange(galleryInputRef.current, setGalleryFiles)}
-            className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-sm text-slate-900 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-700 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+            className="sr-only"
           />
+          <label
+            htmlFor="galleryFiles"
+            className="flex min-h-24 cursor-pointer flex-col justify-center rounded-2xl border border-blue-300 bg-white px-4 py-4 shadow-sm transition active:scale-95"
+          >
+            <span className="text-lg font-black text-slate-950">🖼️ 사진 선택하기</span>
+            <span className="mt-1 text-sm font-bold text-slate-500">
+              갤러리·파일에서 선택
+            </span>
+          </label>
         </div>
       </div>
 
       {isCompressing ? (
-        <div className="mt-3 rounded-xl border border-blue-200 bg-white p-3 text-sm font-bold text-blue-700">
-          사진 용량을 줄이는 중입니다...
+        <div className="mt-3 rounded-xl border border-blue-200 bg-white p-3 text-sm font-black text-blue-700">
+          사진 용량을 줄이는 중입니다. 잠시만 기다려 주세요.
         </div>
       ) : null}
 
       {selectedFiles.length > 0 ? (
-        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-sm font-bold text-slate-700">
-            선택된 파일 {selectedFiles.length}개
+        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <p className="text-sm font-black text-emerald-800">
+            제출 준비 완료 · 선택된 사진 {selectedFiles.length}개
           </p>
-          <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-600">
+          <ul className="mt-2 space-y-1 text-xs leading-5 text-emerald-900">
             {selectedFiles.map((file, index) => (
               <li key={`${file.name}-${index}`}>
                 • {file.name} ({formatKb(file.size)})
@@ -194,11 +199,11 @@ export default function FieldParticipationFileInput() {
             ))}
           </ul>
         </div>
-      ) : null}
-
-      <p className="mt-3 text-xs leading-5 text-slate-500">
-        위험 위치, 바닥 상태, 장비 이상, 보호구·안전조치 상태를 촬영해 첨부하세요.
-      </p>
+      ) : (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm font-bold text-slate-500">
+          아직 선택된 사진이 없습니다. 위험 위치, 바닥 상태, 장비 이상, 보호구·안전조치 상태를 촬영해 첨부하세요.
+        </div>
+      )}
     </section>
   );
 }
