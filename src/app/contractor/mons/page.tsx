@@ -29,7 +29,6 @@ const contractor = SAMPLE_CONTRACTOR_COMPANY_MONS;
 const submissionItems = SAMPLE_MONS_CONTRACTOR_SUBMISSIONS;
 const submissionSummary = getContractorSubmissionSummary(submissionItems);
 
-
 function getPrincipalReviewBadgeClass(status: string) {
   if (status === "확인") {
     return "border-emerald-400/40 bg-emerald-950/30 text-emerald-200";
@@ -105,6 +104,14 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
     "작업 전·후 사진과 필요한 서명·교육 증빙은 세메앱으로 제출해 주세요.",
   ].slice(0, 4);
 
+  const visibleReviewRecords = [...submissionStore.records]
+    .sort((a, b) => {
+      const aNeedsFollowUp = a.principalReviewStatus === "보완요청" ? 1 : 0;
+      const bNeedsFollowUp = b.principalReviewStatus === "보완요청" ? 1 : 0;
+      return bNeedsFollowUp - aNeedsFollowUp;
+    })
+    .slice(0, 5);
+
   if (!isMonsContractorTokenValid(params.token)) {
     redirect("/login?error=invalid_contractor_token");
   }
@@ -116,8 +123,8 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
           <p className="text-xs font-bold text-cyan-300">SafeMetrica 협력사 제출</p>
           <h1 className="mt-2 text-2xl font-black">㈜몬스 작업 제출</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            {contractor.name}는 {principal.name} 현장의 협력사로서 작업 전 TBM, 작업 전후 사진,
-            교육·서명·출석, 위험성평가 공유 확인, 조치 전후 사진만 제출합니다.
+            {contractor.name}는 {principal.name} 현장에서 오늘 공유사항을 확인하고,
+            필요한 증빙만 세메앱으로 제출합니다.
           </p>
           <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950 p-4">
             <p className="text-sm font-bold text-slate-300">제출·검토 현황</p>
@@ -142,13 +149,13 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
           </div>
         </section>
 
-        <section className="rounded-3xl border border-cyan-500/40 bg-cyan-950/20 p-5">
+        <section className="mt-5 rounded-3xl border border-cyan-500/40 bg-cyan-950/20 p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-black text-cyan-300">㈜버블몬코리아 원청 공유</p>
               <h2 className="mt-1 text-2xl font-black text-white">오늘 원청 공유사항</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                ㈜버블몬코리아 현장에서 오늘 작업 전 확인해야 할 핵심 안전사항입니다.
+                오늘 작업 전 확인할 내용입니다. 읽고 아래 필요한 증빙만 제출하세요.
               </p>
             </div>
             <span className="w-fit rounded-full border border-cyan-400/40 px-3 py-1 text-xs font-black text-cyan-200">
@@ -167,14 +174,14 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
-              <p className="text-xs font-bold text-slate-400">SIF·고위험</p>
+              <p className="text-xs font-bold text-slate-400">고위험 주의</p>
               <p className="mt-2 text-xs leading-5 text-slate-200">
                 {partnerSifFocus}
               </p>
             </div>
 
             <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
-              <p className="text-xs font-bold text-slate-400">PTW 확인</p>
+              <p className="text-xs font-bold text-slate-400">작업허가 확인</p>
               <p className="mt-2 text-xs leading-5 text-slate-200">
                 {partnerPtwMessage}
               </p>
@@ -189,12 +196,12 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
           </div>
         </section>
 
-        <section className="mt-5 rounded-2xl border border-slate-700 bg-slate-900 p-4">
+        <section className="mt-5 rounded-3xl border border-slate-700 bg-slate-900 p-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-lg font-black">원청 검토 결과</h2>
+              <h2 className="text-lg font-black">보완요청 먼저 확인</h2>
               <p className="mt-1 text-sm leading-6 text-slate-400">
-                ㈜버블몬코리아 현장관리감독자의 확인 또는 보완요청 상태를 확인합니다.
+                보완요청이 있으면 먼저 보완 제출하고, 없으면 오늘 필요한 증빙만 제출하세요.
               </p>
             </div>
             {hasFollowUpRequest ? (
@@ -203,7 +210,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
               </span>
             ) : (
               <span className="rounded-full border border-emerald-400/40 bg-emerald-950/30 px-3 py-1 text-xs font-black text-emerald-200">
-                확인 중
+                보완 없음
               </span>
             )}
           </div>
@@ -211,7 +218,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
           {!submissionStore.configured ? (
             <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
               <p className="text-sm font-bold text-amber-200">
-                제출 DB 연결 전입니다. 제출 후 원청 검토 결과가 이 영역에 표시됩니다.
+                제출자료 연결 전입니다. 제출 후 원청 확인 결과가 이곳에 표시됩니다.
               </p>
             </div>
           ) : submissionStore.errorMessage ? (
@@ -223,13 +230,13 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
             <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950 p-4">
               <p className="text-sm font-bold text-slate-300">아직 제출자료가 없습니다.</p>
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                아래 제출 항목에서 자료를 제출하면 원청 검토 결과가 이곳에 표시됩니다.
+                아래 오늘 제출할 항목에서 자료를 제출하면 원청 확인 결과가 이곳에 표시됩니다.
               </p>
             </div>
           ) : (
             <div className="mt-4 space-y-3">
-              {submissionStore.records.slice(0, 5).map((record) => (
-                <article key={record.id} className="rounded-2xl border border-slate-700 bg-slate-950 p-4">
+              {visibleReviewRecords.map((record) => (
+                <article key={record.id} className={`rounded-2xl border p-4 ${record.principalReviewStatus === "보완요청" ? "border-rose-400/40 bg-rose-950/20" : "border-slate-700 bg-slate-950"}`}>
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="min-w-0">
                       <p className="text-base font-black text-white">{record.title}</p>
@@ -255,7 +262,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
                     {record.principalReviewStatus === "보완요청" ? (
                       <Link
                         href={`/contractor/mons/submit?item=${encodeURIComponent(record.submissionItemId)}&token=${encodeURIComponent(params.token ?? "")}`}
-                        className="rounded-xl bg-rose-500 px-4 py-4 text-center text-sm font-black text-white shadow-lg shadow-rose-950/30 transition active:scale-95 md:w-44"
+                        className="flex min-h-14 items-center justify-center rounded-2xl bg-rose-500 px-5 py-4 text-center text-base font-black text-white shadow-lg shadow-rose-950/30 transition active:scale-95 md:w-48"
                       >
                         보완 제출하기
                       </Link>
@@ -276,8 +283,16 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
         </section>
 
         <section className="mt-5 space-y-3">
+          <div className="rounded-3xl border border-slate-700 bg-slate-900 p-5">
+            <p className="text-xs font-black text-cyan-300">오늘 할 일</p>
+            <h2 className="mt-1 text-2xl font-black text-white">오늘 제출할 항목</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              해당되는 항목만 선택해 사진·서명·교육·조치 증빙을 제출하세요.
+            </p>
+          </div>
+
           {submissionItems.map((item, index) => (
-            <article key={item.id} className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+            <article key={item.id} className="rounded-3xl border border-slate-700 bg-slate-900 p-5">
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/20 text-sm font-black text-cyan-200">
                   {index + 1}
