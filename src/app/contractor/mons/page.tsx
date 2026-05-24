@@ -84,10 +84,10 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
     <main className="min-h-screen bg-slate-950 px-4 py-5 text-white">
       <div className="mx-auto max-w-3xl">
         <section className="rounded-3xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">
-          <p className="text-xs font-bold text-cyan-300">SafeMetrica Contractor Submit</p>
+          <p className="text-xs font-bold text-cyan-300">SafeMetrica Partner Submit</p>
           <h1 className="mt-2 text-2xl font-black">몬스 작업 제출</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            {contractor.name}는 {principal.name} 현장의 하청·협력업체로서 작업 전 TBM, 작업 전후 사진,
+            {contractor.name}는 {principal.name} 현장의 협력사로서 작업 전 TBM, 작업 전후 사진,
             교육·서명·출석, 위험성평가 공유 확인, 조치 전후 사진만 제출합니다.
           </p>
           <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950 p-4">

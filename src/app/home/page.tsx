@@ -270,7 +270,7 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🤝</span>
-                  <span className="text-white text-sm font-bold">하청 제출현황</span>
+                  <span className="text-white text-sm font-bold">협력사 제출현황</span>
                 </div>
                 <p className="mt-2 text-gray-300 text-xs leading-relaxed">
                   몬스 TBM·사진·교육증빙·조치사진 제출상태를 확인합니다.
