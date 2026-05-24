@@ -3,6 +3,10 @@ import PrintReportButton from "@/components/PrintReportButton";
 import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
 import { hasTbmSpecialIssue, needsTbmEvidenceBook, hasLinkedEvidenceBook as hasLinkedEvidenceBookByProps } from "@/lib/tbmStatus";
+import {
+  fetchContractorSubmissionRecords,
+  getContractorSubmissionRecordSummary,
+} from "@/lib/contractorSubmissionRecords";
 
 export const dynamic = "force-dynamic";
 
@@ -345,6 +349,11 @@ export default async function MonthlySafetyReportPage({
     getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey).catch(() => null),
   ]);
 
+  const partnerSubmissionStore =
+    company.code === "bubblemon"
+      ? await fetchContractorSubmissionRecords()
+      : { configured: false, records: [], errorMessage: "" };
+
   const tbmRows = tbmRowsRaw.filter((row) => inMonth(getDateFromPage(row), monthKey));
   const ebRows = ebRowsRaw.filter((row) => {
     const date = getDateFromPage(row);
@@ -388,6 +397,34 @@ export default async function MonthlySafetyReportPage({
   const riskTotal = riskAny?.total ?? riskAny?.items?.length ?? 0;
   const highRiskCount = riskAny?.highRiskCount ?? 0;
   const actionNeededCount = riskAny?.actionNeededCount ?? 0;
+
+  const partnerRecordsThisMonth = partnerSubmissionStore.records.filter((record) =>
+    record.workDate ? record.workDate.startsWith(monthKey) : true
+  );
+  const partnerSummary = getContractorSubmissionRecordSummary(partnerRecordsThisMonth);
+  const partnerHasFollowUp = partnerSummary.followUpCount > 0;
+  const partnerHasPending = partnerSummary.principalPendingCount > 0;
+  const partnerFollowUpRecords = partnerRecordsThisMonth.filter(
+    (record) => record.principalReviewStatus === "보완요청"
+  );
+  const partnerPendingRecords = partnerRecordsThisMonth.filter(
+    (record) =>
+      record.principalReviewStatus === "미검토" ||
+      record.principalReviewStatus === "검토중" ||
+      !record.principalReviewStatus
+  );
+  const partnerReportStatus = partnerHasFollowUp
+    ? "보완 필요"
+    : partnerHasPending
+      ? "검토 필요"
+      : partnerSummary.total > 0
+        ? "확인 완료"
+        : "제출 없음";
+  const partnerReportBannerClass = partnerHasFollowUp
+    ? "border-rose-500/40 bg-rose-950/30 text-rose-100 print:border-rose-300 print:bg-rose-50 print:text-rose-900"
+    : partnerHasPending
+      ? "border-amber-500/40 bg-amber-950/30 text-amber-100 print:border-amber-300 print:bg-amber-50 print:text-amber-900"
+      : "border-emerald-500/40 bg-emerald-950/30 text-emerald-100 print:border-emerald-300 print:bg-emerald-50 print:text-emerald-900";
 
   const recentTbm = tbmRows.slice(0, 8);
   const ebMissingRows = tbmEvidenceRequiredRows.filter((row) => !hasLinkedEvidenceBook(row));
@@ -438,6 +475,120 @@ export default async function MonthlySafetyReportPage({
             </p>
           </div>
         </div>
+
+        {company.code === "bubblemon" ? (
+          <Section
+            title="협력사 이행현황"
+            desc="몬스 제출자료의 원청 확인, 보완요청, 미검토 상태를 월간 기준으로 확인합니다."
+          >
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+              <StatCard
+                label="최근 접수"
+                value={partnerSummary.total}
+                hint="월간 협력사 제출자료"
+                tone="border-cyan-500/40"
+              />
+              <StatCard
+                label="원청 확인"
+                value={partnerSummary.principalConfirmedCount}
+                hint="확인 완료"
+                tone="border-emerald-500/40"
+              />
+              <StatCard
+                label="미검토"
+                value={partnerSummary.principalPendingCount}
+                hint="원청 검토 필요"
+                tone="border-amber-500/40"
+              />
+              <StatCard
+                label="보완요청"
+                value={partnerSummary.followUpCount}
+                hint="협력사 보완 필요"
+                tone="border-rose-500/40"
+              />
+              <StatCard
+                label="보고 상태"
+                value={partnerReportStatus}
+                hint="월간 대표자 확인 기준"
+                tone={partnerHasFollowUp ? "border-rose-500/40" : partnerHasPending ? "border-amber-500/40" : "border-emerald-500/40"}
+              />
+            </div>
+
+            <div className={`mt-4 rounded-2xl border p-4 text-sm font-bold leading-6 ${partnerReportBannerClass}`}>
+              {partnerHasFollowUp
+                ? "협력사 제출자료 중 보완요청 항목이 남아 있습니다. 버블몬 현장관리감독자의 보완 확인이 필요합니다."
+                : partnerHasPending
+                  ? "협력사 제출자료 중 아직 원청 미검토 항목이 있습니다. 원청 확인 또는 보완요청으로 처리해야 합니다."
+                  : partnerSummary.total > 0
+                    ? "이번 달 협력사 제출자료는 원청 확인 상태로 관리되고 있습니다."
+                    : "이번 달 협력사 제출자료가 아직 확인되지 않습니다."}
+            </div>
+
+            {partnerSubmissionStore.errorMessage ? (
+              <div className="mt-4 rounded-2xl border border-amber-500/40 bg-amber-950/30 p-4 text-sm leading-6 text-amber-100 print:border-amber-300 print:bg-amber-50 print:text-amber-900">
+                협력사 제출자료 조회 확인이 필요합니다.
+              </div>
+            ) : null}
+
+            {partnerRecordsThisMonth.length > 0 ? (
+              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-black text-white print:text-slate-950">최근 협력사 제출자료</h3>
+                  <Link
+                    href="/contractor-status"
+                    className="rounded-full bg-cyan-500 px-3 py-1 text-xs font-black text-slate-950 print:hidden"
+                  >
+                    상세 보기
+                  </Link>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {partnerRecordsThisMonth.slice(0, 5).map((record) => (
+                    <div
+                      key={record.id}
+                      className="rounded-xl border border-slate-800 bg-slate-950 p-3 print:border-slate-300 print:bg-white"
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-white print:text-slate-950">{record.title}</p>
+                          <p className="mt-1 text-xs leading-5 text-slate-400 print:text-slate-600">
+                            {record.workDate || "작업일 미입력"} · {record.siteArea || "구역 미입력"} · {record.submitterName || "제출자 미입력"}
+                          </p>
+                        </div>
+                        <span
+                          className={`w-fit rounded-full border px-2 py-1 text-xs font-black ${
+                            record.principalReviewStatus === "보완요청"
+                              ? "border-rose-400/40 text-rose-200 print:text-rose-800"
+                              : record.principalReviewStatus === "확인"
+                                ? "border-emerald-400/40 text-emerald-200 print:text-emerald-800"
+                                : "border-amber-400/40 text-amber-200 print:text-amber-800"
+                          }`}
+                        >
+                          원청 검토: {record.principalReviewStatus || "미검토"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {(partnerFollowUpRecords.length > 0 || partnerPendingRecords.length > 0) ? (
+              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+                <h3 className="text-sm font-black text-white print:text-slate-950">대표자 확인 필요 항목</h3>
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300 print:text-slate-700">
+                  {partnerFollowUpRecords.length > 0 ? (
+                    <li>• 협력사 보완요청 {partnerFollowUpRecords.length}건은 다음 월간 보고 전 조치 확인이 필요합니다.</li>
+                  ) : null}
+                  {partnerPendingRecords.length > 0 ? (
+                    <li>• 원청 미검토 제출자료 {partnerPendingRecords.length}건은 현장관리감독자 검토가 필요합니다.</li>
+                  ) : null}
+                  <li>• 협력사 제출자료는 Notion이 아니라 SafeMetrica 앱에서 확인·검토합니다.</li>
+                </ul>
+              </div>
+            ) : null}
+          </Section>
+        ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="월간 TBM" value={`${tbmRows.length}건`} hint="해당 월 작성된 TBM 기록" tone="border-blue-800" />
