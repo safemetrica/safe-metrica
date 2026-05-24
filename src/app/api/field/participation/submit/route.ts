@@ -168,8 +168,6 @@ function buildContentWithConfirmation(params: {
   return lines.join("\n").slice(0, 1900);
 }
 
-}
-
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
 
