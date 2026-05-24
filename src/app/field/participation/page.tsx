@@ -1,5 +1,9 @@
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+
 const feedbackTypes = ["위험 제보", "아차사고", "개선 제안", "기타"];
 
 type PageProps = {
