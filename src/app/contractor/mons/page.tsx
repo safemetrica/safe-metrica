@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
@@ -102,15 +103,15 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
                     ) : null}
                   </div>
 
-                  <button
-                    type="button"
-                    className="mt-4 w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30"
+                  <Link
+                    href={`/contractor/mons/submit?item=${encodeURIComponent(item.id)}&token=${encodeURIComponent(params.token ?? "")}`}
+                    className="mt-4 block w-full rounded-xl bg-cyan-500 px-4 py-3 text-center text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30"
                   >
                     {getSubmitButtonLabel(item.itemType)}
-                  </button>
+                  </Link>
 
                   <p className="mt-2 text-xs leading-5 text-slate-500">
-                    실제 파일 업로드 저장은 다음 단계에서 연결합니다. 현재 화면은 몬스 제한 제출 앱 구조 확인용입니다.
+                    제출 화면에서 작업일, 작업명, 현장구역, 제출자, 내용, 증빙 메모를 입력합니다.
                   </p>
                 </div>
               </div>

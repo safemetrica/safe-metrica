@@ -309,6 +309,11 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
   },
 ];
 
+
+export function getContractorSubmissionItemById(itemId: string) {
+  return SAMPLE_MONS_CONTRACTOR_SUBMISSIONS.find((item) => item.id === itemId) ?? null;
+}
+
 export function getContractorSubmissionSummary(items: ContractorSubmissionItem[]) {
   const totalItems = items.length;
   const submittedCount = items.filter((item) =>

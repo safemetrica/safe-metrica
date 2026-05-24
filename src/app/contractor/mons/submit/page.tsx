@@ -1,0 +1,139 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import {
+  SAMPLE_CONTRACTOR_COMPANY_MONS,
+  SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON,
+  getContractorSubmissionItemById,
+} from "@/lib/contractorRelation";
+
+type PageProps = {
+  searchParams: Promise<{
+    token?: string;
+    item?: string;
+    error?: string;
+  }>;
+};
+
+function isMonsContractorTokenValid(token?: string) {
+  const expectedToken = process.env.MONS_CONTRACTOR_TOKEN;
+  return Boolean(expectedToken && token === expectedToken);
+}
+
+const principal = SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON;
+const contractor = SAMPLE_CONTRACTOR_COMPANY_MONS;
+
+export default async function MonsContractorSubmitFormPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+
+  if (!isMonsContractorTokenValid(params.token)) {
+    redirect("/login?error=invalid_contractor_token");
+  }
+
+  const item = getContractorSubmissionItemById(params.item ?? "");
+
+  if (!item) {
+    redirect(`/contractor/mons?token=${encodeURIComponent(params.token ?? "")}`);
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-950 px-4 py-5 text-white">
+      <div className="mx-auto max-w-2xl">
+        <Link
+          href={`/contractor/mons?token=${encodeURIComponent(params.token ?? "")}`}
+          className="text-sm font-bold text-cyan-300 hover:text-cyan-200"
+        >
+          ← 몬스 제출 목록으로
+        </Link>
+
+        <section className="mt-4 rounded-3xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">
+          <p className="text-xs font-bold text-cyan-300">MONS Submit Form</p>
+          <h1 className="mt-2 text-2xl font-black">{item.title}</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+
+          <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950 p-4">
+            <p className="text-xs font-bold text-slate-400">필요 증빙</p>
+            <ul className="mt-2 space-y-1 text-sm leading-5 text-slate-300">
+              {item.requiredEvidence.map((evidence) => (
+                <li key={evidence}>• {evidence}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {params.error ? (
+          <section className="mt-4 rounded-2xl border border-red-500/30 bg-red-950/30 p-4">
+            <p className="text-sm font-bold text-red-200">
+              필수 입력값이 부족합니다. 작업일, 작업명, 현장/구역, 제출자, 연락처, 제출 내용을 확인해 주세요.
+            </p>
+          </section>
+        ) : null}
+
+        <form
+          action="/api/contractor/mons/submit"
+          method="post"
+          className="mt-4 space-y-4 rounded-3xl border border-slate-700 bg-slate-900 p-5"
+        >
+          <input type="hidden" name="token" value={params.token ?? ""} />
+          <input type="hidden" name="itemId" value={item.id} />
+          <input type="hidden" name="tenantCode" value="bubblemon" />
+          <input type="hidden" name="principalCode" value={principal.code} />
+          <input type="hidden" name="contractorCode" value={contractor.code} />
+
+          <div>
+            <label className="text-sm font-bold text-slate-200" htmlFor="workDate">작업일</label>
+            <input id="workDate" name="workDate" type="date" required className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white" />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-slate-200" htmlFor="workName">작업명</label>
+            <input id="workName" name="workName" required placeholder="예: 입출고 작업 전 TBM, 적재장 정리, 조치사진 제출" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white" />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-slate-200" htmlFor="siteArea">현장/구역</label>
+            <input id="siteArea" name="siteArea" required placeholder="예: 창고 A구역, 상차장, 출고장, 작업차량 주변" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white" />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-bold text-slate-200" htmlFor="submitterName">제출자</label>
+              <input id="submitterName" name="submitterName" required placeholder="성명" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white" />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-slate-200" htmlFor="contact">연락처</label>
+              <input id="contact" name="contact" required placeholder="연락 가능한 번호" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-slate-200" htmlFor="submissionContent">제출 내용</label>
+            <textarea id="submissionContent" name="submissionContent" required rows={5} placeholder="오늘 실시한 TBM, 작업 전후 상태, 교육·서명·출석, 조치 전후 내용 등을 간단히 적어주세요." className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm leading-6 text-white" />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-slate-200" htmlFor="evidenceMemo">사진·파일 증빙 메모</label>
+            <textarea id="evidenceMemo" name="evidenceMemo" rows={4} placeholder="예: 작업 전 사진 2장, 작업 후 사진 1장, 서명지 촬영 완료, 사진 파일명 또는 공유 링크" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm leading-6 text-white" />
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              파일 직접 업로드는 다음 단계에서 연결합니다. 지금은 촬영 여부, 파일명, 공유 링크, 사진 설명을 남깁니다.
+            </p>
+          </div>
+
+          <section className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
+            <h2 className="text-sm font-black text-amber-200">제출 전 확인</h2>
+            <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-300">
+              <li>• TBM 활동 증빙과 조치 이행 증빙은 별도로 확인됩니다.</li>
+              <li>• 제출자료는 버블몬 원청 또는 SafeMetrica 관리자가 검토합니다.</li>
+              <li>• 제출 후 보완 요청이 있을 수 있습니다.</li>
+            </ul>
+          </section>
+
+          <button type="submit" className="w-full rounded-xl bg-cyan-500 px-4 py-4 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30">
+            원청 확인 요청하기
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
