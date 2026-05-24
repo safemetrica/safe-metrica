@@ -159,27 +159,15 @@ function buildContentWithConfirmation(params: {
 
   lines.push(params.content);
 
-  const confirmations: string[] = [];
-
-  if (params.riskCheck) {
-    confirmations.push("오늘 작업의 주요 위험요인을 확인했습니다.");
-  }
-
-  if (params.riskAssessmentCheck) {
-    confirmations.push("위험성평가 주요 내용을 공유받았습니다.");
-  }
-
-  if (params.safetyMeasureCheck) {
-    confirmations.push("필요한 안전조치와 주의사항을 확인했습니다.");
-  }
-
-  if (confirmations.length > 0) {
-    lines.push("");
-    lines.push("[위험성평가 공유 확인]");
-    confirmations.forEach((confirmation) => lines.push(`- ${confirmation}`));
-  }
+  lines.push("");
+  lines.push("[위험성평가 공유 확인]");
+  lines.push(`- 오늘 작업의 주요 위험요인 확인: ${params.riskCheck ? "확인" : "미확인"}`);
+  lines.push(`- 위험성평가 주요 내용 공유: ${params.riskAssessmentCheck ? "확인" : "미확인"}`);
+  lines.push(`- 필요한 안전조치와 주의사항 확인: ${params.safetyMeasureCheck ? "확인" : "미확인"}`);
 
   return lines.join("\n").slice(0, 1900);
+}
+
 }
 
 export async function POST(req: NextRequest) {
@@ -269,6 +257,18 @@ export async function POST(req: NextRequest) {
     내용: richText(finalContent),
     처리상태: { select: { name: "접수" } },
   };
+
+  if (hasNotionProperty(propertyNames, "위험요인 확인")) {
+    properties["위험요인 확인"] = { checkbox: riskCheck };
+  }
+
+  if (hasNotionProperty(propertyNames, "위험성평가 공유 확인")) {
+    properties["위험성평가 공유 확인"] = { checkbox: riskAssessmentCheck };
+  }
+
+  if (hasNotionProperty(propertyNames, "안전조치 확인")) {
+    properties["안전조치 확인"] = { checkbox: safetyMeasureCheck };
+  }
 
   if (hasNotionProperty(propertyNames, "제출자")) {
     properties["제출자"] = richText(submitter);
