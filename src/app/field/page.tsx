@@ -8,6 +8,7 @@ import TbmFormAction from "@/components/TbmFormAction";
 const PTW_REQUIRED_TAGS = ["고소작업", "밀폐공간", "화학/MSDS", "용접/용단", "전기"];
 import { getTbmFormUrl } from "@/lib/tenantLinks";
 import { needsTbmEvidenceBook } from "@/lib/tbmStatus";
+import { buildDailySafetyBriefing } from "@/lib/dailySafetyBriefing";
 
 async function getFieldData(): Promise<Record<string, any>> {
   const company = await getCompanyConfig();
@@ -132,6 +133,20 @@ async function getFieldData(): Promise<Record<string, any>> {
   if (오늘할일.length === 0)
     오늘할일.push({ priority: 'ok', icon: '✅', title: '이상 없음', desc: '오늘 현장 안전 상태 정상', href: '/field' });
 
+  const riskAny = risk as any;
+  const dailySafetyBriefing = buildDailySafetyBriefing({
+    companyName: company.name,
+    todayTbmCount: 오늘TBM.length,
+    ebMissingCount: EB누락.length,
+    actionNeededCount: 조치필요.length,
+    ptwPendingCount: PTW미승인.length,
+    ptwBlockedCount: PTW위험.length,
+    ptwRequiredMissingCount: PTW필요미제출 ? 1 : 0,
+    highRiskCount: riskAny.highRiskCount ?? 0,
+    riskActionNeededCount: riskAny.actionNeededCount ?? riskAny.tbmShareNeededCount ?? 0,
+    budgetNeededCount: riskAny.budgetNeededCount ?? 0,
+  });
+
   // 잘된 점 멘트
   const 칭찬멘트: string[] = [];
   if (이번주TBM.length >= 5) 칭찬멘트.push(`📅 이번 주 TBM ${이번주TBM.length}건 제출 — 꾸준한 안전 기록 수고하셨습니다!`);
@@ -172,6 +187,7 @@ async function getFieldData(): Promise<Record<string, any>> {
     checklist, PTW필요태그, PTW필요미제출, 칭찬멘트, safetyNews, 오늘할일, weatherAlert,
     riskTbmShareNeededCount: risk.tbmShareNeededCount,
     riskTbmShareNeededItems: risk.tbmShareNeededItems,
+    dailySafetyBriefing,
     전체미완료: checklist.filter((c: {done: boolean; text: string; href: string; urgent: boolean}) => !c.done).length,
   };
 }
@@ -229,6 +245,60 @@ export default async function FieldPage() {
 
         {/* AI 브리핑은 최상단 전체폭 */}
         <FieldAiBrief />
+
+        <section className="mb-4 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🧭</span>
+                <h2 className="text-sm font-black text-white">공통 안전브리핑 기준</h2>
+                <span className="rounded-full border border-cyan-400/40 px-2 py-0.5 text-[11px] font-black text-cyan-200">
+                  {d.dailySafetyBriefing.statusLabel}
+                </span>
+              </div>
+              <p className="mt-2 text-sm font-bold leading-6 text-cyan-100">
+                {d.dailySafetyBriefing.fieldHeadline}
+              </p>
+            </div>
+            <Link
+              href="/risk"
+              className="rounded-full border border-cyan-400/40 px-3 py-1 text-xs font-black text-cyan-200 transition active:scale-95"
+            >
+              위험성평가 확인
+            </Link>
+          </div>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+              <p className="text-xs font-bold text-slate-400">현장 공유</p>
+              <ul className="mt-2 space-y-1.5 text-xs leading-5 text-slate-200">
+                {d.dailySafetyBriefing.fieldMessages.slice(0, 3).map((message: string) => (
+                  <li key={message}>• {message}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+              <p className="text-xs font-bold text-slate-400">SIF·고위험</p>
+              <ul className="mt-2 space-y-1.5 text-xs leading-5 text-slate-200">
+                {d.dailySafetyBriefing.sifFocus.slice(0, 3).map((message: string) => (
+                  <li key={message}>• {message}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+              <p className="text-xs font-bold text-slate-400">PTW·증빙</p>
+              <ul className="mt-2 space-y-1.5 text-xs leading-5 text-slate-200">
+                {[...d.dailySafetyBriefing.ptwMessages, ...d.dailySafetyBriefing.evidenceMessages]
+                  .slice(0, 3)
+                  .map((message: string) => (
+                    <li key={message}>• {message}</li>
+                  ))}
+              </ul>
+            </div>
+          </div>
+        </section>
 
         {/* 오늘 TBM 운영 흐름 / 공유·후속 조치 */}
         <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">

@@ -479,6 +479,7 @@ async function getDashboardData() {
     PTW위험목록: PTW위험목록.slice(0, 3),
     PTW미승인목록: PTW미승인목록.slice(0, 3),
     todayTasks,
+    dailySafetyBriefing,
     증거점수,
     증거분석,
     risk,
@@ -730,9 +731,30 @@ export default async function DashboardPage() {
             <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-bold text-white">오늘 운영 브리핑</h2>
+                <span className="rounded-full border border-cyan-400/40 px-2 py-0.5 text-[11px] font-black text-cyan-200">
+                  {s.dailySafetyBriefing.statusLabel}
+                </span>
                 <span className="text-xs text-slate-500">TBM · 증빙 · PTW 기준</span>
               </div>
-              <AiDiagnosisCard />
+              <div className="mb-3 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4">
+                  <p className="text-xs font-black text-cyan-200">공통 안전브리핑 엔진</p>
+                  <p className="mt-2 text-sm font-bold leading-6 text-cyan-50">
+                    {s.dailySafetyBriefing.executiveHeadline}
+                  </p>
+                  <ul className="mt-3 space-y-1.5 text-xs leading-5 text-slate-200">
+                    {s.dailySafetyBriefing.executiveMessages.slice(0, 4).map((message: string) => (
+                      <li key={message}>• {message}</li>
+                    ))}
+                    {s.dailySafetyBriefing.partnerMessages
+                      .filter((message: string) => !message.includes("신호 없음"))
+                      .slice(0, 2)
+                      .map((message: string) => (
+                        <li key={message}>• {message}</li>
+                      ))}
+                  </ul>
+                </div>
+
+                <AiDiagnosisCard />
             </div>
 
             <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5 shadow-xl">
