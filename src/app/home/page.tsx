@@ -261,6 +261,28 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
             </Link>
           ))}
         </div>
+        {company.code === "bubblemon" ? (
+          <Link
+            href="/contractor-status"
+            className="mt-4 block rounded-xl border border-cyan-500/40 bg-cyan-950/30 p-4 shadow-lg transition-all duration-200 active:scale-95"
+          >
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🤝</span>
+                  <span className="text-white text-sm font-bold">하청 제출현황</span>
+                </div>
+                <p className="mt-2 text-gray-300 text-xs leading-relaxed">
+                  몬스 TBM·작업 전후 사진·교육증빙·위험성평가 공유 확인·조치사진 제출상태를 확인합니다.
+                </p>
+              </div>
+              <span className="rounded-full bg-cyan-500 px-3 py-1 text-xs font-black text-gray-950">
+                원청 확인
+              </span>
+            </div>
+          </Link>
+        ) : null}
+
         <div className="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-yellow-400">⚠️</span>
