@@ -1,3 +1,5 @@
+import FieldParticipationFileInput from "./FieldParticipationFileInput";
+
 const feedbackTypes = ["위험 제보", "아차사고", "개선 제안", "기타"];
 
 type PageProps = {
@@ -63,6 +65,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
         <form
           action="/api/field/participation/submit"
           method="post"
+          encType="multipart/form-data"
           className="mt-4 space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
         >
           <input type="hidden" name="companyCode" value={companyCode} />
@@ -156,11 +159,13 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
             </label>
           </div>
 
+          <FieldParticipationFileInput />
+
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <h2 className="text-sm font-black text-amber-800">안내</h2>
             <p className="mt-2 text-sm leading-6 text-amber-900">
               제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다.
-              사진 첨부는 다음 단계에서 적용됩니다.
+              첨부 사진은 세메앱이 용량을 줄여 저장합니다.
             </p>
           </section>
 
