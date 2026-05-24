@@ -37,6 +37,31 @@ function formatNotionUuid(rawId: string) {
   return rawId.trim();
 }
 
+async function resolveDataSourceId(notionApiKey: string, rawId: string) {
+  const formattedId = formatNotionUuid(rawId);
+
+  const databaseResponse = await fetch(`https://api.notion.com/v1/databases/${formattedId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${notionApiKey}`,
+      "Notion-Version": "2025-09-03",
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (databaseResponse.ok) {
+    const database = await databaseResponse.json();
+    const dataSourceId = database?.data_sources?.[0]?.id;
+
+    if (dataSourceId) {
+      return dataSourceId;
+    }
+  }
+
+  return formattedId;
+}
+
 function getTodayDateValue() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -171,7 +196,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const dataSourceId = formatNotionUuid(company.fieldVoiceDbId);
+  const dataSourceId = await resolveDataSourceId(company.notionApiKey, company.fieldVoiceDbId);
   const finalContent = buildContentWithConfirmation({
     content,
     riskCheck,
