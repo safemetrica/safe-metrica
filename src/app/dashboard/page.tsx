@@ -6,6 +6,7 @@ import AiDiagnosisCard from "@/components/AiDiagnosisCard";
 import TodayTasksCard from "@/components/TodayTasksCard";
 import EvidenceScoreCard from "@/components/EvidenceScoreCard";
 import { getCompanyConfig } from "@/lib/company";
+import { fetchContractorSubmissionRecords, getContractorSubmissionRecordSummary } from "@/lib/contractorSubmissionRecords";
 import { hasTbmSpecialIssue, needsTbmEvidenceBook, hasLinkedEvidenceBook } from "@/lib/tbmStatus";
 
 const DASHBOARD_SAFE_DATA_CONNECTION_MESSAGE =
@@ -285,7 +286,7 @@ async function getDashboardData() {
     "Content-Type": "application/json",
   };
 
-  const [tbmData, ebData, ptwData, risk] = await Promise.all([
+  const [tbmData, ebData, ptwData, risk, contractorSubmissionStore] = await Promise.all([
     queryNotionDatabase(company.tbmDbId, headers, {
       page_size: 100,
       sorts: [{ property: "날짜", direction: "descending" }],
@@ -297,7 +298,12 @@ async function getDashboardData() {
       page_size: 100,
     }),
     getRiskSummary(company.riskAssessmentDbId, headers),
+    company.code === "bubblemon"
+      ? fetchContractorSubmissionRecords()
+      : Promise.resolve({ configured: false, records: [], errorMessage: "" }),
   ]);
+
+  const contractorSubmissionSummary = getContractorSubmissionRecordSummary(contractorSubmissionStore.records);
 
   const today = getKstDateKey();
   const thisMonth = today.slice(0, 7);
@@ -365,6 +371,22 @@ async function getDashboardData() {
 
   if (PTW필요미제출.length > 0) {
     todayTasks.push({ icon: "🚨", text: `고위험 작업 PTW 확인 필요 ${PTW필요미제출.length}건`, href: "/ptw", urgent: true });
+  }
+
+  if (contractorSubmissionSummary.followUpCount > 0) {
+    todayTasks.push({
+      icon: "🤝",
+      text: `협력사 보완요청 ${contractorSubmissionSummary.followUpCount}건 — 확인 필요`,
+      href: "/contractor-status",
+      urgent: true,
+    });
+  } else if (contractorSubmissionSummary.principalPendingCount > 0) {
+    todayTasks.push({
+      icon: "🤝",
+      text: `협력사 미검토 제출자료 ${contractorSubmissionSummary.principalPendingCount}건 — 원청 검토 필요`,
+      href: "/contractor-status",
+      urgent: false,
+    });
   }
 
   const tbm전체 = rows.length;

@@ -4,6 +4,7 @@ import { getCompanyConfig } from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
 
 import { getTbmFormUrl } from "@/lib/tenantLinks";
+import PartnerCompanyStatusCard from "@/components/PartnerCompanyStatusCard";
 const menus = [
   { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
   { href: "/ebm", icon: "📚", label: "Evidence Book", sub: "증빙 현황 조회", color: "from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600", border: "border-emerald-500" },
@@ -261,27 +262,7 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
             </Link>
           ))}
         </div>
-        {company.code === "bubblemon" ? (
-          <Link
-            href="/contractor-status"
-            className="mt-4 block rounded-xl border border-cyan-500/40 bg-cyan-950/30 p-4 shadow-lg transition-all duration-200 active:scale-95"
-          >
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">🤝</span>
-                  <span className="text-white text-sm font-bold">협력사 제출현황</span>
-                </div>
-                <p className="mt-2 text-gray-300 text-xs leading-relaxed">
-                  몬스 TBM·사진·교육증빙·조치사진 제출상태를 확인합니다.
-                </p>
-              </div>
-              <span className="rounded-full bg-cyan-500 px-3 py-1 text-xs font-black text-gray-950">
-                원청 확인
-              </span>
-            </div>
-          </Link>
-        ) : null}
+        <PartnerCompanyStatusCard className="mt-4" />
 
         <div className="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
