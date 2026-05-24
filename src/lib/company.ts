@@ -61,6 +61,14 @@ function assertSafeCompanyCode(code: string): string {
   return normalized;
 }
 
+function getCompanyRowQueryCodes(code: string) {
+  if (code === "greenkorea") {
+    return ["greenkorea", "korea-green", "korea_green", "koreagreen"];
+  }
+
+  return [code];
+}
+
 function getFieldVoiceDbIdFallback(code: string) {
   if (code === "daedo") return process.env.DAEDO_FIELD_VOICE_DB_ID;
   if (code === "dongwoo") return process.env.DONGWOO_FIELD_VOICE_DB_ID;
@@ -160,42 +168,52 @@ async function queryCompanyRow(code: string) {
     throw new Error("Missing env: NOTION_COMPANIES_DB_ID");
   }
 
-  const res = await fetch(`https://api.notion.com/v1/databases/${companiesDbId}/query`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${notionApiKey}`,
-      "Notion-Version": "2022-06-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      filter: {
-        and: [
-          {
-            property: "companyCode",
-            rich_text: {
-              equals: code,
-            },
-          },
-          {
-            property: "active",
-            checkbox: {
-              equals: true,
-            },
-          },
-        ],
-      },
-      page_size: 1,
-    }),
-    cache: "no-store",
-  });
+  const queryCodes = getCompanyRowQueryCodes(code);
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Companies DB query failed: ${res.status} ${text}`);
+  for (const queryCode of queryCodes) {
+    const res = await fetch(`https://api.notion.com/v1/databases/${companiesDbId}/query`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${notionApiKey}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        filter: {
+          and: [
+            {
+              property: "companyCode",
+              rich_text: {
+                equals: queryCode,
+              },
+            },
+            {
+              property: "active",
+              checkbox: {
+                equals: true,
+              },
+            },
+          ],
+        },
+        page_size: 1,
+      }),
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Companies DB query failed: ${res.status} ${text}`);
+    }
+
+    const data = await res.json();
+    const row = data?.results?.[0] ?? null;
+
+    if (row) {
+      return row;
+    }
   }
 
-  const data = await res.json();
-  return data?.results?.[0] ?? null;
+  return null;
 }
 
 export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
