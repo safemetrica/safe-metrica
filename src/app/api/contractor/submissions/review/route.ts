@@ -65,5 +65,9 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  return redirectTo(req, "/contractor-status", { review: "updated" });
+  return redirectTo(req, "/contractor-status", {
+    review: "updated",
+    result: reviewStatus,
+    t: String(Date.now()),
+  });
 }

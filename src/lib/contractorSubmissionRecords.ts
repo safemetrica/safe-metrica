@@ -173,3 +173,22 @@ export function getContractorSubmissionRecordSummary(records: ContractorSubmissi
     followUpCount,
   };
 }
+
+export function extractEvidenceUrls(evidenceMemo: string) {
+  const urlPattern = /https?:\/\/[^\s]+/g;
+  const urls = evidenceMemo.match(urlPattern) ?? [];
+
+  return urls.map((url) => ({
+    url,
+    fileName: decodeURIComponent(url.split("/").pop() ?? "첨부파일").split("?")[0],
+  }));
+}
+
+export function getEvidenceMemoWithoutUrls(evidenceMemo: string) {
+  return evidenceMemo
+    .split("\n")
+    .filter((line) => !line.includes("http://") && !line.includes("https://"))
+    .join("\n")
+    .trim();
+}
+
