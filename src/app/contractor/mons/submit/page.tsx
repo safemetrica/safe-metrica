@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import MonsEvidenceFileInput from "./MonsEvidenceFileInput";
+import MonsSubmitButton from "./MonsSubmitButton";
+
 import {
   SAMPLE_CONTRACTOR_COMPANY_MONS,
   SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON,
@@ -73,7 +76,9 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
         {params.error ? (
           <section className="mt-4 rounded-2xl border border-red-500/30 bg-red-950/30 p-4">
             <p className="text-sm font-bold text-red-200">
-              필수 입력값이 부족합니다. 작업명, 현장/구역, 제출 내용, 사진·파일 증빙을 확인해 주세요.
+              {params.error === "file_too_large"
+                ? "첨부파일 용량이 큽니다. 사진을 다시 선택하거나 5장 이하로 줄여 제출해 주세요."
+                : "필수 입력값이 부족합니다. 작업명, 현장/구역, 제출 내용을 확인해 주세요."}
             </p>
           </section>
         ) : null}
@@ -178,44 +183,7 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
             />
           </div>
 
-          <div className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4">
-            <p className="text-sm font-black text-cyan-200">사진 촬영·파일 첨부</p>
-
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="text-xs font-bold text-slate-300" htmlFor="cameraEvidenceFiles">
-                  카메라로 바로 촬영
-                </label>
-                <input
-                  id="cameraEvidenceFiles"
-                  name="evidenceFiles"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  className="mt-2 block w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-4 text-sm text-slate-200 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-black file:text-slate-950"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-300" htmlFor="galleryEvidenceFiles">
-                  갤러리·파일에서 선택
-                </label>
-                <input
-                  id="galleryEvidenceFiles"
-                  name="evidenceFiles"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  multiple
-                  className="mt-2 block w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-4 text-sm text-slate-200 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-black file:text-slate-950"
-                />
-              </div>
-            </div>
-
-            <p className="mt-2 text-xs leading-5 text-slate-400">
-              현장에서 바로 촬영하거나, 이미 촬영한 사진을 갤러리에서 선택할 수 있습니다. 작업 전·후 사진, 서명지, 조치사진을 첨부하세요.
-            </p>
-          </div>
+          <MonsEvidenceFileInput />
 
           <div>
             <label className="text-sm font-bold text-slate-200" htmlFor="evidenceMemo">
@@ -239,12 +207,7 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
             </ul>
           </section>
 
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-cyan-500 px-4 py-4 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30"
-          >
-            원청 확인 요청하기
-          </button>
+          <MonsSubmitButton />
         </form>
       </div>
     </main>
