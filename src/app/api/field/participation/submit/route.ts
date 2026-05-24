@@ -37,8 +37,31 @@ function formatNotionUuid(rawId: string) {
   return rawId.trim();
 }
 
-async function resolveDataSourceId(notionApiKey: string, rawId: string) {
+async function fetchDataSourcePropertyNames(notionApiKey: string, dataSourceId: string) {
+  const response = await fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${notionApiKey}`,
+      "Notion-Version": "2025-09-03",
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const dataSource = await response.json();
+  const propertyNames = Object.keys(dataSource?.properties ?? {});
+
+  return new Set(propertyNames);
+}
+
+async function resolveDataSourceMeta(notionApiKey: string, rawId: string) {
   const formattedId = formatNotionUuid(rawId);
+  let dataSourceId = formattedId;
+  let propertyNames: Set<string> | null = null;
 
   const databaseResponse = await fetch(`https://api.notion.com/v1/databases/${formattedId}`, {
     method: "GET",
@@ -52,14 +75,30 @@ async function resolveDataSourceId(notionApiKey: string, rawId: string) {
 
   if (databaseResponse.ok) {
     const database = await databaseResponse.json();
-    const dataSourceId = database?.data_sources?.[0]?.id;
+    const databasePropertyNames = Object.keys(database?.properties ?? {});
 
-    if (dataSourceId) {
-      return dataSourceId;
+    if (databasePropertyNames.length > 0) {
+      propertyNames = new Set(databasePropertyNames);
+    }
+
+    const resolvedDataSourceId = database?.data_sources?.[0]?.id;
+
+    if (resolvedDataSourceId) {
+      dataSourceId = resolvedDataSourceId;
     }
   }
 
-  return formattedId;
+  const dataSourcePropertyNames = await fetchDataSourcePropertyNames(notionApiKey, dataSourceId);
+
+  if (dataSourcePropertyNames) {
+    propertyNames = dataSourcePropertyNames;
+  }
+
+  return { dataSourceId, propertyNames };
+}
+
+function hasNotionProperty(propertyNames: Set<string> | null, propertyName: string) {
+  return !propertyNames || propertyNames.has(propertyName);
 }
 
 function getTodayDateValue() {
@@ -196,13 +235,48 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const dataSourceId = await resolveDataSourceId(company.notionApiKey, company.fieldVoiceDbId);
-  const finalContent = buildContentWithConfirmation({
+  const { dataSourceId, propertyNames } = await resolveDataSourceMeta(
+    company.notionApiKey,
+    company.fieldVoiceDbId
+  );
+
+  let finalContent = buildContentWithConfirmation({
     content,
     riskCheck,
     riskAssessmentCheck,
     safetyMeasureCheck,
   });
+
+  const inlineMetaLines: string[] = [];
+
+  if (!hasNotionProperty(propertyNames, "제출자")) {
+    inlineMetaLines.push(`제출자: ${submitter}`);
+  }
+
+  if (!hasNotionProperty(propertyNames, "익명")) {
+    inlineMetaLines.push(`익명 제출: ${anonymous ? "예" : "아니오"}`);
+  }
+
+  if (inlineMetaLines.length > 0) {
+    finalContent = `${finalContent}\n\n[제출 정보]\n${inlineMetaLines.join("\n")}`.slice(0, 1900);
+  }
+
+  const properties: Record<string, unknown> = {
+    "의견 제목": titleText(title),
+    "의견 유형": { select: { name: type } },
+    등록일: { date: { start: reportedDate } },
+    "위치/구역": richText(location),
+    내용: richText(finalContent),
+    처리상태: { select: { name: "접수" } },
+  };
+
+  if (hasNotionProperty(propertyNames, "제출자")) {
+    properties["제출자"] = richText(submitter);
+  }
+
+  if (hasNotionProperty(propertyNames, "익명")) {
+    properties["익명"] = { checkbox: anonymous };
+  }
 
   const response = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",
@@ -216,16 +290,7 @@ export async function POST(req: NextRequest) {
         type: "data_source_id",
         data_source_id: dataSourceId,
       },
-      properties: {
-        "의견 제목": titleText(title),
-        "의견 유형": { select: { name: type } },
-        등록일: { date: { start: reportedDate } },
-        "위치/구역": richText(location),
-        제출자: richText(submitter),
-        익명: { checkbox: anonymous },
-        내용: richText(finalContent),
-        처리상태: { select: { name: "접수" } },
-      },
+      properties,
     }),
     cache: "no-store",
   });
