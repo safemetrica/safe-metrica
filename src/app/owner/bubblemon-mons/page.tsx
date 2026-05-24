@@ -50,7 +50,7 @@ export default async function BubblemonMonsOwnerPage() {
           <p className="text-sm font-bold text-blue-300">Principal · Contractor</p>
           <h1 className="mt-2 text-3xl font-black">버블몬 × 몬스 물류업 안전운영 계약 준비</h1>
           <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-300">
-            버블몬코리아를 원청 고객사로, 몬스를 하청·협력업체로 두고 TBM, 점검·교육,
+            버블몬코리아를 원청 고객사로, 몬스를 협력사로 두고 TBM, 점검·교육,
             위험성평가 공유기록, 교육·이수증빙, 조치 증빙, 월간보고서 운영 범위를 확인합니다.
           </p>
         </section>
@@ -65,9 +65,9 @@ export default async function BubblemonMonsOwnerPage() {
               </p>
             </article>
             <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
-              <p className="text-sm font-black text-white">물류업 원청·하청</p>
+              <p className="text-sm font-black text-white">물류업 원청·협력사</p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                버블몬은 원청, 몬스는 하청·협력업체로 두고 물류업 안전운영 기록을 관리합니다.
+                버블몬은 원청, 몬스는 협력사로 두고 물류업 안전운영 기록을 관리합니다.
               </p>
             </article>
             <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
@@ -141,7 +141,7 @@ export default async function BubblemonMonsOwnerPage() {
         <section className="mt-6 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-bold text-cyan-200">MONS Contractor Submission</p>
+              <p className="text-sm font-bold text-cyan-200">MONS Partner Submission</p>
               <h2 className="mt-1 text-xl font-black text-white">몬스 제한 제출 현황</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
                 몬스에는 전체 운영 링크를 제공하지 않고, TBM·작업 전후 사진·교육증빙·위험성평가 공유확인·조치 전후 사진만
@@ -220,7 +220,7 @@ export default async function BubblemonMonsOwnerPage() {
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-400">
-            기준: 하청 제출상태와 원청 검토상태는 분리합니다. TBM 활동 증빙이 있어도 작업·조치 이행 증빙이 충분하다고 자동 확정하지 않습니다.
+            기준: 협력사 제출상태와 원청 검토상태는 분리합니다. TBM 활동 증빙이 있어도 작업·조치 이행 증빙이 충분하다고 자동 확정하지 않습니다.
           </p>
         </section>
 
@@ -282,7 +282,7 @@ export default async function BubblemonMonsOwnerPage() {
         <section className="mt-6 rounded-2xl border border-blue-500/30 bg-blue-950/20 p-5">
           <h2 className="text-lg font-black text-blue-200">계약 전 확인 문구</h2>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            SafeMetrica는 법정교육기관을 대체하지 않으며, 원청과 협력업체의 안전운영 기록,
+            SafeMetrica는 법정교육기관을 대체하지 않으며, 원청과 협력사의 안전운영 기록,
             위험성평가 공유기록, 교육·이수증빙, TBM, 조치 증빙, 월간보고서 관리를 체계화하도록 지원합니다.
           </p>
         </section>

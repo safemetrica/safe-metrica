@@ -54,8 +54,8 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
         </Link>
 
         <section className="mt-4 rounded-3xl border border-cyan-500/30 bg-gray-900 p-5 shadow-2xl">
-          <p className="text-xs font-bold text-cyan-300">Principal · Contractor Status</p>
-          <h1 className="mt-2 text-2xl font-black">하청 제출현황</h1>
+          <p className="text-xs font-bold text-cyan-300">Principal · Partner Status</p>
+          <h1 className="mt-2 text-2xl font-black">협력사 제출현황</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-300">
             {principal.name} 원청 운영 화면에서 {contractor.name}의 TBM·사진·교육증빙·조치사진 제출상태를 확인합니다.
           </p>
@@ -227,7 +227,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
             <div>
               <h2 className="text-lg font-black">몬스 제출 항목</h2>
               <p className="mt-1 text-sm leading-6 text-gray-400">
-                하청 제출상태와 원청 검토상태는 분리해서 봅니다.
+                협력사 제출상태와 원청 검토상태는 분리해서 봅니다.
               </p>
             </div>
             <span className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-bold text-cyan-200">
@@ -273,7 +273,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
         <section className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
           <h2 className="text-base font-black text-amber-200">운영 기준</h2>
           <p className="mt-2 text-sm leading-6 text-gray-300">
-            몬스는 별도 고객사 테넌트가 아니라 {principal.name} 테넌트 안에서 관리되는 하청·협력업체입니다.
+            몬스는 별도 고객사 테넌트가 아니라 {principal.name} 테넌트 안에서 관리되는 협력사입니다.
             몬스에는 전체 운영 홈이 아니라 제한 제출 앱만 제공합니다.
           </p>
           <p className="mt-2 text-xs leading-5 text-gray-500">

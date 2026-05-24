@@ -1,7 +1,7 @@
 export type CompanyContractRole =
   | "원청"
-  | "하청"
-  | "협력업체";
+  | "협력사"
+  | "협력사";
 
 export type ContractorRelationStatus =
   | "계약예정"
@@ -26,7 +26,7 @@ export type PrincipalCompany = {
 export type ContractorCompany = {
   code: string;
   name: string;
-  role: "하청" | "협력업체";
+  role: "협력사" | "협력사";
   description: string;
 };
 
@@ -114,8 +114,8 @@ export const SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON: PrincipalCompany = {
 export const SAMPLE_CONTRACTOR_COMPANY_MONS: ContractorCompany = {
   code: "mons",
   name: "몬스",
-  role: "하청",
-  description: "물류업 원청 고객사와 연결된 하청·협력업체로, TBM, 점검·교육, 위험성평가 공유기록, 증빙자료를 관리해야 하는 작업 수행 주체",
+  role: "협력사",
+  description: "물류업 원청 고객사와 연결된 협력사로, TBM, 점검·교육, 위험성평가 공유기록, 증빙자료를 관리해야 하는 작업 수행 주체",
 };
 
 export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
@@ -131,7 +131,7 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   contractExpectedDate: "2026-05-26",
 
   workScope: [
-    "물류업 원청·하청 작업관리",
+    "물류업 원청·협력사 작업관리",
     "작업 전 TBM 운영",
     "점검·교육 기록관리",
     "위험성평가 결과 공유기록 관리",
@@ -156,8 +156,8 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   actionEvidenceStatus: "대기",
   monthlyReportStatus: "대기",
 
-  nextAction: "화요일 계약 전 일반 고객사 계약 범위, 원청·하청 운영 범위, 고객사 테넌트 세팅 기준 확정",
-  note: "SafeMetrica는 EduLink와 별도로, 일반 고객사 계약 구조에서 원청과 협력업체의 안전운영 기록과 증빙관리 체계화를 지원한다.",
+  nextAction: "화요일 계약 전 일반 고객사 계약 범위, 원청·협력사 운영 범위, 고객사 테넌트 세팅 기준 확정",
+  note: "SafeMetrica는 EduLink와 별도로, 일반 고객사 계약 구조에서 원청과 협력사의 안전운영 기록과 증빙관리 체계화를 지원한다.",
 };
 
 
@@ -275,7 +275,7 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
     monthlyReportIncluded: true,
     restrictedLinkOnly: true,
 
-    nextAction: "위험성평가 공유 확인 항목을 월간보고서 원청·하청 섹션에 반영",
+    nextAction: "위험성평가 공유 확인 항목을 월간보고서 원청·협력사 섹션에 반영",
   },
   {
     id: "mons-submission-action-photo-001",
