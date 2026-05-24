@@ -113,7 +113,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
     <main className="min-h-screen bg-slate-950 px-4 py-5 text-white">
       <div className="mx-auto max-w-3xl">
         <section className="rounded-3xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">
-          <p className="text-xs font-bold text-cyan-300">SafeMetrica Partner Submit</p>
+          <p className="text-xs font-bold text-cyan-300">SafeMetrica 협력사 제출</p>
           <h1 className="mt-2 text-2xl font-black">㈜몬스 작업 제출</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
             {contractor.name}는 {principal.name} 현장의 협력사로서 작업 전 TBM, 작업 전후 사진,
@@ -145,7 +145,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
         <section className="rounded-3xl border border-cyan-500/40 bg-cyan-950/20 p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-black text-cyan-300">Principal Shared Briefing</p>
+              <p className="text-xs font-black text-cyan-300">㈜버블몬코리아 원청 공유</p>
               <h2 className="mt-1 text-2xl font-black text-white">오늘 원청 공유사항</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 ㈜버블몬코리아 현장에서 오늘 작업 전 확인해야 할 핵심 안전사항입니다.

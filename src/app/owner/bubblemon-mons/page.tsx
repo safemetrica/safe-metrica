@@ -141,7 +141,7 @@ export default async function BubblemonMonsOwnerPage() {
         <section className="mt-6 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-bold text-cyan-200">MONS Partner Submission</p>
+              <p className="text-sm font-bold text-cyan-200">㈜몬스 협력사 제출</p>
               <h2 className="mt-1 text-xl font-black text-white">몬스 제한 제출 현황</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
                 몬스에는 전체 운영 링크를 제공하지 않고, TBM·작업 전후 사진·교육증빙·위험성평가 공유확인·조치 전후 사진만
