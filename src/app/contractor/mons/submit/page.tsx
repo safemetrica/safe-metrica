@@ -49,7 +49,7 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
   }
 
   const isSafetyMeetingForm = item.itemType === "TBM";
-  const formTitle = isSafetyMeetingForm ? "안전회의 기록 제출" : item.title.replace("㈜몬스 ", "");
+  const formTitle = isSafetyMeetingForm ? "오늘 안전회의 기록" : item.title.replace("㈜몬스 ", "");
   const formDescription = isSafetyMeetingForm
     ? "작업 전 안전회의, 위험요인 공유, 보호구 확인, 참석 사진 또는 서명을 기록합니다."
     : item.description;
