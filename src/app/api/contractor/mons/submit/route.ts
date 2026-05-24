@@ -23,6 +23,26 @@ function getFormText(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function normalizeNotionId(rawId: string) {
+  return rawId.trim().replace(/^collection:\/\//, "").replace(/-/g, "");
+}
+
+function formatNotionUuid(rawId: string) {
+  const normalized = normalizeNotionId(rawId);
+
+  if (/^[0-9a-fA-F]{32}$/.test(normalized)) {
+    return [
+      normalized.slice(0, 8),
+      normalized.slice(8, 12),
+      normalized.slice(12, 16),
+      normalized.slice(16, 20),
+      normalized.slice(20),
+    ].join("-");
+  }
+
+  return rawId.trim();
+}
+
 function isFile(value: FormDataEntryValue): value is File {
   return value instanceof File && value.size > 0;
 }
@@ -163,11 +183,12 @@ export async function POST(req: NextRequest) {
   });
 
   const notionApiKey = process.env.NOTION_API_KEY;
-  const databaseId = process.env.NOTION_CONTRACTOR_SUBMISSIONS_DB_ID;
+  const rawDatabaseId = process.env.NOTION_CONTRACTOR_SUBMISSIONS_DB_ID;
+  const dataSourceId = rawDatabaseId ? formatNotionUuid(rawDatabaseId) : "";
 
   let storageStatus: "saved" | "received" = "received";
 
-  if (notionApiKey && databaseId) {
+  if (notionApiKey && dataSourceId) {
     const principal = SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON;
     const contractor = SAMPLE_CONTRACTOR_COMPANY_MONS;
 
@@ -175,11 +196,14 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${notionApiKey}`,
-        "Notion-Version": "2022-06-28",
+        "Notion-Version": "2025-09-03",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        parent: { database_id: databaseId },
+        parent: {
+          type: "data_source_id",
+          data_source_id: dataSourceId,
+        },
         properties: {
           제출명: titleText(`${contractor.name} ${item.itemType} - ${workName}`),
           tenantCode: richText("bubblemon"),

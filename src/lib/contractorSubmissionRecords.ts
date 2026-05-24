@@ -56,6 +56,26 @@ function getPhone(prop: NotionProperty | undefined) {
   return prop?.phone_number ?? "";
 }
 
+function normalizeNotionId(rawId: string) {
+  return rawId.trim().replace(/^collection:\/\//, "").replace(/-/g, "");
+}
+
+function formatNotionUuid(rawId: string) {
+  const normalized = normalizeNotionId(rawId);
+
+  if (/^[0-9a-fA-F]{32}$/.test(normalized)) {
+    return [
+      normalized.slice(0, 8),
+      normalized.slice(8, 12),
+      normalized.slice(12, 16),
+      normalized.slice(16, 20),
+      normalized.slice(20),
+    ].join("-");
+  }
+
+  return rawId.trim();
+}
+
 function mapSubmissionPage(page: NotionPage): ContractorSubmissionRecord {
   const props = page.properties ?? {};
 
@@ -83,9 +103,10 @@ function mapSubmissionPage(page: NotionPage): ContractorSubmissionRecord {
 
 export async function fetchContractorSubmissionRecords() {
   const notionApiKey = process.env.NOTION_API_KEY;
-  const databaseId = process.env.NOTION_CONTRACTOR_SUBMISSIONS_DB_ID;
+  const rawDatabaseId = process.env.NOTION_CONTRACTOR_SUBMISSIONS_DB_ID;
+  const dataSourceId = rawDatabaseId ? formatNotionUuid(rawDatabaseId) : "";
 
-  if (!notionApiKey || !databaseId) {
+  if (!notionApiKey || !dataSourceId) {
     return {
       configured: false,
       records: [] as ContractorSubmissionRecord[],
@@ -93,11 +114,11 @@ export async function fetchContractorSubmissionRecords() {
     };
   }
 
-  const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+  const response = await fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${notionApiKey}`,
-      "Notion-Version": "2022-06-28",
+      "Notion-Version": "2025-09-03",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
