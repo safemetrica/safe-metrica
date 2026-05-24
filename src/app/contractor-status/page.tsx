@@ -10,8 +10,10 @@ import {
   getContractorSubmissionSummary,
 } from "@/lib/contractorRelation";
 import {
+  extractEvidenceUrls,
   fetchContractorSubmissionRecords,
   getContractorSubmissionRecordSummary,
+  getEvidenceMemoWithoutUrls,
 } from "@/lib/contractorSubmissionRecords";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +24,16 @@ const relation = SAMPLE_BUBBLEMON_MONS_RELATION;
 const submissionItems = SAMPLE_MONS_CONTRACTOR_SUBMISSIONS;
 const summary = getContractorSubmissionSummary(submissionItems);
 
-export default async function ContractorStatusPage() {
+type PageProps = {
+  searchParams: Promise<{
+    review?: string;
+    status?: string;
+    detail?: string;
+  }>;
+};
+
+export default async function ContractorStatusPage({ searchParams }: PageProps) {
+  const params = await searchParams;
   const company = await getCompanyConfig().catch(() => null);
   const submissionStore = await fetchContractorSubmissionRecords();
   const recordSummary = getContractorSubmissionRecordSummary(submissionStore.records);
@@ -73,6 +84,29 @@ export default async function ContractorStatusPage() {
           </article>
         </section>
 
+        {params.review === "updated" ? (
+          <section className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4">
+            <p className="text-sm font-black text-emerald-200">
+              원청 검토 상태가 반영되었습니다.
+            </p>
+          </section>
+        ) : params.review === "notion_error" ? (
+          <section className="mt-4 rounded-2xl border border-red-500/30 bg-red-950/30 p-4">
+            <p className="text-sm font-black text-red-200">
+              원청 검토 상태 반영 중 오류가 발생했습니다.
+            </p>
+            <p className="mt-2 text-xs leading-5 text-gray-400">
+              {params.status ?? ""} {params.detail ?? ""}
+            </p>
+          </section>
+        ) : params.review === "invalid" ? (
+          <section className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
+            <p className="text-sm font-black text-amber-200">
+              검토 요청값을 확인해 주세요.
+            </p>
+          </section>
+        ) : null}
+
         <section className="mt-4 rounded-2xl border border-cyan-500/30 bg-cyan-950/10 p-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
@@ -116,9 +150,29 @@ export default async function ContractorStatusPage() {
                       </p>
                       <p className="mt-3 text-sm leading-6 text-gray-300">{record.submissionContent}</p>
                       {record.evidenceMemo ? (
-                        <p className="mt-2 rounded-xl border border-gray-800 bg-gray-900 p-3 text-xs leading-5 text-gray-300">
-                          증빙 메모: {record.evidenceMemo}
-                        </p>
+                        <div className="mt-2 rounded-xl border border-gray-800 bg-gray-900 p-3 text-xs leading-5 text-gray-300">
+                          {getEvidenceMemoWithoutUrls(record.evidenceMemo) ? (
+                            <p>증빙 메모: {getEvidenceMemoWithoutUrls(record.evidenceMemo)}</p>
+                          ) : (
+                            <p className="text-gray-500">증빙 메모 없음</p>
+                          )}
+
+                          {extractEvidenceUrls(record.evidenceMemo).length > 0 ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {extractEvidenceUrls(record.evidenceMemo).map((file, index) => (
+                                <a
+                                  key={`${file.url}-${index}`}
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="rounded-lg bg-cyan-500 px-3 py-2 text-xs font-black text-gray-950 transition active:scale-95"
+                                >
+                                  첨부파일 {index + 1} 보기
+                                </a>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
                       ) : null}
                       <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
                         <span className="rounded-full border border-emerald-400/30 px-2 py-1 text-emerald-200">
@@ -139,7 +193,7 @@ export default async function ContractorStatusPage() {
                         <input type="hidden" name="reviewStatus" value="확인" />
                         <button
                           type="submit"
-                          className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-gray-950"
+                          className="w-full rounded-xl bg-emerald-500 px-4 py-4 text-base font-black text-gray-950 shadow-lg shadow-emerald-950/30 transition active:scale-95"
                         >
                           원청 확인
                         </button>
@@ -150,7 +204,7 @@ export default async function ContractorStatusPage() {
                         <input type="hidden" name="reviewStatus" value="보완요청" />
                         <button
                           type="submit"
-                          className="w-full rounded-xl border border-rose-400/40 px-4 py-3 text-sm font-black text-rose-200"
+                          className="w-full rounded-xl border border-rose-400/50 px-4 py-4 text-base font-black text-rose-200 shadow-lg shadow-rose-950/20 transition active:scale-95"
                         >
                           보완요청
                         </button>
