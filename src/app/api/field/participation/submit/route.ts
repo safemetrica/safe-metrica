@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 
 import {
   TenantRequiredError,
@@ -9,12 +10,90 @@ import {
 
 const FIELD_VOICE_TYPES = new Set(["위험 제보", "아차사고", "개선 제안", "기타"]);
 
+type UploadedFieldVoiceFile = {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+};
+
+const MAX_EVIDENCE_FILES = 5;
+const MAX_SERVER_FILE_SIZE_BYTES = 4 * 1024 * 1024;
+
+
 function getFormText(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
 function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
+}
+
+function isFile(value: FormDataEntryValue): value is File {
+  return value instanceof File && value.size > 0;
+}
+
+function sanitizeFileName(fileName: string) {
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
+  return safeName || "field-voice-file";
+}
+
+async function uploadEvidenceFiles(files: File[], companyCode: string, reportedDate: string) {
+  const uploadedFiles: UploadedFieldVoiceFile[] = [];
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN || files.length === 0) {
+    return uploadedFiles;
+  }
+
+  for (const file of files.slice(0, MAX_EVIDENCE_FILES)) {
+    const fileName = sanitizeFileName(file.name);
+    const blob = await put(
+      `field-voice/${companyCode}/${reportedDate}/${Date.now()}-${fileName}`,
+      file,
+      {
+        access: "public",
+        addRandomSuffix: true,
+      }
+    );
+
+    uploadedFiles.push({
+      name: file.name,
+      url: blob.url,
+      size: file.size,
+      type: file.type,
+    });
+  }
+
+  return uploadedFiles;
+}
+
+function buildFileMemoLines(params: {
+  files: File[];
+  uploadedFiles: UploadedFieldVoiceFile[];
+}) {
+  const lines: string[] = [];
+
+  if (params.files.length === 0) {
+    return lines;
+  }
+
+  lines.push("[첨부 파일]");
+  params.files.forEach((file) => {
+    lines.push(`- ${file.name} (${Math.round(file.size / 1024)}KB)`);
+  });
+
+  if (params.uploadedFiles.length > 0) {
+    lines.push("");
+    lines.push("[세메앱 저장 파일 URL]");
+    params.uploadedFiles.forEach((file) => {
+      lines.push(`- ${file.name}: ${file.url}`);
+    });
+  } else {
+    lines.push("");
+    lines.push("파일 URL: BLOB_READ_WRITE_TOKEN 설정 후 자동 저장됩니다.");
+  }
+
+  return lines;
 }
 
 function normalizeNotionId(rawId: string) {
@@ -207,6 +286,27 @@ export async function POST(req: NextRequest) {
   const riskAssessmentCheck = getFormChecked(formData, "riskAssessmentCheck");
   const safetyMeasureCheck = getFormChecked(formData, "safetyMeasureCheck");
 
+  const evidenceFiles = formData.getAll("evidenceFiles").filter(isFile);
+  const oversizedFile = evidenceFiles.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
+
+  if (oversizedFile) {
+    return redirectTo(req, "/field/participation/submitted", {
+      status: "file_too_large",
+      company: company.code,
+    });
+  }
+
+  let uploadedFiles: UploadedFieldVoiceFile[] = [];
+
+  try {
+    uploadedFiles = await uploadEvidenceFiles(evidenceFiles, company.code, reportedDate);
+  } catch {
+    return redirectTo(req, "/field/participation/submitted", {
+      status: "file_upload_error",
+      company: company.code,
+    });
+  }
+
   if (!title || !content) {
     return redirectTo(req, "/field/participation/submitted", {
       status: "missing_required",
@@ -247,6 +347,15 @@ export async function POST(req: NextRequest) {
     finalContent = `${finalContent}\n\n[제출 정보]\n${inlineMetaLines.join("\n")}`.slice(0, 1900);
   }
 
+  const fileMemoLines = buildFileMemoLines({
+    files: evidenceFiles,
+    uploadedFiles,
+  });
+
+  if (fileMemoLines.length > 0) {
+    finalContent = `${finalContent}\n\n${fileMemoLines.join("\n")}`.slice(0, 1900);
+  }
+
   const properties: Record<string, unknown> = {
     "의견 제목": titleText(title),
     "의견 유형": { select: { name: type } },
@@ -274,6 +383,18 @@ export async function POST(req: NextRequest) {
 
   if (hasNotionProperty(propertyNames, "익명")) {
     properties["익명"] = { checkbox: anonymous };
+  }
+
+  if (uploadedFiles.length > 0 && hasNotionProperty(propertyNames, "사진/파일")) {
+    properties["사진/파일"] = {
+      files: uploadedFiles.map((file) => ({
+        name: file.name.slice(0, 100),
+        type: "external",
+        external: {
+          url: file.url,
+        },
+      })),
+    };
   }
 
   const response = await fetch("https://api.notion.com/v1/pages", {
