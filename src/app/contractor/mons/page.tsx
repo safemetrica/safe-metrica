@@ -11,6 +11,7 @@ import {
   fetchContractorSubmissionRecords,
   getContractorSubmissionRecordSummary,
 } from "@/lib/contractorSubmissionRecords";
+import { buildDailySafetyBriefing } from "@/lib/dailySafetyBriefing";
 
 type PageProps = {
   searchParams: Promise<{
@@ -76,6 +77,34 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
   const recordSummary = getContractorSubmissionRecordSummary(submissionStore.records);
   const hasFollowUpRequest = recordSummary.followUpCount > 0;
 
+  const sharedSafetyBriefing = buildDailySafetyBriefing({
+    companyName: "버블몬코리아",
+    todayTbmCount: 0,
+    ebMissingCount: 0,
+    actionNeededCount: 0,
+    ptwPendingCount: 0,
+    ptwBlockedCount: 0,
+    ptwRequiredMissingCount: 0,
+    highRiskCount: 0,
+    riskActionNeededCount: 0,
+    partnerFollowUpCount: recordSummary.followUpCount,
+    partnerPendingCount: recordSummary.principalPendingCount,
+  });
+
+  const partnerSifFocus = sharedSafetyBriefing.sifFocus[0].includes("별도")
+    ? "차량·보행 혼재, 후진 충돌, 상하차 끼임 주의"
+    : sharedSafetyBriefing.sifFocus[0];
+
+  const partnerPtwMessage = sharedSafetyBriefing.ptwMessages[0].includes("없음")
+    ? "고위험 작업 전 원청 승인 필요 여부 확인"
+    : sharedSafetyBriefing.ptwMessages[0];
+
+  const partnerSharedMessages = [
+    "작업 전 TBM에서 차량·보행 혼재, 후진 충돌, 상하차 주변 정리상태를 확인해 주세요.",
+    ...sharedSafetyBriefing.partnerMessages.filter((message) => !message.includes("신호 없음")),
+    "작업 전·후 사진과 필요한 서명·교육 증빙은 세메앱으로 제출해 주세요.",
+  ].slice(0, 4);
+
   if (!isMonsContractorTokenValid(params.token)) {
     redirect("/login?error=invalid_contractor_token");
   }
@@ -109,6 +138,53 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
                 <p className="text-xs text-slate-400">보완요청</p>
                 <p className="mt-1 text-2xl font-black text-rose-300">{recordSummary.followUpCount}</p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-cyan-500/40 bg-cyan-950/20 p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-cyan-300">Principal Shared Briefing</p>
+              <h2 className="mt-1 text-2xl font-black text-white">오늘 원청 공유사항</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                버블몬 현장에서 오늘 작업 전 확인해야 할 핵심 안전사항입니다.
+              </p>
+            </div>
+            <span className="w-fit rounded-full border border-cyan-400/40 px-3 py-1 text-xs font-black text-cyan-200">
+              {sharedSafetyBriefing.statusLabel}
+            </span>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950 p-4">
+            <p className="text-sm font-black text-cyan-100">{sharedSafetyBriefing.fieldHeadline}</p>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-200">
+              {partnerSharedMessages.map((message) => (
+                <li key={message}>• {message}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+              <p className="text-xs font-bold text-slate-400">SIF·고위험</p>
+              <p className="mt-2 text-xs leading-5 text-slate-200">
+                {partnerSifFocus}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+              <p className="text-xs font-bold text-slate-400">PTW 확인</p>
+              <p className="mt-2 text-xs leading-5 text-slate-200">
+                {partnerPtwMessage}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+              <p className="text-xs font-bold text-slate-400">제출 증빙</p>
+              <p className="mt-2 text-xs leading-5 text-slate-200">
+                작업 전후 사진·교육·서명·조치사진을 필요한 항목별로 제출
+              </p>
             </div>
           </div>
         </section>
