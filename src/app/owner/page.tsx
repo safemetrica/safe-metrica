@@ -10,6 +10,20 @@ const tenants = [
     desc: "TBM, EB, PTW, 위험성평가, 월간보고서 운영",
   },
   {
+    code: "dongwoo",
+    name: "동우환경",
+    category: "생활폐기물",
+    status: "운영중",
+    description: "TBM, EB, PTW, 위험성평가, 현장참여, 월간보고서 운영",
+  },
+  {
+    code: "korea-green",
+    name: "한국그린환경",
+    category: "생활폐기물",
+    status: "운영중",
+    description: "TBM, EB, PTW, 위험성평가, 현장참여, 월간보고서 운영",
+  },
+  {
     code: "demo",
     name: "데모 사업장",
     industry: "공통 데모",
