@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${notionApiKey}`,
-      "Notion-Version": "2022-06-28",
+      "Notion-Version": "2025-09-03",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
