@@ -78,7 +78,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
   const hasFollowUpRequest = recordSummary.followUpCount > 0;
 
   const sharedSafetyBriefing = buildDailySafetyBriefing({
-    companyName: "버블몬코리아",
+    companyName: "㈜버블몬코리아",
     todayTbmCount: 0,
     ebMissingCount: 0,
     actionNeededCount: 0,
@@ -114,7 +114,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
       <div className="mx-auto max-w-3xl">
         <section className="rounded-3xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">
           <p className="text-xs font-bold text-cyan-300">SafeMetrica Partner Submit</p>
-          <h1 className="mt-2 text-2xl font-black">몬스 작업 제출</h1>
+          <h1 className="mt-2 text-2xl font-black">㈜몬스 작업 제출</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
             {contractor.name}는 {principal.name} 현장의 협력사로서 작업 전 TBM, 작업 전후 사진,
             교육·서명·출석, 위험성평가 공유 확인, 조치 전후 사진만 제출합니다.
@@ -148,7 +148,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
               <p className="text-xs font-black text-cyan-300">Principal Shared Briefing</p>
               <h2 className="mt-1 text-2xl font-black text-white">오늘 원청 공유사항</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                버블몬 현장에서 오늘 작업 전 확인해야 할 핵심 안전사항입니다.
+                ㈜버블몬코리아 현장에서 오늘 작업 전 확인해야 할 핵심 안전사항입니다.
               </p>
             </div>
             <span className="w-fit rounded-full border border-cyan-400/40 px-3 py-1 text-xs font-black text-cyan-200">
@@ -194,7 +194,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
             <div>
               <h2 className="text-lg font-black">원청 검토 결과</h2>
               <p className="mt-1 text-sm leading-6 text-slate-400">
-                버블몬 현장관리감독자의 확인 또는 보완요청 상태를 확인합니다.
+                ㈜버블몬코리아 현장관리감독자의 확인 또는 보완요청 상태를 확인합니다.
               </p>
             </div>
             {hasFollowUpRequest ? (
@@ -336,7 +336,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
         <section className="mt-5 rounded-2xl border border-slate-700 bg-slate-900 p-4">
           <h2 className="text-base font-black">제한 앱 안내</h2>
           <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
-            <li>• 이 화면은 몬스 제출 전용 화면입니다.</li>
+            <li>• 이 화면은 ㈜몬스 제출 전용 화면입니다.</li>
             <li>• 버블몬 전체 운영 홈, 위험성평가표, 월간보고서, Evidence Book 전체 목록은 제공하지 않습니다.</li>
             <li>• 제출 항목은 버블몬 원청의 확인 대상입니다.</li>
           </ul>

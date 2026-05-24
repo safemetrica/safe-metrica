@@ -55,7 +55,7 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
           href={`/contractor/mons?token=${encodeURIComponent(params.token ?? "")}`}
           className="text-sm font-bold text-cyan-300 hover:text-cyan-200"
         >
-          ← 몬스 제출 목록으로
+          ← ㈜몬스 제출 목록으로
         </Link>
 
         <section className="mt-4 rounded-3xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">

@@ -479,7 +479,7 @@ export default async function MonthlySafetyReportPage({
         {company.code === "bubblemon" ? (
           <Section
             title="협력사 이행현황"
-            desc="몬스 제출자료의 원청 확인, 보완요청, 미검토 상태를 월간 기준으로 확인합니다."
+            desc="㈜몬스 제출자료의 원청 확인, 보완요청, 미검토 상태를 월간 기준으로 확인합니다."
           >
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               <StatCard
@@ -516,7 +516,7 @@ export default async function MonthlySafetyReportPage({
 
             <div className={`mt-4 rounded-2xl border p-4 text-sm font-bold leading-6 ${partnerReportBannerClass}`}>
               {partnerHasFollowUp
-                ? "협력사 제출자료 중 보완요청 항목이 남아 있습니다. 버블몬 현장관리감독자의 보완 확인이 필요합니다."
+                ? "협력사 제출자료 중 보완요청 항목이 남아 있습니다. ㈜버블몬코리아 현장관리감독자의 보완 확인이 필요합니다."
                 : partnerHasPending
                   ? "협력사 제출자료 중 아직 원청 미검토 항목이 있습니다. 원청 확인 또는 보완요청으로 처리해야 합니다."
                   : partnerSummary.total > 0

@@ -112,7 +112,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
             <div>
               <h2 className="text-lg font-black">최근 제출자료</h2>
               <p className="mt-1 text-sm leading-6 text-gray-400">
-                몬스가 제출한 자료를 버블몬 현장관리감독자가 확인하거나 보완요청합니다.
+                ㈜몬스가 제출한 자료를 ㈜버블몬코리아 현장관리감독자가 확인하거나 보완요청합니다.
               </p>
             </div>
             <span className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-bold text-cyan-200">
@@ -133,7 +133,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
             </div>
           ) : submissionStore.records.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-gray-700 bg-gray-950 p-4">
-              <p className="text-sm font-bold text-gray-300">아직 접수된 몬스 제출자료가 없습니다.</p>
+              <p className="text-sm font-bold text-gray-300">아직 접수된 ㈜몬스 제출자료가 없습니다.</p>
               <p className="mt-2 text-xs leading-5 text-gray-500">
                 몬스가 제출 전용 링크에서 자료를 제출하면 이 영역에 표시됩니다.
               </p>
@@ -217,7 +217,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
           )}
 
           <p className="mt-4 text-xs leading-5 text-gray-500">
-            기준: 몬스 제출완료는 자료 접수이며, 버블몬 원청 확인과 분리됩니다.
+            기준: ㈜몬스 제출완료는 자료 접수이며, 버블몬 원청 확인과 분리됩니다.
           </p>
         </section>
 
@@ -225,7 +225,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
         <section className="mt-4 rounded-2xl border border-gray-700 bg-gray-900 p-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-lg font-black">몬스 제출 항목</h2>
+              <h2 className="text-lg font-black">㈜몬스 제출 항목</h2>
               <p className="mt-1 text-sm leading-6 text-gray-400">
                 협력사 제출상태와 원청 검토상태는 분리해서 봅니다.
               </p>
@@ -244,7 +244,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
                     <p className="mt-1 text-sm leading-6 text-gray-400">{item.description}</p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
                       <span className="rounded-full border border-amber-400/30 px-2 py-1 text-amber-200">
-                        몬스 제출: {item.contractorSubmissionStatus}
+                        ㈜몬스 제출: {item.contractorSubmissionStatus}
                       </span>
                       <span className="rounded-full border border-slate-500/40 px-2 py-1 text-slate-300">
                         버블몬 검토: {item.principalReviewStatus}
@@ -273,7 +273,7 @@ export default async function ContractorStatusPage({ searchParams }: PageProps) 
         <section className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
           <h2 className="text-base font-black text-amber-200">운영 기준</h2>
           <p className="mt-2 text-sm leading-6 text-gray-300">
-            몬스는 별도 고객사 테넌트가 아니라 {principal.name} 테넌트 안에서 관리되는 협력사입니다.
+            ㈜몬스는 별도 고객사 테넌트가 아니라 {principal.name} 테넌트 안에서 관리되는 협력사입니다.
             몬스에는 전체 운영 홈이 아니라 제한 제출 앱만 제공합니다.
           </p>
           <p className="mt-2 text-xs leading-5 text-gray-500">
