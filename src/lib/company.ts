@@ -47,6 +47,14 @@ function assertSafeCompanyCode(code: string): string {
   return normalized;
 }
 
+function getFieldVoiceDbIdFallback(code: string) {
+  if (code === "daedo") return process.env.DAEDO_FIELD_VOICE_DB_ID;
+  if (code === "dongwoo") return process.env.DONGWOO_FIELD_VOICE_DB_ID;
+  if (code === "korea-green") return process.env.KOREA_GREEN_FIELD_VOICE_DB_ID;
+  if (code === "bubblemon") return process.env.BUBBLEMON_FIELD_VOICE_DB_ID;
+  return undefined;
+}
+
 const TENANT_TOKEN_ENV_BY_COMPANY: Record<string, string> = {
   daedo: "DAEDO_TENANT_TOKEN",
   bubblemon: "BUBBLEMON_TENANT_TOKEN",
@@ -214,7 +222,9 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
   const adminEvidenceDbId =
     getTextPropPlainText(props["adminEvidenceDbId"]) || undefined;
   const fieldVoiceDbId =
-    getTextPropPlainText(props["fieldVoiceDbId"]) || undefined;
+    getTextPropPlainText(props["fieldVoiceDbId"]) ||
+    getFieldVoiceDbIdFallback(code) ||
+    undefined;
   const listeningDbId =
     getTextPropPlainText(props["listeningDbId"]) || undefined;
   const riskAssessmentDbId =
