@@ -43,9 +43,11 @@ function resolveCompanyCodeAlias(code: string): string {
   if (
     normalized === "korea-green" ||
     normalized === "korea_green" ||
-    normalized === "koreagreen"
+    normalized === "koreagreen" ||
+    normalized === "greenkorea" ||
+    normalized === "hankookgreen"
   ) {
-    return "greenkorea";
+    return "hankookgreen";
   }
 
   return normalized;
@@ -62,8 +64,8 @@ function assertSafeCompanyCode(code: string): string {
 }
 
 function getCompanyRowQueryCodes(code: string) {
-  if (code === "greenkorea") {
-    return ["greenkorea", "korea-green", "korea_green", "koreagreen"];
+  if (code === "hankookgreen") {
+    return ["hankookgreen", "greenkorea", "korea-green", "korea_green", "koreagreen"];
   }
 
   return [code];
@@ -72,7 +74,7 @@ function getCompanyRowQueryCodes(code: string) {
 function getFieldVoiceDbIdFallback(code: string) {
   if (code === "daedo") return process.env.DAEDO_FIELD_VOICE_DB_ID;
   if (code === "dongwoo") return process.env.DONGWOO_FIELD_VOICE_DB_ID;
-  if (code === "korea-green" || code === "greenkorea") return process.env.KOREA_GREEN_FIELD_VOICE_DB_ID;
+  if (code === "korea-green" || code === "greenkorea" || code === "hankookgreen") return process.env.KOREA_GREEN_FIELD_VOICE_DB_ID;
   if (code === "bubblemon") return process.env.BUBBLEMON_FIELD_VOICE_DB_ID;
   return undefined;
 }
