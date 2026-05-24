@@ -104,7 +104,9 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
             <input
               id="location"
               name="location"
-              placeholder="예: 상차장, 분리수거장, A구역, 차량 대기장"\n              defaultValue={siteValue}\n              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              placeholder="예: 상차장, 분리수거장, A구역, 차량 대기장"
+              defaultValue={siteValue}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
           </div>
 
