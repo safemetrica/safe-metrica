@@ -123,6 +123,22 @@ export default async function BubblemonMonsOwnerPage() {
 
 
         <section className="mt-6 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-cyan-200">MONS Submit App</p>
+              <h2 className="mt-1 text-xl font-black text-white">몬스 작업자 제한 제출 앱</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                몬스에는 버블몬 전체 운영 홈을 제공하지 않고, 작업 제출 전용 링크만 제공합니다.
+                실제 전달 링크는 MONS_CONTRACTOR_TOKEN 환경변수를 붙인 제한 링크로 발급합니다.
+              </p>
+            </div>
+            <div className="rounded-xl border border-cyan-400/30 bg-slate-950 px-4 py-3 text-xs font-bold text-cyan-100">
+              /contractor/mons?token=[환경변수]
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-sm font-bold text-cyan-200">MONS Contractor Submission</p>
