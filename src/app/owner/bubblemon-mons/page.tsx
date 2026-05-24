@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import {
   SAMPLE_BUBBLEMON_MONS_RELATION,
   SAMPLE_CONTRACTOR_COMPANY_MONS,
+  SAMPLE_MONS_CONTRACTOR_SUBMISSIONS,
   SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON,
   getContractorRelationSummary,
+  getContractorSubmissionSummary,
 } from "@/lib/contractorRelation";
 
 function isOwnerTokenValid(ownerToken?: string) {
@@ -17,6 +19,8 @@ const relation = SAMPLE_BUBBLEMON_MONS_RELATION;
 const principal = SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON;
 const contractor = SAMPLE_CONTRACTOR_COMPANY_MONS;
 const summary = getContractorRelationSummary(relation);
+const submissionItems = SAMPLE_MONS_CONTRACTOR_SUBMISSIONS;
+const submissionSummary = getContractorSubmissionSummary(submissionItems);
 
 const statusRows = [
   { label: "TBM 운영", value: relation.tbmStatus },
@@ -116,6 +120,94 @@ export default async function BubblemonMonsOwnerPage() {
             <p className="mt-2 text-3xl font-black text-rose-300">{summary.followUpCount}</p>
           </article>
         </section>
+
+
+        <section className="mt-6 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-5">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-cyan-200">MONS Contractor Submission</p>
+              <h2 className="mt-1 text-xl font-black text-white">몬스 제한 제출 현황</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                몬스에는 전체 운영 링크를 제공하지 않고, TBM·작업 전후 사진·교육증빙·위험성평가 공유확인·조치 전후 사진만
+                제출할 수 있는 제한 제출 구조로 관리합니다.
+              </p>
+            </div>
+            <div className="rounded-xl border border-cyan-400/30 bg-slate-950 px-4 py-3 text-sm text-cyan-100">
+              제출률 {submissionSummary.submissionRate}%
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-6">
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-xs font-bold text-slate-400">제출 항목</p>
+              <p className="mt-2 text-2xl font-black text-white">{submissionSummary.totalItems}</p>
+            </article>
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-xs font-bold text-slate-400">제출 완료</p>
+              <p className="mt-2 text-2xl font-black text-emerald-300">{submissionSummary.submittedCount}</p>
+            </article>
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-xs font-bold text-slate-400">제출 대기</p>
+              <p className="mt-2 text-2xl font-black text-amber-300">{submissionSummary.pendingCount}</p>
+            </article>
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-xs font-bold text-slate-400">원청 확인</p>
+              <p className="mt-2 text-2xl font-black text-emerald-300">{submissionSummary.reviewConfirmedCount}</p>
+            </article>
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-xs font-bold text-slate-400">원청 미검토</p>
+              <p className="mt-2 text-2xl font-black text-amber-300">{submissionSummary.reviewPendingCount}</p>
+            </article>
+            <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-xs font-bold text-slate-400">EB 필요</p>
+              <p className="mt-2 text-2xl font-black text-blue-300">{submissionSummary.evidenceBookRequiredCount}</p>
+            </article>
+          </div>
+
+          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-700">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-slate-950 text-slate-300">
+                <tr>
+                  <th className="px-4 py-3">제출 항목</th>
+                  <th className="px-4 py-3">몬스 제출</th>
+                  <th className="px-4 py-3">버블몬 검토</th>
+                  <th className="px-4 py-3">필요 증빙</th>
+                  <th className="px-4 py-3">다음 조치</th>
+                </tr>
+              </thead>
+              <tbody>
+                {submissionItems.map((item) => (
+                  <tr key={item.id} className="border-t border-slate-700 align-top">
+                    <td className="px-4 py-3">
+                      <p className="font-black text-white">{item.title}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-400">{item.description}</p>
+                      {item.restrictedLinkOnly ? (
+                        <p className="mt-2 inline-flex rounded-full border border-cyan-400/30 px-2 py-1 text-xs font-bold text-cyan-200">
+                          제한 제출
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 font-bold text-amber-300">{item.contractorSubmissionStatus}</td>
+                    <td className="px-4 py-3 font-bold text-slate-200">{item.principalReviewStatus}</td>
+                    <td className="px-4 py-3 text-slate-300">
+                      <ul className="space-y-1">
+                        {item.requiredEvidence.map((evidence) => (
+                          <li key={evidence}>• {evidence}</li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td className="px-4 py-3 text-slate-300">{item.nextAction}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-4 text-xs leading-5 text-slate-400">
+            기준: 하청 제출상태와 원청 검토상태는 분리합니다. TBM 활동 증빙이 있어도 작업·조치 이행 증빙이 충분하다고 자동 확정하지 않습니다.
+          </p>
+        </section>
+
 
         <section className="mt-6 grid gap-4 lg:grid-cols-2">
           <article className="rounded-2xl border border-slate-700 bg-slate-900 p-5">
