@@ -37,8 +37,22 @@ function normalizeCompanyCode(code: string): string {
   return code.trim().toLowerCase();
 }
 
-function assertSafeCompanyCode(code: string): string {
+function resolveCompanyCodeAlias(code: string): string {
   const normalized = normalizeCompanyCode(code);
+
+  if (
+    normalized === "korea-green" ||
+    normalized === "korea_green" ||
+    normalized === "koreagreen"
+  ) {
+    return "greenkorea";
+  }
+
+  return normalized;
+}
+
+function assertSafeCompanyCode(code: string): string {
+  const normalized = resolveCompanyCodeAlias(code);
 
   if (!/^[a-z0-9_-]{2,50}$/.test(normalized)) {
     throw new UnknownCompanyError(normalized || "empty");
@@ -50,7 +64,7 @@ function assertSafeCompanyCode(code: string): string {
 function getFieldVoiceDbIdFallback(code: string) {
   if (code === "daedo") return process.env.DAEDO_FIELD_VOICE_DB_ID;
   if (code === "dongwoo") return process.env.DONGWOO_FIELD_VOICE_DB_ID;
-  if (code === "korea-green") return process.env.KOREA_GREEN_FIELD_VOICE_DB_ID;
+  if (code === "korea-green" || code === "greenkorea") return process.env.KOREA_GREEN_FIELD_VOICE_DB_ID;
   if (code === "bubblemon") return process.env.BUBBLEMON_FIELD_VOICE_DB_ID;
   return undefined;
 }
