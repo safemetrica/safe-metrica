@@ -273,7 +273,7 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                   <span className="text-white text-sm font-bold">하청 제출현황</span>
                 </div>
                 <p className="mt-2 text-gray-300 text-xs leading-relaxed">
-                  몬스 TBM·작업 전후 사진·교육증빙·위험성평가 공유 확인·조치사진 제출상태를 확인합니다.
+                  몬스 TBM·사진·교육증빙·조치사진 제출상태를 확인합니다.
                 </p>
               </div>
               <span className="rounded-full bg-cyan-500 px-3 py-1 text-xs font-black text-gray-950">
