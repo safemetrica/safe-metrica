@@ -106,7 +106,7 @@ export type ContractorRelation = {
 
 export const SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON: PrincipalCompany = {
   code: "bubblemon",
-  name: "버블몬코리아",
+  name: "㈜버블몬코리아",
   role: "원청",
   description: "대도환경·동우환경·한국그린환경과 같은 일반 SafeMetrica 고객사 계약 구조로 운영되는 물류업 원청 고객사",
 };
@@ -122,7 +122,7 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   id: "relation-bubblemon-mons-001",
 
   principalCode: "bubblemon",
-  principalName: "버블몬코리아",
+  principalName: "㈜버블몬코리아",
 
   contractorCode: "mons",
   contractorName: "몬스",
@@ -168,13 +168,13 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
 
     tenantCode: "bubblemon",
     principalCode: "bubblemon",
-    principalName: "버블몬코리아",
+    principalName: "㈜버블몬코리아",
     contractorCode: "mons",
     contractorName: "몬스",
 
     itemType: "TBM",
-    title: "몬스 작업 전 TBM 제출",
-    description: "몬스 작업자가 작업 전 TBM 실시 기록과 참석 확인 자료를 제한 제출 구조로 제출합니다.",
+    title: "㈜몬스 작업 전 TBM 제출",
+    description: "㈜몬스 작업자가 작업 전 TBM 실시 기록과 참석 확인 자료를 제한 제출 구조로 제출합니다.",
     requiredEvidence: [
       "작업 전 TBM 실시 기록",
       "참석자 확인 또는 서명",
@@ -197,7 +197,7 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
 
     tenantCode: "bubblemon",
     principalCode: "bubblemon",
-    principalName: "버블몬코리아",
+    principalName: "㈜버블몬코리아",
     contractorCode: "mons",
     contractorName: "몬스",
 
@@ -225,7 +225,7 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
 
     tenantCode: "bubblemon",
     principalCode: "bubblemon",
-    principalName: "버블몬코리아",
+    principalName: "㈜버블몬코리아",
     contractorCode: "mons",
     contractorName: "몬스",
 
@@ -254,13 +254,13 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
 
     tenantCode: "bubblemon",
     principalCode: "bubblemon",
-    principalName: "버블몬코리아",
+    principalName: "㈜버블몬코리아",
     contractorCode: "mons",
     contractorName: "몬스",
 
     itemType: "위험성평가 공유 확인",
     title: "위험성평가 공유 확인 제출",
-    description: "버블몬 원청의 위험성평가 결과가 몬스 작업자에게 공유되었는지 확인합니다.",
+    description: "버블몬 원청의 위험성평가 결과가 ㈜몬스 작업자에게 공유되었는지 확인합니다.",
     requiredEvidence: [
       "위험성평가 공유 확인 기록",
       "작업자 확인 또는 서명",
@@ -283,7 +283,7 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
 
     tenantCode: "bubblemon",
     principalCode: "bubblemon",
-    principalName: "버블몬코리아",
+    principalName: "㈜버블몬코리아",
     contractorCode: "mons",
     contractorName: "몬스",
 

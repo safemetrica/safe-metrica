@@ -50,7 +50,7 @@ export default async function BubblemonMonsOwnerPage() {
           <p className="text-sm font-bold text-blue-300">Principal · Contractor</p>
           <h1 className="mt-2 text-3xl font-black">버블몬 × 몬스 물류업 안전운영 계약 준비</h1>
           <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-300">
-            버블몬코리아를 원청 고객사로, 몬스를 협력사로 두고 TBM, 점검·교육,
+            ㈜버블몬코리아를 원청 고객사로, 몬스를 협력사로 두고 TBM, 점검·교육,
             위험성평가 공유기록, 교육·이수증빙, 조치 증빙, 월간보고서 운영 범위를 확인합니다.
           </p>
         </section>
@@ -67,7 +67,7 @@ export default async function BubblemonMonsOwnerPage() {
             <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
               <p className="text-sm font-black text-white">물류업 원청·협력사</p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                버블몬은 원청, 몬스는 협력사로 두고 물류업 안전운영 기록을 관리합니다.
+                버블몬은 원청, ㈜몬스는 협력사로 두고 물류업 안전운영 기록을 관리합니다.
               </p>
             </article>
             <article className="rounded-xl border border-slate-700 bg-slate-900 p-4">
@@ -126,7 +126,7 @@ export default async function BubblemonMonsOwnerPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-bold text-cyan-200">MONS Submit App</p>
-              <h2 className="mt-1 text-xl font-black text-white">몬스 작업자 제한 제출 앱</h2>
+              <h2 className="mt-1 text-xl font-black text-white">㈜몬스 작업자 제한 제출 앱</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
                 몬스에는 버블몬 전체 운영 홈을 제공하지 않고, 작업 제출 전용 링크만 제공합니다.
                 실제 전달 링크는 MONS_CONTRACTOR_TOKEN 환경변수를 붙인 제한 링크로 발급합니다.
@@ -185,7 +185,7 @@ export default async function BubblemonMonsOwnerPage() {
               <thead className="bg-slate-950 text-slate-300">
                 <tr>
                   <th className="px-4 py-3">제출 항목</th>
-                  <th className="px-4 py-3">몬스 제출</th>
+                  <th className="px-4 py-3">㈜몬스 제출</th>
                   <th className="px-4 py-3">버블몬 검토</th>
                   <th className="px-4 py-3">필요 증빙</th>
                   <th className="px-4 py-3">다음 조치</th>
