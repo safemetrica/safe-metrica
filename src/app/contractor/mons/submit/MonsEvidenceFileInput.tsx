@@ -119,22 +119,22 @@ export default function MonsEvidenceFileInput() {
   }
 
   return (
-    <div className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4">
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-black text-cyan-200">사진 촬영·파일 첨부</p>
-          <p className="mt-1 text-xs leading-5 text-slate-400">
+          <p className="text-sm font-black text-blue-700">사진 촬영·파일 첨부</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
             사진은 자동으로 용량을 줄여 저장합니다. 최대 {MAX_FILES}장까지 제출하세요.
           </p>
         </div>
-        <span className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-black text-cyan-200">
+        <span className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-black text-blue-700">
           자동 압축
         </span>
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div>
-          <label className="text-xs font-bold text-slate-300" htmlFor="cameraEvidenceFiles">
+          <label className="text-xs font-bold text-slate-600" htmlFor="cameraEvidenceFiles">
             카메라로 바로 촬영
           </label>
           <input
@@ -146,12 +146,12 @@ export default function MonsEvidenceFileInput() {
             capture="environment"
             multiple
             onChange={handleFileChange}
-            className="mt-2 block w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-4 text-sm text-slate-200 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-black file:text-slate-950"
+            className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-sm text-slate-900 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-700 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
           />
         </div>
 
         <div>
-          <label className="text-xs font-bold text-slate-300" htmlFor="galleryEvidenceFiles">
+          <label className="text-xs font-bold text-slate-600" htmlFor="galleryEvidenceFiles">
             갤러리·파일에서 선택
           </label>
           <input
@@ -162,7 +162,7 @@ export default function MonsEvidenceFileInput() {
             accept="image/*,application/pdf"
             multiple
             onChange={handleFileChange}
-            className="mt-2 block w-full rounded-xl border border-slate-600 bg-slate-950 px-4 py-4 text-sm text-slate-200 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-black file:text-slate-950"
+            className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-sm text-slate-900 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-700 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
           />
         </div>
       </div>
@@ -180,11 +180,11 @@ export default function MonsEvidenceFileInput() {
       ) : null}
 
       {selectedFiles.length > 0 ? (
-        <div className="mt-3 rounded-xl border border-slate-700 bg-slate-950 p-3">
-          <p className="text-xs font-bold text-slate-300">
+        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+          <p className="text-xs font-bold text-slate-600">
             선택된 파일 {selectedFiles.length}개 · 약 {totalSizeKb.toLocaleString()}KB
           </p>
-          <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-400">
+          <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-500">
             {selectedFiles.map((file) => (
               <li key={`${file.name}-${file.sizeKb}`}>
                 • {file.name} ({file.sizeKb.toLocaleString()}KB)
@@ -194,7 +194,7 @@ export default function MonsEvidenceFileInput() {
         </div>
       ) : null}
 
-      <p className="mt-3 text-xs leading-5 text-slate-400">
+      <p className="mt-3 text-xs leading-5 text-slate-500">
         작업 전·후 사진, 서명지, 조치사진을 첨부하세요. 큰 사진은 세메앱이 줄여서 저장합니다.
       </p>
     </div>
