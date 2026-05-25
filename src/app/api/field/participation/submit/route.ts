@@ -249,6 +249,7 @@ function buildContentWithConfirmation(params: {
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
+  const contractorName = getFormText(formData, "contractorName");
 
   let company;
 
@@ -363,6 +364,15 @@ export async function POST(req: NextRequest) {
     "위치/구역": richText(location),
     내용: richText(finalContent),
     처리상태: { select: { name: "접수" } },
+        ...(contractorName && hasNotionProperty(propertyNames, "협력사명")
+          ? {
+              협력사명: {
+                select: {
+                  name: contractorName,
+                },
+              },
+            }
+          : {}),
   };
 
   if (hasNotionProperty(propertyNames, "위험요인 확인")) {
