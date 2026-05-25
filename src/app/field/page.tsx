@@ -565,6 +565,40 @@ export default async function FieldPage() {
               </div>
             </div>
 
+            {/* 현장참여 접수 검토 */}
+            <div className="rounded-2xl border border-lime-500/30 bg-lime-950/20 p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🗣️</span>
+                    <span className="text-sm font-bold text-white">현장참여 접수 검토</span>
+                    <span className="rounded-full border border-lime-400/40 px-2 py-0.5 text-[11px] font-black text-lime-200">
+                      #201
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-lime-100">
+                    근로자·협력사가 제출한 위험요인, 아차사고, 개선의견과 사진 증빙을 확인합니다.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-lime-500/20 bg-slate-950/60 p-3">
+                <p className="text-xs font-bold text-slate-300">관리자 확인 항목</p>
+                <ul className="mt-2 space-y-1 text-xs leading-5 text-slate-300">
+                  <li>• 접수된 현장 의견과 위치 확인</li>
+                  <li>• 위험요인·위험성평가 공유·안전조치 확인 여부 검토</li>
+                  <li>• 사진/파일 증빙 확인</li>
+                </ul>
+              </div>
+
+              <Link
+                href="/field/voice"
+                className="mt-3 flex min-h-11 items-center justify-center rounded-xl border border-lime-400/50 bg-lime-500/10 px-4 py-2 text-sm font-black text-lime-100 transition hover:bg-lime-500/20 active:scale-95"
+              >
+                접수 내용 확인하기 →
+              </Link>
+            </div>
+
             {/* 빠른 이동 */}
             <div className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
               <div className="mb-3 flex items-center justify-between">
