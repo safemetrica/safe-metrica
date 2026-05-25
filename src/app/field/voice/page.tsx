@@ -373,7 +373,7 @@ export default async function FieldVoiceReviewPage() {
 
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm">
               <p className="font-black text-blue-900">{company.name}</p>
-              <p className="mt-1 text-blue-700">최근 접수 {rows.length}건</p>
+              <p className="mt-1 whitespace-nowrap text-blue-700">최근 접수 {rows.length}건</p>
             </div>
           </div>
         </section>
