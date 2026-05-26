@@ -60,14 +60,13 @@ export default function RootLayout({
 									tirany2014@gmail.com
 								</a>
 								{" "}·{" "}
-								<a
-									className="underline underline-offset-2"
-									href="https://obtainable-end-976.notion.site/SafeMetrica-e9e062cb41314b14b1ae0e186e9b496f?source=copy_link"
-									target="_blank"
-									rel="noreferrer"
-								>
-									이용약관·개인정보처리방침
-								</a>
+								<a className="underline underline-offset-2" href="/terms">
+                                                                        이용약관
+                                                                </a>
+                                                                {" "}·{" "}
+                                                                <a className="underline underline-offset-2" href="/privacy">
+                                                                        개인정보처리방침
+                                                                </a>
 							</div>
 						</div>
 					</footer>
