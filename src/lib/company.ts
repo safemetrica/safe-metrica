@@ -79,6 +79,12 @@ function getFieldVoiceDbIdFallback(code: string) {
   return undefined;
 }
 
+
+function getIndustryTagFallback(code: string) {
+  if (code === "bubblemon") return "물류";
+  return undefined;
+}
+
 const TENANT_TOKEN_ENV_BY_COMPANY: Record<string, string> = {
   daedo: "DAEDO_TENANT_TOKEN",
   bubblemon: "BUBBLEMON_TENANT_TOKEN",
@@ -268,6 +274,7 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
   const industryTag =
     getSelectPropName(props["industryTag"]) ||
     getTextPropPlainText(props["industryTag"]) ||
+    getIndustryTagFallback(code) ||
     "공통";
 
   const safetyCaseEnabled =
