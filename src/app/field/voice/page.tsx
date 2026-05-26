@@ -9,6 +9,8 @@ import {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const FIELD_VOICE_STATUS_OPTIONS = ["접수", "검토중", "조치필요", "조치완료", "반려"];
+
 type NotionProperty = {
   type?: string;
   title?: Array<{ plain_text?: string }>;
@@ -405,10 +407,10 @@ export default async function FieldVoiceReviewPage() {
         </section>
 
         <section className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-          <p className="text-sm font-black text-amber-900">#201 범위</p>
+          <p className="text-sm font-black text-amber-900">#202 상태 변경 v1</p>
           <p className="mt-2 text-sm leading-6 text-amber-900">
-            이 화면은 현장참여 접수 내용을 확인하는 읽기 전용 화면입니다. 승인, 반려,
-            조치완료, 위험성평가 반영 기능은 #202 이후 단계에서 분리 구현합니다.
+            이 화면에서는 현장참여 접수 건의 처리상태를 변경할 수 있습니다. 담당자 지정,
+            조치 메모, 완료사진, 위험성평가 반영 기능은 후속 단계에서 분리 구현합니다.
           </p>
         </section>
 
@@ -483,6 +485,25 @@ export default async function FieldVoiceReviewPage() {
                   <CheckPill label="위험요인 확인" value={row.riskCheck} />
                   <CheckPill label="위험성평가 공유 확인" value={row.riskAssessmentCheck} />
                   <CheckPill label="안전조치 확인" value={row.safetyMeasureCheck} />
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs font-black text-slate-500">상태 변경</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {FIELD_VOICE_STATUS_OPTIONS.map((nextStatus) => (
+                      <form key={nextStatus} action="/api/field/voice/status" method="post">
+                        <input type="hidden" name="pageId" value={row.id} />
+                        <input type="hidden" name="status" value={nextStatus} />
+                        <button
+                          type="submit"
+                          disabled={row.status === nextStatus}
+                          className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-blue-200 disabled:bg-blue-100 disabled:text-blue-800"
+                        >
+                          {row.status === nextStatus ? `현재: ${nextStatus}` : nextStatus}
+                        </button>
+                      </form>
+                    ))}
+                  </div>
                 </div>
 
                 {row.files.length > 0 ? (
