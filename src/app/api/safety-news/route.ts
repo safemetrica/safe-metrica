@@ -77,15 +77,40 @@ const KOSHA_SERVICE_KEY = process.env.KOSHA_SERVICE_KEY || "";
 const KOSHA_CALL_API_ID = process.env.KOSHA_CALL_API_ID || "1060";
 
 const KOSHA_KEYWORDS_BY_INDUSTRY: Record<IndustryTag, string[]> = {
-  폐기물: ["폐기물", "환경미화", "청소차", "수거차"],
-  물류: ["물류", "지게차", "상하차", "창고"],
-  제조: ["제조", "기계", "프레스", "컨베이어"],
-  건설: ["건설", "비계", "굴착", "크레인"],
+  폐기물: [
+    "폐기물",
+    "생활폐기물",
+    "환경미화",
+    "청소",
+    "수거",
+    "청소차",
+    "수거차",
+    "후진",
+    "차량",
+    "끼임",
+    "압축",
+    "압착",
+    "재활용",
+    "선별",
+    "음식물",
+    "쓰레기",
+  ],
+  물류: ["물류", "지게차", "상하차", "창고", "적재", "화물", "팔레트"],
+  제조: ["제조", "기계", "프레스", "컨베이어", "롤러", "끼임"],
+  건설: ["건설", "비계", "굴착", "크레인", "추락", "개구부"],
   공통: [""],
 };
 
 function getKoshaKeywords(tenantIndustryTag: IndustryTag) {
-  return KOSHA_KEYWORDS_BY_INDUSTRY[tenantIndustryTag] ?? [""];
+  const keywords = KOSHA_KEYWORDS_BY_INDUSTRY[tenantIndustryTag] ?? [""];
+
+  return Array.from(
+    new Set(
+      keywords
+        .map((keyword) => keyword.trim())
+        .filter((keyword) => keyword.length > 0 || tenantIndustryTag === "공통")
+    )
+  );
 }
 
 
@@ -405,7 +430,7 @@ async function fetchKoshaItems(keyword: string): Promise<KoshaItem[]> {
   const params = new URLSearchParams({
     serviceKey: KOSHA_SERVICE_KEY,
     pageNo: "1",
-    numOfRows: "20",
+    numOfRows: "30",
     business: "",
     keyword,
     callApiId: KOSHA_CALL_API_ID,
