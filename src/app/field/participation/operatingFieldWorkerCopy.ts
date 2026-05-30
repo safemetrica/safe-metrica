@@ -1,0 +1,90 @@
+export type OperatingFieldWorkerCopy = {
+  code: string;
+  companyName: string;
+  badge: string;
+  title: string;
+  description: string;
+  noticeTitle: string;
+  noticeBody: string;
+  submitButtonLabel: string;
+  submittedMessage: string;
+};
+
+function normalizeCompanyCode(value?: string | null) {
+  const code = (value ?? "").trim().toLowerCase();
+
+  if (
+    code === "korea-green" ||
+    code === "korea_green" ||
+    code === "koreagreen" ||
+    code === "greenkorea"
+  ) {
+    return "hankookgreen";
+  }
+
+  return code;
+}
+
+const OPERATING_FIELD_WORKER_COPY: Record<string, OperatingFieldWorkerCopy> = {
+  daedo: {
+    code: "daedo",
+    companyName: "㈜대도환경",
+    badge: "SafeMetrica 현장근로자 참여",
+    title: "㈜대도환경 현장근로자 안전참여",
+    description:
+      "오늘 작업 전 위험요인을 확인하고, 현장 의견이나 아차사고를 남겨주세요. 제출 내용은 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+    noticeTitle: "현장근로자 참여 안내",
+    noticeBody:
+      "이 화면은 ㈜대도환경 현장근로자용입니다. 제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다.",
+    submitButtonLabel: "위험요인·아차사고 제출하기",
+    submittedMessage:
+      "㈜대도환경 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+  },
+  dongwoo: {
+    code: "dongwoo",
+    companyName: "㈜동우환경",
+    badge: "SafeMetrica 현장근로자 참여",
+    title: "㈜동우환경 현장근로자 안전참여",
+    description:
+      "오늘 작업 전 위험요인을 확인하고, 현장 의견이나 아차사고를 남겨주세요. 제출 내용은 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+    noticeTitle: "현장근로자 참여 안내",
+    noticeBody:
+      "이 화면은 ㈜동우환경 현장근로자용입니다. 제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다.",
+    submitButtonLabel: "위험요인·아차사고 제출하기",
+    submittedMessage:
+      "㈜동우환경 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+  },
+  hankookgreen: {
+    code: "hankookgreen",
+    companyName: "㈜한국그린환경",
+    badge: "SafeMetrica 현장근로자 참여",
+    title: "㈜한국그린환경 현장근로자 안전참여",
+    description:
+      "오늘 작업 전 위험요인을 확인하고, 현장 의견이나 아차사고를 남겨주세요. 제출 내용은 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+    noticeTitle: "현장근로자 참여 안내",
+    noticeBody:
+      "이 화면은 ㈜한국그린환경 현장근로자용입니다. 제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다.",
+    submitButtonLabel: "위험요인·아차사고 제출하기",
+    submittedMessage:
+      "㈜한국그린환경 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+  },
+  bubblemon: {
+    code: "bubblemon",
+    companyName: "㈜버블몬코리아",
+    badge: "SafeMetrica 현장근로자 참여",
+    title: "㈜버블몬코리아 현장근로자 안전참여",
+    description:
+      "오늘 작업 전 위험요인을 확인하고, 현장 의견이나 아차사고를 남겨주세요. 제출 내용은 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+    noticeTitle: "현장근로자 참여 안내",
+    noticeBody:
+      "이 화면은 ㈜버블몬코리아 현장근로자용입니다. 제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다.",
+    submitButtonLabel: "위험요인·아차사고 제출하기",
+    submittedMessage:
+      "㈜버블몬코리아 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
+  },
+};
+
+export function getOperatingFieldWorkerCopy(rawCode?: string | null) {
+  const code = normalizeCompanyCode(rawCode);
+  return OPERATING_FIELD_WORKER_COPY[code] ?? null;
+}

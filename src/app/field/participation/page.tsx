@@ -1,4 +1,5 @@
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
+import { getOperatingFieldWorkerCopy } from "./operatingFieldWorkerCopy";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,6 +25,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   const params = (await searchParams) ?? {};
   const todayDateValue = getTodayDateValue();
   const companyCode = params.company ?? "";
+  const workerCopy = getOperatingFieldWorkerCopy(companyCode);
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
 
@@ -31,11 +33,15 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
     <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
       <div className="mx-auto max-w-3xl">
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-black text-blue-700">SafeMetrica 현장참여</p>
-          <h1 className="mt-2 text-2xl font-black text-slate-950">오늘 현장참여</h1>
+          <p className="text-xs font-black text-blue-700">
+            {workerCopy?.badge ?? "SafeMetrica 현장참여"}
+          </p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950">
+            {workerCopy?.title ?? "오늘 현장참여"}
+          </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            오늘 작업의 위험요인을 확인하고, 현장 의견이나 아차사고를 남겨주세요.
-            제보 내용은 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.
+            {workerCopy?.description ??
+              "오늘 작업의 위험요인을 확인하고, 현장 의견이나 아차사고를 남겨주세요. 제보 내용은 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다."}
           </p>
         </section>
 
@@ -74,6 +80,11 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
         >
           <input type="hidden" name="companyCode" value={companyCode} />
           <input type="hidden" name="source" value={sourceValue} />
+          {workerCopy ? (
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">
+              {workerCopy.companyName} 현장근로자 전용 제출 화면입니다.
+            </div>
+          ) : null}
           {companyCode === "mons" ? (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
               ㈜몬스 현장참여
@@ -171,9 +182,12 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
           <FieldParticipationFileInput />
 
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <h2 className="text-sm font-black text-amber-800">안내</h2>
+            <h2 className="text-sm font-black text-amber-800">
+              {workerCopy?.noticeTitle ?? "안내"}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-amber-900">
-              제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다.
+              {workerCopy?.noticeBody ??
+                "제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다."}
               첨부 사진은 세메앱이 용량을 줄여 저장합니다.
             </p>
           </section>
@@ -182,7 +196,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
             type="submit"
             className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-blue-700 px-5 py-4 text-center text-base font-black text-white shadow-sm transition active:scale-95"
           >
-            현장 의견·사진 제출하기
+            {workerCopy?.submitButtonLabel ?? "현장 의견·사진 제출하기"}
           </button>
         </form>
 
