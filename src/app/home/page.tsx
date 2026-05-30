@@ -16,6 +16,14 @@ const menus = [
   { href: "/inspection-education", icon: "✅", label: "점검·교육", sub: "순회·차량·교육기록", color: "from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600", border: "border-cyan-500" },
   { href: "/kosha", icon: "🏅", label: "KOSHA 인정심사", sub: "11개 Gate 이행률", color: "from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600", border: "border-amber-500" },
 ];
+
+const managerMenuHrefs = new Set([
+  "/tbm",
+  "/ptw",
+  "/field",
+  "/risk",
+  "/monthly-report",
+]);
 async function getWeather() {
   try {
    const now = new Date();
@@ -98,7 +106,18 @@ const hour = kst.getHours();
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<{ role?: string }> | { role?: string };
+}) {
+  const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
+  const role = resolvedSearchParams.role;
+  const isManagerMode = role === "manager";
+  const visibleMenus = isManagerMode
+    ? menus.filter((menu) => managerMenuHrefs.has(menu.href))
+    : menus;
+
   const company = await getCompanyConfig().catch(() => null);
 
   if (!company) {
@@ -253,7 +272,7 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
 
       <div className="p-4 max-w-5xl mx-auto">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-          {menus.map((m) => (
+          {visibleMenus.map((m) => (
             <Link key={m.href} href={m.href}
               className={`bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
               <div className="text-4xl mb-3">{m.icon}</div>
