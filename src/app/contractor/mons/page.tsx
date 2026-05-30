@@ -34,7 +34,7 @@ function getPrincipalReviewBadgeClass(status: string) {
     return "border-emerald-400/40 bg-emerald-950/30 text-emerald-200";
   }
 
-  if (status === "보완요청") {
+  if (status === "자료 보완 안내") {
     return "border-rose-400/40 bg-rose-950/30 text-rose-200";
   }
 
@@ -47,18 +47,18 @@ function getPrincipalReviewBadgeClass(status: string) {
 
 function getPrincipalReviewMessage(status: string) {
   if (status === "확인") {
-    return "버블몬 원청 확인이 완료되었습니다.";
+    return "제출자료 확인이 완료되었습니다.";
   }
 
-  if (status === "보완요청") {
-    return "버블몬 원청에서 보완요청한 자료입니다. 같은 항목으로 보완 제출해 주세요.";
+  if (status === "자료 보완 안내") {
+    return "자료 보완 안내가 등록된 항목입니다. 같은 항목으로 필요한 자료를 다시 제출해 주세요.";
   }
 
   if (status === "검토중") {
-    return "버블몬 원청 검토가 진행 중입니다.";
+    return "제출자료 검토가 진행 중입니다.";
   }
 
-  return "버블몬 원청 검토 대기 중입니다.";
+  return "제출자료 확인 대기 중입니다.";
 }
 
 function getSubmitButtonLabel(itemType: string) {
@@ -78,10 +78,10 @@ function formatContractorSubmissionStatus(status: string) {
 }
 
 function formatPrincipalReviewStatus(status: string) {
-  if (status === "미검토") return "원청 확인 전";
-  if (status === "검토중") return "원청 확인 중";
-  if (status === "확인") return "원청 확인 완료";
-  if (status === "보완요청") return "보완요청";
+  if (status === "미검토") return "확인 전";
+  if (status === "검토중") return "검토 중";
+  if (status === "확인") return "확인 완료";
+  if (status === "자료 보완 안내") return "자료 보완 안내";
   return status;
 }
 
@@ -110,7 +110,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
     : sharedSafetyBriefing.sifFocus[0];
 
   const partnerPtwMessage = sharedSafetyBriefing.ptwMessages[0].includes("없음")
-    ? "고위험 작업 전 원청 승인 필요 여부 확인"
+    ? "고위험 작업 전 확인 필요 여부 확인"
     : sharedSafetyBriefing.ptwMessages[0];
 
   const partnerSharedMessages = [
@@ -120,7 +120,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
   ].slice(0, 4);
 
   const followUpReviewRecords = submissionStore.records
-    .filter((record) => record.principalReviewStatus === "보완요청")
+    .filter((record) => record.principalReviewStatus === "자료 보완 안내")
     .slice(0, 3);
 
   const safetyMeetingItem = (submissionItems.find((item) => item.itemType === "TBM") ?? submissionItems[0])!;
@@ -137,14 +137,14 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-black text-blue-700">SafeMetrica 협력사 제출</p>
+              <p className="text-xs font-black text-blue-700">SafeMetrica 안전운영 제출공간</p>
               <h1 className="mt-2 text-2xl font-black text-slate-950">오늘 안전회의 기록</h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 {principal.name} 현장에서 작업 전 안전회의와 필요한 증빙을 남깁니다.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 text-xs font-bold">
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">협력사: {contractor.name}</span>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">제출 주체: {contractor.name}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">㈜버블몬코리아 현장</span>
             </div>
           </div>
@@ -163,7 +163,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
               <p className="mt-1 text-xl font-black text-emerald-700">{recordSummary.principalConfirmedCount}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-bold text-slate-500">보완요청</p>
+              <p className="text-xs font-bold text-slate-500">자료 보완 안내</p>
               <p className="mt-1 text-xl font-black text-rose-600">{recordSummary.followUpCount}</p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
             <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-xs font-black text-amber-800">오늘 원청 공유사항</p>
+                  <p className="text-xs font-black text-amber-800">오늘 공유사항</p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">작업 전 꼭 확인하세요</h2>
                   <p className="mt-2 text-sm leading-6 text-amber-900">
                     {sharedSafetyBriefing.fieldHeadline}
@@ -199,10 +199,10 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
               <section className="rounded-3xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-black text-rose-700">보완요청</p>
-                    <h2 className="mt-1 text-xl font-black text-slate-950">보완요청이 있습니다</h2>
+                    <p className="text-xs font-black text-rose-700">자료 보완 안내</p>
+                    <h2 className="mt-1 text-xl font-black text-slate-950">자료 보완 안내이 있습니다</h2>
                     <p className="mt-2 text-sm leading-6 text-rose-900">
-                      원청 요청 내용을 확인하고 보완 제출해 주세요.
+                      안내 내용을 확인하고 필요한 자료를 제출해 주세요.
                     </p>
                   </div>
                   <span className="w-fit rounded-full bg-rose-600 px-3 py-1 text-xs font-black text-white">
@@ -236,7 +236,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
               </section>
             ) : (
               <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-                <p className="text-sm font-black text-emerald-800">현재 보완요청은 없습니다.</p>
+                <p className="text-sm font-black text-emerald-800">현재 자료 보완 안내은 없습니다.</p>
                 <p className="mt-1 text-xs leading-5 text-emerald-700">
                   오늘 작업 전 안전회의를 기록하고 필요한 사진·서명 증빙을 남기면 됩니다.
                 </p>
@@ -270,7 +270,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
                 <p className="text-sm font-black text-blue-900">위험성평가 공유 확인 포함</p>
                 <ul className="mt-2 space-y-1 text-sm leading-6 text-blue-900">
                   <li>• 오늘 작업의 주요 위험요인을 공유받았습니다.</li>
-                  <li>• 원청 공유사항과 작업 전 주의사항을 확인했습니다.</li>
+                  <li>• 오늘 공유사항과 작업 전 주의사항을 확인했습니다.</li>
                   <li>• 필요한 안전조치와 관리적 대책을 확인했습니다.</li>
                 </ul>
               </div>
@@ -283,7 +283,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
               </Link>
 
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                제출자료는 ㈜버블몬코리아 원청 또는 SafeMetrica 관리자가 확인합니다.
+                제출자료는 SafeMetrica 운영 기준에 따라 확인됩니다.
               </p>
             </section>
           </div>
@@ -327,15 +327,15 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
               <h2 className="mt-1 text-lg font-black text-slate-950">자동 확정 아님</h2>
               <p className="mt-3 text-sm leading-6 text-slate-600">
                 TBM 활동 증빙만으로 작업·조치 이행이 자동 확정되지는 않습니다.
-                제출자료는 원청 또는 SafeMetrica 관리자가 확인합니다.
+                제출자료는 SafeMetrica 운영 기준에 따라 확인됩니다.
               </p>
             </section>
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-black text-slate-500">제한 앱 안내</p>
-              <h2 className="mt-1 text-lg font-black text-slate-950">협력사 제출 전용</h2>
+              <h2 className="mt-1 text-lg font-black text-slate-950">안전운영 제출 전용</h2>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                이 화면은 ㈜몬스 제출 전용 화면입니다. 제출 항목은 ㈜버블몬코리아 원청의 확인 대상입니다.
+                이 화면은 ㈜몬스 안전운영 자료를 제출하는 전용 공간입니다.
               </p>
             </section>
           </aside>

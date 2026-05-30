@@ -31,7 +31,7 @@ export default async function MonsContractorSubmittedPage({ searchParams }: Page
     <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
       <div className="mx-auto max-w-2xl">
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-black text-blue-700">SafeMetrica 협력사 제출</p>
+          <p className="text-xs font-black text-blue-700">SafeMetrica 안전운영 제출</p>
           <h1 className="mt-2 text-2xl font-black text-slate-950">
             {params.status === "notion_error" ? "제출 저장 확인 필요" : "제출 접수 완료"}
           </h1>
@@ -43,7 +43,7 @@ export default async function MonsContractorSubmittedPage({ searchParams }: Page
           {params.status === "saved" ? (
             <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
               <p className="text-sm font-bold text-emerald-700">
-                제출 내용이 저장되었습니다. ㈜버블몬코리아 원청 검토를 기다려 주세요.
+                제출 내용이 저장되었습니다. 자료 확인 후 상태가 반영됩니다.
               </p>
             </div>
           ) : params.status === "notion_error" ? (
