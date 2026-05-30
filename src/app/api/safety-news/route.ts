@@ -43,12 +43,31 @@ type KoshaItem = {
 };
 
 type KoshaPayload = {
+  response?: {
+    body?: {
+      items?: {
+        item?: KoshaItem[] | KoshaItem;
+      };
+    };
+  };
   body?: {
     items?: {
       item?: KoshaItem[] | KoshaItem;
     };
   };
 };
+
+function getKoshaPayloadItems(payload: KoshaPayload): KoshaItem[] {
+  const rawItem =
+    payload.response?.body?.items?.item ??
+    payload.body?.items?.item;
+
+  if (!rawItem) {
+    return [];
+  }
+
+  return Array.isArray(rawItem) ? rawItem : [rawItem];
+}
 
 const KOSHA_API_BASE_URL =
   process.env.KOSHA_API_BASE_URL ||
@@ -392,13 +411,11 @@ async function fetchKoshaCases(): Promise<SafetyCaseCard[]> {
   }
 
   const payload = (await response.json()) as KoshaPayload;
-  const rawItem = payload.body?.items?.item;
+  const items = getKoshaPayloadItems(payload);
 
-  if (!rawItem) {
+  if (items.length === 0) {
     return [];
   }
-
-  const items = Array.isArray(rawItem) ? rawItem : [rawItem];
 
   return normalizeKoshaItems(items);
 }
