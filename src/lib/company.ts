@@ -82,6 +82,18 @@ function getFieldVoiceDbIdFallback(code: string) {
 
 function getIndustryTagFallback(code: string) {
   if (code === "bubblemon") return "물류";
+
+  if (
+    code === "daedo" ||
+    code === "dongwoo" ||
+    code === "hankookgreen" ||
+    code === "korea-green" ||
+    code === "greenkorea" ||
+    code === "koreagreen"
+  ) {
+    return "폐기물";
+  }
+
   return undefined;
 }
 
