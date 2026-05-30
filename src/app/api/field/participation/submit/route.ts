@@ -293,6 +293,12 @@ export async function POST(req: NextRequest) {
   const riskAssessmentCheck = getFormChecked(formData, "riskAssessmentCheck");
   const safetyMeasureCheck = getFormChecked(formData, "safetyMeasureCheck");
   const sharedRiskSummary = getFormText(formData, "sharedRiskSummary");
+  const isAcknowledgementOnly =
+    type === "공유확인" &&
+    riskCheck &&
+    riskAssessmentCheck &&
+    safetyMeasureCheck &&
+    (!content || content === "오늘은 추가 의견 없음.");
 
   const evidenceFiles = formData.getAll("evidenceFiles").filter(isFile);
   const oversizedFile = evidenceFiles.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
@@ -371,7 +377,7 @@ export async function POST(req: NextRequest) {
     등록일: { date: { start: reportedDate } },
     "위치/구역": richText(location),
     내용: richText(finalContent),
-    처리상태: { select: { name: "접수" } },
+    처리상태: { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } },
         ...(contractorName && hasNotionProperty(propertyNames, "협력사명")
           ? {
               협력사명: {

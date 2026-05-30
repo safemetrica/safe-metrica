@@ -102,11 +102,12 @@ export default function FieldParticipationStepper({
 
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
-  const finalContent = content.trim() || "오늘은 추가 의견 없음.";
-  const finalTitle =
-    content.trim().length > 0
-      ? `${feedbackType} - 현장근로자 참여`
-      : "의견 없음 - 위험성평가 공유확인";
+  const hasOpinion = content.trim().length > 0;
+  const finalFeedbackType = hasOpinion ? feedbackType : "공유확인";
+  const finalContent = hasOpinion ? content.trim() : "오늘은 추가 의견 없음.";
+  const finalTitle = hasOpinion
+    ? `${feedbackType} - 현장근로자 참여`
+    : "위험성평가 공유확인 완료";
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -115,7 +116,7 @@ export default function FieldParticipationStepper({
         <input type="hidden" name="source" value={sourceValue} />
         <input type="hidden" name="sharedRiskSummary" value={riskSummary.memo ?? ""} />
         <input type="hidden" name="reportedDate" value={todayDateValue} />
-        <input type="hidden" name="type" value={feedbackType} />
+        <input type="hidden" name="type" value={finalFeedbackType} />
         <input type="hidden" name="title" value={finalTitle} />
         <input type="hidden" name="content" value={finalContent} />
         <input type="hidden" name="location" value={location} />

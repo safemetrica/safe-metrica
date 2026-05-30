@@ -221,14 +221,14 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
   const contentProp = getProp(properties, ["내용", "상세 내용", "상세내용", "의견 내용"]);
   const fileProp = getProp(properties, ["사진/파일", "첨부", "첨부파일", "파일", "사진"]);
 
-  const title = getTitleText(titleProp) || getRichText(titleProp) || "제목 없음";
+  const title = getTitleText(titleProp) || getRichText(titleProp) || "현장참여 기록";
   const content = getRichText(contentProp);
 
   return {
     id: page.id,
     notionUrl: page.url,
     title,
-    type: getSelectName(typeProp) || "유형 미지정",
+    type: getSelectName(typeProp) || "공유확인",
     status: getSelectName(statusProp) || "상태 미지정",
     reportedDate: getDateStart(dateProp) || page.created_time || "",
     location: getRichText(locationProp) || "위치 미입력",
@@ -365,10 +365,10 @@ export default async function FieldVoiceReviewPage() {
             <div>
               <p className="text-xs font-black text-blue-700">SafeMetrica 현장참여</p>
               <h1 className="mt-2 text-2xl font-black text-slate-950">
-                현장참여 관리자 검토
+                현장참여 접수함
               </h1>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                근로자·협력사가 제출한 위험요인, 아차사고, 개선의견, 안전조치 확인 내용을
+                근로자의 위험성평가 공유확인, 현장 의견, 아차사고 제보 내용을
                 읽기 전용으로 검토합니다. 상태 변경과 조치 완료 처리는 다음 단계에서 지원됩니다.
               </p>
             </div>
@@ -409,7 +409,7 @@ export default async function FieldVoiceReviewPage() {
         <section className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
           <p className="text-sm font-black text-amber-900">#202 상태 변경 v1</p>
           <p className="mt-2 text-sm leading-6 text-amber-900">
-            이 화면에서는 현장참여 접수 건의 처리상태를 변경할 수 있습니다. 담당자 지정,
+            이 화면에서는 현장참여 접수 건을 확인하고 조치 필요 여부를 구분합니다. 담당자 지정,
             조치 메모, 완료사진, 위험성평가 반영 기능은 후속 단계에서 분리 구현합니다.
           </p>
         </section>
