@@ -125,7 +125,7 @@ export async function getFieldWorkerRiskSummary(
         seen.add(item.id);
         return true;
       })
-      .slice(0, 5)
+      .slice(0, 3)
       .map(toSummaryItem);
 
     return {
