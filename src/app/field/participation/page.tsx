@@ -11,7 +11,6 @@ type PageProps = {
     company?: string;
     site?: string;
     source?: string;
-    contractor?: string;
   }>;
 };
 
@@ -27,8 +26,6 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   const companyCode = params.company ?? "";
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
-  const contractorParam = params.contractor ?? "";
-  const contractorName = contractorParam === "mons" ? "(주)몬스" : "";
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
@@ -77,11 +74,9 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
         >
           <input type="hidden" name="companyCode" value={companyCode} />
           <input type="hidden" name="source" value={sourceValue} />
-          <input type="hidden" name="contractorName" value={contractorName} />
-
-          {contractorName ? (
+          {companyCode === "mons" ? (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
-              협력사: {contractorName}
+              ㈜몬스 현장참여
             </div>
           ) : null}
 
