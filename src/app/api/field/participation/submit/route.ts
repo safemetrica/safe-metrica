@@ -371,23 +371,55 @@ export async function POST(req: NextRequest) {
     finalContent = `${finalContent}\n\n${fileMemoLines.join("\n")}`.slice(0, 1900);
   }
 
-  const properties: Record<string, unknown> = {
-    "의견 제목": titleText(title),
-    "의견 유형": { select: { name: type } },
-    등록일: { date: { start: reportedDate } },
-    "위치/구역": richText(location),
-    내용: richText(finalContent),
-    처리상태: { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } },
-        ...(contractorName && hasNotionProperty(propertyNames, "협력사명")
-          ? {
-              협력사명: {
-                select: {
-                  name: contractorName,
-                },
-              },
-            }
-          : {}),
-  };
+  const properties: Record<string, unknown> = {};
+
+  if (hasNotionProperty(propertyNames, "제출 제목")) {
+    properties["제출 제목"] = titleText(title);
+  } else if (hasNotionProperty(propertyNames, "의견 제목")) {
+    properties["의견 제목"] = titleText(title);
+  } else if (hasNotionProperty(propertyNames, "제목")) {
+    properties["제목"] = titleText(title);
+  }
+
+  if (hasNotionProperty(propertyNames, "제출 유형")) {
+    properties["제출 유형"] = { select: { name: type } };
+  } else if (hasNotionProperty(propertyNames, "의견 유형")) {
+    properties["의견 유형"] = { select: { name: type } };
+  }
+
+  if (hasNotionProperty(propertyNames, "일시")) {
+    properties["일시"] = { date: { start: reportedDate } };
+  } else if (hasNotionProperty(propertyNames, "등록일")) {
+    properties["등록일"] = { date: { start: reportedDate } };
+  } else if (hasNotionProperty(propertyNames, "날짜")) {
+    properties["날짜"] = { date: { start: reportedDate } };
+  }
+
+  if (hasNotionProperty(propertyNames, "작업/위치")) {
+    properties["작업/위치"] = richText(location);
+  } else if (hasNotionProperty(propertyNames, "위치/구역")) {
+    properties["위치/구역"] = richText(location);
+  } else if (hasNotionProperty(propertyNames, "위치")) {
+    properties["위치"] = richText(location);
+  }
+
+  if (hasNotionProperty(propertyNames, "내용")) {
+    properties["내용"] = richText(finalContent);
+  }
+
+  if (hasNotionProperty(propertyNames, "처리상태")) {
+    properties["처리상태"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
+  } else if (hasNotionProperty(propertyNames, "상태")) {
+    properties["상태"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
+  }
+
+  if (contractorName && hasNotionProperty(propertyNames, "협력사명")) {
+    properties["협력사명"] = {
+      select: {
+        name: contractorName,
+      },
+    };
+  }
 
   if (hasNotionProperty(propertyNames, "위험요인 확인")) {
     properties["위험요인 확인"] = { checkbox: riskCheck };
