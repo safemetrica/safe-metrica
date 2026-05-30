@@ -76,6 +76,19 @@ const KOSHA_API_BASE_URL =
 const KOSHA_SERVICE_KEY = process.env.KOSHA_SERVICE_KEY || "";
 const KOSHA_CALL_API_ID = process.env.KOSHA_CALL_API_ID || "1060";
 
+const KOSHA_KEYWORDS_BY_INDUSTRY: Record<IndustryTag, string[]> = {
+  폐기물: ["폐기물", "환경미화", "청소차", "수거차"],
+  물류: ["물류", "지게차", "상하차", "창고"],
+  제조: ["제조", "기계", "프레스", "컨베이어"],
+  건설: ["건설", "비계", "굴착", "크레인"],
+  공통: [""],
+};
+
+function getKoshaKeywords(tenantIndustryTag: IndustryTag) {
+  return KOSHA_KEYWORDS_BY_INDUSTRY[tenantIndustryTag] ?? [""];
+}
+
+
 function classifyAccidentType(text: string): AccidentType {
   const value = text.replace(/\s/g, "");
 
@@ -388,17 +401,13 @@ function selectCards(
   return selected.slice(0, 2);
 }
  
-async function fetchKoshaCases(): Promise<SafetyCaseCard[]> {
-  if (!KOSHA_SERVICE_KEY) {
-    return [];
-  }
-
+async function fetchKoshaItems(keyword: string): Promise<KoshaItem[]> {
   const params = new URLSearchParams({
     serviceKey: KOSHA_SERVICE_KEY,
     pageNo: "1",
     numOfRows: "20",
     business: "",
-    keyword: "",
+    keyword,
     callApiId: KOSHA_CALL_API_ID,
   });
 
@@ -411,13 +420,57 @@ async function fetchKoshaCases(): Promise<SafetyCaseCard[]> {
   }
 
   const payload = (await response.json()) as KoshaPayload;
-  const items = getKoshaPayloadItems(payload);
+  return getKoshaPayloadItems(payload);
+}
 
-  if (items.length === 0) {
+async function fetchKoshaCases(tenantIndustryTag: IndustryTag): Promise<SafetyCaseCard[]> {
+  if (!KOSHA_SERVICE_KEY) {
     return [];
   }
 
-  return normalizeKoshaItems(items);
+  const keywords = getKoshaKeywords(tenantIndustryTag);
+  const settled = await Promise.allSettled(
+    keywords.map((keyword) => fetchKoshaItems(keyword))
+  );
+
+  const cards: SafetyCaseCard[] = [];
+
+  for (const result of settled) {
+    if (result.status !== "fulfilled") {
+      continue;
+    }
+
+    const normalized = normalizeKoshaItems(result.value);
+
+    for (const card of normalized) {
+      const industryTag =
+        card.industryTag === "공통" && tenantIndustryTag !== "공통"
+          ? tenantIndustryTag
+          : card.industryTag;
+
+      cards.push({
+        ...card,
+        industryTag,
+        isSimilarIndustry:
+          industryTag === tenantIndustryTag || card.isSimilarIndustry,
+      });
+    }
+  }
+
+  const seen = new Set<string>();
+
+  return cards
+    .filter((card) => {
+      const key = `${card.id}:${card.title}:${card.summary.slice(0, 80)}`;
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 60);
 }
 
 async function getTenantSafetyContext(request?: NextRequest): Promise<{
@@ -492,7 +545,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const koshaCards = await fetchKoshaCases();
+    const koshaCards = await fetchKoshaCases(tenantContext.industryTag);
 
     // KOSHA 결과가 있더라도 업종 유사 사례가 부족할 수 있으므로
     // 기존 tenant-aware 선별 로직은 유지하되, SAMPLE은 보조 후보로만 포함한다.
