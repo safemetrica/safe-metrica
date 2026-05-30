@@ -1,4 +1,5 @@
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
+import FieldParticipationStepper from "./FieldParticipationStepper";
 import { getOperatingFieldWorkerCopy } from "./operatingFieldWorkerCopy";
 import { getFieldWorkerRiskSummary } from "./fieldWorkerRiskSummary";
 
@@ -31,6 +32,20 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
 
+  if (riskSummary) {
+    return (
+      <FieldParticipationStepper
+        companyCode={companyCode}
+        siteValue={siteValue}
+        sourceValue={sourceValue}
+        todayDateValue={todayDateValue}
+        workerCopy={workerCopy}
+        riskSummary={riskSummary}
+        feedbackTypes={feedbackTypes}
+      />
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
       <div className="mx-auto max-w-3xl">
@@ -47,7 +62,6 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
           </p>
         </section>
 
-        {!riskSummary ? (
         <section className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
           <p className="text-xs font-black text-blue-700">위험성평가 공유 확인</p>
           <h2 className="mt-1 text-xl font-black text-slate-950">오늘 작업 전 확인</h2>
@@ -74,7 +88,6 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
             ))}
           </div>
         </section>
-        ) : null}
 
         <form
           action="/api/field/participation/submit"
@@ -84,70 +97,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
         >
           <input type="hidden" name="companyCode" value={companyCode} />
           <input type="hidden" name="source" value={sourceValue} />
-          <input type="hidden" name="sharedRiskSummary" value={riskSummary?.memo ?? ""} />
-
-          {riskSummary ? (
-            <section className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
-              <p className="text-xs font-black text-blue-700">위험성평가표 공유</p>
-              <h2 className="mt-1 text-xl font-black text-slate-950">오늘 공유된 주요 위험요인</h2>
-
-              {riskSummary.items.length > 0 ? (
-                <div className="mt-4 space-y-3">
-                  {riskSummary.items.map((item, index) => (
-                    <article key={item.id} className="rounded-2xl border border-blue-100 bg-white p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-black text-blue-700">위험성평가 항목 {index + 1}</p>
-                          <h3 className="mt-1 text-base font-black text-slate-950">{item.taskName}</h3>
-                        </div>
-                        <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-white">
-                          위험수준 {item.riskLevel}
-                        </span>
-                      </div>
-
-                      <dl className="mt-3 space-y-2 text-sm leading-6">
-                        <div>
-                          <dt className="font-black text-slate-700">주요 위험요인</dt>
-                          <dd className="text-slate-700">{item.hazard}</dd>
-                        </div>
-                        <div>
-                          <dt className="font-black text-slate-700">개선대책·작업 전 유의사항</dt>
-                          <dd className="text-slate-700">{item.improvementPlan}</dd>
-                        </div>
-                      </dl>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 rounded-2xl border border-blue-100 bg-white p-4 text-sm font-bold text-slate-700">
-                  연결된 위험성평가표에서 현장근로자 공유 항목을 불러올 수 없습니다. 관리자에게 위험성평가표 연결 상태를 확인해 주세요.
-                </p>
-              )}
-
-              <div className="mt-4 space-y-3">
-                {[
-                  "오늘 작업의 주요 위험요인을 확인했습니다.",
-                  "위험성평가 주요 내용을 공유받았습니다.",
-                  "필요한 안전조치와 주의사항을 확인했습니다.",
-                ].map((label) => (
-                  <label key={label} className="flex gap-3 rounded-2xl border border-blue-100 bg-white p-4 text-sm font-bold text-slate-800">
-                    <input
-                      type="checkbox"
-                      name={
-                        label.includes("주요 위험요인")
-                          ? "riskCheck"
-                          : label.includes("위험성평가")
-                            ? "riskAssessmentCheck"
-                            : "safetyMeasureCheck"
-                      }
-                      className="mt-1 h-5 w-5 rounded border-slate-300"
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
-          ) : null}
+          <input type="hidden" name="sharedRiskSummary" value="" />
 
           {workerCopy ? (
             <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">
