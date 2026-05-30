@@ -44,6 +44,18 @@ type Props = {
 
 const stepLabels = ["위험 확인", "주지 확인", "의견 제출", "완료"];
 
+function normalizeParticipationType(rawType: string) {
+  const value = rawType.trim();
+  const compact = value.replace(/\s+/g, "");
+
+  if (compact === "위험제보" || compact === "위험요인제보") return "위험제보";
+  if (compact === "개선제안" || compact === "개선의견") return "개선제안";
+  if (compact === "아차사고" || compact === "아차사고제보") return "아차사고";
+  if (compact === "공유확인" || compact === "주지확인") return "공유확인";
+
+  return value || "위험제보";
+}
+
 function StepHeader({ step }: { step: number }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -94,7 +106,16 @@ export default function FieldParticipationStepper({
   const [riskCheck, setRiskCheck] = useState(false);
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
-  const [feedbackType, setFeedbackType] = useState(feedbackTypes[0] ?? "위험 제보");
+  const feedbackTypeOptions = useMemo(() => {
+    const source = feedbackTypes.length > 0 ? feedbackTypes : ["위험제보", "아차사고", "개선제안"];
+    return Array.from(new Set(source.map(normalizeParticipationType))).filter(
+      (type) => type !== "공유확인"
+    );
+  }, [feedbackTypes]);
+  const [feedbackType, setFeedbackType] = useState(() =>
+    normalizeParticipationType(feedbackTypeOptions[0] ?? "위험제보")
+  );
+  const [reportTitle, setReportTitle] = useState("");
   const [location, setLocation] = useState(siteValue);
   const [submitter, setSubmitter] = useState("");
   const [anonymous, setAnonymous] = useState(false);
@@ -102,11 +123,11 @@ export default function FieldParticipationStepper({
 
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
-  const hasOpinion = content.trim().length > 0;
-  const finalFeedbackType = hasOpinion ? feedbackType : "공유확인";
-  const finalContent = hasOpinion ? content.trim() : "오늘은 추가 의견 없음.";
+  const hasOpinion = reportTitle.trim().length > 0 || content.trim().length > 0;
+  const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : "공유확인";
+  const finalContent = hasOpinion ? content.trim() || "상세 내용 미입력" : "오늘은 추가 의견 없음.";
   const finalTitle = hasOpinion
-    ? `${feedbackType} - 현장근로자 참여`
+    ? reportTitle.trim() || `${finalFeedbackType} - 현장근로자 참여`
     : "위험성평가 공유확인 완료";
 
   return (
@@ -249,14 +270,25 @@ export default function FieldParticipationStepper({
                 </p>
 
                 <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">의견 유형</label>
+                  <label className="text-sm font-bold text-slate-700">제보 제목</label>
+                  <input
+                    value={reportTitle}
+                    onChange={(event) => setReportTitle(event.target.value.slice(0, 80))}
+                    placeholder="예: 재활용장 바닥 깨진 병 조각 발견"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
+                  <p className="mt-1 text-right text-xs font-bold text-slate-500">{reportTitle.length}/80</p>
+                </div>
+
+                <div className="mt-4">
+                  <label className="text-sm font-bold text-slate-700">제보 유형</label>
                   <select
                     value={feedbackType}
-                    onChange={(event) => setFeedbackType(event.target.value)}
+                    onChange={(event) => setFeedbackType(normalizeParticipationType(event.target.value))}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   >
-                    {feedbackTypes.map((type) => (
-                      <option key={type}>{type}</option>
+                    {feedbackTypeOptions.map((type) => (
+                      <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
                 </div>
@@ -348,7 +380,7 @@ export default function FieldParticipationStepper({
                 type="submit"
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white"
               >
-                {content.trim() ? "제출하기 →" : "의견 없이 완료하기 →"}
+                {hasOpinion ? "제출하기 →" : "의견 없이 완료하기 →"}
               </button>
             ) : null}
 
