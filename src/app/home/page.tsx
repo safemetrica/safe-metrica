@@ -124,6 +124,10 @@ export default async function Home({
     redirect("/login?error=tenant_required");
   }
 
+  if (company.code === "mons") {
+    redirect("/contractor/mons");
+  }
+
   const tbmFormUrl = getTbmFormUrl(company);
 
   const weather = await getWeather();
