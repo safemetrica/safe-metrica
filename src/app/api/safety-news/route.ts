@@ -423,7 +423,7 @@ async function getTenantSafetyContext(request?: NextRequest): Promise<{
       return normalized;
     }
 
-    return /대도환경|동우환경|한국그린환경|daedo|dongwoo|greenkorea/i.test(identity)
+    return /대도환경|동우환경|한국그린환경|daedo|dongwoo|hankookgreen|greenkorea|korea-green|koreagreen/i.test(identity)
       ? "폐기물"
       : "공통";
   };
