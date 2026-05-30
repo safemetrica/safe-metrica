@@ -252,6 +252,35 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
       })()}
 
       <div className="p-4 max-w-5xl mx-auto">
+
+        <div className="mb-4 rounded-2xl border border-cyan-800 bg-cyan-950/30 p-4">
+          <div className="mb-3">
+            <h2 className="text-white font-black text-lg">역할별 바로가기</h2>
+            <p className="text-cyan-300 text-xs">대표 · 현장관리자 · 근로자 · 제출주체 분리 운영</p>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Link href="/dashboard" className="rounded-xl bg-purple-700 p-4 text-white">
+              <div className="text-2xl">👔</div>
+              <div className="font-bold mt-2">대표 모드</div>
+            </Link>
+
+            <Link href="/field" className="rounded-xl bg-teal-700 p-4 text-white">
+              <div className="text-2xl">👷</div>
+              <div className="font-bold mt-2">현장관리자</div>
+            </Link>
+
+            <Link href="/field/participation" className="rounded-xl bg-emerald-700 p-4 text-white">
+              <div className="text-2xl">🧑‍🏭</div>
+              <div className="font-bold mt-2">근로자 참여</div>
+            </Link>
+
+            <Link href="/contractor/mons?token=6064290a7ad1685c2cff1671480916c91e4c3662465e07a388990f1b43414bbd" className="rounded-xl bg-orange-700 p-4 text-white">
+              <div className="text-2xl">📤</div>
+              <div className="font-bold mt-2">안전자료 제출</div>
+            </Link>
+          </div>
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
           {menus.map((m) => (
             <Link key={m.href} href={m.href}
