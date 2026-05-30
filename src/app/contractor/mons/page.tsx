@@ -145,7 +145,7 @@ export default async function MonsContractorSubmitPage({ searchParams }: PagePro
             </div>
             <div className="flex flex-wrap gap-2 text-xs font-bold">
               <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">제출 주체: {contractor.name}</span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">㈜버블몬코리아 현장</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">㈜몬스 자체 운영</span>
             </div>
           </div>
 
