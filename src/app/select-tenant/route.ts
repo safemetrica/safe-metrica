@@ -22,10 +22,29 @@ function requiresTenantToken(companyCode: string) {
   return companyCode in TENANT_TOKEN_ENV_BY_COMPANY;
 }
 
+function getSafeNextPath(rawNext: string | null) {
+  if (!rawNext) return "/home";
+  if (!rawNext.startsWith("/") || rawNext.startsWith("//")) return "/home";
+
+  try {
+    const parsed = new URL(rawNext, "https://safe-metrica.local");
+    const allowedPaths = new Set([
+      "/home",
+    ]);
+
+    if (!allowedPaths.has(parsed.pathname)) return "/home";
+
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return "/home";
+  }
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = (url.searchParams.get("code") ?? "").trim().toLowerCase();
   const token = url.searchParams.get("token");
+  const nextPath = getSafeNextPath(url.searchParams.get("next"));
 
   if (!code) {
     const res = redirectToLogin(req, "missing_company");
@@ -48,7 +67,7 @@ export async function GET(req: NextRequest) {
   try {
     const company = await getCompanyConfigByCode(code);
 
-    const res = NextResponse.redirect(new URL("/home", req.url));
+    const res = NextResponse.redirect(new URL(nextPath, req.url));
 
     res.cookies.set("sm_company_code", company.code, {
       path: "/",
