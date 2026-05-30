@@ -365,6 +365,14 @@ function sampleCases(): SafetyCaseCard[] {
   ];
 }
 
+function summarizeCards(cards: SafetyCaseCard[]) {
+  return cards.reduce<Record<string, number>>((acc, card) => {
+    const key = `${card.source}:${card.industryTag}`;
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+}
+
 function selectCards(
   cards: SafetyCaseCard[],
   tenantIndustryTag: IndustryTag,
@@ -386,13 +394,41 @@ function selectCards(
     };
   });
 
-  const industryCandidates = scored
-    .filter((card) => card.isSimilarIndustry)
+  const koshaIndustryCandidates = scored
+    .filter((card) => card.source === "KOSHA" && card.isSimilarIndustry)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-  const commonCandidates = scored
-    .filter((card) => card.industryTag === "공통" && !card.isSimilarIndustry)
+  const sampleIndustryCandidates = scored
+    .filter((card) => card.source === "SAMPLE" && card.isSimilarIndustry)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  const industryCandidates =
+    koshaIndustryCandidates.length > 0
+      ? koshaIndustryCandidates
+      : sampleIndustryCandidates;
+
+  const koshaCommonCandidates = scored
+    .filter(
+      (card) =>
+        card.source === "KOSHA" &&
+        card.industryTag === "공통" &&
+        !card.isSimilarIndustry
+    )
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  const sampleCommonCandidates = scored
+    .filter(
+      (card) =>
+        card.source === "SAMPLE" &&
+        card.industryTag === "공통" &&
+        !card.isSimilarIndustry
+    )
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  const commonCandidates =
+    koshaCommonCandidates.length > 0
+      ? koshaCommonCandidates
+      : sampleCommonCandidates;
 
   const industryPick =
     pickDailyItem(industryCandidates, [
@@ -598,6 +634,15 @@ export async function GET(request: NextRequest) {
       dateKey: getKstDateKey(),
       industryTag: tenantContext.industryTag,
       cards,
+      ...(request.nextUrl.searchParams.get("debug") === "1"
+        ? {
+            debug: {
+              koshaCandidateCount: koshaCards.length,
+              koshaBreakdown: summarizeCards(koshaCards),
+              selectedBreakdown: summarizeCards(cards),
+            },
+          }
+        : {}),
     });
   } catch (error) {
     console.error("[safety-news]", error);
