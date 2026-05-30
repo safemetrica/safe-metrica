@@ -373,7 +373,11 @@ export async function POST(req: NextRequest) {
 
   const properties: Record<string, unknown> = {};
 
-  if (hasNotionProperty(propertyNames, "제출 제목")) {
+  if (hasNotionProperty(propertyNames, "제보 제목")) {
+    properties["제보 제목"] = titleText(title);
+  } else if (hasNotionProperty(propertyNames, "제보제목")) {
+    properties["제보제목"] = titleText(title);
+  } else if (hasNotionProperty(propertyNames, "제출 제목")) {
     properties["제출 제목"] = titleText(title);
   } else if (hasNotionProperty(propertyNames, "의견 제목")) {
     properties["의견 제목"] = titleText(title);
@@ -381,7 +385,11 @@ export async function POST(req: NextRequest) {
     properties["제목"] = titleText(title);
   }
 
-  if (hasNotionProperty(propertyNames, "제출 유형")) {
+  if (hasNotionProperty(propertyNames, "제보유형")) {
+    properties["제보유형"] = { select: { name: type } };
+  } else if (hasNotionProperty(propertyNames, "제보 유형")) {
+    properties["제보 유형"] = { select: { name: type } };
+  } else if (hasNotionProperty(propertyNames, "제출 유형")) {
     properties["제출 유형"] = { select: { name: type } };
   } else if (hasNotionProperty(propertyNames, "의견 유형")) {
     properties["의견 유형"] = { select: { name: type } };
@@ -409,6 +417,8 @@ export async function POST(req: NextRequest) {
 
   if (hasNotionProperty(propertyNames, "처리상태")) {
     properties["처리상태"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
+  } else if (hasNotionProperty(propertyNames, "처리상태_기존")) {
+    properties["처리상태_기존"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
   } else if (hasNotionProperty(propertyNames, "상태")) {
     properties["상태"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
   }
