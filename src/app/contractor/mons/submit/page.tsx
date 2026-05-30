@@ -65,7 +65,7 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
         </Link>
 
         <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-black text-blue-700">SafeMetrica 협력사 제출</p>
+          <p className="text-xs font-black text-blue-700">SafeMetrica 안전운영 제출</p>
           <h1 className="mt-2 text-2xl font-black text-slate-950">{formTitle}</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">{formDescription}</p>
 
@@ -208,7 +208,7 @@ export default async function MonsContractorSubmitFormPage({ searchParams }: Pag
             <h2 className="text-sm font-black text-amber-800">제출 전 확인</h2>
             <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-900">
               <li>• TBM 활동 증빙과 조치 이행 증빙은 별도로 확인됩니다.</li>
-              <li>• 제출자료는 ㈜버블몬코리아 원청 또는 SafeMetrica 관리자가 검토합니다.</li>
+              <li>• 제출자료는 SafeMetrica 운영 기준에 따라 확인됩니다.</li>
               <li>• 제출 후 보완 요청이 있을 수 있습니다.</li>
             </ul>
           </section>
