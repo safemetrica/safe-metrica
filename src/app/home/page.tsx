@@ -4,7 +4,6 @@ import { getCompanyConfig } from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
 
 import { getTbmFormUrl } from "@/lib/tenantLinks";
-import PartnerCompanyStatusCard from "@/components/PartnerCompanyStatusCard";
 const menus = [
   { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
   { href: "/field/participation", icon: "🗣️", label: "현장참여", sub: "위험요인 확인·의견제보", color: "from-lime-600 to-emerald-700 hover:from-lime-500 hover:to-emerald-600", border: "border-lime-500" },
@@ -263,7 +262,10 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
             </Link>
           ))}
         </div>
-        <PartnerCompanyStatusCard className="mt-4" />
+        {/*
+          Legacy external submitter card hidden.
+          Mons is now an independent tenant, not a Bubblemon contractor.
+        */}
 
         <div className="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">

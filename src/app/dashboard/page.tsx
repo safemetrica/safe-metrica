@@ -392,14 +392,14 @@ async function getDashboardData() {
   if (contractorSubmissionSummary.followUpCount > 0) {
     todayTasks.push({
       icon: "🤝",
-      text: `협력사 보완요청 ${contractorSubmissionSummary.followUpCount}건 — 확인 필요`,
+      text: `제출자료 보완 안내 ${contractorSubmissionSummary.followUpCount}건 — 확인 필요`,
       href: "/contractor-status",
       urgent: true,
     });
   } else if (contractorSubmissionSummary.principalPendingCount > 0) {
     todayTasks.push({
       icon: "🤝",
-      text: `협력사 미검토 제출자료 ${contractorSubmissionSummary.principalPendingCount}건 — 원청 검토 필요`,
+      text: `미확인 제출자료 ${contractorSubmissionSummary.principalPendingCount}건 — 확인 필요`,
       href: "/contractor-status",
       urgent: false,
     });
