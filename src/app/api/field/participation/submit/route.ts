@@ -230,6 +230,7 @@ async function resolveCompanyConfig(formData: FormData) {
 
 function buildContentWithConfirmation(params: {
   content: string;
+  sharedRiskSummary: string;
   riskCheck: boolean;
   riskAssessmentCheck: boolean;
   safetyMeasureCheck: boolean;
@@ -237,6 +238,11 @@ function buildContentWithConfirmation(params: {
   const lines: string[] = [];
 
   lines.push(params.content);
+
+  if (params.sharedRiskSummary) {
+    lines.push("");
+    lines.push(params.sharedRiskSummary);
+  }
 
   lines.push("");
   lines.push("[위험성평가 공유 확인]");
@@ -286,6 +292,7 @@ export async function POST(req: NextRequest) {
   const riskCheck = getFormChecked(formData, "riskCheck");
   const riskAssessmentCheck = getFormChecked(formData, "riskAssessmentCheck");
   const safetyMeasureCheck = getFormChecked(formData, "safetyMeasureCheck");
+  const sharedRiskSummary = getFormText(formData, "sharedRiskSummary");
 
   const evidenceFiles = formData.getAll("evidenceFiles").filter(isFile);
   const oversizedFile = evidenceFiles.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
@@ -329,6 +336,7 @@ export async function POST(req: NextRequest) {
 
   let finalContent = buildContentWithConfirmation({
     content,
+    sharedRiskSummary,
     riskCheck,
     riskAssessmentCheck,
     safetyMeasureCheck,
