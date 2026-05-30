@@ -1,23 +1,31 @@
 type TenantLike = {
   code?: string | null;
   name?: string | null;
+  tbmDbId?: string | null;
 };
 
-const TBM_FORM_URLS: Record<string, string> = {
-  daedo:
-    process.env.NEXT_PUBLIC_DAEDO_TBM_FORM_URL ||
-    "https://www.notion.so/495ff98dcded498ca2311d4286135603?v=1b757b2e91454827b38fabac38a702c9",
-  bubblemon:
-    process.env.NEXT_PUBLIC_BUBBLEMON_TBM_FORM_URL ||
-    "https://www.notion.so/67d050dc3b0f4d3f9098af9abf0c8813?v=b3283e3c5de948f5908f2fef607855f4",
-};
+function normalizeNotionDatabaseId(value?: string | null) {
+  const raw = String(value ?? "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  const compact = raw.replace(/-/g, "");
+
+  if (!/^[a-f0-9]{32}$/i.test(compact)) {
+    return "";
+  }
+
+  return compact;
+}
 
 export function getTbmFormUrl(company?: TenantLike | null): string | null {
-  const code = String(company?.code ?? "").trim().toLowerCase();
+  const tbmDbId = normalizeNotionDatabaseId(company?.tbmDbId);
 
-  if (!code) {
+  if (!tbmDbId) {
     return null;
   }
 
-  return TBM_FORM_URLS[code] || null;
+  return `https://www.notion.so/${tbmDbId}`;
 }
