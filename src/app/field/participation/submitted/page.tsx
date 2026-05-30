@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getFieldParticipationCopy } from "../fieldParticipationCopy";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -64,6 +65,7 @@ function getStatusCopy(status?: string) {
 export default async function FieldParticipationSubmittedPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const copy = getStatusCopy(params.status);
+  const tenantCopy = getFieldParticipationCopy(params.company);
   const participationHref = params.company
     ? `/field/participation?company=${encodeURIComponent(params.company)}`
     : "/field/participation";
@@ -79,13 +81,15 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
     <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
       <div className="mx-auto max-w-2xl">
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-black text-blue-700">SafeMetrica 현장참여</p>
+          <p className="text-xs font-black text-blue-700">{tenantCopy.badge}</p>
           <h1 className="mt-2 text-2xl font-black text-slate-950">{copy.title}</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">{copy.message}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {tenantCopy.companyName} · {copy.message}
+          </p>
 
           <div className={`mt-4 rounded-2xl border p-4 ${toneClass}`}>
             <p className="text-sm font-bold">
-              안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.
+              {tenantCopy.submittedReviewMessage}
             </p>
             {params.message ? (
               <p className="mt-2 text-xs leading-5">
@@ -101,12 +105,9 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
             >
               다른 의견 남기기
             </Link>
-            <Link
-              href="/"
-              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-black text-slate-700"
-            >
-              홈으로
-            </Link>
+            <div className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-center text-sm font-black text-slate-600">
+              제출 후 창을 닫아도 됩니다
+            </div>
           </div>
         </section>
       </div>
