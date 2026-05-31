@@ -248,15 +248,101 @@ function getWeatherActionPlan(weather: {
   return null;
 }
 
+
+function getWeatherTestSnapshot(testMode?: string | null) {
+  const mode = String(testMode ?? "").trim().toLowerCase();
+
+  if (!mode) return null;
+
+  const base = {
+    observedAt: "테스트",
+    stopRequired: false,
+  };
+
+  if (mode === "heat35" || mode === "heat") {
+    return {
+      ...base,
+      tmp: 35,
+      feelsLike: 36,
+      wsd: 1.2,
+      pty: "0",
+      pop: 0,
+      icon: "🔥",
+      decision: "LIMIT",
+      alerts: ["🔥 폭염위험 35°C — 물·그늘·휴식·작업시간 조정 필요"],
+    };
+  }
+
+  if (mode === "heat33") {
+    return {
+      ...base,
+      tmp: 33,
+      feelsLike: 34,
+      wsd: 1.2,
+      pty: "0",
+      pop: 0,
+      icon: "☀️",
+      decision: "LIMIT",
+      alerts: ["☀️ 폭염 33°C — 온열질환 예방조치 확인"],
+    };
+  }
+
+  if (mode === "rain") {
+    return {
+      ...base,
+      tmp: 24,
+      feelsLike: 24,
+      wsd: 2.1,
+      pty: "1",
+      pop: 80,
+      icon: "🌧️",
+      decision: "LIMIT",
+      alerts: ["🌧️ 현재 강수 감지 — 야외작업 주의"],
+    };
+  }
+
+  if (mode === "wind") {
+    return {
+      ...base,
+      tmp: 22,
+      feelsLike: 22,
+      wsd: 10,
+      pty: "0",
+      pop: 0,
+      icon: "💨",
+      decision: "STOP",
+      stopRequired: true,
+      alerts: ["🚨 강풍 10m/s — 고소·양중·외부작업 제한 검토"],
+    };
+  }
+
+  if (mode === "cold") {
+    return {
+      ...base,
+      tmp: -10,
+      feelsLike: -12,
+      wsd: 2.5,
+      pty: "0",
+      pop: 0,
+      icon: "🥶",
+      decision: "LIMIT",
+      alerts: ["🥶 한파 -10°C — 저체온증 위험"],
+    };
+  }
+
+  return null;
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: Promise<{ role?: string }> | { role?: string };
+  searchParams?: Promise<{ role?: string; weatherTest?: string }> | { role?: string; weatherTest?: string };
 }) {
   const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
   const role = resolvedSearchParams.role;
+  const weatherTest = resolvedSearchParams.weatherTest;
   const isManagerMode = role === "manager";
   const visibleMenus = isManagerMode
     ? menus.filter((menu) => managerMenuHrefs.has(menu.href))
@@ -274,7 +360,10 @@ export default async function Home({
 
   const tbmFormUrl = getTbmFormUrl(company);
 
-  const weather = await getWeather();
+  const actualWeather = await getWeather();
+  const weatherTestSnapshot = getWeatherTestSnapshot(weatherTest);
+  const weather = weatherTestSnapshot ?? actualWeather;
+  const isWeatherTestMode = Boolean(weatherTestSnapshot);
   const weatherActionPlan = getWeatherActionPlan(weather);
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
 
@@ -398,7 +487,17 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                   <span className="whitespace-nowrap">풍속 {weather.wsd}m/s</span>
                   <span className="whitespace-nowrap">강수확률 {weather.pop}%</span>
                 </span>
-              </div><p className="text-blue-200 text-xs mt-1">기상청 초단기실황 기준 {weather.observedAt}</p>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="text-blue-200 text-xs">
+                  {isWeatherTestMode ? "날씨 테스트 모드" : "기상청 초단기실황 기준"} {weather.observedAt}
+                </p>
+                {isWeatherTestMode ? (
+                  <span className="rounded-full border border-cyan-400/40 bg-cyan-950 px-2 py-0.5 text-[11px] font-black text-cyan-100">
+                    검수용 미리보기
+                  </span>
+                ) : null}
+              </div>
 
               {/* 의사결정 티켓 */}
               <div className={`rounded-xl border p-3 ${cfg.bg}`}>
