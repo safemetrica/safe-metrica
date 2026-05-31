@@ -33,9 +33,9 @@ export default function TbmFormAction({
           {voiceDraftHref ? (
             <Link
               href={voiceDraftHref}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-cyan-400 bg-cyan-500 px-3 text-xs font-black text-slate-950 shadow-sm hover:bg-cyan-400 sm:px-4 sm:text-sm"
+              className="inline-flex h-9 min-w-[132px] items-center justify-center rounded-lg border border-cyan-400 bg-cyan-500 px-4 text-xs font-black text-slate-950 shadow-sm hover:bg-cyan-400 sm:min-w-[150px] sm:text-sm"
             >
-              🎙️ 말로 초안
+              🎙️ 말로 TBM 초안작성
             </Link>
           ) : null}
 
@@ -44,7 +44,7 @@ export default function TbmFormAction({
               href={tbmFormUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-black text-white shadow-sm hover:bg-blue-500 sm:px-4 sm:text-sm"
+              className="inline-flex h-9 min-w-[132px] items-center justify-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white shadow-sm hover:bg-blue-500 sm:min-w-[150px] sm:text-sm"
             >
               오늘 TBM 작성하기
             </a>
