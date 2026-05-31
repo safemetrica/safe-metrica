@@ -48,8 +48,8 @@ const hour = kst.getHours();
     const fcstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${key}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${fcstDate}&base_time=${fcstTime}&nx=${nx}&ny=${ny}`;
 
         const [ncstRes, fcstRes] = await Promise.all([
-      fetch(ncstUrl, { cache: "no-store" }),
-      fetch(fcstUrl, { next: { revalidate: 3600 } }),
+      fetch(ncstUrl, { next: { revalidate: 7200 } }),
+      fetch(fcstUrl, { next: { revalidate: 7200 } }),
     ]);
 
     const [ncstData, fcstData] = await Promise.all([
