@@ -84,7 +84,7 @@ export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageP
           <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">
             현재 근로자에게 공유할 위험성평가 요약 항목이 없습니다.
             {companyCode === "mons"
-              ? " 몬스는 현재 3개월 단기 독립 테넌트로 현장참여와 TBM 중심으로 운영합니다."
+              ? " 현재 이 사업장은 현장참여와 TBM 중심으로 운영합니다."
               : " 현장관리자에게 위험성평가표 연결 상태를 확인해 주세요."}
           </div>
 
