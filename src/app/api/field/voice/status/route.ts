@@ -1,98 +1,137 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  TenantRequiredError,
-  UnknownCompanyError,
-  getCompanyConfig,
-} from "@/lib/company";
-
-export const dynamic = "force-dynamic";
-
 const STATUS_OPTIONS = new Set(["접수", "검토중", "조치필요", "조치완료", "반려"]);
 
-function normalizeNotionId(rawId: string) {
-  return rawId.trim().replace(/^collection:\/\//, "").replace(/-/g, "");
+const STATUS_PROPERTY_ALIASES = ["처리상태", "처리상태_기존", "처리 상태", "상태"];
+const MEMO_PROPERTY_ALIASES = ["조치 메모", "처리 메모", "관리자 메모", "검토 메모", "조치내용", "조치 내용"];
+
+type NotionPropertyMeta = {
+  type?: string;
+};
+
+type NotionPageResponse = {
+  properties?: Record<string, NotionPropertyMeta>;
+};
+
+function getFormString(formData: FormData, name: string) {
+  const value = formData.get(name);
+  return typeof value === "string" ? value.trim() : "";
 }
 
-function formatNotionUuid(rawId: string) {
-  const normalized = normalizeNotionId(rawId);
-
-  if (/^[0-9a-fA-F]{32}$/.test(normalized)) {
-    return [
-      normalized.slice(0, 8),
-      normalized.slice(8, 12),
-      normalized.slice(12, 16),
-      normalized.slice(16, 20),
-      normalized.slice(20),
-    ].join("-");
-  }
-
-  return rawId.trim();
-}
-
-function redirectToFieldVoice(req: NextRequest, status: string) {
+function redirectTo(req: NextRequest, params?: Record<string, string>) {
   const url = new URL("/field/voice", req.url);
-  url.searchParams.set("status", status);
-  return NextResponse.redirect(url, { status: 303 });
+
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+  }
+
+  return NextResponse.redirect(url);
 }
 
-export async function POST(req: NextRequest) {
-  const formData = await req.formData();
+function pickPropertyName(
+  properties: Record<string, NotionPropertyMeta>,
+  aliases: string[]
+) {
+  return aliases.find((name) => Boolean(properties[name]));
+}
 
-  const pageId = String(formData.get("pageId") ?? "").trim();
-  const nextStatus = String(formData.get("status") ?? "").trim();
-
-  if (!pageId || !/^[0-9a-fA-F-]{32,36}$/.test(pageId)) {
-    return redirectToFieldVoice(req, "invalid_page");
+function buildStatusProperty(propertyType: string | undefined, status: string) {
+  if (propertyType === "status") {
+    return { status: { name: status } };
   }
 
-  if (!STATUS_OPTIONS.has(nextStatus)) {
-    return redirectToFieldVoice(req, "invalid_status");
-  }
+  return { select: { name: status } };
+}
 
-  let company;
-
-  try {
-    company = await getCompanyConfig();
-  } catch (error) {
-    if (error instanceof TenantRequiredError) {
-      return redirectToFieldVoice(req, "tenant_required");
-    }
-
-    if (error instanceof UnknownCompanyError) {
-      return redirectToFieldVoice(req, "unknown_company");
-    }
-
-    return redirectToFieldVoice(req, "company_error");
-  }
-
-  const response = await fetch(`https://api.notion.com/v1/pages/${formatNotionUuid(pageId)}`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${company.notionApiKey}`,
-      "Notion-Version": "2022-06-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      properties: {
-        처리상태: {
-          select: {
-            name: nextStatus,
-          },
+function buildRichTextProperty(value: string) {
+  return {
+    rich_text: [
+      {
+        text: {
+          content: value,
         },
       },
-    }),
+    ],
+  };
+}
+
+async function retrievePage(notionApiKey: string, pageId: string): Promise<NotionPageResponse> {
+  const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${notionApiKey}`,
+      "Notion-Version": "2025-09-03",
+      "Content-Type": "application/json",
+    },
     cache: "no-store",
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    console.error("[field-voice-status] Notion update failed", response.status, text);
-    return redirectToFieldVoice(req, "update_failed");
+    throw new Error(`FIELD_VOICE_PAGE_RETRIEVE_FAILED:${response.status}`);
   }
 
-  revalidatePath("/field/voice");
+  return (await response.json()) as NotionPageResponse;
+}
 
-  return redirectToFieldVoice(req, "updated");
+export async function POST(req: NextRequest) {
+  const notionApiKey = process.env.NOTION_API_KEY;
+
+  if (!notionApiKey) {
+    return redirectTo(req, { error: "missing_notion_key" });
+  }
+
+  const formData = await req.formData();
+  const pageId = getFormString(formData, "pageId");
+  const status = getFormString(formData, "status");
+  const memo = getFormString(formData, "memo");
+
+  if (!pageId || !status || !STATUS_OPTIONS.has(status)) {
+    return redirectTo(req, { error: "invalid_request" });
+  }
+
+  try {
+    const page = await retrievePage(notionApiKey, pageId);
+    const pageProperties = page.properties ?? {};
+
+    const statusPropertyName =
+      pickPropertyName(pageProperties, STATUS_PROPERTY_ALIASES) ?? "처리상태";
+    const statusPropertyType = pageProperties[statusPropertyName]?.type;
+
+    const properties: Record<string, unknown> = {
+      [statusPropertyName]: buildStatusProperty(statusPropertyType, status),
+    };
+
+    const memoPropertyName = pickPropertyName(pageProperties, MEMO_PROPERTY_ALIASES);
+    const memoPropertyType = memoPropertyName
+      ? pageProperties[memoPropertyName]?.type
+      : undefined;
+
+    if (memo && memoPropertyName && memoPropertyType === "rich_text") {
+      properties[memoPropertyName] = buildRichTextProperty(memo);
+    }
+
+    const updateResponse = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${notionApiKey}`,
+        "Notion-Version": "2025-09-03",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ properties }),
+      cache: "no-store",
+    });
+
+    if (!updateResponse.ok) {
+      throw new Error(`FIELD_VOICE_STATUS_UPDATE_FAILED:${updateResponse.status}`);
+    }
+
+    revalidatePath("/field/voice");
+    return redirectTo(req, { updated: status });
+  } catch (error) {
+    console.error(error);
+    return redirectTo(req, { error: "status_update_failed" });
+  }
 }
