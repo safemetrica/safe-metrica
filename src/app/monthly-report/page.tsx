@@ -1037,7 +1037,7 @@ export default async function MonthlySafetyReportPage({
 
         <Section
           title="현장참여 및 위험성평가 공유확인"
-          desc="근로자 현장참여 QR을 통해 접수된 위험성평가 공유확인, 위험제보, 아차사고, 개선제안 기록입니다."
+          desc="근로자 현장참여 QR을 통해 접수된 기록을 제출구분 기준으로 공유확인, 위험제보, 아차사고, 개선제안으로 분리합니다."
           defaultOpen={isDetailView || fieldVoiceFollowUpRows.length > 0}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -1077,7 +1077,7 @@ export default async function MonthlySafetyReportPage({
             <h3 className="text-base font-black text-white print:text-slate-950">월간 현장참여 확인</h3>
             <p className="mt-2 text-sm leading-6 text-slate-300 print:text-slate-700">
               이번 달 현장참여 접수는 총 {fieldVoiceRows.length}건입니다.
-              공유확인 {fieldVoiceAcknowledgementRows.length}건, 위험제보·아차사고·개선제안 {fieldVoiceReviewRows.length}건,
+              제출구분 기준 공유확인 {fieldVoiceAcknowledgementRows.length}건, 위험제보·아차사고·개선제안 {fieldVoiceReviewRows.length}건,
               조치완료 {fieldVoiceDoneRows.length}건으로 확인됩니다.
             </p>
             <p className="mt-2 text-xs leading-5 text-slate-500 print:text-slate-600">

@@ -603,7 +603,7 @@ export default async function FieldVoiceReviewPage() {
               <p className="text-xs font-black text-blue-700">SafeMetrica 현장참여</p>
               <h1 className="mt-2 text-2xl font-black text-slate-950">현장참여 접수함</h1>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                위험성평가 공유확인은 기록으로 분리하고, 위험제보·아차사고·개선제안은
+                제출구분 기준으로 공유확인은 기록으로 분리하고, 위험제보·아차사고·개선제안은
                 검토 필요 또는 조치 필요 항목으로 구분합니다.
               </p>
             </div>

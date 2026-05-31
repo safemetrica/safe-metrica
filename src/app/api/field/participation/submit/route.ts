@@ -8,7 +8,35 @@ import {
   getCompanyConfigByCode,
 } from "@/lib/company";
 
-const FIELD_VOICE_TYPES = new Set(["위험 제보", "아차사고", "개선 제안", "기타"]);
+const STANDARD_FIELD_VOICE_TYPES = new Set(["공유확인", "위험제보", "아차사고", "개선제안", "기타"]);
+
+function normalizeFieldVoiceSubmissionType(rawType: string) {
+  const compact = rawType.replace(/\s+/g, "").trim();
+
+  if (compact.includes("공유확인") || compact.includes("주지확인") || compact.includes("확인완료")) {
+    return "공유확인";
+  }
+
+  if (compact.includes("위험제보") || compact.includes("위험신고") || compact.includes("위험요인제보")) {
+    return "위험제보";
+  }
+
+  if (compact.includes("아차사고") || compact.toLowerCase().includes("nearmiss")) {
+    return "아차사고";
+  }
+
+  if (compact.includes("개선제안") || compact.includes("개선의견")) {
+    return "개선제안";
+  }
+
+  return STANDARD_FIELD_VOICE_TYPES.has(rawType) ? rawType : "기타";
+}
+
+function toLegacyFieldVoiceType(submissionType: string) {
+  if (submissionType === "위험제보") return "위험 제보";
+  if (submissionType === "개선제안") return "개선 제안";
+  return submissionType;
+}
 
 type UploadedFieldVoiceFile = {
   name: string;
@@ -281,7 +309,8 @@ export async function POST(req: NextRequest) {
 
   const title = getFormText(formData, "title");
   const rawType = getFormText(formData, "type");
-  const type = FIELD_VOICE_TYPES.has(rawType) ? rawType : "기타";
+  const submissionType = normalizeFieldVoiceSubmissionType(rawType);
+  const type = toLegacyFieldVoiceType(submissionType);
   const reportedDate = getFormText(formData, "reportedDate") || getTodayDateValue();
   const location = getFormText(formData, "location");
   const anonymous = getFormChecked(formData, "anonymous");
@@ -294,7 +323,7 @@ export async function POST(req: NextRequest) {
   const safetyMeasureCheck = getFormChecked(formData, "safetyMeasureCheck");
   const sharedRiskSummary = getFormText(formData, "sharedRiskSummary");
   const isAcknowledgementOnly =
-    type === "공유확인" &&
+    submissionType === "공유확인" &&
     riskCheck &&
     riskAssessmentCheck &&
     safetyMeasureCheck &&
@@ -383,6 +412,10 @@ export async function POST(req: NextRequest) {
     properties["의견 제목"] = titleText(title);
   } else if (hasNotionProperty(propertyNames, "제목")) {
     properties["제목"] = titleText(title);
+  }
+
+  if (hasNotionProperty(propertyNames, "제출구분")) {
+    properties["제출구분"] = { select: { name: submissionType } };
   }
 
   if (hasNotionProperty(propertyNames, "제보유형")) {
