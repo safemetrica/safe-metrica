@@ -6,6 +6,7 @@ import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
 import { getCompanyConfig } from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
+import TbmVoiceDraftHelper from "@/components/TbmVoiceDraftHelper";
 
 import { getTbmFormUrl } from "@/lib/tenantLinks";
 async function getTbmRows() {
@@ -97,6 +98,12 @@ export default async function TbmPage() {
             </p>
           </div>
         </div>
+        <TbmVoiceDraftHelper
+          tbmFormUrl={tbmFormUrl}
+          companyName={company.name}
+          className="mb-5"
+        />
+
         <div
           className={`mb-5 rounded-2xl border p-4 sm:p-5 ${
             hasTodayActionItems
