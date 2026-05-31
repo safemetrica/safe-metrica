@@ -875,9 +875,17 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
             </p>
           </div>
 
-          <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-200">
-            {risk.hasDb ? `DB 연동됨 · ${risk.total}건` : "DB 연결 필요"}
-          </span>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              href="/risk/report"
+              className="inline-flex items-center whitespace-nowrap rounded-full border border-blue-500/40 bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-200 hover:bg-blue-500/25"
+            >
+              위험성평가표 출력
+            </Link>
+            <span className="inline-flex items-center whitespace-nowrap rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-200">
+              {risk.hasDb ? `DB 연동됨 · ${risk.total}건` : "DB 연결 필요"}
+            </span>
+          </div>
         </div>
 
         {!risk.hasDb ? (
