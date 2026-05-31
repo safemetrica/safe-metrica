@@ -19,7 +19,7 @@ export async function GET() {
     const ny = process.env.WEATHER_NY ?? "127";
     const key = process.env.WEATHER_API_KEY!;
     const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?serviceKey=${key}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { next: { revalidate: 7200 } });
     const data = await res.json();
     const items = data?.response?.body?.items?.item ?? [];
     const get = (cat: string) => items.find((i: any) => i.category === cat)?.fcstValue;
