@@ -490,7 +490,9 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <p className="text-blue-200 text-xs">
-                  {isWeatherTestMode ? "날씨 테스트 모드" : "기상청 초단기실황 기준"} {weather.observedAt}
+                  {isWeatherTestMode
+                    ? "날씨 테스트 모드"
+                    : `기상청 초단기실황 기준 ${weather.observedAt}`}
                 </p>
                 {isWeatherTestMode ? (
                   <span className="rounded-full border border-cyan-400/40 bg-cyan-950 px-2 py-0.5 text-[11px] font-black text-cyan-100">
