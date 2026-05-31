@@ -46,6 +46,10 @@ type FieldVoiceRow = {
   anonymous?: boolean;
   content: string;
   actionMemo?: string;
+  actionHistory?: string;
+  actionAuthor?: string;
+  actionCreatedAt?: string;
+  actionUpdatedAt?: string;
   riskCheck?: boolean;
   riskAssessmentCheck?: boolean;
   safetyMeasureCheck?: boolean;
@@ -96,7 +100,7 @@ function normalizeVoiceStatus(value: string) {
   if (lower === "in progress") return "검토중";
   if (lower === "done") return "조치완료";
 
-  if (compact.includes("반려")) return "반려";
+  if (compact.includes("반려") || compact.includes("보류")) return "반려";
   if (compact.includes("조치완료") || compact === "완료" || compact.includes("처리완료")) return "조치완료";
   if (compact.includes("조치필요") || compact.includes("미조치") || compact.includes("보완필요") || compact.includes("미완료")) return "조치필요";
   if (compact.includes("검토중") || compact.includes("검토")) return "검토중";
@@ -124,7 +128,12 @@ function getProp(
     if (properties[name]) return properties[name];
   }
 
-  return undefined;
+  const compactNames = names.map(compactLabel);
+  const matchedKey = Object.keys(properties).find((key) =>
+    compactNames.includes(compactLabel(key))
+  );
+
+  return matchedKey ? properties[matchedKey] : undefined;
 }
 
 function getTitleText(prop: NotionProperty | undefined) {
@@ -269,6 +278,10 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
   const anonymousProp = getProp(properties, ["익명", "익명 제출"]);
   const contentProp = getProp(properties, ["내용", "제보 내용", "상세 내용", "상세내용", "의견 내용"]);
   const memoProp = getProp(properties, ["조치 메모", "처리 메모", "관리자 메모", "검토 메모", "조치내용", "조치 내용"]);
+  const actionHistoryProp = getProp(properties, ["조치 이력", "처리 이력", "관리자 조치 이력", "검토 이력"]);
+  const actionAuthorProp = getProp(properties, ["조치 메모 작성자", "조치메모 작성자", "처리자", "검토자", "관리자"]);
+  const actionCreatedAtProp = getProp(properties, ["조치 메모 작성일시", "조치메모 작성일시", "처리일시", "검토일시"]);
+  const actionUpdatedAtProp = getProp(properties, ["최종 조치 변경일시", "최종조치변경일시", "처리상태 변경일시", "최종 처리일시"]);
   const fileProp = getProp(properties, ["사진/파일", "사진/첨부", "첨부", "첨부파일", "파일", "사진"]);
 
   const title = getTitleText(titleProp) || getRichText(titleProp) || "현장참여 기록";
@@ -428,6 +441,7 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
         className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"
       >
         <input type="hidden" name="pageId" value={row.id} />
+        <input type="hidden" name="actionAuthor" value="SafeMetrica 관리자" />
         <label htmlFor={`memo-${row.id}`} className="text-xs font-black text-slate-500">
           상태 변경 / 조치 메모
         </label>
@@ -677,7 +691,7 @@ export default async function FieldVoiceReviewPage() {
         <section className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
           <p className="text-sm font-black text-amber-900">상태 변경 v1</p>
           <p className="mt-2 text-sm leading-6 text-amber-900">
-            현재는 접수함 분류와 상태 변경만 처리합니다. 담당자 지정, 조치 메모, 완료사진,
+            현재는 접수함 분류와 상태 변경, 조치 메모 이력 저장까지 처리합니다. 담당자 지정, 완료사진,
             위험성평가 반영 후보 연결은 후속 단계에서 분리 구현합니다.
           </p>
         </section>

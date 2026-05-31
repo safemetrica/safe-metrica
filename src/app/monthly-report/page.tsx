@@ -209,7 +209,7 @@ function normalizeFieldVoiceStatus(value: string) {
   if (lower === "in progress") return "검토중";
   if (lower === "done") return "조치완료";
 
-  if (compact.includes("반려")) return "반려";
+  if (compact.includes("반려") || compact.includes("보류")) return "반려";
   if (compact.includes("조치완료") || compact === "완료" || compact.includes("처리완료")) return "조치완료";
   if (compact.includes("조치필요") || compact.includes("미조치") || compact.includes("보완필요") || compact.includes("미완료")) return "조치필요";
   if (compact.includes("검토중") || compact.includes("검토")) return "검토중";
@@ -218,53 +218,74 @@ function normalizeFieldVoiceStatus(value: string) {
   return value || "상태 미지정";
 }
 
+function getPropByNames(properties: Record<string, any>, names: string[]) {
+  for (const name of names) {
+    if (properties[name]) return properties[name];
+  }
+
+  const compactNames = names.map(compactLabel);
+  const matchedKey = Object.keys(properties).find((key) =>
+    compactNames.includes(compactLabel(key))
+  );
+
+  return matchedKey ? properties[matchedKey] : undefined;
+}
+
+function getFirstTextByNames(properties: Record<string, any>, names: string[]) {
+  return getTextPropPlainText(getPropByNames(properties, names));
+}
+
 function getFieldVoiceDateFromPage(row: NotionPage): string {
   const props = row.properties ?? {};
-  return (
-    getTextPropPlainText(props["등록일"]) ||
-    getTextPropPlainText(props["등록일시"]) ||
-    getTextPropPlainText(props["일시"]) ||
-    getTextPropPlainText(props["발생/확인일"]) ||
-    getTextPropPlainText(props["작성일"]) ||
-    getTextPropPlainText(props["날짜"]) ||
-    ""
-  );
+  return getFirstTextByNames(props, [
+    "등록일",
+    "등록일시",
+    "일시",
+    "발생/확인일",
+    "작성일",
+    "날짜",
+  ]);
 }
 
 function getFieldVoiceTitle(row: NotionPage): string {
   const props = row.properties ?? {};
   return (
-    getTextPropPlainText(props["의견 제목"]) ||
-    getTextPropPlainText(props["제보 제목"]) ||
-    getTextPropPlainText(props["의견제목"]) ||
-    getTextPropPlainText(props["제목"]) ||
-    getTextPropPlainText(props["Name"]) ||
-    getTextPropPlainText(props["이름"]) ||
-    "현장참여 기록"
+    getFirstTextByNames(props, [
+      "의견 제목",
+      "제보 제목",
+      "의견제목",
+      "제목",
+      "Name",
+      "이름",
+    ]) || "현장참여 기록"
   );
 }
 
 function getFieldVoiceType(row: NotionPage): string {
   const props = row.properties ?? {};
   return normalizeFieldVoiceType(
-    getTextPropPlainText(props["의견 유형"]) ||
-      getTextPropPlainText(props["의견유형"]) ||
-      getTextPropPlainText(props["제보유형"]) ||
-      getTextPropPlainText(props["제보 유형"]) ||
-      getTextPropPlainText(props["유형"]) ||
-      getTextPropPlainText(props["분류"]) ||
-      ""
+    getFirstTextByNames(props, [
+      "제출구분",
+      "제출 구분",
+      "의견 유형",
+      "의견유형",
+      "제보유형",
+      "제보 유형",
+      "유형",
+      "분류",
+    ])
   );
 }
 
 function getFieldVoiceStatus(row: NotionPage): string {
   const props = row.properties ?? {};
   return normalizeFieldVoiceStatus(
-    getTextPropPlainText(props["처리상태"]) ||
-      getTextPropPlainText(props["처리상태_기존"]) ||
-      getTextPropPlainText(props["처리 상태"]) ||
-      getTextPropPlainText(props["상태"]) ||
-      ""
+    getFirstTextByNames(props, [
+      "처리상태",
+      "처리상태_기존",
+      "처리 상태",
+      "상태",
+    ])
   );
 }
 
@@ -281,15 +302,14 @@ function getFieldVoiceLocation(row: NotionPage): string {
 
 function getFieldVoiceMemo(row: NotionPage): string {
   const props = row.properties ?? {};
-  return (
-    getTextPropPlainText(props["조치 메모"]) ||
-    getTextPropPlainText(props["처리 메모"]) ||
-    getTextPropPlainText(props["관리자 메모"]) ||
-    getTextPropPlainText(props["검토 메모"]) ||
-    getTextPropPlainText(props["조치내용"]) ||
-    getTextPropPlainText(props["조치 내용"]) ||
-    ""
-  );
+  return getFirstTextByNames(props, [
+    "조치 메모",
+    "처리 메모",
+    "관리자 메모",
+    "검토 메모",
+    "조치내용",
+    "조치 내용",
+  ]);
 }
 
 function isFieldVoiceAcknowledgement(row: NotionPage) {
