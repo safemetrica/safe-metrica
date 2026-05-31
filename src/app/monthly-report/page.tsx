@@ -319,6 +319,64 @@ function StatCard(props: { label: string; value: string | number; hint?: string;
   );
 }
 
+function MonthlyReportTenantRequiredFallback() {
+  return (
+    <main className="min-h-screen bg-slate-950 px-4 py-10 text-slate-100">
+      <div className="mx-auto max-w-3xl">
+        <section className="rounded-3xl border border-amber-500/40 bg-amber-950/30 p-6 shadow-sm">
+          <p className="text-sm font-black text-amber-300">SafeMetrica 월간 안전운영 보고서</p>
+          <h1 className="mt-3 text-2xl font-black text-white">
+            고객사 접속 정보가 필요합니다.
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-amber-100">
+            월간보고서는 고객사별 TBM, EB, PTW, 위험성평가, 현장참여 DB와 연결되어 있어
+            전용 보안 링크 또는 고객사 운영 홈 접속 후 이용할 수 있습니다.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-amber-100">
+            브라우저별 쿠키 상태가 다를 수 있습니다. 기존 링크가 열리지 않으면 고객사 홈으로 다시 접속하거나,
+            관리자에게 새 고객사 접속 링크를 요청해 주세요.
+          </p>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <Link
+              href="/"
+              className="rounded-2xl border border-amber-400/50 bg-slate-950 px-4 py-3 text-center text-sm font-black text-amber-100 hover:bg-slate-900"
+            >
+              랜딩홈으로 이동
+            </Link>
+            <Link
+              href="/login?error=tenant_required"
+              className="rounded-2xl bg-amber-600 px-4 py-3 text-center text-sm font-black text-white hover:bg-amber-700"
+            >
+              고객사 접속 안내
+            </Link>
+            <Link
+              href="/select-tenant"
+              className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-center text-sm font-black text-slate-100 hover:bg-slate-800"
+            >
+              고객사 선택
+            </Link>
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-slate-800 bg-slate-900 p-5 text-xs leading-6 text-slate-400 shadow-sm">
+          <p className="font-black text-slate-100">안내</p>
+          <p className="mt-2">
+            월간보고서는 고객사 운영 DB 기준의 참고자료입니다. 고객사 접속 정보가 확인된 후 이용해 주세요.
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function isTenantAccessError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+
+  const name = error.name || error.constructor.name;
+  return name === "TenantRequiredError" || name === "UnknownCompanyError";
+}
+
 function Section(props: {
   title: string;
   children: React.ReactNode;
@@ -484,7 +542,17 @@ export default async function MonthlySafetyReportPage({
     ? `/monthly-report?month=${encodeURIComponent(monthKey)}&view=detail`
     : "/monthly-report?view=detail";
 
-  const company = await getCompanyConfig();
+  let company;
+
+  try {
+    company = await getCompanyConfig();
+  } catch (error) {
+    if (isTenantAccessError(error)) {
+      return <MonthlyReportTenantRequiredFallback />;
+    }
+
+    throw error;
+  }
   const headers = { Authorization: `Bearer ${company.notionApiKey}` };
 
   const [tbmRowsRaw, ebRowsRaw, ptwRowsRaw, fieldVoiceRowsRaw, risk] = await Promise.all([
