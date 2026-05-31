@@ -185,6 +185,125 @@ function countByStatus(rows: NotionPage[], names: string[]) {
   });
 }
 
+function compactLabel(value: string) {
+  return value.replace(/\s+/g, "").trim();
+}
+
+function normalizeFieldVoiceType(value: string) {
+  const compact = compactLabel(value);
+
+  if (compact.includes("공유확인") || compact.includes("주지확인")) return "공유확인";
+  if (compact.includes("위험제보") || compact.includes("위험요인제보") || compact.includes("위험신고")) return "위험제보";
+  if (compact.includes("아차사고")) return "아차사고";
+  if (compact.includes("개선제안") || compact.includes("개선의견")) return "개선제안";
+  if (compact.includes("기타")) return "기타";
+
+  return value || "유형 미지정";
+}
+
+function normalizeFieldVoiceStatus(value: string) {
+  const compact = compactLabel(value);
+  const lower = value.trim().toLowerCase();
+
+  if (lower === "to do") return "접수";
+  if (lower === "in progress") return "검토중";
+  if (lower === "done") return "조치완료";
+
+  if (compact.includes("반려")) return "반려";
+  if (compact.includes("조치완료") || compact === "완료" || compact.includes("처리완료")) return "조치완료";
+  if (compact.includes("조치필요") || compact.includes("미조치") || compact.includes("보완필요") || compact.includes("미완료")) return "조치필요";
+  if (compact.includes("검토중") || compact.includes("검토")) return "검토중";
+  if (compact.includes("접수")) return "접수";
+
+  return value || "상태 미지정";
+}
+
+function getFieldVoiceDateFromPage(row: NotionPage): string {
+  const props = row.properties ?? {};
+  return (
+    getTextPropPlainText(props["등록일"]) ||
+    getTextPropPlainText(props["등록일시"]) ||
+    getTextPropPlainText(props["일시"]) ||
+    getTextPropPlainText(props["발생/확인일"]) ||
+    getTextPropPlainText(props["작성일"]) ||
+    getTextPropPlainText(props["날짜"]) ||
+    ""
+  );
+}
+
+function getFieldVoiceTitle(row: NotionPage): string {
+  const props = row.properties ?? {};
+  return (
+    getTextPropPlainText(props["의견 제목"]) ||
+    getTextPropPlainText(props["제보 제목"]) ||
+    getTextPropPlainText(props["의견제목"]) ||
+    getTextPropPlainText(props["제목"]) ||
+    getTextPropPlainText(props["Name"]) ||
+    getTextPropPlainText(props["이름"]) ||
+    "현장참여 기록"
+  );
+}
+
+function getFieldVoiceType(row: NotionPage): string {
+  const props = row.properties ?? {};
+  return normalizeFieldVoiceType(
+    getTextPropPlainText(props["의견 유형"]) ||
+      getTextPropPlainText(props["의견유형"]) ||
+      getTextPropPlainText(props["제보유형"]) ||
+      getTextPropPlainText(props["제보 유형"]) ||
+      getTextPropPlainText(props["유형"]) ||
+      getTextPropPlainText(props["분류"]) ||
+      ""
+  );
+}
+
+function getFieldVoiceStatus(row: NotionPage): string {
+  const props = row.properties ?? {};
+  return normalizeFieldVoiceStatus(
+    getTextPropPlainText(props["처리상태"]) ||
+      getTextPropPlainText(props["처리상태_기존"]) ||
+      getTextPropPlainText(props["처리 상태"]) ||
+      getTextPropPlainText(props["상태"]) ||
+      ""
+  );
+}
+
+function getFieldVoiceLocation(row: NotionPage): string {
+  const props = row.properties ?? {};
+  return (
+    getTextPropPlainText(props["위치/구역"]) ||
+    getTextPropPlainText(props["작업/위치"]) ||
+    getTextPropPlainText(props["위치"]) ||
+    getTextPropPlainText(props["구역"]) ||
+    "위치 미입력"
+  );
+}
+
+function getFieldVoiceMemo(row: NotionPage): string {
+  const props = row.properties ?? {};
+  return (
+    getTextPropPlainText(props["조치 메모"]) ||
+    getTextPropPlainText(props["처리 메모"]) ||
+    getTextPropPlainText(props["관리자 메모"]) ||
+    getTextPropPlainText(props["검토 메모"]) ||
+    getTextPropPlainText(props["조치내용"]) ||
+    getTextPropPlainText(props["조치 내용"]) ||
+    ""
+  );
+}
+
+function isFieldVoiceAcknowledgement(row: NotionPage) {
+  return getFieldVoiceType(row) === "공유확인";
+}
+
+function getFieldVoiceStatusTone(status: string) {
+  if (status === "조치완료") return "border-emerald-400/40 text-emerald-200 print:text-emerald-800";
+  if (status === "검토중") return "border-blue-400/40 text-blue-200 print:text-blue-800";
+  if (status === "조치필요") return "border-amber-400/40 text-amber-200 print:text-amber-800";
+  if (status === "반려") return "border-rose-400/40 text-rose-200 print:text-rose-800";
+  return "border-slate-500/40 text-slate-200 print:text-slate-700";
+}
+
 function getCurrentMonthKey(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -342,10 +461,11 @@ export default async function MonthlySafetyReportPage({
   const company = await getCompanyConfig();
   const headers = { Authorization: `Bearer ${company.notionApiKey}` };
 
-  const [tbmRowsRaw, ebRowsRaw, ptwRowsRaw, risk] = await Promise.all([
+  const [tbmRowsRaw, ebRowsRaw, ptwRowsRaw, fieldVoiceRowsRaw, risk] = await Promise.all([
     queryNotionDatabase(company.tbmDbId, company.notionApiKey),
     queryNotionDatabase(company.ebmDbId, company.notionApiKey),
     queryNotionDatabase(company.ptwDbId, company.notionApiKey),
+    queryNotionDatabase(company.fieldVoiceDbId, company.notionApiKey),
     getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey).catch(() => null),
   ]);
 
@@ -363,6 +483,19 @@ export default async function MonthlySafetyReportPage({
     const date = getDateFromPage(row);
     return date ? inMonth(date, monthKey) : true;
   });
+  const fieldVoiceRows = fieldVoiceRowsRaw.filter((row) => {
+    const date = getFieldVoiceDateFromPage(row);
+    return date ? inMonth(date, monthKey) : true;
+  });
+
+  const fieldVoiceAcknowledgementRows = fieldVoiceRows.filter(isFieldVoiceAcknowledgement);
+  const fieldVoiceReviewRows = fieldVoiceRows.filter((row) => !isFieldVoiceAcknowledgement(row));
+  const fieldVoiceDoneRows = fieldVoiceReviewRows.filter((row) => getFieldVoiceStatus(row) === "조치완료");
+  const fieldVoiceFollowUpRows = fieldVoiceReviewRows.filter((row) =>
+    ["접수", "검토중", "조치필요", "상태 미지정"].includes(getFieldVoiceStatus(row))
+  );
+  const fieldVoiceMemoCount = fieldVoiceRows.filter((row) => Boolean(getFieldVoiceMemo(row))).length;
+
   const validPtwRows = ptwRows.filter(isValidPtwRow);
 
   const tbmSpecialCount = tbmRows.filter((row) => hasTbmSpecialIssue(row.properties ?? {})).length;
@@ -672,6 +805,114 @@ export default async function MonthlySafetyReportPage({
               </p>
             </div>
           </div>
+        </Section>
+
+        <Section
+          title="현장참여 및 위험성평가 공유확인"
+          desc="근로자 현장참여 QR을 통해 접수된 위험성평가 공유확인, 위험제보, 아차사고, 개선제안 기록입니다."
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard
+              label="총 접수"
+              value={`${fieldVoiceRows.length}건`}
+              hint="월간 현장참여 전체 기록"
+              tone="border-cyan-800"
+            />
+            <StatCard
+              label="공유확인"
+              value={`${fieldVoiceAcknowledgementRows.length}건`}
+              hint="위험성평가 주지확인 기록"
+              tone="border-emerald-800"
+            />
+            <StatCard
+              label="검토 대상"
+              value={`${fieldVoiceReviewRows.length}건`}
+              hint="위험제보·아차사고·개선제안"
+              tone="border-blue-800"
+            />
+            <StatCard
+              label="조치완료"
+              value={`${fieldVoiceDoneRows.length}건`}
+              hint="관리자 처리 완료"
+              tone="border-emerald-800"
+            />
+            <StatCard
+              label="다음 달 확인"
+              value={`${fieldVoiceFollowUpRows.length}건`}
+              hint="접수·검토중·조치필요"
+              tone="border-amber-800"
+            />
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+            <h3 className="text-base font-black text-white print:text-slate-950">월간 현장참여 확인</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300 print:text-slate-700">
+              이번 달 현장참여 접수는 총 {fieldVoiceRows.length}건입니다.
+              공유확인 {fieldVoiceAcknowledgementRows.length}건, 위험제보·아차사고·개선제안 {fieldVoiceReviewRows.length}건,
+              조치완료 {fieldVoiceDoneRows.length}건으로 확인됩니다.
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500 print:text-slate-600">
+              근로자 참여 기록은 위험성평가 공유 여부와 현장 위험 신호를 확인하기 위한 운영기록입니다.
+              조치완료 여부는 관리자 확인 기준이며, 법적 판단 또는 면책을 보장하지 않습니다.
+            </p>
+          </div>
+
+          {fieldVoiceRows.length > 0 ? (
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+              <h3 className="text-sm font-black text-white print:text-slate-950">최근 현장참여 기록</h3>
+              <div className="mt-3 space-y-2">
+                {fieldVoiceRows.slice(0, 5).map((row) => {
+                  const status = getFieldVoiceStatus(row);
+                  const memo = getFieldVoiceMemo(row);
+
+                  return (
+                    <div
+                      key={row.id}
+                      className="rounded-xl border border-slate-800 bg-slate-950 p-3 print:border-slate-300 print:bg-white"
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-white print:text-slate-950">{getFieldVoiceTitle(row)}</p>
+                          <p className="mt-1 text-xs leading-5 text-slate-400 print:text-slate-600">
+                            {getFieldVoiceDateFromPage(row) || "일자 미입력"} · {getFieldVoiceLocation(row)} · {getFieldVoiceType(row)}
+                          </p>
+                          {memo ? (
+                            <p className="mt-2 text-xs leading-5 text-blue-200 print:text-blue-800">
+                              조치 메모: {memo}
+                            </p>
+                          ) : null}
+                        </div>
+                        <span className={`w-fit rounded-full border px-2 py-1 text-xs font-black ${getFieldVoiceStatusTone(status)}`}>
+                          {status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400 print:border-slate-300 print:bg-white print:text-slate-600">
+              이번 달 현장참여 접수 기록이 없습니다.
+            </div>
+          )}
+
+          {fieldVoiceFollowUpRows.length > 0 ? (
+            <div className="mt-4 rounded-2xl border border-amber-900/70 bg-amber-950/20 p-4 print:border-amber-200 print:bg-amber-50">
+              <h3 className="text-base font-black text-amber-200 print:text-amber-900">다음 달 확인 필요</h3>
+              <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
+                <li>• 접수·검토중·조치필요 상태의 현장참여 {fieldVoiceFollowUpRows.length}건은 관리자 검토가 필요합니다.</li>
+                <li>• 조치 메모가 필요한 경우 현장참여 접수함에서 처리 경과를 남깁니다.</li>
+                <li>• 반복 제보는 위험성평가 개선대책 반영 후보로 검토합니다.</li>
+              </ul>
+            </div>
+          ) : null}
+
+          {fieldVoiceMemoCount > 0 ? (
+            <div className="mt-4 rounded-2xl border border-blue-900/70 bg-blue-950/20 p-4 text-sm leading-6 text-blue-100 print:border-blue-200 print:bg-blue-50 print:text-blue-900">
+              이번 달 현장참여 기록 중 관리자 조치 메모가 입력된 항목은 {fieldVoiceMemoCount}건입니다.
+            </div>
+          ) : null}
         </Section>
 
         <Section
