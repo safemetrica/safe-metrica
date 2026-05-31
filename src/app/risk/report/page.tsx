@@ -124,13 +124,37 @@ export default async function RiskAssessmentReportPage() {
   const completedCount = risk.completedCount;
   const openCount = risk.openCount;
 
+  const todayLabel = new Date().toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
+  const reportYear =
+    items.find((item) => item.assessmentYear)?.assessmentYear || String(new Date().getFullYear());
+  const assessmentType =
+    items.find((item) => item.assessmentType)?.assessmentType || "정기/수시 위험성평가";
+  const sourceDoc =
+    items.find((item) => item.sourceDoc)?.sourceDoc || "SafeMetrica 위험성평가 DB";
+  const assessmentMethod = "빈도 × 강도 입력값 기준";
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 text-slate-950 print:bg-white print:px-0 print:py-0">
       <style>{`
         @media print {
           @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 8mm;
+          }
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .risk-print-table {
+            font-size: 9px;
+          }
+          .risk-print-table th,
+          .risk-print-table td {
+            padding: 5px 4px !important;
+            line-height: 1.35 !important;
+          }
+          .risk-report-title {
+            font-size: 22px !important;
           }
           .print-hidden {
             display: none !important;
@@ -157,10 +181,12 @@ export default async function RiskAssessmentReportPage() {
         <section className="print-section rounded-3xl border border-slate-200 bg-white p-5 shadow-sm print:border-slate-300 print:shadow-none">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black text-blue-700">SafeMetrica 위험성평가표 출력지원 v1</p>
-              <h1 className="mt-2 text-3xl font-black text-slate-950">위험성평가표 출력 초안</h1>
+              <p className="text-sm font-black text-blue-700">SafeMetrica 위험성평가표 출력지원 v1.1</p>
+              <h1 className="risk-report-title mt-2 text-3xl font-black text-slate-950">
+                {reportYear}년 {company.name} 위험성평가표 출력 초안
+              </h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                {company.name} · 위험성평가 DB 기준 · 관리자 확인용 출력 화면
+                위험성평가 DB 기준 · 관리자 확인용 출력 화면 · {assessmentType}
               </p>
             </div>
 
@@ -184,6 +210,41 @@ export default async function RiskAssessmentReportPage() {
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
             본 화면은 세메앱에 기록된 위험요인, 개선대책, 조치상태를 기준으로 위험성평가표 출력 초안을 지원하는 화면입니다.
             최종 위험성평가의 확정, 승인 및 보관 책임은 사업장 관리 기준에 따라 사업주 또는 관리자가 확인해야 합니다.
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+            <table className="w-full border-collapse text-sm">
+              <tbody>
+                <tr className="border-b border-slate-200">
+                  <th className="w-32 bg-slate-100 px-3 py-2 text-left font-black text-slate-700">사업장명</th>
+                  <td className="px-3 py-2 font-bold text-slate-950">{company.name}</td>
+                  <th className="w-32 bg-slate-100 px-3 py-2 text-left font-black text-slate-700">평가연도</th>
+                  <td className="px-3 py-2 text-slate-800">{reportYear}년</td>
+                  <th className="w-32 bg-slate-100 px-3 py-2 text-left font-black text-slate-700">출력일</th>
+                  <td className="px-3 py-2 text-slate-800">{todayLabel}</td>
+                </tr>
+                <tr>
+                  <th className="bg-slate-100 px-3 py-2 text-left font-black text-slate-700">평가유형</th>
+                  <td className="px-3 py-2 text-slate-800">{assessmentType}</td>
+                  <th className="bg-slate-100 px-3 py-2 text-left font-black text-slate-700">평가방법</th>
+                  <td className="px-3 py-2 text-slate-800">{assessmentMethod}</td>
+                  <th className="bg-slate-100 px-3 py-2 text-left font-black text-slate-700">자료출처</th>
+                  <td className="px-3 py-2 text-slate-800">{sourceDoc}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-emerald-300 bg-emerald-100 px-3 py-2 text-center text-sm font-black text-emerald-800">
+              하: 낮은 위험
+            </div>
+            <div className="rounded-xl border border-amber-300 bg-amber-100 px-3 py-2 text-center text-sm font-black text-amber-900">
+              중: 관리 필요
+            </div>
+            <div className="rounded-xl border border-red-300 bg-red-100 px-3 py-2 text-center text-sm font-black text-red-800">
+              상: 우선 관리
+            </div>
           </div>
         </section>
 
@@ -213,22 +274,22 @@ export default async function RiskAssessmentReportPage() {
                   </p>
                 </div>
                 <p className="text-xs font-bold text-slate-500">
-                  출력일: {new Date().toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}
+                  총 {items.length}개 위험요인
                 </p>
               </div>
 
               <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="min-w-[1400px] w-full border-collapse text-left">
+                <table className="risk-print-table min-w-[1400px] w-full border-collapse text-left">
                   <thead className="bg-slate-900 text-white">
                     <tr>
                       <th className="w-14 px-2 py-3 text-center text-xs">No.</th>
                       <th className="w-44 px-2 py-3 text-xs">작업공정</th>
-                      <th className="w-56 px-2 py-3 text-xs">위험요인/사고형태</th>
+                      <th className="w-56 px-2 py-3 text-xs">유해·위험요인 / 사고형태</th>
                       <th className="w-64 px-2 py-3 text-xs">현재 안전조치</th>
                       <th className="w-36 px-2 py-3 text-center text-xs">현재 위험성</th>
                       <th className="w-72 px-2 py-3 text-xs">개선대책</th>
                       <th className="w-36 px-2 py-3 text-center text-xs">개선 후 위험성</th>
-                      <th className="w-40 px-2 py-3 text-xs">담당/일정</th>
+                      <th className="w-40 px-2 py-3 text-xs">담당자 / 일정</th>
                       <th className="w-28 px-2 py-3 text-center text-xs">상태</th>
                     </tr>
                   </thead>
