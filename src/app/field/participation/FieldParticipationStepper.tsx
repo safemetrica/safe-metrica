@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 
@@ -54,6 +54,33 @@ function normalizeParticipationType(rawType: string) {
   if (compact === "공유확인" || compact === "주지확인") return "공유확인";
 
   return value || "위험제보";
+}
+
+function buildFieldParticipationTtsText(params: {
+  companyName?: string;
+  canOpenRiskSummary: boolean;
+  riskItems: RiskSummaryItem[];
+}) {
+  const lines: string[] = [];
+
+  lines.push(`${params.companyName ?? "현장"} 안전참여 안내입니다.`);
+  lines.push("오늘 작업 전 핵심 위험을 확인합니다.");
+
+  if (params.riskItems.length > 0) {
+    params.riskItems.forEach((item, index) => {
+      lines.push(
+        `핵심 위험 ${index + 1}. ${item.taskName}. 위험요인: ${item.hazard}. 확인할 안전조치: ${item.improvementPlan}.`
+      );
+    });
+  } else if (params.canOpenRiskSummary) {
+    lines.push("위험성평가 공유요약은 아래 버튼에서 별도로 확인할 수 있습니다.");
+  } else {
+    lines.push("오늘 작업 전 티비엠 공유 내용과 현장 주의사항을 확인해 주세요.");
+  }
+
+  lines.push("내용을 확인했으면 핵심 위험 확인 완료 버튼을 눌러 다음 단계로 진행해 주세요.");
+
+  return lines.join(" ");
 }
 
 function StepHeader({ step }: { step: number }) {
@@ -120,6 +147,7 @@ export default function FieldParticipationStepper({
   const [submitter, setSubmitter] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [content, setContent] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const normalizedCompanyCode = companyCode.trim().toLowerCase();
@@ -140,6 +168,52 @@ export default function FieldParticipationStepper({
   const finalTitle = hasOpinion
     ? reportTitle.trim() || `${finalFeedbackType} - 현장근로자 참여`
     : "위험성평가 공유확인 완료";
+
+  const ttsText = useMemo(
+    () =>
+      buildFieldParticipationTtsText({
+        companyName: workerCopy?.companyName,
+        canOpenRiskSummary,
+        riskItems,
+      }),
+    [workerCopy?.companyName, canOpenRiskSummary, riskItems]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  function handlePlayTts() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      alert("이 브라우저에서는 음성 안내를 지원하지 않습니다.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(ttsText);
+    utterance.lang = "ko-KR";
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
+
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function handleStopTts() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    setIsSpeaking(false);
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -186,6 +260,24 @@ export default function FieldParticipationStepper({
 
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900">
                   오늘 작업 전 아래 핵심 위험요인을 반드시 확인하세요.
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={handlePlayTts}
+                    className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white shadow-sm"
+                  >
+                    🔊 오늘 안내 음성듣기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStopTts}
+                    disabled={!isSpeaking}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    음성 정지
+                  </button>
                 </div>
 
                 {riskItems.length > 0 ? (
