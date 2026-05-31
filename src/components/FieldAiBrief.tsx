@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function normalizeBriefText(value: string | null): string {
   return String(value ?? "")
@@ -71,10 +71,33 @@ function getFieldBriefView(value: string | null): {
   };
 }
 
+type FieldBriefView = ReturnType<typeof getFieldBriefView>;
+
+function buildFieldBriefTtsText(view: FieldBriefView) {
+  const lines: string[] = [];
+
+  lines.push("AI 현장 비서 브리핑입니다.");
+  lines.push(`핵심 요약. ${view.headline}`);
+
+  if (view.bullets.length > 0) {
+    lines.push("확인할 내용입니다.");
+    view.bullets.forEach((line, index) => {
+      lines.push(`${index + 1}번. ${line}`);
+    });
+  }
+
+  lines.push(view.action);
+  lines.push("위험성평가표의 주요 위험요인과 오늘 TBM 공유 여부를 함께 확인하세요.");
+
+  return lines.join(" ");
+}
+
+
 export default function FieldAiBrief() {
   const [brief, setBrief] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
     fetch("/api/field-ai-brief", {
@@ -103,7 +126,44 @@ export default function FieldAiBrief() {
       });
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   const view = getFieldBriefView(brief);
+  const bulletKey = view.bullets.join("|");
+  const ttsText = useMemo(() => buildFieldBriefTtsText(view), [view.headline, view.action, bulletKey]);
+
+  function handlePlayTts() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      alert("이 브라우저에서는 음성 안내를 지원하지 않습니다.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(ttsText);
+    utterance.lang = "ko-KR";
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function handleStopTts() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    setIsSpeaking(false);
+  }
 
   return (
     <section className="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
@@ -118,7 +178,26 @@ export default function FieldAiBrief() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {!loading ? (
+            <>
+              <button
+                type="button"
+                onClick={handlePlayTts}
+                className="rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-[11px] font-black text-blue-100 hover:bg-blue-500/20"
+              >
+                🔊 브리핑 듣기
+              </button>
+              <button
+                type="button"
+                onClick={handleStopTts}
+                disabled={!isSpeaking}
+                className="rounded-full border border-slate-600 bg-slate-950 px-3 py-1 text-[11px] font-black text-slate-300 disabled:text-slate-600"
+              >
+                정지
+              </button>
+            </>
+          ) : null}
           <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-300">
             GPT-4o-mini
           </span>
