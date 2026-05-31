@@ -469,8 +469,13 @@ export default async function MonthlySafetyReportPage({
     getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey).catch(() => null),
   ]);
 
+  // 원청·협력사 제출자료 월간 섹션은 향후 건설/건물관리/용역대행 등
+  // 실제 협력사 운영 모듈을 사용하는 테넌트에서 다시 활성화한다.
+  // 현재 버블몬·몬스는 독립 테넌트 구조이므로 월간보고서에서 협력사 섹션을 숨긴다.
+  const showContractorSubmissionSection = false;
+
   const partnerSubmissionStore =
-    company.code === "bubblemon"
+    showContractorSubmissionSection
       ? await fetchContractorSubmissionRecords()
       : { configured: false, records: [], errorMessage: "" };
 
@@ -609,7 +614,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </div>
 
-        {company.code === "bubblemon" ? (
+        {showContractorSubmissionSection ? (
           <Section
             title="협력사 이행현황"
             desc="㈜몬스 제출자료의 원청 확인, 보완요청, 미검토 상태를 월간 기준으로 확인합니다."
