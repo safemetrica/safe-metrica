@@ -332,7 +332,7 @@ function Section(props: {
       open={defaultOpen}
       className="group rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-sm print:border-slate-300 print:bg-white"
     >
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 print:hidden">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-2xl focus:outline-none focus:ring-0 print:hidden">
         <div>
           <h2 className="text-lg font-black text-white print:text-slate-950">{props.title}</h2>
           {props.desc && <p className="mt-1 text-sm text-slate-400 print:text-slate-600">{props.desc}</p>}
@@ -473,10 +473,16 @@ function buildExpertOpinion(input: {
 export default async function MonthlySafetyReportPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ month?: string }>;
+  searchParams?: Promise<{ month?: string; view?: string }>;
 }) {
   const params = (await searchParams) ?? {};
   const monthKey = params.month || getCurrentMonthKey();
+  const viewMode = params.view === "detail" ? "detail" : "summary";
+  const isDetailView = viewMode === "detail";
+  const summaryHref = params.month ? `/monthly-report?month=${encodeURIComponent(monthKey)}` : "/monthly-report";
+  const detailHref = params.month
+    ? `/monthly-report?month=${encodeURIComponent(monthKey)}&view=detail`
+    : "/monthly-report?view=detail";
 
   const company = await getCompanyConfig();
   const headers = { Authorization: `Bearer ${company.notionApiKey}` };
@@ -671,6 +677,26 @@ export default async function MonthlySafetyReportPage({
             </div>
 
             <div className="flex flex-wrap gap-2 print:hidden">
+              <Link
+                href={summaryHref}
+                className={`rounded-xl border px-4 py-2 text-sm font-bold ${
+                  viewMode === "summary"
+                    ? "border-blue-500 bg-blue-600 text-white"
+                    : "border-slate-700 text-slate-200 hover:bg-slate-800"
+                }`}
+              >
+                요약 보기
+              </Link>
+              <Link
+                href={detailHref}
+                className={`rounded-xl border px-4 py-2 text-sm font-bold ${
+                  viewMode === "detail"
+                    ? "border-blue-500 bg-blue-600 text-white"
+                    : "border-slate-700 text-slate-200 hover:bg-slate-800"
+                }`}
+              >
+                상세 보기
+              </Link>
               <Link href="/home" className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-800">
                 홈
               </Link>
@@ -858,7 +884,7 @@ export default async function MonthlySafetyReportPage({
           ) : null}
         </section>
 
-        <Section title="운영 데이터 점검" desc="월간 운영 DB 수치를 기준으로 확인된 항목입니다.">
+        <Section title="운영 데이터 점검" desc="월간 운영 DB 수치를 기준으로 확인된 항목입니다." defaultOpen={isDetailView}>
           <div className="space-y-5">
             <div className="rounded-2xl border border-blue-900/70 bg-blue-950/30 p-4 print:border-blue-200 print:bg-blue-50">
               <p className="text-sm font-bold text-blue-200 print:text-blue-900">데이터 기반 종합 확인</p>
@@ -938,7 +964,7 @@ export default async function MonthlySafetyReportPage({
         <Section
           title="현장참여 및 위험성평가 공유확인"
           desc="근로자 현장참여 QR을 통해 접수된 위험성평가 공유확인, 위험제보, 아차사고, 개선제안 기록입니다."
-          defaultOpen={fieldVoiceFollowUpRows.length > 0}
+          defaultOpen={isDetailView || fieldVoiceFollowUpRows.length > 0}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
@@ -1047,7 +1073,7 @@ export default async function MonthlySafetyReportPage({
         <Section
           title="위험성평가 및 근로자 참여·교육 이행 현황"
           desc="위험성평가 결과가 근로자에게 공유되고, 교육·TBM·증빙으로 관리되는지 확인하는 운영 섹션입니다."
-          defaultOpen={false}
+          defaultOpen={isDetailView}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="교육 이수현황" value="준비 중" hint="교육명·교육일·참석자·수료증 확인" tone="border-cyan-800" />
@@ -1067,7 +1093,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
-        <Section title="EB 연결 보완 필요 항목" desc="조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다." defaultOpen={tbmEbMissingCount > 0}>
+        <Section title="EB 연결 보완 필요 항목" desc="조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다." defaultOpen={isDetailView || tbmEbMissingCount > 0}>
           <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-slate-900 text-slate-300 print:bg-slate-100 print:text-slate-800">
@@ -1113,7 +1139,7 @@ export default async function MonthlySafetyReportPage({
         </Section>
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <Section title="TBM 운영 현황" desc="월간 TBM 작성, 특이사항, 증빙 연결 상태입니다." defaultOpen={false}>
+          <Section title="TBM 운영 현황" desc="월간 TBM 작성, 특이사항, 증빙 연결 상태입니다." defaultOpen={isDetailView}>
             <div className="grid gap-3 sm:grid-cols-3">
               <StatCard label="작성" value={tbmRows.length} />
               <StatCard label="특이사항" value={tbmSpecialCount} />
@@ -1121,7 +1147,7 @@ export default async function MonthlySafetyReportPage({
             </div>
           </Section>
 
-          <Section title="위험성평가 관리 현황" desc="위험성평가표 DB 기준의 상시 관리 항목입니다." defaultOpen={false}>
+          <Section title="위험성평가 관리 현황" desc="위험성평가표 DB 기준의 상시 관리 항목입니다." defaultOpen={isDetailView}>
             <div className="grid gap-3 sm:grid-cols-3">
               <StatCard label="전체 위험항목" value={riskTotal} />
               <StatCard label="고위험" value={highRiskCount} />
@@ -1130,7 +1156,7 @@ export default async function MonthlySafetyReportPage({
           </Section>
         </div>
 
-        <Section title="최근 TBM 기록" desc="해당 월 TBM 중 최근 일부를 표시합니다." defaultOpen={false}>
+        <Section title="최근 TBM 기록" desc="해당 월 TBM 중 최근 일부를 표시합니다." defaultOpen={isDetailView}>
           <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-slate-900 text-slate-300 print:bg-slate-100 print:text-slate-800">
@@ -1171,7 +1197,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
-        <Section title="운영 참고사항" defaultOpen={false}>
+        <Section title="운영 참고사항" defaultOpen={isDetailView}>
           <ul className="space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
             <li>• EB 연결 누락 TBM은 증빙 연결 여부를 확인합니다.</li>
             <li>• 위험성평가표상 고위험 관리항목은 월간 TBM 공유 여부와 관련 조치 기록을 확인합니다.</li>
