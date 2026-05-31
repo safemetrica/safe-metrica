@@ -565,6 +565,9 @@ export default async function FieldVoiceReviewPage() {
       row.safetyMeasureCheck === false
   ).length;
 
+  const fieldWorkerParticipationPath = `/field/participation?company=${encodeURIComponent(company.code)}`;
+  const fieldWorkerParticipationUrl = `https://safe-metrica.vercel.app${fieldWorkerParticipationPath}`;
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
       <div className="mx-auto max-w-5xl">
@@ -583,6 +586,37 @@ export default async function FieldVoiceReviewPage() {
               <p className="font-black text-blue-900">{company.name}</p>
               <p className="mt-1 whitespace-nowrap text-blue-700">최근 접수 {rows.length}건</p>
             </div>
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-black text-emerald-700">현장근로자 QR 링크</p>
+              <h2 className="mt-2 text-xl font-black text-slate-950">
+                {company.name} 근로자 안전참여 링크
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-emerald-900">
+                이 링크는 근로자가 위험성평가 공유확인, 아차사고, 개선제안을 제출하는
+                공개 QR용 링크입니다. 관리자 접수함과 구분해서 사용하세요.
+              </p>
+            </div>
+
+            <a
+              href={fieldWorkerParticipationPath}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-emerald-600"
+            >
+              근로자 화면 열기
+            </a>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-white p-4">
+            <p className="text-xs font-black text-emerald-700">QR 생성용 주소</p>
+            <code className="mt-2 block break-all rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-emerald-100">
+              {fieldWorkerParticipationUrl}
+            </code>
           </div>
         </section>
 
