@@ -109,14 +109,14 @@ export default async function OwnerConsolePage({
 
         <section className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5">
           <p className="text-sm font-bold text-amber-200">Principal · Contractor</p>
-          <h2 className="mt-2 text-2xl font-black text-white">버블몬 × 몬스 원청·협력사</h2>
+          <h2 className="mt-2 text-2xl font-black text-white">몬스 독립 테넌트 운영</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-            화요일 계약 준비용 내부 화면입니다. EduLink와 별도인 일반 고객사 계약 구조로, 버블몬을 원청, 몬스를 협력사로 두고
+            몬스는 버블몬 협력사가 아니라 3개월 단기 독립 테넌트입니다. 현장참여와 TBM 중심으로
             TBM, 점검·교육, 위험성평가 공유, 교육증빙, 월간보고서 관리 범위를 확인합니다.
           </p>
           <div className="mt-5">
             <a
-              href="/owner/bubblemon-mons"
+              href="/owner"
               className="inline-flex rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-400"
             >
               물류업 계약 준비 화면 열기
