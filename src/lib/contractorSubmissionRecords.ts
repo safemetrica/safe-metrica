@@ -143,6 +143,10 @@ export async function fetchContractorSubmissionRecords() {
   }
 
   const data = await response.json();
+
+  // LEGACY:
+  // 과거 버블몬 원청·몬스 협력사 제출 모듈 확인용 필터입니다.
+  // 최신 운영 기준에서 몬스는 독립 테넌트이며, 신규 운영 동선은 현장참여/TBM 중심입니다.
   const records = ((data?.results ?? []) as NotionPage[])
     .map(mapSubmissionPage)
     .filter((record) => record.tenantCode === "bubblemon" && record.contractorCode === "mons");

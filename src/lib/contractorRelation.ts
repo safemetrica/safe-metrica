@@ -108,14 +108,14 @@ export const SAMPLE_PRINCIPAL_COMPANY_BUBBLEMON: PrincipalCompany = {
   code: "bubblemon",
   name: "㈜버블몬코리아",
   role: "원청",
-  description: "대도환경·동우환경·한국그린환경과 같은 일반 SafeMetrica 고객사 계약 구조로 운영되는 물류업 원청 고객사",
+  description: "LEGACY: 과거 버블몬·몬스 원청·협력사 테스트 구조입니다. 최신 기준에서 몬스는 독립 테넌트입니다.",
 };
 
 export const SAMPLE_CONTRACTOR_COMPANY_MONS: ContractorCompany = {
   code: "mons",
   name: "몬스",
   role: "협력사",
-  description: "물류업 원청 고객사와 연결된 협력사로, TBM, 점검·교육, 위험성평가 공유기록, 증빙자료를 관리해야 하는 작업 수행 주체",
+  description: "LEGACY: 과거 협력사 제출 모듈 테스트용 샘플입니다. 최신 운영 기준에서 몬스는 버블몬 협력사가 아니라 독립 테넌트입니다.",
 };
 
 export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
@@ -131,7 +131,7 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   contractExpectedDate: "2026-05-26",
 
   workScope: [
-    "물류업 원청·협력사 작업관리",
+    "LEGACY 원청·협력사 작업관리",
     "작업 전 TBM 운영",
     "점검·교육 기록관리",
     "위험성평가 결과 공유기록 관리",
@@ -157,7 +157,7 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   monthlyReportStatus: "대기",
 
   nextAction: "화요일 계약 전 일반 고객사 계약 범위, 원청·협력사 운영 범위, 고객사 테넌트 세팅 기준 확정",
-  note: "SafeMetrica는 EduLink와 별도로, 일반 고객사 계약 구조에서 원청과 협력사의 안전운영 기록과 증빙관리 체계화를 지원한다.",
+  note: "LEGACY: 이 샘플 관계는 과거 테스트 구조입니다. 최신 운영 기준에서 몬스는 독립 테넌트이며 버블몬 협력사로 집계하지 않습니다.",
 };
 
 
@@ -260,7 +260,7 @@ export const SAMPLE_MONS_CONTRACTOR_SUBMISSIONS: ContractorSubmissionItem[] = [
 
     itemType: "위험성평가 공유 확인",
     title: "위험성평가 공유 확인 제출",
-    description: "버블몬 원청의 위험성평가 결과가 ㈜몬스 작업자에게 공유되었는지 확인합니다.",
+    description: "LEGACY: 과거 원청·협력사 테스트 설명입니다. 최신 기준에서 몬스는 독립 테넌트이며 위험성평가 공유는 현재 운영 범위에서 제외합니다.",
     requiredEvidence: [
       "위험성평가 공유 확인 기록",
       "작업자 확인 또는 서명",
