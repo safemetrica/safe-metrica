@@ -64,6 +64,64 @@ function getConfirmationClass(value: boolean) {
     : "border-slate-300 bg-slate-100 text-slate-600";
 }
 
+function RiskReportTenantRequiredFallback() {
+  return (
+    <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950">
+      <div className="mx-auto max-w-3xl">
+        <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+          <p className="text-sm font-black text-amber-700">SafeMetrica 위험성평가표 출력지원</p>
+          <h1 className="mt-3 text-2xl font-black text-amber-950">
+            고객사 접속 정보가 필요합니다.
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-amber-900">
+            위험성평가표 출력지원 화면은 고객사별 Risk DB와 연결되어 있어
+            전용 보안 링크 또는 고객사 운영 홈 접속 후 이용할 수 있습니다.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-amber-900">
+            기존 운영 링크가 열리지 않는 경우 관리자에게 새 고객사 접속 링크를 요청해 주세요.
+          </p>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <Link
+              href="/"
+              className="rounded-2xl border border-amber-300 bg-white px-4 py-3 text-center text-sm font-black text-amber-900 hover:bg-amber-100"
+            >
+              랜딩홈으로 이동
+            </Link>
+            <Link
+              href="/login?error=tenant_required"
+              className="rounded-2xl bg-amber-700 px-4 py-3 text-center text-sm font-black text-white hover:bg-amber-800"
+            >
+              고객사 접속 안내
+            </Link>
+            <Link
+              href="/select-tenant"
+              className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-black text-slate-700 hover:bg-slate-50"
+            >
+              고객사 선택
+            </Link>
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 text-xs leading-6 text-slate-600 shadow-sm">
+          <p className="font-black text-slate-900">안내</p>
+          <p className="mt-2">
+            이 화면은 위험성평가표 자동확정이 아니라 고객사 Risk DB를 기준으로
+            출력지원 검토본을 표시하는 화면입니다. 고객사 접속 정보가 확인된 후 이용해 주세요.
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function isTenantAccessError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+
+  const name = error.name || error.constructor.name;
+  return name === "TenantRequiredError" || name === "UnknownCompanyError";
+}
+
 function StatBox({
   label,
   value,
@@ -209,7 +267,18 @@ function RiskReportRow({ item, index }: { item: RiskItemDetail; index: number })
 }
 
 export default async function RiskAssessmentReportPage() {
-  const company = await getCompanyConfig();
+  let company;
+
+  try {
+    company = await getCompanyConfig();
+  } catch (error) {
+    if (isTenantAccessError(error)) {
+      return <RiskReportTenantRequiredFallback />;
+    }
+
+    throw error;
+  }
+
   const risk = await getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey);
 
   const items = risk.items;
