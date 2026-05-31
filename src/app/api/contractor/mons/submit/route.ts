@@ -1,12 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-function redirectTo(req: NextRequest) {
-  const url = new URL("/field/participation", req.url);
-  url.searchParams.set("company", "mons");
-  url.searchParams.set("legacy", "contractor_mons_submit_disabled");
-  return NextResponse.redirect(url, { status: 303 });
+const retiredMessage =
+  "몬스 협력사 제출 API는 종료되었습니다. 몬스는 현재 독립 테넌트로 현장참여와 TBM 중심으로 운영합니다.";
+
+export async function GET() {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: "retired_mons_contractor_submit_api",
+      message: retiredMessage,
+      redirectTo: "/contractor/mons",
+    },
+    { status: 410 },
+  );
 }
 
-export async function POST(req: NextRequest) {
-  return redirectTo(req);
+export async function POST() {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: "retired_mons_contractor_submit_api",
+      message: retiredMessage,
+      redirectTo: "/contractor/mons",
+    },
+    { status: 410 },
+  );
 }
