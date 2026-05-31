@@ -319,15 +319,35 @@ function StatCard(props: { label: string; value: string | number; hint?: string;
   );
 }
 
-function Section(props: { title: string; children: React.ReactNode; desc?: string }) {
+function Section(props: {
+  title: string;
+  children: React.ReactNode;
+  desc?: string;
+  defaultOpen?: boolean;
+}) {
+  const defaultOpen = props.defaultOpen ?? true;
+
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-sm print:border-slate-300 print:bg-white">
-      <div className="mb-4">
-        <h2 className="text-lg font-black text-white print:text-slate-950">{props.title}</h2>
-        {props.desc && <p className="mt-1 text-sm text-slate-400 print:text-slate-600">{props.desc}</p>}
+    <details
+      open={defaultOpen}
+      className="group rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-sm print:border-slate-300 print:bg-white"
+    >
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 print:hidden">
+        <div>
+          <h2 className="text-lg font-black text-white print:text-slate-950">{props.title}</h2>
+          {props.desc && <p className="mt-1 text-sm text-slate-400 print:text-slate-600">{props.desc}</p>}
+        </div>
+        <span className="mt-1 text-slate-500 transition group-open:rotate-180">⌄</span>
+      </summary>
+
+      <div className="mt-4 print:mt-0 print:block">
+        <div className="hidden print:mb-4 print:block">
+          <h2 className="text-lg font-black text-slate-950">{props.title}</h2>
+          {props.desc && <p className="mt-1 text-sm text-slate-600">{props.desc}</p>}
+        </div>
+        {props.children}
       </div>
-      {props.children}
-    </section>
+    </details>
   );
 }
 
@@ -582,9 +602,61 @@ export default async function MonthlySafetyReportPage({
     actionPhotoCount,
   });
 
+  const monthlyComplementItems = [
+    {
+      label: "EB 연결 보완",
+      count: tbmEbMissingCount,
+      note: "조치상태 기준 EB 연결 필요 항목",
+    },
+    {
+      label: "현장참여 확인",
+      count: fieldVoiceFollowUpRows.length,
+      note: "접수·검토중·조치필요 현장참여",
+    },
+    {
+      label: "위험성평가 개선대책",
+      count: actionNeededCount,
+      note: "위험성평가표상 개선대책 관리항목",
+    },
+    {
+      label: "PTW 승인대기",
+      count: ptwPending,
+      note: "승인 또는 검토가 필요한 PTW",
+    },
+  ].filter((item) => item.count > 0);
+
+  const monthlyComplementTotal = monthlyComplementItems.reduce(
+    (sum, item) => sum + item.count,
+    0
+  );
+
 
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 print:bg-white print:text-slate-950">
+      <style>{`
+        @media print {
+          details:not([open]) > div {
+            display: block !important;
+          }
+          details > summary {
+            display: none !important;
+          }
+          details {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          table {
+            break-inside: auto;
+          }
+          tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          thead {
+            display: table-header-group;
+          }
+        }
+      `}</style>
       <div className="mx-auto max-w-6xl space-y-5">
         <div className="flex flex-col gap-3 rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-sm print:border-slate-300 print:bg-white">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -735,6 +807,57 @@ export default async function MonthlySafetyReportPage({
           <StatCard label="PTW" value={`${validPtwRows.length}건`} hint={`승인 ${ptwApproved} · 대기 ${ptwPending}`} tone="border-orange-800" />
         </div>
 
+        <section
+          className={`rounded-3xl border p-5 shadow-sm ${
+            monthlyComplementTotal > 0
+              ? "border-amber-500/50 bg-amber-950/30 print:border-amber-300 print:bg-amber-50"
+              : "border-emerald-500/40 bg-emerald-950/20 print:border-emerald-300 print:bg-emerald-50"
+          }`}
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p
+                className={`text-sm font-black ${
+                  monthlyComplementTotal > 0
+                    ? "text-amber-200 print:text-amber-900"
+                    : "text-emerald-200 print:text-emerald-900"
+                }`}
+              >
+                {monthlyComplementTotal > 0 ? "보완 필요 항목 요약" : "월간 핵심 신호"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-300 print:text-slate-700">
+                {monthlyComplementTotal > 0
+                  ? `이번 달 관리자 확인이 필요한 항목은 총 ${monthlyComplementTotal}건입니다.`
+                  : "이번 달 주요 보완 필요 항목은 확인되지 않았습니다."}
+              </p>
+            </div>
+            <span
+              className={`w-fit rounded-full px-3 py-1 text-xs font-black ${
+                monthlyComplementTotal > 0
+                  ? "bg-amber-400 text-slate-950"
+                  : "bg-emerald-400 text-slate-950"
+              }`}
+            >
+              총 {monthlyComplementTotal}건
+            </span>
+          </div>
+
+          {monthlyComplementItems.length > 0 ? (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {monthlyComplementItems.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3 print:border-slate-300 print:bg-white"
+                >
+                  <p className="text-xs font-black text-slate-400 print:text-slate-600">{item.label}</p>
+                  <p className="mt-1 text-2xl font-black text-white print:text-slate-950">{item.count}건</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500 print:text-slate-600">{item.note}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
         <Section title="운영 데이터 점검" desc="월간 운영 DB 수치를 기준으로 확인된 항목입니다.">
           <div className="space-y-5">
             <div className="rounded-2xl border border-blue-900/70 bg-blue-950/30 p-4 print:border-blue-200 print:bg-blue-50">
@@ -815,6 +938,7 @@ export default async function MonthlySafetyReportPage({
         <Section
           title="현장참여 및 위험성평가 공유확인"
           desc="근로자 현장참여 QR을 통해 접수된 위험성평가 공유확인, 위험제보, 아차사고, 개선제안 기록입니다."
+          defaultOpen={fieldVoiceFollowUpRows.length > 0}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
@@ -923,6 +1047,7 @@ export default async function MonthlySafetyReportPage({
         <Section
           title="위험성평가 및 근로자 참여·교육 이행 현황"
           desc="위험성평가 결과가 근로자에게 공유되고, 교육·TBM·증빙으로 관리되는지 확인하는 운영 섹션입니다."
+          defaultOpen={false}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="교육 이수현황" value="준비 중" hint="교육명·교육일·참석자·수료증 확인" tone="border-cyan-800" />
@@ -942,7 +1067,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
-        <Section title="EB 연결 보완 필요 항목" desc="조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다.">
+        <Section title="EB 연결 보완 필요 항목" desc="조치상태 기준으로 EB 연결이 필요하지만 연결EB relation이 비어 있는 TBM입니다." defaultOpen={tbmEbMissingCount > 0}>
           <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-slate-900 text-slate-300 print:bg-slate-100 print:text-slate-800">
@@ -988,7 +1113,7 @@ export default async function MonthlySafetyReportPage({
         </Section>
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <Section title="TBM 운영 현황" desc="월간 TBM 작성, 특이사항, 증빙 연결 상태입니다.">
+          <Section title="TBM 운영 현황" desc="월간 TBM 작성, 특이사항, 증빙 연결 상태입니다." defaultOpen={false}>
             <div className="grid gap-3 sm:grid-cols-3">
               <StatCard label="작성" value={tbmRows.length} />
               <StatCard label="특이사항" value={tbmSpecialCount} />
@@ -996,7 +1121,7 @@ export default async function MonthlySafetyReportPage({
             </div>
           </Section>
 
-          <Section title="위험성평가 관리 현황" desc="위험성평가표 DB 기준의 상시 관리 항목입니다.">
+          <Section title="위험성평가 관리 현황" desc="위험성평가표 DB 기준의 상시 관리 항목입니다." defaultOpen={false}>
             <div className="grid gap-3 sm:grid-cols-3">
               <StatCard label="전체 위험항목" value={riskTotal} />
               <StatCard label="고위험" value={highRiskCount} />
@@ -1005,7 +1130,7 @@ export default async function MonthlySafetyReportPage({
           </Section>
         </div>
 
-        <Section title="최근 TBM 기록" desc="해당 월 TBM 중 최근 일부를 표시합니다.">
+        <Section title="최근 TBM 기록" desc="해당 월 TBM 중 최근 일부를 표시합니다." defaultOpen={false}>
           <div className="overflow-hidden rounded-2xl border border-slate-800 print:border-slate-300">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-slate-900 text-slate-300 print:bg-slate-100 print:text-slate-800">
@@ -1046,7 +1171,7 @@ export default async function MonthlySafetyReportPage({
           </div>
         </Section>
 
-        <Section title="운영 참고사항">
+        <Section title="운영 참고사항" defaultOpen={false}>
           <ul className="space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
             <li>• EB 연결 누락 TBM은 증빙 연결 여부를 확인합니다.</li>
             <li>• 위험성평가표상 고위험 관리항목은 월간 TBM 공유 여부와 관련 조치 기록을 확인합니다.</li>
