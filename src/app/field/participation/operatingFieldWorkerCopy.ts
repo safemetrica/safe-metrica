@@ -82,6 +82,20 @@ const OPERATING_FIELD_WORKER_COPY: Record<string, OperatingFieldWorkerCopy> = {
     submittedMessage:
       "㈜버블몬코리아 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
   },
+  mons: {
+    code: "mons",
+    companyName: "㈜몬스",
+    badge: "SafeMetrica 현장근로자 참여",
+    title: "㈜몬스 현장근로자 안전참여",
+    description:
+      "오늘 작업 전 TBM 공유 내용과 현장 주의사항을 확인하고, 필요한 의견이나 아차사고를 남겨주세요.",
+    noticeTitle: "현장근로자 참여 안내",
+    noticeBody:
+      "이 화면은 ㈜몬스 현장근로자용입니다. 제출 내용은 현장 안전 확인과 작업 전 공유 기록으로 활용됩니다.",
+    submitButtonLabel: "현장 의견 제출하기",
+    submittedMessage:
+      "㈜몬스 현장관리자가 확인하고 필요한 조치 또는 TBM 운영 참고자료로 검토합니다.",
+  },
 };
 
 export function getOperatingFieldWorkerCopy(rawCode?: string | null) {
