@@ -71,6 +71,50 @@ function formatNotionUuid(rawId: string) {
   return rawId.trim();
 }
 
+function compactLabel(value: string) {
+  return value.replace(/\s+/g, "").trim();
+}
+
+function normalizeVoiceType(value: string) {
+  const compact = compactLabel(value);
+
+  if (compact.includes("공유확인") || compact.includes("주지확인")) return "공유확인";
+  if (compact.includes("위험제보") || compact.includes("위험요인제보") || compact.includes("위험신고")) return "위험제보";
+  if (compact.includes("아차사고")) return "아차사고";
+  if (compact.includes("개선제안") || compact.includes("개선의견")) return "개선제안";
+  if (compact.includes("기타")) return "기타";
+
+  return value || "공유확인";
+}
+
+function normalizeVoiceStatus(value: string) {
+  const compact = compactLabel(value);
+  const lower = value.trim().toLowerCase();
+
+  if (lower === "to do") return "접수";
+  if (lower === "in progress") return "검토중";
+  if (lower === "done") return "조치완료";
+
+  if (compact.includes("반려")) return "반려";
+  if (compact.includes("조치완료") || compact === "완료" || compact.includes("처리완료")) return "조치완료";
+  if (compact.includes("조치필요") || compact.includes("미조치") || compact.includes("보완필요") || compact.includes("미완료")) return "조치필요";
+  if (compact.includes("검토중") || compact.includes("검토")) return "검토중";
+  if (compact.includes("접수")) return "접수";
+
+  return value || "상태 미지정";
+}
+
+function isAcknowledgementRow(row: FieldVoiceRow) {
+  return normalizeVoiceType(row.type) === "공유확인";
+}
+
+function isActionNeededRow(row: FieldVoiceRow) {
+  if (isAcknowledgementRow(row)) return false;
+
+  const status = normalizeVoiceStatus(row.status);
+  return status === "검토중" || status === "조치필요";
+}
+
 function getProp(
   properties: Record<string, NotionProperty>,
   names: string[]
@@ -171,6 +215,10 @@ async function queryNotionRows(params: {
     },
     {
       page_size: 20,
+      sorts: [{ property: "일시", direction: "descending" }],
+    },
+    {
+      page_size: 20,
     },
   ];
 
@@ -211,15 +259,15 @@ async function queryNotionRows(params: {
 function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
   const properties = page.properties ?? {};
 
-  const titleProp = getProp(properties, ["의견 제목", "제목", "Name", "이름"]);
-  const typeProp = getProp(properties, ["의견 유형", "유형", "분류"]);
-  const statusProp = getProp(properties, ["처리상태", "상태"]);
-  const dateProp = getProp(properties, ["등록일", "발생/확인일", "작성일", "날짜"]);
-  const locationProp = getProp(properties, ["위치/구역", "위치", "구역"]);
-  const submitterProp = getProp(properties, ["제출자", "작성자", "이름"]);
+  const titleProp = getProp(properties, ["의견 제목", "제보 제목", "의견제목", "제목", "Name", "이름"]);
+  const typeProp = getProp(properties, ["의견 유형", "의견유형", "제보유형", "제보 유형", "유형", "분류"]);
+  const statusProp = getProp(properties, ["처리상태", "처리상태_기존", "처리 상태", "상태"]);
+  const dateProp = getProp(properties, ["등록일", "등록일시", "일시", "발생/확인일", "작성일", "날짜"]);
+  const locationProp = getProp(properties, ["위치/구역", "작업/위치", "위치", "구역"]);
+  const submitterProp = getProp(properties, ["제출자", "작성자", "이름", "성명"]);
   const anonymousProp = getProp(properties, ["익명", "익명 제출"]);
-  const contentProp = getProp(properties, ["내용", "상세 내용", "상세내용", "의견 내용"]);
-  const fileProp = getProp(properties, ["사진/파일", "첨부", "첨부파일", "파일", "사진"]);
+  const contentProp = getProp(properties, ["내용", "제보 내용", "상세 내용", "상세내용", "의견 내용"]);
+  const fileProp = getProp(properties, ["사진/파일", "사진/첨부", "첨부", "첨부파일", "파일", "사진"]);
 
   const title = getTitleText(titleProp) || getRichText(titleProp) || "현장참여 기록";
   const content = getRichText(contentProp);
@@ -228,8 +276,8 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
     id: page.id,
     notionUrl: page.url,
     title,
-    type: getSelectName(typeProp) || "공유확인",
-    status: getSelectName(statusProp) || "상태 미지정",
+    type: normalizeVoiceType(getSelectName(typeProp) || "공유확인"),
+    status: normalizeVoiceStatus(getSelectName(statusProp) || "상태 미지정"),
     reportedDate: getDateStart(dateProp) || page.created_time || "",
     location: getRichText(locationProp) || "위치 미입력",
     submitter: getRichText(submitterProp) || "제출자 미입력",
@@ -244,12 +292,15 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
 
 function StatusBadge({ status }: { status: string }) {
   const isDone = status.includes("완료");
+  const isActionNeeded = status.includes("조치필요");
   const isProgress = status.includes("검토") || status.includes("진행");
   const className = isDone
     ? "bg-emerald-100 text-emerald-800"
-    : isProgress
-      ? "bg-blue-100 text-blue-800"
-      : "bg-slate-100 text-slate-700";
+    : isActionNeeded
+      ? "bg-amber-100 text-amber-900"
+      : isProgress
+        ? "bg-blue-100 text-blue-800"
+        : "bg-slate-100 text-slate-700";
 
   return (
     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${className}`}>
@@ -290,6 +341,150 @@ function ErrorState() {
       <p className="mt-2 text-sm leading-6 text-red-800">
         Notion 현장 의견 DB 설정, API 권한, 데이터소스 연결 상태를 확인해 주세요.
       </p>
+    </section>
+  );
+}
+
+function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
+  return (
+    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={row.status} />
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+              {row.type}
+            </span>
+            {row.files.length > 0 ? (
+              <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-black text-purple-800">
+                첨부 {row.files.length}개
+              </span>
+            ) : null}
+          </div>
+
+          <h2 className="mt-3 text-xl font-black text-slate-950">{row.title}</h2>
+        </div>
+
+        <div className="text-left text-xs font-bold text-slate-500 sm:text-right">
+          <p>{formatDateLabel(row.reportedDate)}</p>
+          {row.notionUrl ? (
+            <a
+              href={row.notionUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-flex text-blue-700 underline"
+            >
+              Notion 원본
+            </a>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          <p className="text-xs font-black text-slate-500">위치/구역</p>
+          <p className="mt-1 text-sm font-bold text-slate-900">{row.location}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          <p className="text-xs font-black text-slate-500">제출자</p>
+          <p className="mt-1 text-sm font-bold text-slate-900">
+            {row.anonymous ? "익명" : row.submitter}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          <p className="text-xs font-black text-slate-500">처리상태</p>
+          <p className="mt-1 text-sm font-bold text-slate-900">{row.status}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-3">
+        <p className="text-xs font-black text-slate-500">내용</p>
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">
+          {truncateText(row.content, 260)}
+        </p>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <CheckPill label="위험요인 확인" value={row.riskCheck} />
+        <CheckPill label="위험성평가 공유 확인" value={row.riskAssessmentCheck} />
+        <CheckPill label="안전조치 확인" value={row.safetyMeasureCheck} />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+        <p className="text-xs font-black text-slate-500">상태 변경</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {FIELD_VOICE_STATUS_OPTIONS.map((nextStatus) => (
+            <form key={nextStatus} action="/api/field/voice/status" method="post">
+              <input type="hidden" name="pageId" value={row.id} />
+              <input type="hidden" name="status" value={nextStatus} />
+              <button
+                type="submit"
+                disabled={row.status === nextStatus}
+                className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-blue-200 disabled:bg-blue-100 disabled:text-blue-800"
+              >
+                {row.status === nextStatus ? `현재: ${nextStatus}` : nextStatus}
+              </button>
+            </form>
+          ))}
+        </div>
+      </div>
+
+      {row.files.length > 0 ? (
+        <div className="mt-4 rounded-2xl border border-purple-100 bg-purple-50 p-3">
+          <p className="text-xs font-black text-purple-800">사진/파일</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {row.files.map((file) => (
+              <a
+                key={file.url}
+                href={file.url}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full bg-white px-3 py-2 text-xs font-black text-purple-800 underline"
+              >
+                {file.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function VoiceSection({
+  title,
+  description,
+  rows,
+  emptyText,
+  badgeClassName,
+}: {
+  title: string;
+  description: string;
+  rows: FieldVoiceRow[];
+  emptyText: string;
+  badgeClassName: string;
+}) {
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-black text-slate-950">{title}</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+        </div>
+        <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-black ${badgeClassName}`}>
+          {rows.length}건
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-4">
+        {rows.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
+            {emptyText}
+          </div>
+        ) : (
+          rows.map((row) => <FieldVoiceCard key={row.id} row={row} />)
+        )}
+      </div>
     </section>
   );
 }
@@ -357,6 +552,19 @@ export default async function FieldVoiceReviewPage() {
     hasError = true;
   }
 
+  const acknowledgementRows = rows.filter(isAcknowledgementRow);
+  const actionNeededRows = rows.filter(isActionNeededRow);
+  const reviewRequiredRows = rows.filter(
+    (row) => !isAcknowledgementRow(row) && !isActionNeededRow(row)
+  );
+
+  const uncheckedCount = rows.filter(
+    (row) =>
+      row.riskCheck === false ||
+      row.riskAssessmentCheck === false ||
+      row.safetyMeasureCheck === false
+  ).length;
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
       <div className="mx-auto max-w-5xl">
@@ -364,12 +572,10 @@ export default async function FieldVoiceReviewPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-black text-blue-700">SafeMetrica 현장참여</p>
-              <h1 className="mt-2 text-2xl font-black text-slate-950">
-                현장참여 접수함
-              </h1>
+              <h1 className="mt-2 text-2xl font-black text-slate-950">현장참여 접수함</h1>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                근로자의 위험성평가 공유확인, 현장 의견, 아차사고 제보 내용을
-                읽기 전용으로 검토합니다. 상태 변경과 조치 완료 처리는 다음 단계에서 지원됩니다.
+                위험성평가 공유확인은 기록으로 분리하고, 위험제보·아차사고·개선제안은
+                검토 필요 또는 조치 필요 항목으로 구분합니다.
               </p>
             </div>
 
@@ -381,10 +587,21 @@ export default async function FieldVoiceReviewPage() {
         </section>
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-black text-slate-500">최근 접수</p>
-            <p className="mt-2 text-2xl font-black text-slate-950">{rows.length}</p>
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+            <p className="text-xs font-black text-emerald-700">공유확인 기록</p>
+            <p className="mt-2 text-2xl font-black text-emerald-950">{acknowledgementRows.length}</p>
           </div>
+          <div className="rounded-3xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+            <p className="text-xs font-black text-blue-700">검토 필요 접수</p>
+            <p className="mt-2 text-2xl font-black text-blue-950">{reviewRequiredRows.length}</p>
+          </div>
+          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <p className="text-xs font-black text-amber-700">조치 필요 / 미조치</p>
+            <p className="mt-2 text-2xl font-black text-amber-950">{actionNeededRows.length}</p>
+          </div>
+        </section>
+
+        <section className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-black text-slate-500">사진/파일 있음</p>
             <p className="mt-2 text-2xl font-black text-slate-950">
@@ -392,140 +609,50 @@ export default async function FieldVoiceReviewPage() {
             </p>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-black text-slate-500">미확인 포함</p>
-            <p className="mt-2 text-2xl font-black text-slate-950">
-              {
-                rows.filter(
-                  (row) =>
-                    row.riskCheck === false ||
-                    row.riskAssessmentCheck === false ||
-                    row.safetyMeasureCheck === false
-                ).length
-              }
-            </p>
+            <p className="text-xs font-black text-slate-500">확인 체크 미완료 포함</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">{uncheckedCount}</p>
           </div>
         </section>
 
         <section className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-          <p className="text-sm font-black text-amber-900">#202 상태 변경 v1</p>
+          <p className="text-sm font-black text-amber-900">상태 변경 v1</p>
           <p className="mt-2 text-sm leading-6 text-amber-900">
-            이 화면에서는 현장참여 접수 건을 확인하고 조치 필요 여부를 구분합니다. 담당자 지정,
-            조치 메모, 완료사진, 위험성평가 반영 기능은 후속 단계에서 분리 구현합니다.
+            현재는 접수함 분류와 상태 변경만 처리합니다. 담당자 지정, 조치 메모, 완료사진,
+            위험성평가 반영 후보 연결은 후속 단계에서 분리 구현합니다.
           </p>
         </section>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 space-y-5">
           {hasError ? (
             <ErrorState />
           ) : rows.length === 0 ? (
             <EmptyState />
           ) : (
-            rows.map((row) => (
-              <article
-                key={row.id}
-                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={row.status} />
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
-                        {row.type}
-                      </span>
-                      {row.files.length > 0 ? (
-                        <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-black text-purple-800">
-                          첨부 {row.files.length}개
-                        </span>
-                      ) : null}
-                    </div>
+            <>
+              <VoiceSection
+                title="공유확인 기록"
+                description="의견 없이 위험요인·위험성평가·안전조치 확인만 완료한 주지확인 기록입니다."
+                rows={acknowledgementRows}
+                emptyText="공유확인 기록이 아직 없습니다."
+                badgeClassName="bg-emerald-100 text-emerald-800"
+              />
 
-                    <h2 className="mt-3 text-xl font-black text-slate-950">{row.title}</h2>
-                  </div>
+              <VoiceSection
+                title="검토 필요 접수"
+                description="위험제보, 아차사고, 개선제안 중 접수·완료·기타 상태로 분류된 항목입니다."
+                rows={reviewRequiredRows}
+                emptyText="검토할 현장 제보가 없습니다."
+                badgeClassName="bg-blue-100 text-blue-800"
+              />
 
-                  <div className="text-left text-xs font-bold text-slate-500 sm:text-right">
-                    <p>{formatDateLabel(row.reportedDate)}</p>
-                    {row.notionUrl ? (
-                      <a
-                        href={row.notionUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-1 inline-flex text-blue-700 underline"
-                      >
-                        Notion 원본
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-xs font-black text-slate-500">위치/구역</p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">{row.location}</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-xs font-black text-slate-500">제출자</p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">
-                      {row.anonymous ? "익명" : row.submitter}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                    <p className="text-xs font-black text-slate-500">처리상태</p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">{row.status}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-3">
-                  <p className="text-xs font-black text-slate-500">내용</p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">
-                    {truncateText(row.content, 260)}
-                  </p>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <CheckPill label="위험요인 확인" value={row.riskCheck} />
-                  <CheckPill label="위험성평가 공유 확인" value={row.riskAssessmentCheck} />
-                  <CheckPill label="안전조치 확인" value={row.safetyMeasureCheck} />
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs font-black text-slate-500">상태 변경</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {FIELD_VOICE_STATUS_OPTIONS.map((nextStatus) => (
-                      <form key={nextStatus} action="/api/field/voice/status" method="post">
-                        <input type="hidden" name="pageId" value={row.id} />
-                        <input type="hidden" name="status" value={nextStatus} />
-                        <button
-                          type="submit"
-                          disabled={row.status === nextStatus}
-                          className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-blue-200 disabled:bg-blue-100 disabled:text-blue-800"
-                        >
-                          {row.status === nextStatus ? `현재: ${nextStatus}` : nextStatus}
-                        </button>
-                      </form>
-                    ))}
-                  </div>
-                </div>
-
-                {row.files.length > 0 ? (
-                  <div className="mt-4 rounded-2xl border border-purple-100 bg-purple-50 p-3">
-                    <p className="text-xs font-black text-purple-800">사진/파일</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {row.files.map((file) => (
-                        <a
-                          key={file.url}
-                          href={file.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full bg-white px-3 py-2 text-xs font-black text-purple-800 underline"
-                        >
-                          {file.name}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </article>
-            ))
+              <VoiceSection
+                title="조치 필요 / 미조치"
+                description="검토중, 조치필요, 미조치, 보완필요, 미완료 성격의 항목입니다."
+                rows={actionNeededRows}
+                emptyText="현재 조치 필요로 분류된 현장 제보가 없습니다."
+                badgeClassName="bg-amber-100 text-amber-900"
+              />
+            </>
           )}
         </div>
       </div>
