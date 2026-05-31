@@ -204,12 +204,12 @@ export default function FieldParticipationStepper({
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  className="mt-4 w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-black text-blue-700"
+                <a
+                  href={`/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
+                  className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"
                 >
-                  전체 위험성평가표 보기
-                </button>
+                  근로자용 위험성평가 요약 보기
+                </a>
               </div>
             ) : null}
 
