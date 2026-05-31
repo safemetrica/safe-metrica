@@ -32,6 +32,14 @@ type RiskSummary = {
   memo: string;
 };
 
+type WeatherNotice = {
+  level: "danger" | "warning" | "info";
+  icon: string;
+  title: string;
+  message: string;
+  ttsLine: string;
+} | null;
+
 type Props = {
   companyCode: string;
   siteValue: string;
@@ -40,6 +48,7 @@ type Props = {
   workerCopy: WorkerCopy;
   riskSummary: RiskSummary;
   feedbackTypes: string[];
+  weatherNotice?: WeatherNotice;
 };
 
 const stepLabels = ["위험 확인", "주지 확인", "의견 제출", "완료"];
@@ -60,11 +69,16 @@ function buildFieldParticipationTtsText(params: {
   companyName?: string;
   canOpenRiskSummary: boolean;
   riskItems: RiskSummaryItem[];
+  weatherNotice?: WeatherNotice;
 }) {
   const lines: string[] = [];
 
   lines.push(`${params.companyName ?? "현장"} 안전참여 안내입니다.`);
   lines.push("오늘 작업 전 핵심 위험을 확인합니다.");
+
+  if (params.weatherNotice) {
+    lines.push(params.weatherNotice.ttsLine);
+  }
 
   if (params.riskItems.length > 0) {
     params.riskItems.forEach((item, index) => {
@@ -128,6 +142,7 @@ export default function FieldParticipationStepper({
   workerCopy,
   riskSummary,
   feedbackTypes,
+  weatherNotice,
 }: Props) {
   const [step, setStep] = useState(1);
   const [riskCheck, setRiskCheck] = useState(false);
@@ -175,8 +190,9 @@ export default function FieldParticipationStepper({
         companyName: workerCopy?.companyName,
         canOpenRiskSummary,
         riskItems,
+        weatherNotice,
       }),
-    [workerCopy?.companyName, canOpenRiskSummary, riskItems]
+    [workerCopy?.companyName, canOpenRiskSummary, riskItems, weatherNotice]
   );
 
   useEffect(() => {
@@ -186,6 +202,13 @@ export default function FieldParticipationStepper({
       }
     };
   }, []);
+
+  const weatherNoticeClassName =
+    weatherNotice?.level === "danger"
+      ? "border-red-200 bg-red-50 text-red-900"
+      : weatherNotice?.level === "warning"
+        ? "border-orange-200 bg-orange-50 text-orange-900"
+        : "border-cyan-200 bg-cyan-50 text-cyan-900";
 
   function handlePlayTts() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -261,6 +284,15 @@ export default function FieldParticipationStepper({
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900">
                   오늘 작업 전 아래 핵심 위험요인을 반드시 확인하세요.
                 </div>
+
+                {weatherNotice ? (
+                  <div className={`mt-4 rounded-2xl border p-4 text-sm font-bold leading-6 ${weatherNoticeClassName}`}>
+                    <p className="text-xs font-black">오늘 날씨 주의</p>
+                    <p className="mt-1">
+                      {weatherNotice.icon} {weatherNotice.title} — {weatherNotice.message}
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   <button

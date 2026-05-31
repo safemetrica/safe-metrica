@@ -9,11 +9,20 @@ export const revalidate = 0;
 
 const feedbackTypes = ["위험 제보", "아차사고", "개선 제안", "기타"];
 
+type FieldWeatherNotice = {
+  level: "danger" | "warning" | "info";
+  icon: string;
+  title: string;
+  message: string;
+  ttsLine: string;
+};
+
 type PageProps = {
   searchParams?: Promise<{
     company?: string;
     site?: string;
     source?: string;
+    weatherTest?: string;
   }>;
 };
 
@@ -22,6 +31,141 @@ function getTodayDateValue() {
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   return kst.toISOString().slice(0, 10);
 }
+
+function buildFieldWeatherNotice(weather: {
+  tmp?: number | null;
+  feelsLike?: number | null;
+  wsd?: number | null;
+  pty?: string | null;
+  pop?: number | null;
+}): FieldWeatherNotice | null {
+  const tmp = Number.isFinite(weather.tmp) ? Number(weather.tmp) : null;
+  const feelsLike = Number.isFinite(weather.feelsLike) ? Number(weather.feelsLike) : tmp;
+  const wsd = Number.isFinite(weather.wsd) ? Number(weather.wsd) : 0;
+  const pty = weather.pty ?? "0";
+  const pop = Number.isFinite(weather.pop) ? Number(weather.pop) : 0;
+
+  if (wsd >= 10) {
+    return {
+      level: "danger",
+      icon: "💨",
+      title: "강풍주의",
+      message: "외부작업, 고소작업, 날림물 위험을 확인하세요.",
+      ttsLine: "오늘은 강풍주의가 필요합니다. 외부작업, 고소작업, 날림물 위험을 확인하세요.",
+    };
+  }
+
+  if ((feelsLike ?? 0) >= 35 || (tmp ?? 0) >= 35) {
+    return {
+      level: "danger",
+      icon: "🔥",
+      title: "폭염위험",
+      message: "물·휴식·그늘을 확인하고, 어지러움이나 두통이 있으면 즉시 보고하세요.",
+      ttsLine: "오늘은 폭염위험이 있습니다. 물, 휴식, 그늘을 확인하고 어지러움이나 두통이 있으면 즉시 보고하세요.",
+    };
+  }
+
+  if ((feelsLike ?? 0) >= 33 || (tmp ?? 0) >= 33) {
+    return {
+      level: "warning",
+      icon: "☀️",
+      title: "폭염주의",
+      message: "수분섭취와 휴식 장소를 확인하고, 몸 상태 이상은 바로 공유하세요.",
+      ttsLine: "오늘은 폭염주의가 필요합니다. 수분섭취와 휴식 장소를 확인하고 몸 상태 이상은 바로 공유하세요.",
+    };
+  }
+
+  if ((feelsLike ?? 0) >= 30 || (tmp ?? 0) >= 30) {
+    return {
+      level: "info",
+      icon: "🌡️",
+      title: "더위주의",
+      message: "작업 전 물을 마시고, 장시간 옥외작업 시 휴식 장소를 확인하세요.",
+      ttsLine: "오늘은 더위주의가 필요합니다. 작업 전 물을 마시고 장시간 옥외작업 시 휴식 장소를 확인하세요.",
+    };
+  }
+
+  if (pty !== "0" || pop >= 40) {
+    return {
+      level: "warning",
+      icon: "🌧️",
+      title: "우천주의",
+      message: "바닥 미끄럼, 차량 이동, 시야저하 위험을 확인하세요.",
+      ttsLine: "오늘은 우천주의가 필요합니다. 바닥 미끄럼, 차량 이동, 시야저하 위험을 확인하세요.",
+    };
+  }
+
+  if ((tmp ?? 0) <= -10) {
+    return {
+      level: "warning",
+      icon: "🥶",
+      title: "한파주의",
+      message: "방한보호구를 착용하고, 손발 저림 등 이상증상은 즉시 보고하세요.",
+      ttsLine: "오늘은 한파주의가 필요합니다. 방한보호구를 착용하고 손발 저림 등 이상증상은 즉시 보고하세요.",
+    };
+  }
+
+  return null;
+}
+
+function getFieldWeatherTestSnapshot(testMode?: string | null) {
+  const mode = String(testMode ?? "").trim().toLowerCase();
+
+  if (mode === "heat35" || mode === "heat") {
+    return { tmp: 35, feelsLike: 36, wsd: 1.2, pty: "0", pop: 0 };
+  }
+
+  if (mode === "heat33") {
+    return { tmp: 33, feelsLike: 34, wsd: 1.2, pty: "0", pop: 0 };
+  }
+
+  if (mode === "rain") {
+    return { tmp: 24, feelsLike: 24, wsd: 2.1, pty: "1", pop: 80 };
+  }
+
+  if (mode === "wind") {
+    return { tmp: 22, feelsLike: 22, wsd: 10, pty: "0", pop: 0 };
+  }
+
+  if (mode === "cold") {
+    return { tmp: -10, feelsLike: -12, wsd: 2.5, pty: "0", pop: 0 };
+  }
+
+  return null;
+}
+
+async function getFieldWeatherNotice(weatherTest?: string | null): Promise<FieldWeatherNotice | null> {
+  const testSnapshot = getFieldWeatherTestSnapshot(weatherTest);
+
+  if (testSnapshot) {
+    return buildFieldWeatherNotice(testSnapshot);
+  }
+
+  try {
+    const baseUrl =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3000"
+        : "https://safe-metrica.vercel.app";
+
+    const res = await fetch(`${baseUrl}/api/weather`, {
+      next: { revalidate: 7200 },
+    });
+
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as {
+      tmp?: number | null;
+      wsd?: number | null;
+      pty?: string | null;
+      pop?: number | null;
+    };
+
+    return buildFieldWeatherNotice(data);
+  } catch {
+    return null;
+  }
+}
+
 
 export default async function FieldParticipationPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
@@ -36,6 +180,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   };
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
+  const weatherNotice = await getFieldWeatherNotice(params.weatherTest);
 
   if (!companyCode) {
     return (
@@ -73,6 +218,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
         workerCopy={workerCopy}
         riskSummary={riskSummary}
         feedbackTypes={feedbackTypes}
+        weatherNotice={weatherNotice}
       />
     );
   }
