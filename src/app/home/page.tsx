@@ -84,15 +84,17 @@ const hour = kst.getHours();
     const sky = getFcst("SKY") ?? "1";
 
     const alerts: string[] = [];
-    if (wsd >= 10) alerts.push(`🚨 강풍 ${wsd}m/s — 고소작업 중단 의무`);
-    if (tmp >= 33) alerts.push(`☀️ 폭염 ${tmp}°C — 온열질환 주의`);
+    if (wsd >= 10) alerts.push(`🚨 강풍 ${wsd}m/s — 고소·양중·외부작업 제한 검토`);
+    if (tmp >= 35) alerts.push(`🔥 폭염위험 ${tmp}°C — 물·그늘·휴식·작업시간 조정 필요`);
+    else if (tmp >= 33) alerts.push(`☀️ 폭염 ${tmp}°C — 온열질환 예방조치 확인`);
+    else if (tmp >= 30) alerts.push(`🌡️ 더위주의 ${tmp}°C — 수분섭취·휴식 안내 필요`);
     if (tmp <= -10) alerts.push(`🥶 한파 ${tmp}°C — 저체온증 위험`);
     if (pty !== "0") alerts.push(`🌧️ 현재 강수 감지 — 야외작업 주의`);
     else if (pop >= 40) alerts.push(`🌦️ 강수확률 ${pop}% — 야외작업 시 우비 준비`);
     else if (pop >= 20) alerts.push(`☁️ 강수확률 ${pop}% — 날씨 변화 주의`);
 
     // 의사결정 티켓 판정
-    const stopRequired = wsd >= 10; // 법적 작업중지 의무 (산안법 기준)
+    const stopRequired = wsd >= 10;
     const limitRequired = tmp >= 33 || tmp <= -10 || pty !== "0";
     const decision = stopRequired ? "STOP" : limitRequired ? "LIMIT" : "NORMAL";
 
@@ -102,6 +104,148 @@ const hour = kst.getHours();
   } catch {
     return { tmp: null, feelsLike: null, observedAt: null, wsd: null, pty: null, pop: 0, alerts: [], icon: "⛅", decision: null, stopRequired: false };
   }
+}
+
+
+type WeatherActionPlan = {
+  title: string;
+  summary: string;
+  actions: string[];
+  tbmSentence: string;
+  evidence: string[];
+};
+
+function getWeatherActionPlan(weather: {
+  tmp: number | null;
+  feelsLike?: number | null;
+  wsd: number | null;
+  pty: string | null;
+  pop: number;
+}): WeatherActionPlan | null {
+  const tmp = Number.isFinite(weather.tmp) ? Number(weather.tmp) : null;
+  const feelsLike = Number.isFinite(weather.feelsLike) ? Number(weather.feelsLike) : tmp;
+  const wsd = Number.isFinite(weather.wsd) ? Number(weather.wsd) : 0;
+  const pop = Number.isFinite(weather.pop) ? Number(weather.pop) : 0;
+  const hasRain = weather.pty !== null && weather.pty !== "0";
+
+  if (wsd >= 10) {
+    return {
+      title: "강풍 작업제한 브리핑",
+      summary: `풍속 ${wsd}m/s 기준으로 고소·양중·외부작업 제한 여부를 확인하세요.`,
+      actions: [
+        "고소·사다리·양중·외부작업 진행 가능 여부를 현장책임자가 확인",
+        "적치물·가설물·문짝·천막 등 바람 영향 물건 고정",
+        "작업 제한 또는 중단 판단 내용을 TBM에 기록",
+      ],
+      tbmSentence:
+        "오늘은 강풍 영향이 있어 고소·양중·외부작업은 현장책임자 확인 후 진행하고, 바람에 날릴 수 있는 물건은 작업 전 고정합니다.",
+      evidence: [
+        "작업구역 및 외부 적치물 고정 사진",
+        "작업 제한 또는 작업 전 점검 사진",
+        "현장책임자 확인 후 TBM 공유 사진",
+      ],
+    };
+  }
+
+  if ((feelsLike ?? 0) >= 35 || (tmp ?? 0) >= 35) {
+    return {
+      title: "폭염위험 온열질환 예방 브리핑",
+      summary: `기온 ${tmp}°C, 체감 ${feelsLike}°C 수준입니다. 물·그늘·휴식·작업시간 조정 확인이 필요합니다.`,
+      actions: [
+        "작업 전 생수·그늘·휴식 장소 확보",
+        "무더운 시간대 장시간 연속작업 제한 검토",
+        "어지러움·두통·메스꺼움 등 이상증상 즉시 보고 안내",
+        "고령자·신규자·옥외작업자 상태를 관리감독자가 수시 확인",
+      ],
+      tbmSentence:
+        "오늘은 폭염위험이 있어 작업 전 물과 휴식 장소를 확인하고, 어지러움·두통·메스꺼움 등 온열질환 의심 증상이 있으면 즉시 작업을 멈추고 현장관리자에게 보고합니다.",
+      evidence: [
+        "생수 또는 음료 비치 사진",
+        "그늘·휴식 장소 확보 사진",
+        "TBM에서 온열질환 예방 안내하는 사진",
+        "작업시간 조정 또는 휴식 안내 게시 사진",
+      ],
+    };
+  }
+
+  if ((feelsLike ?? 0) >= 33 || (tmp ?? 0) >= 33) {
+    return {
+      title: "폭염주의 온열질환 예방 브리핑",
+      summary: `기온 ${tmp}°C, 체감 ${feelsLike}°C 수준입니다. 수분섭취와 휴식 안내가 필요합니다.`,
+      actions: [
+        "작업 전 물 비치와 휴식 장소 확인",
+        "근로자에게 수분섭취와 이상증상 보고 기준 공유",
+        "옥외작업·상하차·중량물 작업자는 휴식 주기 확인",
+      ],
+      tbmSentence:
+        "오늘은 폭염주의가 있어 작업 전 물과 휴식 장소를 확인하고, 어지러움·두통 등 이상증상이 있으면 즉시 현장관리자에게 보고합니다.",
+      evidence: [
+        "물 비치 사진",
+        "휴식 장소 또는 그늘 사진",
+        "TBM 공유 사진",
+      ],
+    };
+  }
+
+  if ((feelsLike ?? 0) >= 30 || (tmp ?? 0) >= 30) {
+    return {
+      title: "더위주의 현장 브리핑",
+      summary: `기온 ${tmp}°C 수준입니다. 장시간 옥외작업 시 수분섭취와 휴식 안내가 필요합니다.`,
+      actions: [
+        "작업 전 수분섭취 안내",
+        "옥외작업자는 휴식 장소 확인",
+        "이상증상 발생 시 즉시 보고하도록 TBM에서 공유",
+      ],
+      tbmSentence:
+        "오늘은 더위가 예상되므로 작업 전 수분섭취와 휴식 장소를 확인하고, 몸 상태 이상이 있으면 즉시 공유합니다.",
+      evidence: [
+        "TBM 공유 사진",
+        "물 비치 또는 휴식 장소 사진",
+      ],
+    };
+  }
+
+  if (hasRain || pop >= 40) {
+    return {
+      title: "우천·미끄럼 주의 브리핑",
+      summary: hasRain
+        ? "현재 강수가 감지되었습니다. 야외작업과 차량 이동 시 미끄럼·시야저하를 확인하세요."
+        : `강수확률 ${pop}%입니다. 야외작업 시 날씨 변화에 대비하세요.`,
+      actions: [
+        "바닥 물기·침출수·미끄럼 구간 확인",
+        "차량·지게차 이동 동선과 보행자 동선 분리",
+        "야외작업자는 우비·안전화 상태 확인",
+      ],
+      tbmSentence:
+        "오늘은 우천 또는 미끄럼 위험이 있어 바닥 상태와 이동 동선을 확인하고, 차량·지게차 주변 접근을 주의합니다.",
+      evidence: [
+        "미끄럼 구간 정리 사진",
+        "차량·보행자 동선 확인 사진",
+        "우천 대비 보호구 착용 사진",
+      ],
+    };
+  }
+
+  if ((tmp ?? 0) <= -10) {
+    return {
+      title: "한파 저체온 예방 브리핑",
+      summary: `기온 ${tmp}°C 수준입니다. 저체온·동상 예방조치가 필요합니다.`,
+      actions: [
+        "방한복·장갑·보온장비 착용 확인",
+        "장시간 옥외작업 시 휴식과 온열 장소 확인",
+        "손발 저림·감각저하 등 이상증상 즉시 보고 안내",
+      ],
+      tbmSentence:
+        "오늘은 한파로 인해 저체온과 동상 위험이 있으므로 방한보호구를 착용하고, 손발 저림 등 이상증상은 즉시 보고합니다.",
+      evidence: [
+        "방한보호구 착용 사진",
+        "휴식 장소 또는 온열 장소 사진",
+        "TBM 공유 사진",
+      ],
+    };
+  }
+
+  return null;
 }
 
 export const dynamic = "force-dynamic";
@@ -131,6 +275,7 @@ export default async function Home({
   const tbmFormUrl = getTbmFormUrl(company);
 
   const weather = await getWeather();
+  const weatherActionPlan = getWeatherActionPlan(weather);
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
 
   const decisionConfig = {
@@ -138,22 +283,22 @@ export default async function Home({
       bg: "bg-red-950 border-red-700",
       badge: "bg-red-700 text-white",
       label: "🚨 작업중지 필요",
-      desc: "풍속 10m/s 이상 — 고소작업 법적 중단 의무 (산안법)",
-      action: "현장 책임자 확인 후 중단 조치 → 대표 사후 보고 필수",
+      desc: "강풍 기준 도달 — 고소·양중·외부작업 중단 또는 제한 검토",
+      action: "현장 책임자 확인 후 작업 가능 여부를 판단하고 TBM에 기록",
     },
     LIMIT: {
       bg: "bg-yellow-950 border-yellow-700",
       badge: "bg-yellow-600 text-white",
       label: "🟡 제한 운영",
-      desc: "기상 임계값 도달 — 작업 범위 축소 권고",
-      action: "현장 책임자 판단 → 계속/제한 선택 시 대표 사후 보고",
+      desc: "기상 위험요인 확인 — 작업범위·휴식·보호구·동선 조정 필요",
+      action: "현장 책임자 판단 후 TBM 공유 및 사진 증빙 확보",
     },
     NORMAL: {
       bg: "bg-gray-900 border-gray-700",
       badge: "bg-green-700 text-white",
       label: "🟢 정상 작업",
       desc: "기상 이상 없음",
-      action: "정상 운영 가능",
+      action: "정상 운영 가능. 단, 작업 전 TBM에서 날씨 변화 여부를 공유",
     },
   };
 
@@ -273,6 +418,38 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
                   ))}
                 </div>
               )}
+
+              {weatherActionPlan ? (
+                <div className="mt-3 grid gap-2">
+                  <div className="rounded-xl border border-cyan-500/30 bg-slate-950/60 p-3">
+                    <p className="text-xs font-black text-cyan-200">{weatherActionPlan.title}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-200">{weatherActionPlan.summary}</p>
+                    <ul className="mt-2 space-y-1">
+                      {weatherActionPlan.actions.map((item) => (
+                        <li key={item} className="flex gap-2 text-xs leading-5 text-slate-100">
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border border-blue-500/30 bg-blue-950/40 p-3">
+                      <p className="text-xs font-black text-blue-200">오늘 TBM 반영 문장</p>
+                      <p className="mt-1 text-xs leading-5 text-blue-50">{weatherActionPlan.tbmSentence}</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 p-3">
+                      <p className="text-xs font-black text-emerald-200">사진 증빙 권장</p>
+                      <ul className="mt-1 space-y-1">
+                        {weatherActionPlan.evidence.map((item) => (
+                          <li key={item} className="text-xs leading-5 text-emerald-50">- {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         );
