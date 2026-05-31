@@ -2,11 +2,17 @@ import Link from "next/link";
 
 type Props = {
   tbmFormUrl?: string | null;
+  voiceDraftHref?: string | null;
   compact?: boolean;
   className?: string;
 };
 
-export default function TbmFormAction({ tbmFormUrl, compact = false, className = "" }: Props) {
+export default function TbmFormAction({
+  tbmFormUrl,
+  voiceDraftHref,
+  compact = false,
+  className = "",
+}: Props) {
   return (
     <div className={`rounded-xl border border-blue-700/60 bg-blue-950/30 px-4 py-2 ${className}`}>
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -23,7 +29,16 @@ export default function TbmFormAction({ tbmFormUrl, compact = false, className =
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {voiceDraftHref ? (
+            <Link
+              href={voiceDraftHref}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-cyan-400 bg-cyan-500 px-3 text-xs font-black text-slate-950 shadow-sm hover:bg-cyan-400 sm:px-4 sm:text-sm"
+            >
+              🎙️ 말로 초안
+            </Link>
+          ) : null}
+
           {tbmFormUrl ? (
             <a
               href={tbmFormUrl}
