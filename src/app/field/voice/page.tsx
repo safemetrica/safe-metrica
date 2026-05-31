@@ -45,6 +45,7 @@ type FieldVoiceRow = {
   submitter: string;
   anonymous?: boolean;
   content: string;
+  actionMemo?: string;
   riskCheck?: boolean;
   riskAssessmentCheck?: boolean;
   safetyMeasureCheck?: boolean;
@@ -267,6 +268,7 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
   const submitterProp = getProp(properties, ["제출자", "작성자", "이름", "성명"]);
   const anonymousProp = getProp(properties, ["익명", "익명 제출"]);
   const contentProp = getProp(properties, ["내용", "제보 내용", "상세 내용", "상세내용", "의견 내용"]);
+  const memoProp = getProp(properties, ["조치 메모", "처리 메모", "관리자 메모", "검토 메모", "조치내용", "조치 내용"]);
   const fileProp = getProp(properties, ["사진/파일", "사진/첨부", "첨부", "첨부파일", "파일", "사진"]);
 
   const title = getTitleText(titleProp) || getRichText(titleProp) || "현장참여 기록";
@@ -283,6 +285,7 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
     submitter: getRichText(submitterProp) || "제출자 미입력",
     anonymous: getCheckboxValue(anonymousProp),
     content: content || "내용 없음",
+    actionMemo: getRichText(memoProp),
     riskCheck: getCheckboxValue(getProp(properties, ["위험요인 확인"])),
     riskAssessmentCheck: getCheckboxValue(getProp(properties, ["위험성평가 공유 확인"])),
     safetyMeasureCheck: getCheckboxValue(getProp(properties, ["안전조치 확인"])),
@@ -404,30 +407,53 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
         </p>
       </div>
 
+      {row.actionMemo ? (
+        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-3">
+          <p className="text-xs font-black text-blue-700">관리자 조치 메모</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-blue-950">
+            {row.actionMemo}
+          </p>
+        </div>
+      ) : null}
+
       <div className="mt-4 flex flex-wrap gap-2">
         <CheckPill label="위험요인 확인" value={row.riskCheck} />
         <CheckPill label="위험성평가 공유 확인" value={row.riskAssessmentCheck} />
         <CheckPill label="안전조치 확인" value={row.safetyMeasureCheck} />
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-        <p className="text-xs font-black text-slate-500">상태 변경</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+      <form
+        action="/api/field/voice/status"
+        method="post"
+        className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"
+      >
+        <input type="hidden" name="pageId" value={row.id} />
+        <label htmlFor={`memo-${row.id}`} className="text-xs font-black text-slate-500">
+          상태 변경 / 조치 메모
+        </label>
+        <textarea
+          id={`memo-${row.id}`}
+          name="memo"
+          rows={3}
+          defaultValue={row.actionMemo ?? ""}
+          placeholder="예: 현장 확인 후 미끄럼 구간 청소 완료 / 담당자에게 보완 요청 / 위험성평가 반영 검토"
+          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+        />
+        <div className="mt-3 flex flex-wrap gap-2">
           {FIELD_VOICE_STATUS_OPTIONS.map((nextStatus) => (
-            <form key={nextStatus} action="/api/field/voice/status" method="post">
-              <input type="hidden" name="pageId" value={row.id} />
-              <input type="hidden" name="status" value={nextStatus} />
-              <button
-                type="submit"
-                disabled={row.status === nextStatus}
-                className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-blue-200 disabled:bg-blue-100 disabled:text-blue-800"
-              >
-                {row.status === nextStatus ? `현재: ${nextStatus}` : nextStatus}
-              </button>
-            </form>
+            <button
+              key={nextStatus}
+              type="submit"
+              name="status"
+              value={nextStatus}
+              disabled={row.status === nextStatus}
+              className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-blue-200 disabled:bg-blue-100 disabled:text-blue-800"
+            >
+              {row.status === nextStatus ? `현재: ${nextStatus}` : nextStatus}
+            </button>
           ))}
         </div>
-      </div>
+      </form>
 
       {row.files.length > 0 ? (
         <div className="mt-4 rounded-2xl border border-purple-100 bg-purple-50 p-3">
