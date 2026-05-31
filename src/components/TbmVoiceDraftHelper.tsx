@@ -209,14 +209,14 @@ export default function TbmVoiceDraftHelper({
     <section id="tbm-voice-draft" className={`scroll-mt-24 rounded-2xl border border-cyan-700/60 bg-cyan-950/25 p-4 ${className}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원 v1</p>
+          <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원</p>
           <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 초안 만들기</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-100/80">
             현장관리자가 말한 내용을 TBM 초안으로 정리합니다. 초안을 복사한 뒤 오늘 TBM 작성 화면에 붙여넣고, 참석사진·현장사진·특이사항/조치사진을 함께 첨부하세요.
           </p>
         </div>
         <span className="w-fit rounded-full border border-cyan-400/30 bg-slate-950 px-3 py-1 text-xs font-black text-cyan-100">
-          비용 0원 · 브라우저 음성인식
+          현장관리자 작성지원
         </span>
       </div>
 
