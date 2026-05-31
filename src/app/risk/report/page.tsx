@@ -50,6 +50,20 @@ function afterRiskScoreText(item: RiskItemDetail) {
   return parts.length > 0 ? parts.join(" · ") : "-";
 }
 
+function hasPhotoEvidence(item: RiskItemDetail) {
+  return item.beforePhotos.length > 0 || item.afterPhotos.length > 0;
+}
+
+function confirmationText(value: boolean) {
+  return value ? "확인" : "미확인";
+}
+
+function getConfirmationClass(value: boolean) {
+  return value
+    ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+    : "border-slate-300 bg-slate-100 text-slate-600";
+}
+
 function StatBox({
   label,
   value,
@@ -65,6 +79,70 @@ function StatBox({
       <p className="mt-2 text-3xl font-black text-slate-950">{value}</p>
       {hint ? <p className="mt-1 text-xs leading-5 text-slate-500">{hint}</p> : null}
     </div>
+  );
+}
+
+function PhotoEvidenceCard({ item }: { item: RiskItemDetail }) {
+  const before = item.beforePhotos.slice(0, 2);
+  const after = item.afterPhotos.slice(0, 2);
+
+  return (
+    <article className="break-inside-avoid rounded-2xl border border-slate-200 bg-white p-4 shadow-sm print:border-slate-300 print:shadow-none">
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-black text-slate-950">{item.processName || item.taskName || item.title || "위험요인"}</p>
+        <p className="text-xs leading-5 text-slate-600">{item.hazard || item.accidentType || "-"}</p>
+      </div>
+
+      {item.actionMemo ? (
+        <p className="mt-2 rounded-xl bg-slate-50 p-2 text-xs leading-5 text-slate-600">
+          조치 메모: {item.actionMemo}
+        </p>
+      ) : null}
+
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div>
+          <p className="text-xs font-black text-slate-500">개선 전 사진 {item.beforePhotos.length}장</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {before.length > 0 ? (
+              before.map((file) => (
+                <a key={file.url} href={file.url} target="_blank" rel="noreferrer" className="block">
+                  <img
+                    src={file.url}
+                    alt={file.name}
+                    className="h-24 w-full rounded-xl border border-slate-200 object-cover print:h-20"
+                  />
+                </a>
+              ))
+            ) : (
+              <div className="col-span-2 rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-500">
+                개선 전 사진 없음
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-black text-slate-500">개선 후 사진 {item.afterPhotos.length}장</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {after.length > 0 ? (
+              after.map((file) => (
+                <a key={file.url} href={file.url} target="_blank" rel="noreferrer" className="block">
+                  <img
+                    src={file.url}
+                    alt={file.name}
+                    className="h-24 w-full rounded-xl border border-slate-200 object-cover print:h-20"
+                  />
+                </a>
+              ))
+            ) : (
+              <div className="col-span-2 rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-500">
+                개선 후 사진 없음
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -102,8 +180,24 @@ function RiskReportRow({ item, index }: { item: RiskItemDetail; index: number })
       </td>
       <td className="px-2 py-3 text-xs leading-5 text-slate-800">
         <p className="font-bold">{item.owner || "담당자 지정 필요"}</p>
-        <p className="mt-1 text-slate-500">기한: {item.dueDate || "-"}</p>
-        <p className="mt-1 text-slate-500">완료: {item.completedDate || "-"}</p>
+        <p className="mt-1 text-slate-500">예정: {item.improvementPlannedDate || item.dueDate || "-"}</p>
+        <p className="mt-1 text-slate-500">완료: {item.improvementCompletedDate || item.completedDate || "-"}</p>
+      </td>
+      <td className="px-2 py-3 text-xs leading-5 text-slate-800">
+        <p className="font-bold">전 {item.beforePhotos.length} / 후 {item.afterPhotos.length}</p>
+        <div className="mt-1 flex flex-wrap gap-1">
+          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${getConfirmationClass(item.adminConfirmed)}`}>
+            관리자 {confirmationText(item.adminConfirmed)}
+          </span>
+          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${getConfirmationClass(item.representativeConfirmed)}`}>
+            대표 {confirmationText(item.representativeConfirmed)}
+          </span>
+        </div>
+        {item.actionMemo ? (
+          <p className="mt-1 text-[10px] leading-4 text-slate-500">
+            메모: {item.actionMemo}
+          </p>
+        ) : null}
       </td>
       <td className="px-2 py-3 text-center">
         <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-black ${getStatusClass(item.status)}`}>
@@ -123,6 +217,11 @@ export default async function RiskAssessmentReportPage() {
   const highRiskCount = items.filter(isHighRiskItem).length;
   const completedCount = risk.completedCount;
   const openCount = risk.openCount;
+  const beforePhotoCount = items.reduce((sum, item) => sum + item.beforePhotos.length, 0);
+  const afterPhotoCount = items.reduce((sum, item) => sum + item.afterPhotos.length, 0);
+  const photoEvidenceItems = items.filter(hasPhotoEvidence);
+  const adminConfirmedCount = items.filter((item) => item.adminConfirmed).length;
+  const representativeConfirmedCount = items.filter((item) => item.representativeConfirmed).length;
 
   const todayLabel = new Date().toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
   const reportYear =
@@ -181,7 +280,7 @@ export default async function RiskAssessmentReportPage() {
         <section className="print-section rounded-3xl border border-slate-200 bg-white p-5 shadow-sm print:border-slate-300 print:shadow-none">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black text-blue-700">SafeMetrica 위험성평가표 출력지원 v1.2</p>
+              <p className="text-sm font-black text-blue-700">SafeMetrica 위험성평가표 출력지원 v2</p>
               <h1 className="risk-report-title mt-2 text-3xl font-black text-slate-950">
                 {reportYear}년 {company.name} 위험성평가표 출력지원 검토본
               </h1>
@@ -265,6 +364,13 @@ export default async function RiskAssessmentReportPage() {
               <StatBox label="관리중" value={`${openCount}건`} hint="완료 전 항목" />
             </section>
 
+            <section className="print-section grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StatBox label="개선 전 사진" value={`${beforePhotoCount}장`} hint="Risk DB 개선 전 사진 기준" />
+              <StatBox label="개선 후 사진" value={`${afterPhotoCount}장`} hint="Risk DB 개선 후 사진 기준" />
+              <StatBox label="관리자 확인" value={`${adminConfirmedCount}/${items.length}`} hint="관리자 확인 체크 기준" />
+              <StatBox label="대표 확인" value={`${representativeConfirmedCount}/${items.length}`} hint="대표/사업주 확인 체크 기준" />
+            </section>
+
             <section className="print-section rounded-3xl border border-slate-200 bg-white p-4 shadow-sm print:border-slate-300 print:shadow-none">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -279,7 +385,7 @@ export default async function RiskAssessmentReportPage() {
               </div>
 
               <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="risk-print-table min-w-[1400px] w-full border-collapse text-left">
+                <table className="risk-print-table min-w-[1600px] w-full border-collapse text-left">
                   <thead className="bg-slate-900 text-white">
                     <tr>
                       <th className="w-14 px-2 py-3 text-center text-xs">No.</th>
@@ -290,6 +396,7 @@ export default async function RiskAssessmentReportPage() {
                       <th className="w-72 px-2 py-3 text-xs">개선대책</th>
                       <th className="w-36 px-2 py-3 text-center text-xs">개선 후 위험성</th>
                       <th className="w-40 px-2 py-3 text-xs">담당자 / 일정</th>
+                      <th className="w-44 px-2 py-3 text-xs">개선사진 / 확인</th>
                       <th className="w-28 px-2 py-3 text-center text-xs">상태</th>
                     </tr>
                   </thead>
@@ -300,7 +407,7 @@ export default async function RiskAssessmentReportPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={9} className="px-3 py-8 text-center text-sm text-slate-500">
+                        <td colSpan={10} className="px-3 py-8 text-center text-sm text-slate-500">
                           출력할 위험성평가 항목이 없습니다.
                         </td>
                       </tr>
@@ -309,6 +416,32 @@ export default async function RiskAssessmentReportPage() {
                 </table>
               </div>
             </section>
+
+            {photoEvidenceItems.length > 0 ? (
+              <section className="print-section rounded-3xl border border-slate-200 bg-white p-5 shadow-sm print:border-slate-300 print:shadow-none">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-950">개선 전·후 사진 증빙</h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      Risk DB의 개선 전 사진, 개선 후 사진 Files 속성에 등록된 자료입니다. 화면에는 항목별 최대 2장씩 표시합니다.
+                    </p>
+                  </div>
+                  <p className="text-xs font-bold text-slate-500">
+                    사진 등록 항목 {photoEvidenceItems.length}건
+                  </p>
+                </div>
+
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  {photoEvidenceItems.slice(0, 8).map((item) => (
+                    <PhotoEvidenceCard key={item.id} item={item} />
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="print-section rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm print:border-slate-300 print:shadow-none">
+                개선 전·후 사진이 등록된 위험요인은 아직 없습니다. 후속 운영에서 TBM/EB 사진과 연결해 보완할 수 있습니다.
+              </section>
+            )}
 
             <section className="print-section grid gap-4 md:grid-cols-2">
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm print:border-slate-300 print:shadow-none">
@@ -345,7 +478,7 @@ export default async function RiskAssessmentReportPage() {
               <ul className="mt-2 space-y-1">
                 <li>• 본 자료는 SafeMetrica에 기록된 위험성평가 DB를 출력 양식으로 정리한 초안입니다.</li>
                 <li>• 개선 후 위험성은 입력값 또는 목표값 기준이며, 실제 조치 완료 후 재확인이 필요합니다.</li>
-                <li>• 사진, 서명, TBM, Evidence Book 등 증빙자료는 별도 운영기록과 함께 보관해야 하며, 개선 전·후 사진 자동 연결은 후속 버전에서 지원합니다.</li>
+                <li>• 개선 전·후 사진은 Risk DB 표준 Files 필드 기준으로 표시되며, TBM/EB 사진 자동 연결은 후속 버전에서 지원합니다.</li>
                 <li>• 최종 위험성평가의 확정, 승인, 보관 책임은 사업장 관리 기준에 따라 사업주 또는 관리자가 확인해야 합니다.</li>
               </ul>
             </section>
