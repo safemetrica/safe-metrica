@@ -4,6 +4,12 @@ export type NotionProperty = {
   title?: Array<{ plain_text?: string }>;
   rich_text?: Array<{ plain_text?: string }>;
   date?: { start?: string | null };
+  files?: Array<{
+    name?: string;
+    type?: "external" | "file" | string;
+    external?: { url?: string };
+    file?: { url?: string };
+  }>;
   checkbox?: boolean;
   select?: { name?: string | null };
   status?: { name?: string | null };
@@ -45,6 +51,11 @@ export type RiskFilter =
 
 export type ManagementTerm = "단기" | "중기" | "장기";
 
+export type RiskEvidenceFile = {
+  name: string;
+  url: string;
+};
+
 export type RiskItemDetail = {
   id: string;
   title: string;
@@ -75,6 +86,15 @@ export type RiskItemDetail = {
   assessmentYear: string;
   assessmentType: string;
   memo: string;
+  improvementPlannedDate: string;
+  improvementCompletedDate: string;
+  beforePhotos: RiskEvidenceFile[];
+  afterPhotos: RiskEvidenceFile[];
+  actionMemo: string;
+  adminConfirmed: boolean;
+  representativeConfirmed: boolean;
+  legalBasis: string;
+  koshaBasis: string;
 };
 
 export type RiskIntelligenceData = {
@@ -119,6 +139,17 @@ function getDatePropStart(prop: NotionProperty | undefined): string {
 
 function getCheckboxPropValue(prop: NotionProperty | undefined): boolean {
   return prop?.checkbox ?? prop?.formula?.boolean ?? false;
+}
+
+function getFilesPropValue(prop: NotionProperty | undefined): RiskEvidenceFile[] {
+  return (
+    prop?.files
+      ?.map((file) => ({
+        name: file.name || "첨부파일",
+        url: file.external?.url || file.file?.url || "",
+      }))
+      .filter((file) => file.url) ?? []
+  );
 }
 
 function getSelectPropName(prop: NotionProperty | undefined): string {
@@ -407,6 +438,33 @@ export async function getRiskIntelligenceData(
       assessmentYear: getTextPropPlainText(getFirstExistingProp(props, ["assessmentYear", "평가연도"])),
       assessmentType: getFlexibleTextValue(getFirstExistingProp(props, ["assessmentType", "평가유형"])),
       memo: getTextPropPlainText(getFirstExistingProp(props, ["memo", "메모"])),
+      improvementPlannedDate: getDatePropStart(
+        getFirstExistingProp(props, ["개선예정일", "improvementPlannedDate", "개선 예정일"])
+      ),
+      improvementCompletedDate: getDatePropStart(
+        getFirstExistingProp(props, ["개선완료일", "improvementCompletedDate", "개선 완료일"])
+      ),
+      beforePhotos: getFilesPropValue(
+        getFirstExistingProp(props, ["개선 전 사진", "개선전사진", "조치 전 사진", "beforePhotos"])
+      ),
+      afterPhotos: getFilesPropValue(
+        getFirstExistingProp(props, ["개선 후 사진", "개선후사진", "조치 후 사진", "afterPhotos"])
+      ),
+      actionMemo: getTextPropPlainText(
+        getFirstExistingProp(props, ["조치 메모", "처리 메모", "관리자 메모", "actionMemo"])
+      ),
+      adminConfirmed: getCheckboxPropValue(
+        getFirstExistingProp(props, ["관리자 확인", "adminConfirmed", "관리자확인"])
+      ),
+      representativeConfirmed: getCheckboxPropValue(
+        getFirstExistingProp(props, ["대표 확인", "사업주 확인", "representativeConfirmed", "대표확인"])
+      ),
+      legalBasis: getTextPropPlainText(
+        getFirstExistingProp(props, ["법령근거", "관련 법령", "법령/기준", "legalBasis"])
+      ),
+      koshaBasis: getTextPropPlainText(
+        getFirstExistingProp(props, ["KOSHA근거", "KOSHA 기준", "KOSHA기준", "koshaBasis"])
+      ),
     };
   });
 
