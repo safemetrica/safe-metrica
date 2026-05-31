@@ -697,6 +697,12 @@ export default async function MonthlySafetyReportPage({
               >
                 상세 보기
               </Link>
+              <Link
+                href="/risk/report"
+                className="rounded-xl border border-emerald-500/50 bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-100 hover:bg-emerald-500/25"
+              >
+                위험성평가표 출력
+              </Link>
               <Link href="/home" className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-slate-800">
                 홈
               </Link>
@@ -1202,7 +1208,8 @@ export default async function MonthlySafetyReportPage({
             <li>• EB 연결 누락 TBM은 증빙 연결 여부를 확인합니다.</li>
             <li>• 위험성평가표상 고위험 관리항목은 월간 TBM 공유 여부와 관련 조치 기록을 확인합니다.</li>
             <li>• 위험성평가표상 개선대책 관리항목은 담당자, 기한, 증빙자료를 확인합니다.</li>
-            <li>• 본 보고서는 운영 참고자료이며 최종 조치 판단은 사업장 관리 기준에 따릅니다.</li>
+            <li>• 본 보고서는 운영 참고자료이며 최종 조치 판단은 사업장 관리 기준에 따릅니다.
+            • 위험성평가표 출력지원 검토본은 상단의 `위험성평가표 출력` 버튼에서 확인할 수 있습니다.</li>
           </ul>
         </Section>
       </div>
