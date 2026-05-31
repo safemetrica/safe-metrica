@@ -32,6 +32,32 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
 
+  if (!companyCode) {
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-5 text-slate-900">
+        <div className="mx-auto max-w-3xl">
+          <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+            <p className="text-xs font-black text-amber-700">SafeMetrica 현장근로자 QR</p>
+            <h1 className="mt-2 text-2xl font-black text-slate-950">회사코드가 포함된 QR 링크가 필요합니다.</h1>
+            <p className="mt-3 text-sm leading-6 text-amber-900">
+              현장근로자 안전참여 화면은 고객사별 위험성평가 공유 항목과 연결됩니다.
+              QR 링크는 반드시 <span className="font-black">/field/participation?company=업체코드</span> 형식으로 배포해 주세요.
+            </p>
+            <div className="mt-4 rounded-2xl border border-amber-300 bg-white p-4 text-sm font-bold text-slate-700">
+              예: /field/participation?company=daedo
+            </div>
+            <a
+              href="/home"
+              className="mt-5 inline-flex rounded-2xl bg-amber-700 px-5 py-3 text-sm font-black text-white"
+            >
+              운영 홈으로 돌아가기
+            </a>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   if (riskSummary) {
     return (
       <FieldParticipationStepper

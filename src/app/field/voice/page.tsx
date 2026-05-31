@@ -322,13 +322,13 @@ function EmptyState() {
     <section className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
       <p className="text-lg font-black text-slate-900">아직 접수된 현장 의견이 없습니다.</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        근로자·협력사가 현장참여 QR로 위험요인, 아차사고, 개선의견을 제출하면 이곳에 표시됩니다.
+        근로자·협력사가 회사코드가 포함된 현장참여 QR로 위험요인, 아차사고, 개선의견을 제출하면 이곳에 표시됩니다.
       </p>
       <Link
-        href="/field/participation"
+        href="/home"
         className="mt-5 inline-flex rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white"
       >
-        현장참여 입력 화면 보기
+        운영 홈으로 돌아가기
       </Link>
     </section>
   );
