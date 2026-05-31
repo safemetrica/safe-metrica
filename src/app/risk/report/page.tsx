@@ -131,7 +131,7 @@ export default async function RiskAssessmentReportPage() {
     items.find((item) => item.assessmentType)?.assessmentType || "정기/수시 위험성평가";
   const sourceDoc =
     items.find((item) => item.sourceDoc)?.sourceDoc || "SafeMetrica 위험성평가 DB";
-  const assessmentMethod = "빈도 × 강도 입력값 기준";
+  const assessmentMethod = "빈도 × 강도 입력값 기준(관리자 확인 필요)";
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 text-slate-950 print:bg-white print:px-0 print:py-0">
@@ -146,12 +146,12 @@ export default async function RiskAssessmentReportPage() {
             print-color-adjust: exact;
           }
           .risk-print-table {
-            font-size: 9px;
+            font-size: 9.5px;
           }
           .risk-print-table th,
           .risk-print-table td {
-            padding: 5px 4px !important;
-            line-height: 1.35 !important;
+            padding: 6px 5px !important;
+            line-height: 1.4 !important;
           }
           .risk-report-title {
             font-size: 22px !important;
@@ -181,12 +181,12 @@ export default async function RiskAssessmentReportPage() {
         <section className="print-section rounded-3xl border border-slate-200 bg-white p-5 shadow-sm print:border-slate-300 print:shadow-none">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black text-blue-700">SafeMetrica 위험성평가표 출력지원 v1.1</p>
+              <p className="text-sm font-black text-blue-700">SafeMetrica 위험성평가표 출력지원 v1.2</p>
               <h1 className="risk-report-title mt-2 text-3xl font-black text-slate-950">
-                {reportYear}년 {company.name} 위험성평가표 출력 초안
+                {reportYear}년 {company.name} 위험성평가표 출력지원 검토본
               </h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                위험성평가 DB 기준 · 관리자 확인용 출력 화면 · {assessmentType}
+                위험성평가 DB 기준 · 사업장 확인용 출력지원 화면 · {assessmentType}
               </p>
             </div>
 
@@ -208,8 +208,8 @@ export default async function RiskAssessmentReportPage() {
           </div>
 
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-            본 화면은 세메앱에 기록된 위험요인, 개선대책, 조치상태를 기준으로 위험성평가표 출력 초안을 지원하는 화면입니다.
-            최종 위험성평가의 확정, 승인 및 보관 책임은 사업장 관리 기준에 따라 사업주 또는 관리자가 확인해야 합니다.
+            본 화면은 세메앱에 기록된 위험요인, 개선대책, 조치상태를 기준으로 위험성평가표 검토본 출력을 지원하는 화면입니다.
+            본 자료는 위험성평가의 자동 확정 또는 법정의무 완료를 의미하지 않으며, 최종 확정·승인·보관은 사업장 관리 기준에 따라 사업주 또는 관리자가 확인해야 합니다.
           </div>
 
           <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
@@ -252,7 +252,7 @@ export default async function RiskAssessmentReportPage() {
           <section className="rounded-3xl border border-red-200 bg-red-50 p-6">
             <h2 className="text-xl font-black text-red-900">위험성평가 DB 연결 필요</h2>
             <p className="mt-2 text-sm leading-6 text-red-800">
-              Companies DB에 riskAssessmentDbId가 연결되면 이 화면에서 출력용 위험성평가표를 생성할 수 있습니다.
+              Companies DB에 riskAssessmentDbId가 연결되면 이 화면에서 출력용 위험성평가표 검토본을 생성할 수 있습니다.
             </p>
           </section>
         ) : (
@@ -270,7 +270,7 @@ export default async function RiskAssessmentReportPage() {
                 <div>
                   <h2 className="text-xl font-black text-slate-950">위험성평가표</h2>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    빈도·강도·위험도는 입력값 또는 연결된 산식 결과 기준입니다. 개선 후 위험성은 예상 또는 목표값으로 표시합니다.
+                    빈도·강도·위험도는 입력값 또는 연결된 산식 결과 기준입니다. 개선 후 위험성은 예상 또는 목표값으로 표시하며, 개선 전·후 사진 증빙은 후속 버전에서 TBM/EB 연결자료와 함께 반영합니다.
                   </p>
                 </div>
                 <p className="text-xs font-bold text-slate-500">
@@ -345,7 +345,7 @@ export default async function RiskAssessmentReportPage() {
               <ul className="mt-2 space-y-1">
                 <li>• 본 자료는 SafeMetrica에 기록된 위험성평가 DB를 출력 양식으로 정리한 초안입니다.</li>
                 <li>• 개선 후 위험성은 입력값 또는 목표값 기준이며, 실제 조치 완료 후 재확인이 필요합니다.</li>
-                <li>• 사진, 서명, TBM, Evidence Book 등 증빙자료는 별도 운영기록과 함께 보관해야 합니다.</li>
+                <li>• 사진, 서명, TBM, Evidence Book 등 증빙자료는 별도 운영기록과 함께 보관해야 하며, 개선 전·후 사진 자동 연결은 후속 버전에서 지원합니다.</li>
                 <li>• 최종 위험성평가의 확정, 승인, 보관 책임은 사업장 관리 기준에 따라 사업주 또는 관리자가 확인해야 합니다.</li>
               </ul>
             </section>
