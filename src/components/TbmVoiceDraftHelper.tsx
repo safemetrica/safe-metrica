@@ -215,9 +215,6 @@ export default function TbmVoiceDraftHelper({
             현장관리자가 말한 내용을 TBM 초안으로 정리합니다. 초안을 복사한 뒤 오늘 TBM 작성 화면에 붙여넣고, 참석사진·현장사진·특이사항/조치사진을 함께 첨부하세요.
           </p>
         </div>
-        <span className="w-fit rounded-full border border-cyan-400/30 bg-slate-950 px-3 py-1 text-xs font-black text-cyan-100">
-          현장관리자 작성지원
-        </span>
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-4">
