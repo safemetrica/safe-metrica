@@ -94,6 +94,12 @@ function buildTbmDraftText(params: {
     "",
     "4. 특이사항/조치 필요",
     "- 현장에서 확인 후 필요 시 조치사항을 추가 입력합니다.",
+    "",
+    "5. 사진/증빙 첨부 안내",
+    "- TBM 실시 또는 참석 확인 사진을 첨부합니다.",
+    "- 작업 전 현장사진 또는 작업대상 사진을 첨부합니다.",
+    "- 특이사항이 있으면 조치 전 사진과 조치 후 사진을 함께 첨부합니다.",
+    "- 위험요인 또는 개선조치가 있는 경우 관련 사진을 누락하지 않습니다.",
   ].join("\n");
 }
 
@@ -206,7 +212,7 @@ export default function TbmVoiceDraftHelper({
           <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원 v1</p>
           <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 초안 만들기</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-            현장관리자가 말한 내용을 TBM 초안으로 정리합니다. 초안을 복사한 뒤 오늘 TBM 작성 화면에 붙여넣으세요.
+            현장관리자가 말한 내용을 TBM 초안으로 정리합니다. 초안을 복사한 뒤 오늘 TBM 작성 화면에 붙여넣고, 참석사진·현장사진·특이사항/조치사진을 함께 첨부하세요.
           </p>
         </div>
         <span className="w-fit rounded-full border border-cyan-400/30 bg-slate-950 px-3 py-1 text-xs font-black text-cyan-100">
@@ -272,7 +278,7 @@ export default function TbmVoiceDraftHelper({
         <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
           <p className="text-xs font-black text-slate-400">복사용 TBM 초안</p>
           <pre className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200 [word-break:keep-all]">
-            {draftText || "음성 인식 후 TBM 초안이 생성됩니다."}
+            {draftText || "음성 인식 후 TBM 초안이 생성됩니다. TBM 작성 화면에서 참석사진, 작업 전 현장사진, 특이사항/조치사진을 함께 첨부하세요."}
           </pre>
         </div>
       </div>
