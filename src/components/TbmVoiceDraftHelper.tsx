@@ -200,7 +200,7 @@ export default function TbmVoiceDraftHelper({
   }
 
   return (
-    <section className={`rounded-2xl border border-cyan-700/60 bg-cyan-950/25 p-4 ${className}`}>
+    <section id="tbm-voice-draft" className={`scroll-mt-24 rounded-2xl border border-cyan-700/60 bg-cyan-950/25 p-4 ${className}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원 v1</p>

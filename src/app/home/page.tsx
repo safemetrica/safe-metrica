@@ -233,6 +233,15 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
 </p>
 <TbmFormAction tbmFormUrl={tbmFormUrl} className="mt-2" />
 
+<div className="mt-2">
+  <a
+    href="/tbm#tbm-voice-draft"
+    className="inline-flex w-full items-center justify-center rounded-xl border border-cyan-500/60 bg-cyan-950/40 px-4 py-3 text-sm font-black text-cyan-100 hover:bg-cyan-900 sm:w-auto"
+  >
+    🎙️ 말로 TBM 초안 만들기
+  </a>
+</div>
+
       </div>
 
       {weather.tmp !== null && weather.decision && (() => {
