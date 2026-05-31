@@ -2,6 +2,7 @@ import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import FieldParticipationStepper from "./FieldParticipationStepper";
 import { getOperatingFieldWorkerCopy } from "./operatingFieldWorkerCopy";
 import type { FieldWorkerRiskSummary } from "./fieldWorkerRiskSummary";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,7 @@ type PageProps = {
     site?: string;
     source?: string;
     weatherTest?: string;
+    legacy?: string;
   }>;
 };
 
@@ -169,6 +171,11 @@ async function getFieldWeatherNotice(weatherTest?: string | null): Promise<Field
 
 export default async function FieldParticipationPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
+
+  if (params.company === "mons" && params.legacy === "contractor-mons") {
+    redirect("/contractor/mons");
+  }
+
   const todayDateValue = getTodayDateValue();
   const companyCode = params.company ?? "";
   const workerCopy = getOperatingFieldWorkerCopy(companyCode);
