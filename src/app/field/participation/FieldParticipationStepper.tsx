@@ -122,6 +122,17 @@ export default function FieldParticipationStepper({
   const [content, setContent] = useState("");
 
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
+  const normalizedCompanyCode = companyCode.trim().toLowerCase();
+  const canOpenRiskSummary = [
+    "daedo",
+    "dongwoo",
+    "hankookgreen",
+    "korea-green",
+    "korea_green",
+    "koreagreen",
+    "greenkorea",
+    "bubblemon",
+  ].includes(normalizedCompanyCode);
   const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
   const hasOpinion = reportTitle.trim().length > 0 || content.trim().length > 0;
   const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : "공유확인";
@@ -199,12 +210,13 @@ export default function FieldParticipationStepper({
                   </div>
                 ) : (
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">
-                    연결된 위험성평가표에서 현장근로자 공유 항목을 불러올 수 없습니다.
-                    관리자에게 위험성평가표 연결 상태를 확인해 주세요.
+                    {canOpenRiskSummary
+                      ? "위험성평가 공유요약은 아래 버튼에서 별도로 확인할 수 있습니다."
+                      : "오늘 작업 전 TBM 공유 내용과 현장 주의사항을 확인해 주세요."}
                   </div>
                 )}
 
-                {riskSummary.hasDb && riskItems.length > 0 ? (
+                {canOpenRiskSummary ? (
                   <a
                     href={`/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
                     className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"

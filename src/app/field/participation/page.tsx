@@ -1,7 +1,7 @@
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import FieldParticipationStepper from "./FieldParticipationStepper";
 import { getOperatingFieldWorkerCopy } from "./operatingFieldWorkerCopy";
-import { getFieldWorkerRiskSummary } from "./fieldWorkerRiskSummary";
+import type { FieldWorkerRiskSummary } from "./fieldWorkerRiskSummary";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,7 +28,12 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   const todayDateValue = getTodayDateValue();
   const companyCode = params.company ?? "";
   const workerCopy = getOperatingFieldWorkerCopy(companyCode);
-  const riskSummary = await getFieldWorkerRiskSummary(companyCode);
+  const riskSummary: FieldWorkerRiskSummary = {
+    hasDb: false,
+    total: 0,
+    items: [],
+    memo: "",
+  };
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
 
