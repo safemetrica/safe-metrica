@@ -231,16 +231,11 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
         <p className="text-blue-300 text-xs text-center">
   {company.name} · 오늘도 안전한 하루 되세요 👷
 </p>
-<TbmFormAction tbmFormUrl={tbmFormUrl} className="mt-2" />
-
-<div className="mt-2">
-  <a
-    href="/tbm#tbm-voice-draft"
-    className="inline-flex w-full items-center justify-center rounded-xl border border-cyan-500/60 bg-cyan-950/40 px-4 py-3 text-sm font-black text-cyan-100 hover:bg-cyan-900 sm:w-auto"
-  >
-    🎙️ 말로 TBM 초안 만들기
-  </a>
-</div>
+<TbmFormAction
+  tbmFormUrl={tbmFormUrl}
+  voiceDraftHref="/tbm#tbm-voice-draft"
+  className="mt-2"
+/>
 
       </div>
 

@@ -64,7 +64,12 @@ export default async function TbmPage() {
             <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
               등록된 TBM과 특이사항, 증빙 연결 상태를 확인합니다.
             </p>
-              <TbmFormAction tbmFormUrl={tbmFormUrl} compact className="mt-4" />
+              <TbmFormAction
+                tbmFormUrl={tbmFormUrl}
+                voiceDraftHref="#tbm-voice-draft"
+                compact
+                className="mt-4"
+              />
 
           </div>
 
