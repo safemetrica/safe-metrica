@@ -2,8 +2,9 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-const MONS_TBM_WRITE_URL = "https://app.notion.com/p/7bbb3490a620485c9162acb3814bbdfd?v=389746e4d50045789dead2e69f779f37";
+const MONS_TBM_WRITE_URL = "https://www.notion.so/6fd3867e1cd2400eb6f7159e63919db9";
 const MONS_FIELD_PARTICIPATION_URL = "/field/participation?company=mons";
+
 
 const guideItems = [
   {
@@ -49,7 +50,7 @@ export default function MonsSubmitSpacePage() {
         <section className="rounded-3xl border border-blue-500/30 bg-blue-950/30 p-5">
           <h2 className="text-xl font-black">현장 제출 바로가기</h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            현장관리자는 오늘 TBM을 작성하고, 근로자에게는 현장참여 링크만 공유합니다.
+            현장관리자는 TBM 작성 링크를 열고, 근로자에게는 현장참여 링크만 공유합니다.
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -59,7 +60,7 @@ export default function MonsSubmitSpacePage() {
               rel="noreferrer"
               className="block rounded-2xl bg-cyan-500 px-4 py-4 text-center text-base font-black text-slate-950 hover:bg-cyan-400"
             >
-              오늘 TBM 작성하기
+              TBM 작성 링크 열기
             </a>
 
             <Link
