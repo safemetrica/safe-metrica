@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { getCompanyConfigByCode } from "@/lib/company";
+import { getTbmFormUrl } from "@/lib/tenantLinks";
+
 export const dynamic = "force-dynamic";
 
 const guideItems = [
@@ -21,7 +24,10 @@ const guideItems = [
   },
 ];
 
-export default function MonsSubmitSpacePage() {
+export default async function MonsSubmitSpacePage() {
+  const monsCompany = await getCompanyConfigByCode("mons").catch(() => null);
+  const tbmFormUrl = getTbmFormUrl(monsCompany);
+
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
       <div className="mx-auto max-w-3xl space-y-5">
@@ -44,17 +50,34 @@ export default function MonsSubmitSpacePage() {
         </section>
 
         <section className="rounded-3xl border border-blue-500/30 bg-blue-950/30 p-5">
-          <h2 className="text-xl font-black">현장참여 바로가기</h2>
+          <h2 className="text-xl font-black">현장 제출 바로가기</h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
-            근로자에게는 아래 현장참여 링크만 공유합니다.
+            현장관리자는 오늘 TBM을 작성하고, 근로자에게는 현장참여 링크만 공유합니다.
           </p>
 
-          <Link
-            href="/field/participation?company=mons"
-            className="mt-4 block rounded-2xl bg-blue-600 px-4 py-4 text-center text-base font-black text-white hover:bg-blue-500"
-          >
-            근로자 현장참여 열기
-          </Link>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {tbmFormUrl ? (
+              <a
+                href={tbmFormUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-2xl bg-cyan-500 px-4 py-4 text-center text-base font-black text-slate-950 hover:bg-cyan-400"
+              >
+                오늘 TBM 작성하기
+              </a>
+            ) : (
+              <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-4 text-center text-sm font-black text-amber-100">
+                TBM 작성 링크 확인 필요
+              </div>
+            )}
+
+            <Link
+              href="/field/participation?company=mons"
+              className="block rounded-2xl bg-blue-600 px-4 py-4 text-center text-base font-black text-white hover:bg-blue-500"
+            >
+              근로자 현장참여 열기
+            </Link>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
