@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-import { getCompanyConfigByCode } from "@/lib/company";
-import { getTbmFormUrl } from "@/lib/tenantLinks";
-
 export const dynamic = "force-dynamic";
+
+const MONS_TBM_WRITE_URL = "여기에_실제_몬스_TBM_작성_노션링크";
+const MONS_FIELD_PARTICIPATION_URL = "/field/participation?company=mons";
 
 const guideItems = [
   {
@@ -24,10 +24,7 @@ const guideItems = [
   },
 ];
 
-export default async function MonsSubmitSpacePage() {
-  const monsCompany = await getCompanyConfigByCode("mons").catch(() => null);
-  const tbmFormUrl = getTbmFormUrl(monsCompany);
-
+export default function MonsSubmitSpacePage() {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
       <div className="mx-auto max-w-3xl space-y-5">
@@ -56,23 +53,17 @@ export default async function MonsSubmitSpacePage() {
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {tbmFormUrl ? (
-              <a
-                href={tbmFormUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="block rounded-2xl bg-cyan-500 px-4 py-4 text-center text-base font-black text-slate-950 hover:bg-cyan-400"
-              >
-                오늘 TBM 작성하기
-              </a>
-            ) : (
-              <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-4 text-center text-sm font-black text-amber-100">
-                TBM 작성 링크 확인 필요
-              </div>
-            )}
+            <a
+              href={MONS_TBM_WRITE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-2xl bg-cyan-500 px-4 py-4 text-center text-base font-black text-slate-950 hover:bg-cyan-400"
+            >
+              오늘 TBM 작성하기
+            </a>
 
             <Link
-              href="/field/participation?company=mons"
+              href={MONS_FIELD_PARTICIPATION_URL}
               className="block rounded-2xl bg-blue-600 px-4 py-4 text-center text-base font-black text-white hover:bg-blue-500"
             >
               근로자 현장참여 열기
