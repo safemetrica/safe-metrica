@@ -131,6 +131,7 @@ export default function TbmVoiceDraftHelper({
   const [actionFiles, setActionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [recordingStartTime, setRecordingStartTime] = useState("");
   const defaultSupervisorName = companyCode === "daedo" || companyName?.includes("대도") ? "김인길" : "현장관리자";
 
@@ -162,7 +163,9 @@ export default function TbmVoiceDraftHelper({
 
     setSupportMessage("");
     setSubmitMessage("");
+    setHasSubmitted(false);
     setRecordingStartTime("");
+    setHasSubmitted(false);
     setSignatureFiles([]);
     setSiteFiles([]);
     setWorkFiles([]);
@@ -218,6 +221,11 @@ export default function TbmVoiceDraftHelper({
   }
 
   async function submitDirectTbm() {
+    if (isSubmitting || hasSubmitted) return;
+    if (isRecording) {
+      setSubmitMessage("녹음을 정지한 뒤 저장해 주세요.");
+      return;
+    }
     if (!draftText && !combinedTranscript) return;
 
     setIsSubmitting(true);
@@ -252,6 +260,7 @@ export default function TbmVoiceDraftHelper({
       }
 
       setSubmitMessage(data.message || "TBM이 저장되었습니다.");
+      setHasSubmitted(true);
       setCopied(false);
     } catch {
       setSubmitMessage("TBM 저장 요청 중 오류가 발생했습니다.");
@@ -279,6 +288,7 @@ export default function TbmVoiceDraftHelper({
     setSupportMessage("");
     setSubmitMessage("");
     setRecordingStartTime("");
+    setHasSubmitted(false);
     setSignatureFiles([]);
     setSiteFiles([]);
     setWorkFiles([]);
@@ -393,10 +403,16 @@ export default function TbmVoiceDraftHelper({
         <button
           type="button"
           onClick={submitDirectTbm}
-          disabled={isSubmitting || (!draftText && !combinedTranscript)}
+          disabled={isSubmitting || isRecording || hasSubmitted || (!draftText && !combinedTranscript)}
           className="mt-3 w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 disabled:bg-slate-700 disabled:text-slate-400"
         >
-          {isSubmitting ? "TBM 저장 중..." : "TBM으로 바로 저장"}
+          {isSubmitting
+            ? "TBM 저장 중..."
+            : hasSubmitted
+              ? "TBM 저장 완료"
+              : isRecording
+                ? "녹음 정지 후 저장"
+                : "TBM으로 바로 저장"}
         </button>
         {submitMessage ? (
           <p className="mt-3 rounded-xl border border-emerald-700 bg-emerald-950/40 p-3 text-sm font-bold leading-6 text-emerald-100">
