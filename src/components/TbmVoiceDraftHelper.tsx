@@ -1,12 +1,28 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+
+import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 
 type Props = {
   tbmFormUrl?: string | null;
   companyName?: string | null;
   companyCode?: string | null;
   className?: string;
+};
+
+type SpeechRecognitionResultLike = {
+  isFinal: boolean;
+  [index: number]: { transcript?: string } | undefined;
+};
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultLike>;
+};
+
+type SpeechRecognitionErrorEventLike = {
+  error?: string;
 };
 
 type SpeechRecognitionLike = {
@@ -16,9 +32,9 @@ type SpeechRecognitionLike = {
   start: () => void;
   stop: () => void;
   abort: () => void;
-  onresult: ((event: any) => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
   onend: (() => void) | null;
-  onerror: ((event: any) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
 };
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
@@ -164,8 +180,7 @@ export default function TbmVoiceDraftHelper({
     setSupportMessage("");
     setSubmitMessage("");
     setHasSubmitted(false);
-    setRecordingStartTime("");
-    setHasSubmitted(false);
+    setRecordingStartTime(getCurrentTimeText());
     setSignatureFiles([]);
     setSiteFiles([]);
     setWorkFiles([]);
@@ -177,7 +192,7 @@ export default function TbmVoiceDraftHelper({
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       let finalText = "";
       let interim = "";
 
@@ -214,10 +229,22 @@ export default function TbmVoiceDraftHelper({
     recognition.start();
   }
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>, setter: (files: File[]) => void) {
-    const files = Array.from(event.target.files ?? []).slice(0, 6);
-    setter(files);
+  function getSelectedFiles(input: HTMLInputElement) {
+    return Array.from(input.files ?? []).filter((file) => file.size > 0).slice(0, 6);
+  }
+
+  function updateSelectedFiles(input: HTMLInputElement, setter: (files: File[]) => void) {
+    setter(getSelectedFiles(input));
+    setHasSubmitted(false);
     setSubmitMessage("");
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>, setter: (files: File[]) => void) {
+    updateSelectedFiles(event.currentTarget, setter);
+  }
+
+  function handleFileInput(event: FormEvent<HTMLInputElement>, setter: (files: File[]) => void) {
+    updateSelectedFiles(event.currentTarget, setter);
   }
 
   async function submitDirectTbm() {
@@ -237,10 +264,10 @@ export default function TbmVoiceDraftHelper({
     formData.append("startTime", recordingStartTime || getCurrentTimeText());
     formData.append("supervisorName", defaultSupervisorName);
 
-    signatureFiles.forEach((file) => formData.append("signatureFiles", file));
-    siteFiles.forEach((file) => formData.append("siteFiles", file));
-    workFiles.forEach((file) => formData.append("workFiles", file));
-    actionFiles.forEach((file) => formData.append("actionFiles", file));
+    signatureFiles.forEach((file) => formData.append(TBM_VOICE_UPLOAD_FIELD_KEYS.signature, file, file.name));
+    siteFiles.forEach((file) => formData.append(TBM_VOICE_UPLOAD_FIELD_KEYS.site, file, file.name));
+    workFiles.forEach((file) => formData.append(TBM_VOICE_UPLOAD_FIELD_KEYS.work, file, file.name));
+    actionFiles.forEach((file) => formData.append(TBM_VOICE_UPLOAD_FIELD_KEYS.action, file, file.name));
 
     try {
       const res = await fetch("/api/tbm/voice-submit", {
@@ -295,130 +322,78 @@ export default function TbmVoiceDraftHelper({
     setActionFiles([]);
   }
 
+  function renderPhotoInput(params: {
+    label: string;
+    description: string;
+    files: File[];
+    setter: (files: File[]) => void;
+  }) {
+    return (
+      <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
+        <span className="text-xs font-black text-cyan-200">{params.label}</span>
+        <span className="mt-1 block text-[11px] leading-5 text-slate-500">{params.description}</span>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(event) => handleFileChange(event, params.setter)}
+          onInput={(event) => handleFileInput(event, params.setter)}
+          className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
+        />
+        <span className="mt-2 block rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-xs font-black text-slate-200">
+          선택 {params.files.length}개
+        </span>
+        {params.files.length > 0 ? (
+          <ul className="mt-2 space-y-1 text-[11px] leading-5 text-slate-400">
+            {params.files.map((file, index) => (
+              <li key={`${file.name}-${file.lastModified}-${index}`} className="truncate">
+                {index + 1}. {file.name}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </label>
+    );
+  }
+
+  const canSubmit = Boolean(combinedTranscript || draftText) && !isRecording;
+  const saveButtonLabel = isSubmitting ? "저장 중..." : hasSubmitted ? "TBM 저장 완료" : "TBM 저장하기";
+
   return (
-    <section id="tbm-voice-draft" className={`scroll-mt-24 rounded-2xl border border-cyan-700/60 bg-cyan-950/25 p-4 ${className}`}>
+    <section
+      id="tbm-voice-draft"
+      className={`scroll-mt-24 rounded-2xl border border-cyan-700/60 bg-cyan-950/25 p-4 pb-24 ${className}`}
+    >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원</p>
-          <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 초안 만들기</h2>
+          <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 저장하기</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-            현장관리자가 말한 내용을 TBM 내용으로 정리합니다. 사진을 첨부한 뒤 세메앱에서 바로 TBM으로 저장할 수 있습니다. 초안 복사와 작성 화면 열기는 보조 기능입니다.
+            현장관리자가 말한 내용을 TBM 초안으로 정리하고, 사진을 첨부한 뒤 바로 Notion TBM DB에 저장합니다.
           </p>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-4">
-        <button
-          type="button"
-          onClick={startRecording}
-          disabled={isRecording}
-          className="rounded-xl bg-cyan-500 px-4 py-3 text-sm font-black text-slate-950 disabled:bg-slate-700 disabled:text-slate-400"
-        >
-          {isRecording ? "녹음 중..." : "녹음 시작"}
-        </button>
-        <button
-          type="button"
-          onClick={stopRecording}
-          disabled={!isRecording}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-black text-slate-200 disabled:bg-slate-900 disabled:text-slate-600"
-        >
-          정지
-        </button>
-        <button
-          type="button"
-          onClick={copyDraft}
-          disabled={!draftText}
-          className="rounded-xl border border-blue-500 bg-blue-950/50 px-4 py-3 text-sm font-black text-blue-100 disabled:border-slate-700 disabled:text-slate-600"
-        >
-          {copied ? "복사 완료" : "초안 복사"}
-        </button>
-        {tbmFormUrl ? (
-          <a
-            href={tbmFormUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950"
+      <div className="mt-4 rounded-xl border border-cyan-700/50 bg-slate-950/50 p-3">
+        <p className="text-xs font-black text-cyan-200">1단계 · 녹음 시작 / 정지</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={startRecording}
+            disabled={isRecording}
+            className="rounded-xl bg-cyan-500 px-4 py-3 text-sm font-black text-slate-950 disabled:bg-slate-700 disabled:text-slate-400"
           >
-            노션폼 열기
-          </a>
-        ) : (
-          <span className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-center text-sm font-bold text-slate-500">
-            작성 링크 없음
-          </span>
-        )}
-      </div>
-
-      <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-        <p className="text-xs font-black text-slate-300">사진 촬영/첨부 · 실시자 {defaultSupervisorName}</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
-            <span className="text-xs font-black text-cyan-200">참석·서명사진</span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(event) => handleFileChange(event, setSignatureFiles)}
-              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
-            />
-            <span className="mt-1 block text-xs text-slate-500">선택 {signatureFiles.length}개</span>
-          </label>
-
-          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
-            <span className="text-xs font-black text-cyan-200">작업 전 현장사진</span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(event) => handleFileChange(event, setSiteFiles)}
-              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
-            />
-            <span className="mt-1 block text-xs text-slate-500">선택 {siteFiles.length}개</span>
-          </label>
-
-          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
-            <span className="text-xs font-black text-cyan-200">작업사진</span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(event) => handleFileChange(event, setWorkFiles)}
-              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
-            />
-            <span className="mt-1 block text-xs text-slate-500">선택 {workFiles.length}개</span>
-          </label>
-
-          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
-            <span className="text-xs font-black text-cyan-200">특이사항·조치사진</span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(event) => handleFileChange(event, setActionFiles)}
-              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
-            />
-            <span className="mt-1 block text-xs text-slate-500">선택 {actionFiles.length}개</span>
-          </label>
+            {isRecording ? "녹음 중..." : "녹음 시작"}
+          </button>
+          <button
+            type="button"
+            onClick={stopRecording}
+            disabled={!isRecording}
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-black text-slate-200 disabled:bg-slate-900 disabled:text-slate-600"
+          >
+            정지
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={submitDirectTbm}
-          disabled={isSubmitting || isRecording || hasSubmitted || (!draftText && !combinedTranscript)}
-          className="mt-3 w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 disabled:bg-slate-700 disabled:text-slate-400"
-        >
-          {isSubmitting
-            ? "TBM 저장 중..."
-            : hasSubmitted
-              ? "TBM 저장 완료"
-              : isRecording
-                ? "녹음 정지 후 저장"
-                : "TBM으로 바로 저장"}
-        </button>
-        {submitMessage ? (
-          <p className="mt-3 rounded-xl border border-emerald-700 bg-emerald-950/40 p-3 text-sm font-bold leading-6 text-emerald-100">
-            {submitMessage}
-          </p>
-        ) : null}
       </div>
 
       {supportMessage ? (
@@ -427,29 +402,120 @@ export default function TbmVoiceDraftHelper({
         </p>
       ) : null}
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-          <p className="text-xs font-black text-slate-400">인식된 음성</p>
-          <p className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200">
-            {combinedTranscript || "녹음 시작 후 현장 작업 내용을 말해 주세요."}
-          </p>
+      <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-black text-cyan-200">2단계 · 인식된 음성 및 TBM 초안</p>
+          <button
+            type="button"
+            onClick={clearDraft}
+            className="shrink-0 rounded-full border border-slate-700 px-3 py-1 text-xs font-black text-slate-300 hover:border-cyan-500 hover:text-white"
+          >
+            초안 초기화
+          </button>
         </div>
 
-        <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-          <p className="text-xs font-black text-slate-400">복사용 TBM 초안</p>
-          <pre className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200 [word-break:keep-all]">
-            {draftText || "음성 인식 후 TBM 내용이 생성됩니다. 사진을 첨부한 뒤 TBM으로 바로 저장할 수 있습니다."}
-          </pre>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+            <p className="text-xs font-black text-slate-400">인식된 음성</p>
+            <p className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200">
+              {combinedTranscript || "녹음 시작 후 현장 작업 내용을 말해 주세요."}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+            <p className="text-xs font-black text-slate-400">TBM 초안</p>
+            <pre className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200 [word-break:keep-all]">
+              {draftText || "음성 인식 후 TBM 내용이 생성됩니다. 사진을 첨부한 뒤 TBM 저장하기를 누르세요."}
+            </pre>
+          </div>
+        </div>
+
+        <details className="mt-3 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+          <summary className="cursor-pointer text-xs font-black text-slate-400">관리자/보조 기능</summary>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={copyDraft}
+              disabled={!draftText}
+              className="rounded-xl border border-blue-500 bg-blue-950/50 px-4 py-3 text-sm font-black text-blue-100 disabled:border-slate-700 disabled:text-slate-600"
+            >
+              {copied ? "복사 완료" : "초안 복사"}
+            </button>
+            {tbmFormUrl ? (
+              <a
+                href={tbmFormUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-center text-sm font-black text-slate-200"
+              >
+                노션폼 열기
+              </a>
+            ) : (
+              <span className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-center text-sm font-bold text-slate-500">
+                작성 링크 없음
+              </span>
+            )}
+          </div>
+        </details>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+        <p className="text-xs font-black text-cyan-200">3단계 · 사진 촬영/첨부</p>
+        <p className="mt-1 text-[11px] leading-5 text-slate-500">실시자 {defaultSupervisorName} · 각 항목 최대 6장</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {renderPhotoInput({
+            label: "참석·서명사진",
+            description: "Notion ‘서명 사진 (참석자 확인)’ 필드로 저장",
+            files: signatureFiles,
+            setter: setSignatureFiles,
+          })}
+          {renderPhotoInput({
+            label: "작업 전 현장사진",
+            description: "Notion ‘현장 사진’ 필드로 저장",
+            files: siteFiles,
+            setter: setSiteFiles,
+          })}
+          {renderPhotoInput({
+            label: "작업사진",
+            description: "Notion ‘파일과 미디어’ 필드로 저장",
+            files: workFiles,
+            setter: setWorkFiles,
+          })}
+          {renderPhotoInput({
+            label: "특이사항·조치사진",
+            description: "Notion ‘조치 사진’ 필드로 저장",
+            files: actionFiles,
+            setter: setActionFiles,
+          })}
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={clearDraft}
-        className="mt-3 text-sm font-bold text-slate-400 underline underline-offset-4 hover:text-white"
-      >
-        초안 초기화
-      </button>
+      {submitMessage ? (
+        <p className="mt-3 rounded-xl border border-emerald-700 bg-emerald-950/40 p-3 text-sm font-bold leading-6 text-emerald-100">
+          {submitMessage}
+        </p>
+      ) : null}
+
+      {combinedTranscript ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-emerald-700/60 bg-slate-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
+          <div className="mx-auto flex max-w-4xl items-center gap-3">
+            <div className="hidden min-w-0 flex-1 sm:block">
+              <p className="text-xs font-black text-emerald-200">4단계 · 하단 고정 저장</p>
+              <p className="truncate text-xs text-slate-400">
+                사진 {signatureFiles.length + siteFiles.length + workFiles.length + actionFiles.length}개 선택됨
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={submitDirectTbm}
+              disabled={!canSubmit || isSubmitting || hasSubmitted}
+              className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 disabled:bg-slate-700 disabled:text-slate-400 sm:w-56"
+            >
+              {saveButtonLabel}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
