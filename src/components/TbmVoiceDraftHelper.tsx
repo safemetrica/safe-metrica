@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
 
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
@@ -162,6 +162,10 @@ export default function TbmVoiceDraftHelper({
   const [siteFiles, setSiteFiles] = useState<File[]>([]);
   const [workFiles, setWorkFiles] = useState<File[]>([]);
   const [actionFiles, setActionFiles] = useState<File[]>([]);
+  const signatureInputRef = useRef<HTMLInputElement | null>(null);
+  const siteInputRef = useRef<HTMLInputElement | null>(null);
+  const workInputRef = useRef<HTMLInputElement | null>(null);
+  const actionInputRef = useRef<HTMLInputElement | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -198,10 +202,8 @@ export default function TbmVoiceDraftHelper({
     setSubmitMessage("");
     setHasSubmitted(false);
     setRecordingStartTime(getCurrentTimeText());
-    setSignatureFiles([]);
-    setSiteFiles([]);
-    setWorkFiles([]);
-    setActionFiles([]);
+    clearPhotoFileState();
+    clearPhotoInputValues();
     setCopied(false);
 
     const recognition = new Recognition();
@@ -248,6 +250,21 @@ export default function TbmVoiceDraftHelper({
 
   function getSelectedFiles(input: HTMLInputElement) {
     return Array.from(input.files ?? []).filter((file) => file.size > 0).slice(0, 6);
+  }
+
+  function clearPhotoInputValues() {
+    [signatureInputRef, siteInputRef, workInputRef, actionInputRef].forEach((inputRef) => {
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    });
+  }
+
+  function clearPhotoFileState() {
+    setSignatureFiles([]);
+    setSiteFiles([]);
+    setWorkFiles([]);
+    setActionFiles([]);
   }
 
   function updateSelectedFiles(input: HTMLInputElement, setter: (files: File[]) => void) {
@@ -305,6 +322,11 @@ export default function TbmVoiceDraftHelper({
 
       setSubmitMessage(data.message || "TBM이 저장되었습니다.");
       setHasSubmitted(true);
+      setTranscript("");
+      setInterimText("");
+      clearPhotoFileState();
+      clearPhotoInputValues();
+      setRecordingStartTime("");
       setCopied(false);
     } catch {
       setSubmitMessage("TBM 저장 요청 중 오류가 발생했습니다.");
@@ -333,10 +355,8 @@ export default function TbmVoiceDraftHelper({
     setSubmitMessage("");
     setRecordingStartTime("");
     setHasSubmitted(false);
-    setSignatureFiles([]);
-    setSiteFiles([]);
-    setWorkFiles([]);
-    setActionFiles([]);
+    clearPhotoFileState();
+    clearPhotoInputValues();
   }
 
   function renderPhotoInput(params: {
@@ -344,6 +364,7 @@ export default function TbmVoiceDraftHelper({
     description: string;
     files: File[];
     setter: (files: File[]) => void;
+    inputRef: RefObject<HTMLInputElement | null>;
   }) {
     return (
       <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
@@ -353,6 +374,7 @@ export default function TbmVoiceDraftHelper({
           type="file"
           accept="image/*"
           multiple
+          ref={params.inputRef}
           onChange={(event) => handleFileChange(event, params.setter)}
           onInput={(event) => handleFileInput(event, params.setter)}
           className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
@@ -486,24 +508,28 @@ export default function TbmVoiceDraftHelper({
             description: "Notion ‘서명 사진 (참석자 확인)’ 필드로 저장",
             files: signatureFiles,
             setter: setSignatureFiles,
+            inputRef: signatureInputRef,
           })}
           {renderPhotoInput({
             label: "작업 전 현장사진",
             description: "Notion ‘현장 사진’ 필드로 저장",
             files: siteFiles,
             setter: setSiteFiles,
+            inputRef: siteInputRef,
           })}
           {renderPhotoInput({
             label: "작업사진",
             description: "Notion ‘파일과 미디어’ 필드로 저장",
             files: workFiles,
             setter: setWorkFiles,
+            inputRef: workInputRef,
           })}
           {renderPhotoInput({
             label: "특이사항·조치사진",
             description: "Notion ‘조치 사진’ 필드로 저장",
             files: actionFiles,
             setter: setActionFiles,
+            inputRef: actionInputRef,
           })}
         </div>
       </div>
