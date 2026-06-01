@@ -21,7 +21,7 @@ function getTodayDateValue() {
 }
 
 function getTimeValue() {
-  return getKstNow().toISOString().slice(11, 16);
+  return getKstNow().toISOString().slice(11, 19);
 }
 
 function getFormText(formData: FormData, key: string) {
@@ -99,14 +99,24 @@ function hasProp(propertiesMeta: Record<string, any>, name: string, type?: strin
   return prop.type === type;
 }
 
+function normalizeKoreanText(text: string) {
+  return text.replace(/\s+/g, "");
+}
+
 function includesAny(text: string, keywords: string[]) {
-  return keywords.some((keyword) => text.includes(keyword));
+  const raw = text;
+  const compact = normalizeKoreanText(text);
+
+  return keywords.some((keyword) => {
+    const normalizedKeyword = normalizeKoreanText(keyword);
+    return raw.includes(keyword) || compact.includes(normalizedKeyword);
+  });
 }
 
 function inferWorkTitle(transcript: string) {
   const text = transcript.replace(/\s+/g, " ").trim();
 
-  if (includesAny(text, ["생활폐기물", "수거", "운반", "골목"])) {
+  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "골목"])) {
     return "생활폐기물 수거·운반 작업 전 TBM";
   }
 
@@ -128,13 +138,27 @@ function inferWorkTitle(transcript: string) {
 function inferWorkType(transcript: string) {
   const text = transcript.replace(/\s+/g, " ");
 
-  if (includesAny(text, ["생활폐기물", "수거", "운반"])) return "생활폐기물 수거·운반";
-  if (includesAny(text, ["지게차", "상하차", "적재", "하차"])) return "상·하차";
-  if (includesAny(text, ["정비", "청소", "점검"])) return "정비·점검";
-  if (includesAny(text, ["용접", "불티"])) return "용접·화기";
-  if (includesAny(text, ["분류", "선별"])) return "선별·분류";
+  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "골목"])) {
+    return "생활폐기물 수거";
+  }
 
-  return "일반작업";
+  if (includesAny(text, ["지게차", "상하차", "상 하차", "적재", "하차"])) {
+    return "상하차 작업";
+  }
+
+  if (includesAny(text, ["차량", "후진", "운전", "서행", "후방카메라"])) {
+    return "차량 점검";
+  }
+
+  if (includesAny(text, ["정비", "설비", "컨베이어", "청소", "수리", "보수"])) {
+    return "정비점검";
+  }
+
+  if (includesAny(text, ["우천", "비", "미끄럼", "침출수"])) {
+    return "우천 작업";
+  }
+
+  return "기타";
 }
 
 function inferRiskTags(transcript: string) {
@@ -176,7 +200,7 @@ function inferWorkTags(transcript: string) {
   const text = transcript.replace(/\s+/g, " ");
   const tags: string[] = [];
 
-  if (includesAny(text, ["생활폐기물", "수거", "운반"])) tags.push("생활폐기물");
+  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반"])) tags.push("생활폐기물");
   if (includesAny(text, ["차량", "후진", "운전", "서행"])) tags.push("차량작업");
   if (includesAny(text, ["지게차", "상하차"])) tags.push("지게차");
   if (includesAny(text, ["끼임", "협착", "찔림", "베임"])) tags.push("협착·베임");
