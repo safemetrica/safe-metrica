@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
+import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
 
 type Props = {
   tbmFormUrl?: string | null;
@@ -67,24 +68,40 @@ function inferRiskBullets(text: string) {
   const compact = text.replace(/\s+/g, " ");
   const risks: string[] = [];
 
-  if (includesAny(compact, ["지게차", "후진", "차량", "상하차", "적재", "하차"])) {
+  if (includesAny(compact, ["지게차", "후진", "차량", "상하차", "적재", "하차", "물류창고", "좁은 동선", "이동 동선", "통로", "생활폐기물", "골목길", "후방카메라", "유도자", "사각지대"])) {
     risks.push("차량·지게차 이동 시 후진 충돌, 사각지대, 보행자 접근 여부 확인");
   }
 
-  if (includesAny(compact, ["끼임", "협착", "컨베이어", "압축", "회전", "롤러"])) {
+  if (includesAny(compact, ["끼임", "협착", "컨베이어", "압축", "압착", "적재함", "압축기", "압축진개차", "회전", "롤러"])) {
     risks.push("회전부·협착부 접근 금지, 정비·청소 전 전원 차단 확인");
   }
 
-  if (includesAny(compact, ["추락", "고소", "사다리", "계단", "상부", "지붕"])) {
+  if (includesAny(compact, ["추락", "낙상", "고소", "고소대", "고소작업", "사다리", "계단", "상부", "지붕", "랙", "높은 곳"])) {
     risks.push("추락 위험 구간 안전난간, 발판, 사다리 고정상태 확인");
   }
 
-  if (includesAny(compact, ["화재", "용접", "불티", "배터리", "충전", "소화기"])) {
+  if (includesAny(compact, ["화재", "화재예방", "용접", "불티", "전자담배", "배터리", "충전", "발열", "소화기"])) {
     risks.push("화재 위험물 주변 정리, 소화기 위치, 충전기·배터리 발열 여부 확인");
   }
 
-  if (includesAny(compact, ["미끄럼", "침출수", "물기", "바닥", "우천", "비"])) {
+  if (includesAny(compact, ["미끄럼", "침출수", "물기", "바닥", "우천", "비", "경사로"])) {
     risks.push("바닥 물기·침출수·미끄럼 구간 확인 및 이동 동선 정리");
+  }
+
+  if (includesAny(compact, ["새벽", "야간", "어두움", "시야", "전조등", "반사조끼"])) {
+    risks.push("야간·새벽작업 시 전조등, 반사조끼, 유도자 위치를 확인");
+  }
+
+  if (includesAny(compact, ["유리", "캔", "날카로운 폐기물", "찔림", "베임"])) {
+    risks.push("날카로운 폐기물 취급 시 베임·찔림 방지 장갑 착용");
+  }
+
+  if (includesAny(compact, ["중량물", "무거운 봉투", "반복작업", "허리"])) {
+    risks.push("중량물은 2인 1조로 취급하고 허리 부담을 줄이는 자세 확인");
+  }
+
+  if (includesAny(compact, ["여름", "여름철", "온열질환", "폭염", "더위", "수분", "휴식"])) {
+    risks.push("온열질환 예방을 위해 수분 섭취, 그늘 휴식, 이상 증상 동료 확인");
   }
 
   if (risks.length === 0) {
@@ -98,7 +115,7 @@ function buildTbmDraftText(params: {
   companyName?: string | null;
   transcript: string;
 }) {
-  const raw = params.transcript.trim();
+  const raw = normalizeTbmVoiceTranscript(params.transcript);
   if (!raw) return "";
 
   const riskBullets = inferRiskBullets(raw);
@@ -363,7 +380,7 @@ export default function TbmVoiceDraftHelper({
   return (
     <section
       id="tbm-voice-draft"
-      className={`scroll-mt-24 rounded-2xl border border-cyan-700/60 bg-cyan-950/25 p-4 pb-24 ${className}`}
+      className={`max-w-full scroll-mt-24 rounded-2xl border border-cyan-700/60 bg-cyan-950/25 p-3 pb-24 sm:p-4 ${className}`}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -498,8 +515,8 @@ export default function TbmVoiceDraftHelper({
       ) : null}
 
       {hasVoiceContent ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-emerald-700/60 bg-slate-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
-          <div className="mx-auto flex max-w-4xl items-center gap-3">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-emerald-700/60 bg-slate-950/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl shadow-black/50 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-4xl items-center gap-3">
             <div className="hidden min-w-0 flex-1 sm:block">
               <p className="text-xs font-black text-emerald-200">4단계 · 하단 고정 저장</p>
               <p className="truncate text-xs text-slate-400">

@@ -14,7 +14,7 @@ export async function SafeNav({ company }: { company?: string }) {
   }
 
   return (
-    <nav className="bg-gray-900 border-b border-gray-700 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 flex max-w-full items-center justify-between gap-2 overflow-hidden border-b border-gray-700 bg-gray-900 px-2 py-2 sm:px-4 sm:py-3">
       <Link
         href="/home"
         className="flex min-w-0 shrink items-center gap-1.5 sm:gap-3 hover:opacity-80 transition cursor-pointer"
@@ -30,7 +30,8 @@ export async function SafeNav({ company }: { company?: string }) {
         </div>
       </Link>
 
-      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+      <div className="-mr-2 flex min-w-0 max-w-[calc(100vw-9rem)] shrink overflow-x-auto overscroll-x-contain pr-2 sm:mr-0 sm:max-w-none sm:shrink-0 sm:gap-1 sm:overflow-visible sm:pr-0">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
         <Link
           href="/tbm"
           className="inline-flex items-center whitespace-nowrap px-1.5 sm:px-3 py-1.5 text-[11px] sm:text-xs leading-none text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
@@ -70,6 +71,7 @@ export async function SafeNav({ company }: { company?: string }) {
           <span className="hidden sm:inline">월간보고서</span>
           <span className="sm:hidden">보고서</span>
         </Link>
+        </div>
       </div>
     </nav>
   );
