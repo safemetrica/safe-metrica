@@ -104,7 +104,7 @@ function buildTbmDraftText(params: {
   const riskBullets = inferRiskBullets(raw);
 
   return [
-    "[TBM 음성 초안]",
+    "[TBM 음성 작성 내용]",
     `사업장: ${params.companyName || "현장"}`,
     "",
     "1. 작업 내용",
@@ -250,7 +250,7 @@ export default function TbmVoiceDraftHelper({
   async function submitDirectTbm() {
     if (isSubmitting || hasSubmitted) return;
     if (isRecording) {
-      setSubmitMessage("녹음을 정지한 뒤 저장해 주세요.");
+      setSubmitMessage("녹음을 완료한 뒤 저장해 주세요.");
       return;
     }
     if (!draftText && !combinedTranscript) return;
@@ -303,7 +303,7 @@ export default function TbmVoiceDraftHelper({
       await navigator.clipboard.writeText(draftText);
       setCopied(true);
     } catch {
-      setSupportMessage("복사가 차단되었습니다. 초안 내용을 길게 눌러 직접 복사해 주세요.");
+      setSupportMessage("복사가 차단되었습니다. 인식된 내용을 길게 눌러 직접 복사해 주세요.");
     }
   }
 
@@ -356,7 +356,8 @@ export default function TbmVoiceDraftHelper({
     );
   }
 
-  const canSubmit = Boolean(combinedTranscript || draftText) && !isRecording;
+  const hasVoiceContent = Boolean(combinedTranscript || draftText);
+  const canSubmit = hasVoiceContent && !isRecording;
   const saveButtonLabel = isSubmitting ? "저장 중..." : hasSubmitted ? "TBM 저장 완료" : "TBM 저장하기";
 
   return (
@@ -367,15 +368,15 @@ export default function TbmVoiceDraftHelper({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원</p>
-          <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 저장하기</h2>
+          <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 작성</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-            현장관리자가 말한 내용을 TBM 초안으로 정리하고, 사진을 첨부한 뒤 바로 Notion TBM DB에 저장합니다.
+            현장관리자가 말한 내용을 인식된 TBM 내용으로 정리하고, 사진을 첨부한 뒤 바로 Notion TBM DB에 저장합니다.
           </p>
         </div>
       </div>
 
       <div className="mt-4 rounded-xl border border-cyan-700/50 bg-slate-950/50 p-3">
-        <p className="text-xs font-black text-cyan-200">1단계 · 녹음 시작 / 정지</p>
+        <p className="text-xs font-black text-cyan-200">1단계 · 녹음 시작 / 완료</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
@@ -391,7 +392,7 @@ export default function TbmVoiceDraftHelper({
             disabled={!isRecording}
             className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-black text-slate-200 disabled:bg-slate-900 disabled:text-slate-600"
           >
-            정지
+            녹음 완료
           </button>
         </div>
       </div>
@@ -404,13 +405,13 @@ export default function TbmVoiceDraftHelper({
 
       <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-black text-cyan-200">2단계 · 인식된 음성 및 TBM 초안</p>
+          <p className="text-xs font-black text-cyan-200">2단계 · 인식된 음성 및 TBM 내용</p>
           <button
             type="button"
             onClick={clearDraft}
             className="shrink-0 rounded-full border border-slate-700 px-3 py-1 text-xs font-black text-slate-300 hover:border-cyan-500 hover:text-white"
           >
-            초안 초기화
+            내용 초기화
           </button>
         </div>
 
@@ -423,7 +424,7 @@ export default function TbmVoiceDraftHelper({
           </div>
 
           <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
-            <p className="text-xs font-black text-slate-400">TBM 초안</p>
+            <p className="text-xs font-black text-slate-400">인식된 TBM 내용</p>
             <pre className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200 [word-break:keep-all]">
               {draftText || "음성 인식 후 TBM 내용이 생성됩니다. 사진을 첨부한 뒤 TBM 저장하기를 누르세요."}
             </pre>
@@ -439,7 +440,7 @@ export default function TbmVoiceDraftHelper({
               disabled={!draftText}
               className="rounded-xl border border-blue-500 bg-blue-950/50 px-4 py-3 text-sm font-black text-blue-100 disabled:border-slate-700 disabled:text-slate-600"
             >
-              {copied ? "복사 완료" : "초안 복사"}
+              {copied ? "복사 완료" : "내용 복사"}
             </button>
             {tbmFormUrl ? (
               <a
@@ -496,7 +497,7 @@ export default function TbmVoiceDraftHelper({
         </p>
       ) : null}
 
-      {combinedTranscript ? (
+      {hasVoiceContent ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-emerald-700/60 bg-slate-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
           <div className="mx-auto flex max-w-4xl items-center gap-3">
             <div className="hidden min-w-0 flex-1 sm:block">

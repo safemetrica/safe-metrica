@@ -35,7 +35,7 @@ export default function TbmFormAction({
               href={voiceDraftHref}
               className="inline-flex h-9 min-w-[132px] items-center justify-center rounded-lg border border-cyan-400 bg-cyan-500 px-4 text-xs font-black text-slate-950 shadow-sm hover:bg-cyan-400 sm:min-w-[150px] sm:text-sm"
             >
-              🎙️ 말로 TBM 초안작성
+              🎙️ 말로 TBM 작성
             </Link>
           ) : null}
 
