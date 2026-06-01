@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-const MONS_TBM_WRITE_URL = "여기에_실제_몬스_TBM_작성_노션링크";
+const MONS_TBM_WRITE_URL = "https://app.notion.com/p/7bbb3490a620485c9162acb3814bbdfd?v=389746e4d50045789dead2e69f779f37";
 const MONS_FIELD_PARTICIPATION_URL = "/field/participation?company=mons";
 
 const guideItems = [
