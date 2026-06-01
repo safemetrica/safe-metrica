@@ -4,8 +4,10 @@ import { put } from "@vercel/blob";
 import { getCompanyConfig, TenantRequiredError, UnknownCompanyError } from "@/lib/company";
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { detectTbmVoiceIntent } from "@/lib/tbmVoiceIntent";
+import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
 
 const SUPPORTED_COMPANY_CODES = new Set(["daedo", "bubblemon", "hankookgreen", "dongwoo"]);
+const WASTE_COLLECTION_COMPANY_CODES = new Set(["daedo", "hankookgreen", "dongwoo"]);
 const MAX_FILES_PER_GROUP = 6;
 const MAX_SERVER_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 
@@ -168,6 +170,94 @@ function includesAny(text: string, keywords: string[]) {
   });
 }
 
+function isWasteCollectionCompany(companyCode?: string) {
+  return Boolean(companyCode && WASTE_COLLECTION_COMPANY_CODES.has(companyCode));
+}
+
+function inferWasteCollectionWorkTypes(text: string, companyCode?: string) {
+  if (!isWasteCollectionCompany(companyCode)) return [];
+
+  const types: string[] = [];
+
+  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "종량제", "재활용", "음식물", "대형폐기물"])) {
+    types.push("생활폐기물 수거");
+  }
+
+  if (includesAny(text, ["차량 후진", "후진", "후방카메라", "후진경보기", "유도자", "사각지대"])) {
+    types.push("차량 후진 작업");
+  }
+
+  if (includesAny(text, ["골목길", "좁은 골목", "보행자", "이면도로", "주택가"])) {
+    types.push("골목길 수거");
+  }
+
+  if (includesAny(text, ["적재함", "압축기", "압착", "압축진개차", "덮개", "리프트"])) {
+    types.push("적재함·압축기 작업");
+  }
+
+  if (includesAny(text, ["침출수", "우천", "비", "미끄럼", "바닥", "경사로"])) {
+    types.push("우천·미끄럼 작업");
+  }
+
+  if (includesAny(text, ["새벽", "야간", "어두움", "시야", "전조등", "반사조끼"])) {
+    types.push("야간·새벽작업");
+  }
+
+  if (includesAny(text, ["유리", "캔", "날카로운 폐기물", "찔림", "베임"])) {
+    types.push("찔림·베임 위험");
+  }
+
+  if (includesAny(text, ["중량물", "무거운 봉투", "반복작업", "허리"])) {
+    types.push("중량물 취급");
+  }
+
+  return types;
+}
+
+function inferWasteCollectionRiskTags(text: string, companyCode?: string) {
+  if (!isWasteCollectionCompany(companyCode)) return [];
+
+  const risks: string[] = [];
+
+  if (includesAny(text, ["차량", "차량 후진", "후진", "골목길", "좁은 골목", "보행자", "이면도로", "주택가", "충돌"])) {
+    risks.push("차량 충돌");
+  }
+
+  if (includesAny(text, ["차량 후진", "후진", "후방카메라", "후진경보기", "유도자"])) {
+    risks.push("후진 충돌");
+  }
+
+  if (includesAny(text, ["사각지대", "후방카메라", "후진경보기", "유도자", "골목길", "좁은 골목"])) {
+    risks.push("사각지대");
+  }
+
+  if (includesAny(text, ["적재함", "압축기", "압착", "압축진개차", "덮개", "리프트", "끼임", "협착"])) {
+    risks.push("끼임·협착");
+  }
+
+  if (includesAny(text, ["침출수", "우천", "비", "미끄럼", "바닥", "경사로"])) {
+    risks.push("미끄럼·전도");
+  }
+
+  if (includesAny(text, ["유리", "캔", "날카로운 폐기물", "찔림", "베임"])) {
+    risks.push("찔림·베임");
+  }
+
+  if (includesAny(text, ["낙하", "맞음", "떨어짐", "덮개", "리프트", "대형폐기물"])) {
+    risks.push("낙하·맞음");
+  }
+
+  if (includesAny(text, ["중량물", "무거운 봉투", "반복작업", "허리"])) {
+    risks.push("중량물 부담");
+  }
+
+  if (includesAny(text, ["새벽", "야간", "어두움", "시야", "전조등", "반사조끼"])) {
+    risks.push("야간 시야불량");
+  }
+
+  return risks;
+}
+
 function inferWorkTitle(transcript: string) {
   const text = transcript.replace(/\s+/g, " ").trim();
 
@@ -190,15 +280,26 @@ function inferWorkTitle(transcript: string) {
   return "현장 작업 전 TBM";
 }
 
-function inferWorkType(transcript: string) {
+function inferWorkType(transcript: string, companyCode?: string) {
   const text = transcript.replace(/\s+/g, " ");
 
-  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "골목"])) {
+  if (
+    isWasteCollectionCompany(companyCode) &&
+    includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "종량제", "재활용", "음식물", "대형폐기물", "골목길"])
+  ) {
     return "생활폐기물 수거";
   }
 
-  if (includesAny(text, ["지게차", "상하차", "상 하차", "적재", "하차"])) {
+  if (includesAny(text, ["상하차", "상 하차", "상차", "하차", "하역"])) {
     return "상하차 작업";
+  }
+
+  if (includesAny(text, ["물류업", "물류창고", "창고", "재고", "적재", "입출고", "입고", "출고"])) {
+    return "창고 입출고";
+  }
+
+  if (includesAny(text, ["지게차", "좁은 동선", "이동 동선", "통로"])) {
+    return "지게차 작업";
   }
 
   if (includesAny(text, ["차량", "후진", "운전", "서행", "후방카메라"])) {
@@ -216,15 +317,21 @@ function inferWorkType(transcript: string) {
   return "기타";
 }
 
-function inferWorkTypesMulti(transcript: string) {
+function inferWorkTypesMulti(transcript: string, companyCode?: string) {
   const text = transcript.replace(/\s+/g, " ");
+  const wasteCollectionTypes = inferWasteCollectionWorkTypes(text, companyCode);
+
+  if (wasteCollectionTypes.length > 0) {
+    return Array.from(new Set(wasteCollectionTypes));
+  }
+
   const types: string[] = [];
 
   if (includesAny(text, ["상하차", "상 하차", "상차", "하차", "싣", "내리", "적재", "하역"])) {
     types.push("상하차");
   }
 
-  if (includesAny(text, ["입출고", "입고", "출고", "창고", "보관", "재고", "피킹", "검수"])) {
+  if (includesAny(text, ["물류업", "물류창고", "입출고", "입고", "출고", "창고", "보관", "재고", "적재", "피킹", "검수"])) {
     types.push("창고 입출고");
   }
 
@@ -232,12 +339,24 @@ function inferWorkTypesMulti(transcript: string) {
     types.push("포장작업");
   }
 
-  if (includesAny(text, ["지게차", "포크리프트", "forklift"])) {
+  if (includesAny(text, ["지게차", "포크리프트", "forklift", "좁은 동선", "이동 동선", "통로", "충돌 위험"])) {
     types.push("지게차 작업");
   }
 
   if (includesAny(text, ["파렛트", "팔레트", "pallet", "빠레트", "파레트"])) {
     types.push("파렛트 작업");
+  }
+
+  if (includesAny(text, ["랙", "높은 곳", "고소대", "고소작업", "고소 작업", "추락", "낙상"])) {
+    types.push("고소작업");
+  }
+
+  if (includesAny(text, ["전자담배", "배터리", "충전", "발열", "화재예방", "화재 예방", "화재", "폭발"])) {
+    types.push("화재위험 작업");
+  }
+
+  if (includesAny(text, ["여름", "여름철", "온열질환", "폭염", "더위", "수분", "휴식"])) {
+    types.push("폭염작업");
   }
 
   if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "골목"])) {
@@ -259,32 +378,44 @@ function inferWorkTypesMulti(transcript: string) {
   return Array.from(new Set(types));
 }
 
-function inferRiskTags(transcript: string) {
+function inferRiskTags(transcript: string, companyCode?: string) {
   const text = transcript.replace(/\s+/g, " ");
-  const risks: string[] = [];
+  const risks: string[] = inferWasteCollectionRiskTags(text, companyCode);
 
   if (includesAny(text, ["차량", "후진", "운전", "골목", "서행", "카메라"])) {
     risks.push("차량 충돌", "후진 충돌", "사각지대");
   }
 
-  if (includesAny(text, ["지게차", "상하차", "적재", "하차"])) {
-    risks.push("지게차 충돌", "낙하·맞음");
+  if (includesAny(text, ["지게차", "상하차", "적재", "하차", "물류창고", "좁은 동선", "이동 동선", "통로", "충돌 위험"])) {
+    risks.push("지게차 충돌");
   }
 
-  if (includesAny(text, ["끼임", "협착", "찔림", "베임", "압착"])) {
-    risks.push("끼임·협착", "찔림·베임");
+  if (includesAny(text, ["낙하", "맞음", "상하차", "하차"])) {
+    risks.push("낙하·맞음");
+  }
+
+  if (includesAny(text, ["끼임", "협착", "압착"])) {
+    risks.push("끼임·협착");
+  }
+
+  if (includesAny(text, ["찔림", "베임"])) {
+    risks.push("찔림·베임");
   }
 
   if (includesAny(text, ["미끄럼", "침출수", "바닥", "우천", "비"])) {
     risks.push("미끄럼·전도");
   }
 
-  if (includesAny(text, ["화재", "용접", "불티", "배터리", "충전"])) {
+  if (includesAny(text, ["화재", "화재예방", "화재 예방", "용접", "불티", "전자담배", "배터리", "충전", "발열", "폭발"])) {
     risks.push("화재·폭발");
   }
 
-  if (includesAny(text, ["추락", "고소", "사다리", "계단"])) {
+  if (includesAny(text, ["추락", "낙상", "고소", "고소대", "고소작업", "고소 작업", "사다리", "계단", "랙", "높은 곳"])) {
     risks.push("추락");
+  }
+
+  if (includesAny(text, ["여름", "여름철", "온열질환", "폭염", "더위", "수분", "휴식"])) {
+    risks.push("온열질환");
   }
 
   if (risks.length === 0) {
@@ -294,14 +425,23 @@ function inferRiskTags(transcript: string) {
   return Array.from(new Set(risks));
 }
 
-function inferWorkTags(transcript: string) {
+function inferWorkTags(transcript: string, companyCode?: string) {
   const text = transcript.replace(/\s+/g, " ");
   const tags: string[] = [];
 
-  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반"])) tags.push("생활폐기물");
+  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "종량제", "재활용", "음식물", "대형폐기물"])) tags.push("생활폐기물");
+  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["차량 후진", "후진", "후방카메라", "후진경보기", "유도자", "사각지대"])) tags.push("차량 후진");
+  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["골목길", "좁은 골목", "보행자", "이면도로", "주택가"])) tags.push("골목길 수거");
+  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["적재함", "압축기", "압착", "압축진개차", "덮개", "리프트"])) tags.push("적재함·압축기");
+  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["새벽", "야간", "어두움", "시야", "전조등", "반사조끼"])) tags.push("야간·새벽작업");
+  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["중량물", "무거운 봉투", "반복작업", "허리"])) tags.push("중량물 취급");
   if (includesAny(text, ["차량", "후진", "운전", "서행"])) tags.push("차량작업");
-  if (includesAny(text, ["지게차", "상하차"])) tags.push("지게차");
+  if (includesAny(text, ["물류업", "물류창고", "창고", "재고", "적재"])) tags.push("창고 입출고");
+  if (includesAny(text, ["지게차", "상하차", "좁은 동선", "이동 동선", "통로"])) tags.push("지게차");
   if (includesAny(text, ["끼임", "협착", "찔림", "베임"])) tags.push("협착·베임");
+  if (includesAny(text, ["랙", "높은 곳", "고소대", "고소작업", "고소 작업", "추락", "낙상"])) tags.push("고소작업");
+  if (includesAny(text, ["전자담배", "배터리", "충전", "발열", "화재예방", "화재 예방", "화재", "폭발"])) tags.push("화재·폭발");
+  if (includesAny(text, ["여름", "여름철", "온열질환", "폭염", "더위", "수분", "휴식"])) tags.push("온열질환");
   if (includesAny(text, ["사진", "증빙", "확인"])) tags.push("사진증빙");
 
   if (tags.length === 0) tags.push("일반 TBM");
@@ -309,8 +449,8 @@ function inferWorkTags(transcript: string) {
   return tags;
 }
 
-function buildSafetyNotice(transcript: string) {
-  const risks = inferRiskTags(transcript);
+function buildSafetyNotice(transcript: string, companyCode?: string) {
+  const risks = inferRiskTags(transcript, companyCode);
   const lines: string[] = [];
 
   lines.push("[음성 TBM 직접저장]");
@@ -460,6 +600,7 @@ export async function POST(req: NextRequest) {
   const startTime = getFormText(formData, "startTime") || getTimeValue();
   const endTime = getTimeValue();
   const mainText = transcript || draftText;
+  const normalizedText = normalizeTbmVoiceTranscript(mainText);
 
   const selectedFileCount =
     signatureFiles.length + siteFiles.length + workFiles.length + actionFiles.length;
@@ -504,11 +645,11 @@ export async function POST(req: NextRequest) {
   const voiceIntent = detectTbmVoiceIntent(mainText);
   const isSafetyPolicyIntent = voiceIntent === "safety_policy";
   const shouldSetWorkType = ["work_tbm", "inspection", "maintenance", "action_completed"].includes(voiceIntent);
-  const title = isSafetyPolicyIntent ? "안전보건경영방침 공유" : inferWorkTitle(mainText);
-  const safetyNotice = buildSafetyNotice(mainText);
+  const title = isSafetyPolicyIntent ? "안전보건경영방침 공유" : inferWorkTitle(normalizedText);
+  const safetyNotice = buildSafetyNotice(normalizedText, company.code);
   const hasSpecialIssue = isSafetyPolicyIntent
     ? false
-    : includesAny(mainText, [
+    : includesAny(normalizedText, [
         "특이사항",
         "아차사고",
         "사고 발생",
@@ -522,12 +663,12 @@ export async function POST(req: NextRequest) {
         "현장 발견",
         "이상 발생",
       ]);
-  const workType = inferWorkType(mainText);
-  const workTypesMulti = isSafetyPolicyIntent ? [] : inferWorkTypesMulti(mainText);
+  const workType = inferWorkType(normalizedText, company.code);
+  const workTypesMulti = isSafetyPolicyIntent ? [] : inferWorkTypesMulti(normalizedText, company.code);
   const workTags = isSafetyPolicyIntent
     ? ["안전보건방침", "경영방침 공유", "근로자 공유"]
-    : inferWorkTags(mainText);
-  const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(mainText);
+    : inferWorkTags(normalizedText, company.code);
+  const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(normalizedText, company.code);
 
   const workTypePropNames = ["작업 유형", "작업유형"];
   const workTypesMultiPropNames = ["작업유형(복수)", "작업 유형(복수)", "작업유형복수"];
