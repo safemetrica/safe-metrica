@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 
 import { getCompanyConfig, TenantRequiredError, UnknownCompanyError } from "@/lib/company";
+import { detectTbmVoiceIntent } from "@/lib/tbmVoiceIntent";
 
 const SUPPORTED_COMPANY_CODES = new Set(["daedo", "bubblemon", "hankookgreen", "dongwoo"]);
 const MAX_FILES_PER_GROUP = 6;
@@ -97,6 +98,14 @@ function hasProp(propertiesMeta: Record<string, any>, name: string, type?: strin
   if (!type) return true;
 
   return prop.type === type;
+}
+
+function hasSelectOption(propertiesMeta: Record<string, any>, name: string, optionName: string) {
+  const prop = propertiesMeta[name];
+
+  if (!prop || prop.type !== "select") return false;
+
+  return Boolean(prop.select?.options?.some((option: { name?: string }) => option.name === optionName));
 }
 
 function normalizeKoreanText(text: string) {
@@ -403,9 +412,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const title = inferWorkTitle(mainText);
+  const voiceIntent = detectTbmVoiceIntent(mainText);
+  const isSafetyPolicyIntent = voiceIntent === "safety_policy";
+  const shouldInferWorkType = voiceIntent === "work_tbm";
+  const title = isSafetyPolicyIntent ? "안전보건경영방침 공유" : inferWorkTitle(mainText);
   const safetyNotice = buildSafetyNotice(mainText);
-  const hasSpecialIssue = /특이|조치|고장|위험|아차|사고|파손|누락|불량|미흡/.test(mainText);
+  const hasSpecialIssue = isSafetyPolicyIntent ? false : /특이|조치|고장|위험|아차|사고|파손|누락|불량|미흡/.test(mainText);
+  const workTags = isSafetyPolicyIntent
+    ? ["안전보건방침", "경영방침 공유", "근로자 공유"]
+    : inferWorkTags(mainText);
+  const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(mainText);
 
   const properties: Record<string, any> = {};
 
@@ -413,16 +429,22 @@ export async function POST(req: NextRequest) {
   if (hasProp(meta, "날짜", "date")) properties["날짜"] = { date: { start: dateValue } };
   if (hasProp(meta, "시작시간", "rich_text")) properties["시작시간"] = richText(startTime);
   if (hasProp(meta, "종료시간", "rich_text")) properties["종료시간"] = richText(endTime);
-  if (hasProp(meta, "작업 유형", "select")) properties["작업 유형"] = selectValue(inferWorkType(mainText));
-  if (hasProp(meta, "작업 태그", "multi_select")) properties["작업 태그"] = multiSelectValue(inferWorkTags(mainText));
-  if (hasProp(meta, "핵심 위험요인", "multi_select")) properties["핵심 위험요인"] = multiSelectValue(inferRiskTags(mainText));
+  if (shouldInferWorkType && hasProp(meta, "작업 유형", "select")) properties["작업 유형"] = selectValue(inferWorkType(mainText));
+  if (hasProp(meta, "작업 태그", "multi_select")) properties["작업 태그"] = multiSelectValue(workTags);
+  if (hasProp(meta, "핵심 위험요인", "multi_select")) properties["핵심 위험요인"] = multiSelectValue(riskTags);
   if (hasProp(meta, "오늘의 주의사항", "rich_text")) properties["오늘의 주의사항"] = richText(safetyNotice);
   if (hasProp(meta, "특이사항", "checkbox")) properties["특이사항"] = { checkbox: hasSpecialIssue };
   if (hasProp(meta, "특이사항 내용", "rich_text")) {
     properties["특이사항 내용"] = richText(hasSpecialIssue ? mainText : "특이사항 없음");
   }
   if (hasProp(meta, "조치 상태", "select")) {
-    properties["조치 상태"] = selectValue(hasSpecialIssue ? "조치 필요" : "해당 없음");
+    if (isSafetyPolicyIntent) {
+      if (hasSelectOption(meta, "조치 상태", "조치 불필요")) {
+        properties["조치 상태"] = selectValue("조치 불필요");
+      }
+    } else {
+      properties["조치 상태"] = selectValue(hasSpecialIssue ? "조치 필요" : "해당 없음");
+    }
   }
   if (hasProp(meta, "실시자(현장총괄)", "select")) {
     properties["실시자(현장총괄)"] = selectValue(supervisorName);
