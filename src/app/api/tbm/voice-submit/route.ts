@@ -216,6 +216,49 @@ function inferWorkType(transcript: string) {
   return "기타";
 }
 
+function inferWorkTypesMulti(transcript: string) {
+  const text = transcript.replace(/\s+/g, " ");
+  const types: string[] = [];
+
+  if (includesAny(text, ["상하차", "상 하차", "상차", "하차", "싣", "내리", "적재", "하역"])) {
+    types.push("상하차");
+  }
+
+  if (includesAny(text, ["입출고", "입고", "출고", "창고", "보관", "재고", "피킹", "검수"])) {
+    types.push("창고 입출고");
+  }
+
+  if (includesAny(text, ["포장", "랩핑", "박스", "패킹", "봉합", "테이핑"])) {
+    types.push("포장작업");
+  }
+
+  if (includesAny(text, ["지게차", "포크리프트", "forklift"])) {
+    types.push("지게차 작업");
+  }
+
+  if (includesAny(text, ["파렛트", "팔레트", "pallet", "빠레트", "파레트"])) {
+    types.push("파렛트 작업");
+  }
+
+  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "골목"])) {
+    types.push("생활폐기물 수거");
+  }
+
+  if (includesAny(text, ["차량", "후진", "운전", "서행", "후방카메라"])) {
+    types.push("차량 작업");
+  }
+
+  if (includesAny(text, ["정비", "설비", "컨베이어", "청소", "수리", "보수"])) {
+    types.push("정비점검");
+  }
+
+  if (includesAny(text, ["우천", "비", "미끄럼", "침출수"])) {
+    types.push("우천 작업");
+  }
+
+  return Array.from(new Set(types));
+}
+
 function inferRiskTags(transcript: string) {
   const text = transcript.replace(/\s+/g, " ");
   const risks: string[] = [];
@@ -479,12 +522,15 @@ export async function POST(req: NextRequest) {
         "현장 발견",
         "이상 발생",
       ]);
+  const workType = inferWorkType(mainText);
+  const workTypesMulti = isSafetyPolicyIntent ? [] : inferWorkTypesMulti(mainText);
   const workTags = isSafetyPolicyIntent
     ? ["안전보건방침", "경영방침 공유", "근로자 공유"]
     : inferWorkTags(mainText);
   const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(mainText);
 
   const workTypePropNames = ["작업 유형", "작업유형"];
+  const workTypesMultiPropNames = ["작업유형(복수)", "작업 유형(복수)", "작업유형복수"];
   const workTagPropNames = ["작업 태그", "작업태그"];
   const riskTagPropNames = ["핵심 위험요인", "핵심위험요인"];
   const safetyNoticePropNames = ["오늘의 주의사항", "오늘주의사항", "오늘 주의사항"];
@@ -502,7 +548,10 @@ export async function POST(req: NextRequest) {
   setIfProp(properties, meta, ["시작시간"], "rich_text", richText(startTime));
   setIfProp(properties, meta, ["종료시간"], "rich_text", richText(endTime));
   if (shouldSetWorkType) {
-    setIfProp(properties, meta, workTypePropNames, "select", selectValue(inferWorkType(mainText)));
+    setIfProp(properties, meta, workTypePropNames, "select", selectValue(workType));
+
+    const multiWorkTypes = workTypesMulti.length > 0 ? workTypesMulti : [workType];
+    setIfProp(properties, meta, workTypesMultiPropNames, "multi_select", multiSelectValue(multiWorkTypes));
   }
   setIfProp(properties, meta, workTagPropNames, "multi_select", multiSelectValue(workTags));
   setIfProp(properties, meta, riskTagPropNames, "multi_select", multiSelectValue(riskTags));
