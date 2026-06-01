@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 
 import { getCompanyConfig, TenantRequiredError, UnknownCompanyError } from "@/lib/company";
+import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { detectTbmVoiceIntent } from "@/lib/tbmVoiceIntent";
 
 const SUPPORTED_COMPANY_CODES = new Set(["daedo", "bubblemon", "hankookgreen", "dongwoo"]);
@@ -12,6 +13,17 @@ type UploadedTbmFile = {
   name: string;
   url: string;
 };
+
+type NotionPropertyMeta = {
+  type?: string;
+  select?: {
+    options?: Array<{ name?: string }>;
+  };
+};
+
+type NotionPropertiesMeta = Record<string, NotionPropertyMeta | undefined>;
+
+type NotionPropertyValue = Record<string, unknown>;
 
 function getKstNow() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -91,7 +103,7 @@ function filesValue(files: UploadedTbmFile[]) {
   };
 }
 
-function hasProp(propertiesMeta: Record<string, any>, name: string, type?: string) {
+function hasProp(propertiesMeta: NotionPropertiesMeta, name: string, type?: string) {
   const prop = propertiesMeta[name];
 
   if (!prop) return false;
@@ -100,7 +112,7 @@ function hasProp(propertiesMeta: Record<string, any>, name: string, type?: strin
   return prop.type === type;
 }
 
-function hasSelectOption(propertiesMeta: Record<string, any>, name: string, optionName: string) {
+function hasSelectOption(propertiesMeta: NotionPropertiesMeta, name: string, optionName: string) {
   const prop = propertiesMeta[name];
 
   if (!prop || prop.type !== "select") return false;
@@ -281,7 +293,7 @@ function validateFileSize(fileGroups: File[][]) {
   return true;
 }
 
-async function getTbmDbProperties(notionApiKey: string, tbmDbId: string) {
+async function getTbmDbProperties(notionApiKey: string, tbmDbId: string): Promise<NotionPropertiesMeta> {
   const res = await fetch(`https://api.notion.com/v1/databases/${tbmDbId}`, {
     method: "GET",
     headers: {
@@ -339,10 +351,10 @@ export async function POST(req: NextRequest) {
   const draftText = getFormText(formData, "draftText");
   const supervisorName = getFormText(formData, "supervisorName") || (company.code === "daedo" ? "김인길" : "현장관리자");
 
-  const signatureFiles = collectFiles(formData, "signatureFiles");
-  const siteFiles = collectFiles(formData, "siteFiles");
-  const workFiles = collectFiles(formData, "workFiles");
-  const actionFiles = collectFiles(formData, "actionFiles");
+  const signatureFiles = collectFiles(formData, TBM_VOICE_UPLOAD_FIELD_KEYS.signature);
+  const siteFiles = collectFiles(formData, TBM_VOICE_UPLOAD_FIELD_KEYS.site);
+  const workFiles = collectFiles(formData, TBM_VOICE_UPLOAD_FIELD_KEYS.work);
+  const actionFiles = collectFiles(formData, TBM_VOICE_UPLOAD_FIELD_KEYS.action);
 
   if (!transcript && !draftText) {
     return NextResponse.json(
@@ -401,7 +413,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let meta: Record<string, any>;
+  let meta: NotionPropertiesMeta;
 
   try {
     meta = await getTbmDbProperties(notionApiKey, company.tbmDbId);
@@ -423,7 +435,7 @@ export async function POST(req: NextRequest) {
     : inferWorkTags(mainText);
   const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(mainText);
 
-  const properties: Record<string, any> = {};
+  const properties: Record<string, NotionPropertyValue> = {};
 
   if (hasProp(meta, "작업명", "title")) properties["작업명"] = titleText(title);
   if (hasProp(meta, "날짜", "date")) properties["날짜"] = { date: { start: dateValue } };
