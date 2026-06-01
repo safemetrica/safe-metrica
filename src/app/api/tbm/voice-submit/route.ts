@@ -174,14 +174,62 @@ function isWasteCollectionCompany(companyCode?: string) {
   return Boolean(companyCode && WASTE_COLLECTION_COMPANY_CODES.has(companyCode));
 }
 
+function hasWasteCollectionProfileSignal(text: string, companyCode?: string) {
+  if (!isWasteCollectionCompany(companyCode)) return false;
+
+  return includesAny(text, [
+    "생활폐기물",
+    "생활 폐기물",
+    "수거",
+    "운반",
+    "종량제",
+    "재활용",
+    "음식물",
+    "대형폐기물",
+    "차량 후진",
+    "후진",
+    "후방카메라",
+    "후진경보기",
+    "유도자",
+    "사각지대",
+    "골목길",
+    "좁은 골목",
+    "보행자",
+    "이면도로",
+    "주택가",
+    "적재함",
+    "압축기",
+    "압착",
+    "압축진개차",
+    "침출수",
+    "새벽",
+    "야간",
+    "날카로운 폐기물",
+    "찔림",
+    "베임",
+  ]);
+}
+
+function includesWasteCompanyExplicitWarehouseKeyword(text: string, companyCode?: string) {
+  const keywords = isWasteCollectionCompany(companyCode)
+    ? ["물류창고", "창고 입출고", "입출고", "입고", "출고", "창고", "보관", "재고", "피킹", "검수"]
+    : ["물류업", "물류창고", "창고", "재고", "적재", "입출고", "입고", "출고"];
+
+  return includesAny(text, keywords);
+}
+
+function includesWasteCompanyExplicitLoadingKeyword(text: string, companyCode?: string) {
+  const keywords = isWasteCollectionCompany(companyCode)
+    ? ["상하차", "상 하차", "상차", "하차", "하역"]
+    : ["상하차", "상 하차", "상차", "하차", "싣", "내리", "적재", "하역"];
+
+  return includesAny(text, keywords);
+}
+
 function inferWasteCollectionWorkTypes(text: string, companyCode?: string) {
-  if (!isWasteCollectionCompany(companyCode)) return [];
+  if (!hasWasteCollectionProfileSignal(text, companyCode)) return [];
 
-  const types: string[] = [];
-
-  if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "종량제", "재활용", "음식물", "대형폐기물"])) {
-    types.push("생활폐기물 수거");
-  }
+  const types: string[] = ["생활폐기물 수거"];
 
   if (includesAny(text, ["차량 후진", "후진", "후방카메라", "후진경보기", "유도자", "사각지대"])) {
     types.push("차량 후진 작업");
@@ -283,18 +331,15 @@ function inferWorkTitle(transcript: string) {
 function inferWorkType(transcript: string, companyCode?: string) {
   const text = transcript.replace(/\s+/g, " ");
 
-  if (
-    isWasteCollectionCompany(companyCode) &&
-    includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "종량제", "재활용", "음식물", "대형폐기물", "골목길"])
-  ) {
+  if (hasWasteCollectionProfileSignal(text, companyCode)) {
     return "생활폐기물 수거";
   }
 
-  if (includesAny(text, ["상하차", "상 하차", "상차", "하차", "하역"])) {
+  if (includesWasteCompanyExplicitLoadingKeyword(text, companyCode)) {
     return "상하차 작업";
   }
 
-  if (includesAny(text, ["물류업", "물류창고", "창고", "재고", "적재", "입출고", "입고", "출고"])) {
+  if (includesWasteCompanyExplicitWarehouseKeyword(text, companyCode)) {
     return "창고 입출고";
   }
 
@@ -327,11 +372,11 @@ function inferWorkTypesMulti(transcript: string, companyCode?: string) {
 
   const types: string[] = [];
 
-  if (includesAny(text, ["상하차", "상 하차", "상차", "하차", "싣", "내리", "적재", "하역"])) {
+  if (includesWasteCompanyExplicitLoadingKeyword(text, companyCode)) {
     types.push("상하차");
   }
 
-  if (includesAny(text, ["물류업", "물류창고", "입출고", "입고", "출고", "창고", "보관", "재고", "적재", "피킹", "검수"])) {
+  if (includesWasteCompanyExplicitWarehouseKeyword(text, companyCode)) {
     types.push("창고 입출고");
   }
 
@@ -380,7 +425,13 @@ function inferWorkTypesMulti(transcript: string, companyCode?: string) {
 
 function inferRiskTags(transcript: string, companyCode?: string) {
   const text = transcript.replace(/\s+/g, " ");
-  const risks: string[] = inferWasteCollectionRiskTags(text, companyCode);
+  const wasteCollectionRisks = inferWasteCollectionRiskTags(text, companyCode);
+
+  if (hasWasteCollectionProfileSignal(text, companyCode)) {
+    return wasteCollectionRisks.length > 0 ? Array.from(new Set(wasteCollectionRisks)) : ["작업 전 안전확인"];
+  }
+
+  const risks: string[] = [];
 
   if (includesAny(text, ["차량", "후진", "운전", "골목", "서행", "카메라"])) {
     risks.push("차량 충돌", "후진 충돌", "사각지대");
@@ -429,14 +480,22 @@ function inferWorkTags(transcript: string, companyCode?: string) {
   const text = transcript.replace(/\s+/g, " ");
   const tags: string[] = [];
 
+  if (hasWasteCollectionProfileSignal(text, companyCode)) {
+    tags.push("생활폐기물");
+    if (includesAny(text, ["차량 후진", "후진", "후방카메라", "후진경보기", "유도자", "사각지대"])) tags.push("차량 후진");
+    if (includesAny(text, ["골목길", "좁은 골목", "보행자", "이면도로", "주택가"])) tags.push("골목길 수거");
+    if (includesAny(text, ["적재함", "압축기", "압착", "압축진개차", "덮개", "리프트"])) tags.push("적재함·압축기");
+    if (includesAny(text, ["새벽", "야간", "어두움", "시야", "전조등", "반사조끼"])) tags.push("야간·새벽작업");
+    if (includesAny(text, ["중량물", "무거운 봉투", "반복작업", "허리"])) tags.push("중량물 취급");
+    if (includesAny(text, ["끼임", "협착", "찔림", "베임"])) tags.push("협착·베임");
+    if (includesAny(text, ["사진", "증빙", "확인"])) tags.push("사진증빙");
+
+    return Array.from(new Set(tags));
+  }
+
   if (includesAny(text, ["생활폐기물", "생활 폐기물", "수거", "운반", "종량제", "재활용", "음식물", "대형폐기물"])) tags.push("생활폐기물");
-  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["차량 후진", "후진", "후방카메라", "후진경보기", "유도자", "사각지대"])) tags.push("차량 후진");
-  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["골목길", "좁은 골목", "보행자", "이면도로", "주택가"])) tags.push("골목길 수거");
-  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["적재함", "압축기", "압착", "압축진개차", "덮개", "리프트"])) tags.push("적재함·압축기");
-  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["새벽", "야간", "어두움", "시야", "전조등", "반사조끼"])) tags.push("야간·새벽작업");
-  if (isWasteCollectionCompany(companyCode) && includesAny(text, ["중량물", "무거운 봉투", "반복작업", "허리"])) tags.push("중량물 취급");
   if (includesAny(text, ["차량", "후진", "운전", "서행"])) tags.push("차량작업");
-  if (includesAny(text, ["물류업", "물류창고", "창고", "재고", "적재"])) tags.push("창고 입출고");
+  if (includesWasteCompanyExplicitWarehouseKeyword(text, companyCode)) tags.push("창고 입출고");
   if (includesAny(text, ["지게차", "상하차", "좁은 동선", "이동 동선", "통로"])) tags.push("지게차");
   if (includesAny(text, ["끼임", "협착", "찔림", "베임"])) tags.push("협착·베임");
   if (includesAny(text, ["랙", "높은 곳", "고소대", "고소작업", "고소 작업", "추락", "낙상"])) tags.push("고소작업");
