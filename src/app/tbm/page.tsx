@@ -106,6 +106,7 @@ export default async function TbmPage() {
         <TbmVoiceDraftHelper
           tbmFormUrl={tbmFormUrl}
           companyName={company.name}
+          companyCode={company.code}
           className="mb-5"
         />
 
