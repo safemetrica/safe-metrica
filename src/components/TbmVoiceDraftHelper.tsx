@@ -5,6 +5,7 @@ import { useMemo, useRef, useState, type ChangeEvent } from "react";
 type Props = {
   tbmFormUrl?: string | null;
   companyName?: string | null;
+  companyCode?: string | null;
   className?: string;
 };
 
@@ -31,6 +32,14 @@ function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null 
   };
 
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+function getCurrentTimeText() {
+  return new Date().toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 function includesAny(text: string, keywords: string[]) {
@@ -106,6 +115,7 @@ function buildTbmDraftText(params: {
 export default function TbmVoiceDraftHelper({
   tbmFormUrl,
   companyName,
+  companyCode,
   className = "",
 }: Props) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -120,6 +130,8 @@ export default function TbmVoiceDraftHelper({
   const [actionFiles, setActionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [recordingStartTime, setRecordingStartTime] = useState("");
+  const defaultSupervisorName = companyCode === "daedo" || companyName?.includes("대도") ? "김인길" : "현장관리자";
 
   const combinedTranscript = [transcript, interimText].filter(Boolean).join(" ").trim();
 
@@ -149,6 +161,7 @@ export default function TbmVoiceDraftHelper({
 
     setSupportMessage("");
     setSubmitMessage("");
+    setRecordingStartTime("");
     setSignatureFiles([]);
     setSiteFiles([]);
     setWorkFiles([]);
@@ -212,8 +225,8 @@ export default function TbmVoiceDraftHelper({
     const formData = new FormData();
     formData.append("transcript", combinedTranscript);
     formData.append("draftText", draftText);
-
-    formData.append("startTime", new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }));
+    formData.append("startTime", recordingStartTime || getCurrentTimeText());
+    formData.append("supervisorName", defaultSupervisorName);
 
     signatureFiles.forEach((file) => formData.append("signatureFiles", file));
     siteFiles.forEach((file) => formData.append("siteFiles", file));
@@ -264,6 +277,7 @@ export default function TbmVoiceDraftHelper({
     setCopied(false);
     setSupportMessage("");
     setSubmitMessage("");
+    setRecordingStartTime("");
     setSignatureFiles([]);
     setSiteFiles([]);
     setWorkFiles([]);
@@ -324,14 +338,13 @@ export default function TbmVoiceDraftHelper({
       </div>
 
       <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-        <p className="text-xs font-black text-slate-300">사진 촬영/첨부</p>
+        <p className="text-xs font-black text-slate-300">사진 촬영/첨부 · 실시자 {defaultSupervisorName}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
             <span className="text-xs font-black text-cyan-200">참석·서명사진</span>
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               multiple
               onChange={(event) => handleFileChange(event, setSignatureFiles)}
               className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
@@ -344,7 +357,6 @@ export default function TbmVoiceDraftHelper({
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               multiple
               onChange={(event) => handleFileChange(event, setSiteFiles)}
               className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
@@ -357,7 +369,6 @@ export default function TbmVoiceDraftHelper({
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               multiple
               onChange={(event) => handleFileChange(event, setWorkFiles)}
               className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
@@ -370,7 +381,6 @@ export default function TbmVoiceDraftHelper({
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               multiple
               onChange={(event) => handleFileChange(event, setActionFiles)}
               className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"

@@ -304,6 +304,7 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const transcript = getFormText(formData, "transcript");
   const draftText = getFormText(formData, "draftText");
+  const supervisorName = getFormText(formData, "supervisorName") || (company.code === "daedo" ? "김인길" : "현장관리자");
 
   const signatureFiles = collectFiles(formData, "signatureFiles");
   const siteFiles = collectFiles(formData, "siteFiles");
@@ -337,6 +338,16 @@ export async function POST(req: NextRequest) {
   const startTime = getFormText(formData, "startTime") || getTimeValue();
   const endTime = getTimeValue();
   const mainText = transcript || draftText;
+
+  const selectedFileCount =
+    signatureFiles.length + siteFiles.length + workFiles.length + actionFiles.length;
+
+  if (selectedFileCount > 0 && !process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      { ok: false, error: "missing_blob_token", message: "사진 저장 설정이 없습니다. BLOB_READ_WRITE_TOKEN을 확인해 주세요." },
+      { status: 500 }
+    );
+  }
 
   let uploadedSignatureFiles: UploadedTbmFile[] = [];
   let uploadedSiteFiles: UploadedTbmFile[] = [];
@@ -390,7 +401,7 @@ export async function POST(req: NextRequest) {
     properties["조치 상태"] = selectValue(hasSpecialIssue ? "조치 필요" : "해당 없음");
   }
   if (hasProp(meta, "실시자(현장총괄)", "select")) {
-    properties["실시자(현장총괄)"] = selectValue("김일권");
+    properties["실시자(현장총괄)"] = selectValue(supervisorName);
   }
 
   if (hasProp(meta, "서명 사진 (참석자 확인)", "files") && uploadedSignatureFiles.length > 0) {
