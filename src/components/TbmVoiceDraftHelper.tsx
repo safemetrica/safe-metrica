@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ChangeEvent } from "react";
 
 type Props = {
   tbmFormUrl?: string | null;
@@ -114,6 +114,9 @@ export default function TbmVoiceDraftHelper({
   const [interimText, setInterimText] = useState("");
   const [copied, setCopied] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
 
   const combinedTranscript = [transcript, interimText].filter(Boolean).join(" ").trim();
 
@@ -142,6 +145,8 @@ export default function TbmVoiceDraftHelper({
     }
 
     setSupportMessage("");
+    setSubmitMessage("");
+    setSelectedFiles([]);
     setCopied(false);
 
     const recognition = new Recognition();
@@ -186,6 +191,52 @@ export default function TbmVoiceDraftHelper({
     recognition.start();
   }
 
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).slice(0, 6);
+    setSelectedFiles(files);
+    setSubmitMessage("");
+  }
+
+  async function submitDirectTbm() {
+    if (!draftText && !combinedTranscript) return;
+
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    const formData = new FormData();
+    formData.append("transcript", combinedTranscript);
+    formData.append("draftText", draftText);
+
+    selectedFiles.forEach((file) => {
+      formData.append("tbmFiles", file);
+    });
+
+    try {
+      const res = await fetch("/api/tbm/voice-submit", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+      };
+
+      if (!res.ok || !data.ok) {
+        setSubmitMessage(data.message || "TBM 저장 중 오류가 발생했습니다.");
+        return;
+      }
+
+      setSubmitMessage(data.message || "TBM이 저장되었습니다.");
+      setCopied(false);
+    } catch {
+      setSubmitMessage("TBM 저장 요청 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function copyDraft() {
     if (!draftText) return;
 
@@ -203,6 +254,8 @@ export default function TbmVoiceDraftHelper({
     setInterimText("");
     setCopied(false);
     setSupportMessage("");
+    setSubmitMessage("");
+    setSelectedFiles([]);
   }
 
   return (
@@ -212,7 +265,7 @@ export default function TbmVoiceDraftHelper({
           <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원</p>
           <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 초안 만들기</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-            현장관리자가 말한 내용을 TBM 초안으로 정리합니다. 초안을 복사한 뒤 오늘 TBM 작성 화면에 붙여넣고, 참석사진·현장사진·특이사항/조치사진을 함께 첨부하세요.
+            현장관리자가 말한 내용을 TBM 내용으로 정리합니다. 사진을 첨부한 뒤 세메앱에서 바로 TBM으로 저장할 수 있습니다. 초안 복사와 작성 화면 열기는 보조 기능입니다.
           </p>
         </div>
       </div>
@@ -249,13 +302,45 @@ export default function TbmVoiceDraftHelper({
             rel="noopener noreferrer"
             className="rounded-xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950"
           >
-            TBM 작성 열기
+            노션폼 열기
           </a>
         ) : (
           <span className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-center text-sm font-bold text-slate-500">
             작성 링크 없음
           </span>
         )}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+        <label className="text-xs font-black text-slate-300" htmlFor="tbmVoiceFiles">
+          사진 촬영/첨부
+        </label>
+        <input
+          id="tbmVoiceFiles"
+          name="tbmFiles"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={handleFileChange}
+          className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-slate-200 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-sm file:font-black file:text-slate-950"
+        />
+        <p className="mt-2 text-xs leading-5 text-slate-400">
+          참석사진, 작업 전 현장사진, 특이사항/조치사진을 첨부하세요. 선택된 사진 {selectedFiles.length}개
+        </p>
+        <button
+          type="button"
+          onClick={submitDirectTbm}
+          disabled={isSubmitting || (!draftText && !combinedTranscript)}
+          className="mt-3 w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 disabled:bg-slate-700 disabled:text-slate-400"
+        >
+          {isSubmitting ? "TBM 저장 중..." : "TBM으로 바로 저장"}
+        </button>
+        {submitMessage ? (
+          <p className="mt-3 rounded-xl border border-emerald-700 bg-emerald-950/40 p-3 text-sm font-bold leading-6 text-emerald-100">
+            {submitMessage}
+          </p>
+        ) : null}
       </div>
 
       {supportMessage ? (
@@ -275,7 +360,7 @@ export default function TbmVoiceDraftHelper({
         <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
           <p className="text-xs font-black text-slate-400">복사용 TBM 초안</p>
           <pre className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200 [word-break:keep-all]">
-            {draftText || "음성 인식 후 TBM 초안이 생성됩니다. TBM 작성 화면에서 참석사진, 작업 전 현장사진, 특이사항/조치사진을 함께 첨부하세요."}
+            {draftText || "음성 인식 후 TBM 내용이 생성됩니다. 사진을 첨부한 뒤 TBM으로 바로 저장할 수 있습니다."}
           </pre>
         </div>
       </div>
