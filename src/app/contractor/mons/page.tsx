@@ -2,6 +2,9 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const MONS_TBM_WRITE_URL = "여기에_실제_몬스_TBM_작성_노션링크";
+const MONS_FIELD_PARTICIPATION_URL = "/field/participation?company=mons";
+
 const guideItems = [
   {
     title: "1. 작업 전 공유",
@@ -20,9 +23,6 @@ const guideItems = [
     body: "참석사진, 작업 전 현장사진, 특이사항 또는 조치 전·후 사진을 누락하지 않습니다.",
   },
 ];
-
-const MONS_TBM_WRITE_URL = "여기에_실제_몬스_TBM_작성_노션링크_붙여넣기";
-const MONS_FIELD_PARTICIPATION_URL = "/field/participation?company=mons";
 
 export default function MonsSubmitSpacePage() {
   return (
