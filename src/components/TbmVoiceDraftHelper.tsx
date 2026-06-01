@@ -114,7 +114,10 @@ export default function TbmVoiceDraftHelper({
   const [interimText, setInterimText] = useState("");
   const [copied, setCopied] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [signatureFiles, setSignatureFiles] = useState<File[]>([]);
+  const [siteFiles, setSiteFiles] = useState<File[]>([]);
+  const [workFiles, setWorkFiles] = useState<File[]>([]);
+  const [actionFiles, setActionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
 
@@ -146,7 +149,10 @@ export default function TbmVoiceDraftHelper({
 
     setSupportMessage("");
     setSubmitMessage("");
-    setSelectedFiles([]);
+    setSignatureFiles([]);
+    setSiteFiles([]);
+    setWorkFiles([]);
+    setActionFiles([]);
     setCopied(false);
 
     const recognition = new Recognition();
@@ -191,9 +197,9 @@ export default function TbmVoiceDraftHelper({
     recognition.start();
   }
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>, setter: (files: File[]) => void) {
     const files = Array.from(event.target.files ?? []).slice(0, 6);
-    setSelectedFiles(files);
+    setter(files);
     setSubmitMessage("");
   }
 
@@ -207,9 +213,12 @@ export default function TbmVoiceDraftHelper({
     formData.append("transcript", combinedTranscript);
     formData.append("draftText", draftText);
 
-    selectedFiles.forEach((file) => {
-      formData.append("tbmFiles", file);
-    });
+    formData.append("startTime", new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }));
+
+    signatureFiles.forEach((file) => formData.append("signatureFiles", file));
+    siteFiles.forEach((file) => formData.append("siteFiles", file));
+    workFiles.forEach((file) => formData.append("workFiles", file));
+    actionFiles.forEach((file) => formData.append("actionFiles", file));
 
     try {
       const res = await fetch("/api/tbm/voice-submit", {
@@ -255,7 +264,10 @@ export default function TbmVoiceDraftHelper({
     setCopied(false);
     setSupportMessage("");
     setSubmitMessage("");
-    setSelectedFiles([]);
+    setSignatureFiles([]);
+    setSiteFiles([]);
+    setWorkFiles([]);
+    setActionFiles([]);
   }
 
   return (
@@ -312,22 +324,61 @@ export default function TbmVoiceDraftHelper({
       </div>
 
       <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-        <label className="text-xs font-black text-slate-300" htmlFor="tbmVoiceFiles">
-          사진 촬영/첨부
-        </label>
-        <input
-          id="tbmVoiceFiles"
-          name="tbmFiles"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          multiple
-          onChange={handleFileChange}
-          className="mt-2 block w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-slate-200 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-sm file:font-black file:text-slate-950"
-        />
-        <p className="mt-2 text-xs leading-5 text-slate-400">
-          참석사진, 작업 전 현장사진, 특이사항/조치사진을 첨부하세요. 선택된 사진 {selectedFiles.length}개
-        </p>
+        <p className="text-xs font-black text-slate-300">사진 촬영/첨부</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
+            <span className="text-xs font-black text-cyan-200">참석·서명사진</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={(event) => handleFileChange(event, setSignatureFiles)}
+              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
+            />
+            <span className="mt-1 block text-xs text-slate-500">선택 {signatureFiles.length}개</span>
+          </label>
+
+          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
+            <span className="text-xs font-black text-cyan-200">작업 전 현장사진</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={(event) => handleFileChange(event, setSiteFiles)}
+              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
+            />
+            <span className="mt-1 block text-xs text-slate-500">선택 {siteFiles.length}개</span>
+          </label>
+
+          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
+            <span className="text-xs font-black text-cyan-200">작업사진</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={(event) => handleFileChange(event, setWorkFiles)}
+              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
+            />
+            <span className="mt-1 block text-xs text-slate-500">선택 {workFiles.length}개</span>
+          </label>
+
+          <label className="block rounded-xl border border-slate-700 bg-slate-900 p-3">
+            <span className="text-xs font-black text-cyan-200">특이사항·조치사진</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={(event) => handleFileChange(event, setActionFiles)}
+              className="mt-2 block w-full text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-950"
+            />
+            <span className="mt-1 block text-xs text-slate-500">선택 {actionFiles.length}개</span>
+          </label>
+        </div>
+
         <button
           type="button"
           onClick={submitDirectTbm}

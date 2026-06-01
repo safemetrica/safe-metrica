@@ -4,7 +4,7 @@ import { put } from "@vercel/blob";
 import { getCompanyConfig, TenantRequiredError, UnknownCompanyError } from "@/lib/company";
 
 const SUPPORTED_COMPANY_CODES = new Set(["daedo", "bubblemon", "hankookgreen", "dongwoo"]);
-const MAX_TBM_FILES = 6;
+const MAX_FILES_PER_GROUP = 6;
 const MAX_SERVER_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 
 type UploadedTbmFile = {
@@ -12,10 +12,16 @@ type UploadedTbmFile = {
   url: string;
 };
 
+function getKstNow() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000);
+}
+
 function getTodayDateValue() {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return kst.toISOString().slice(0, 10);
+  return getKstNow().toISOString().slice(0, 10);
+}
+
+function getTimeValue() {
+  return getKstNow().toISOString().slice(11, 16);
 }
 
 function getFormText(formData: FormData, key: string) {
@@ -33,7 +39,7 @@ function sanitizeFileName(fileName: string) {
     .slice(0, 80);
 }
 
-function notionRichText(content: string) {
+function richText(content: string) {
   return {
     rich_text: [
       {
@@ -45,7 +51,7 @@ function notionRichText(content: string) {
   };
 }
 
-function notionTitle(content: string) {
+function titleText(content: string) {
   return {
     title: [
       {
@@ -57,60 +63,160 @@ function notionTitle(content: string) {
   };
 }
 
-function findPropertyName(
-  properties: Record<string, any>,
-  candidates: string[],
-  expectedType?: string
-) {
-  for (const name of candidates) {
-    const property = properties[name];
-
-    if (!property) continue;
-
-    if (!expectedType || property.type === expectedType) {
-      return name;
-    }
-  }
-
-  if (expectedType) {
-    const found = Object.entries(properties).find(([, property]) => (property as any)?.type === expectedType);
-    return found?.[0] ?? null;
-  }
-
-  return null;
-}
-
-async function getTbmDbProperties(notionApiKey: string, tbmDbId: string) {
-  const res = await fetch(`https://api.notion.com/v1/databases/${tbmDbId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${notionApiKey}`,
-      "Notion-Version": "2022-06-28",
-      "Content-Type": "application/json",
+function selectValue(name: string) {
+  return {
+    select: {
+      name,
     },
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`TBM database metadata failed: ${res.status} ${text}`);
-  }
-
-  const data = await res.json();
-
-  return data?.properties ?? {};
+  };
 }
 
-async function uploadTbmFiles(files: File[], companyCode: string, dateValue: string) {
+function multiSelectValue(names: string[]) {
+  const uniqueNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean))).slice(0, 8);
+
+  return {
+    multi_select: uniqueNames.map((name) => ({ name })),
+  };
+}
+
+function filesValue(files: UploadedTbmFile[]) {
+  return {
+    files: files.map((file) => ({
+      name: file.name,
+      external: {
+        url: file.url,
+      },
+    })),
+  };
+}
+
+function hasProp(propertiesMeta: Record<string, any>, name: string, type?: string) {
+  const prop = propertiesMeta[name];
+
+  if (!prop) return false;
+  if (!type) return true;
+
+  return prop.type === type;
+}
+
+function includesAny(text: string, keywords: string[]) {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function inferWorkTitle(transcript: string) {
+  const text = transcript.replace(/\s+/g, " ").trim();
+
+  if (includesAny(text, ["생활폐기물", "수거", "운반", "골목"])) {
+    return "생활폐기물 수거·운반 작업 전 TBM";
+  }
+
+  if (includesAny(text, ["지게차", "상하차", "적재", "하차"])) {
+    return "지게차·상하차 작업 전 TBM";
+  }
+
+  if (includesAny(text, ["청소", "정비", "컨베이어", "끼임", "협착"])) {
+    return "정비·청소 작업 전 TBM";
+  }
+
+  if (includesAny(text, ["용접", "화재", "불티"])) {
+    return "화재위험 작업 전 TBM";
+  }
+
+  return "현장 작업 전 TBM";
+}
+
+function inferWorkType(transcript: string) {
+  const text = transcript.replace(/\s+/g, " ");
+
+  if (includesAny(text, ["생활폐기물", "수거", "운반"])) return "생활폐기물 수거·운반";
+  if (includesAny(text, ["지게차", "상하차", "적재", "하차"])) return "상·하차";
+  if (includesAny(text, ["정비", "청소", "점검"])) return "정비·점검";
+  if (includesAny(text, ["용접", "불티"])) return "용접·화기";
+  if (includesAny(text, ["분류", "선별"])) return "선별·분류";
+
+  return "일반작업";
+}
+
+function inferRiskTags(transcript: string) {
+  const text = transcript.replace(/\s+/g, " ");
+  const risks: string[] = [];
+
+  if (includesAny(text, ["차량", "후진", "운전", "골목", "서행", "카메라"])) {
+    risks.push("차량 충돌", "후진 충돌", "사각지대");
+  }
+
+  if (includesAny(text, ["지게차", "상하차", "적재", "하차"])) {
+    risks.push("지게차 충돌", "낙하·맞음");
+  }
+
+  if (includesAny(text, ["끼임", "협착", "찔림", "베임", "압착"])) {
+    risks.push("끼임·협착", "찔림·베임");
+  }
+
+  if (includesAny(text, ["미끄럼", "침출수", "바닥", "우천", "비"])) {
+    risks.push("미끄럼·전도");
+  }
+
+  if (includesAny(text, ["화재", "용접", "불티", "배터리", "충전"])) {
+    risks.push("화재·폭발");
+  }
+
+  if (includesAny(text, ["추락", "고소", "사다리", "계단"])) {
+    risks.push("추락");
+  }
+
+  if (risks.length === 0) {
+    risks.push("작업 전 안전확인");
+  }
+
+  return Array.from(new Set(risks));
+}
+
+function inferWorkTags(transcript: string) {
+  const text = transcript.replace(/\s+/g, " ");
+  const tags: string[] = [];
+
+  if (includesAny(text, ["생활폐기물", "수거", "운반"])) tags.push("생활폐기물");
+  if (includesAny(text, ["차량", "후진", "운전", "서행"])) tags.push("차량작업");
+  if (includesAny(text, ["지게차", "상하차"])) tags.push("지게차");
+  if (includesAny(text, ["끼임", "협착", "찔림", "베임"])) tags.push("협착·베임");
+  if (includesAny(text, ["사진", "증빙", "확인"])) tags.push("사진증빙");
+
+  if (tags.length === 0) tags.push("일반 TBM");
+
+  return tags;
+}
+
+function buildSafetyNotice(transcript: string) {
+  const risks = inferRiskTags(transcript);
+  const lines: string[] = [];
+
+  lines.push("[음성 TBM 직접저장]");
+  lines.push("");
+  lines.push("[작업 내용]");
+  lines.push(transcript || "작업 전 TBM 내용을 음성으로 작성했습니다.");
+  lines.push("");
+  lines.push("[오늘의 핵심 위험요인]");
+  risks.forEach((risk) => lines.push(`- ${risk}`));
+  lines.push("");
+  lines.push("[근로자 주의사항]");
+  lines.push("- 작업 전 보호구 착용상태를 확인합니다.");
+  lines.push("- 차량·장비 이동 전 주변 작업자와 보행자 접근 여부를 확인합니다.");
+  lines.push("- 이상 상황, 아차사고, 추가 위험요인은 즉시 현장관리자에게 공유합니다.");
+
+  return lines.join("\n");
+}
+
+async function uploadFiles(files: File[], companyCode: string, dateValue: string, group: string) {
   const uploadedFiles: UploadedTbmFile[] = [];
 
   if (!process.env.BLOB_READ_WRITE_TOKEN || files.length === 0) {
     return uploadedFiles;
   }
 
-  for (const file of files.slice(0, MAX_TBM_FILES)) {
-    const fileName = sanitizeFileName(file.name || "tbm-photo.jpg");
-    const path = `tbm/${companyCode}/${dateValue}/${Date.now()}-${fileName}`;
+  for (const file of files.slice(0, MAX_FILES_PER_GROUP)) {
+    const fileName = sanitizeFileName(file.name || `${group}.jpg`);
+    const path = `tbm/${companyCode}/${dateValue}/${group}/${Date.now()}-${fileName}`;
 
     const blob = await put(path, file, {
       access: "public",
@@ -126,32 +232,40 @@ async function uploadTbmFiles(files: File[], companyCode: string, dateValue: str
   return uploadedFiles;
 }
 
-function buildTbmMemo(params: {
-  companyName: string;
-  transcript: string;
-  draftText: string;
-  uploadedFiles: UploadedTbmFile[];
-}) {
-  const lines: string[] = [];
+function collectFiles(formData: FormData, key: string) {
+  return formData.getAll(key).filter(isFile);
+}
 
-  lines.push("[SafeMetrica 음성 TBM]");
-  lines.push(`사업장: ${params.companyName}`);
-  lines.push("");
-  lines.push("[인식된 음성]");
-  lines.push(params.transcript || "미입력");
-  lines.push("");
-  lines.push("[TBM 정리 내용]");
-  lines.push(params.draftText || "미입력");
+function validateFileSize(fileGroups: File[][]) {
+  for (const files of fileGroups) {
+    const oversized = files.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
 
-  if (params.uploadedFiles.length > 0) {
-    lines.push("");
-    lines.push("[첨부 사진]");
-    params.uploadedFiles.forEach((file, index) => {
-      lines.push(`${index + 1}. ${file.name} - ${file.url}`);
-    });
+    if (oversized) {
+      return false;
+    }
   }
 
-  return lines.join("\n").slice(0, 1900);
+  return true;
+}
+
+async function getTbmDbProperties(notionApiKey: string, tbmDbId: string) {
+  const res = await fetch(`https://api.notion.com/v1/databases/${tbmDbId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${notionApiKey}`,
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.message ?? "TBM database metadata failed");
+  }
+
+  const data = await res.json();
+  return data?.properties ?? {};
 }
 
 export async function POST(req: NextRequest) {
@@ -190,8 +304,11 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const transcript = getFormText(formData, "transcript");
   const draftText = getFormText(formData, "draftText");
-  const dateValue = getTodayDateValue();
-  const files = formData.getAll("tbmFiles").filter(isFile);
+
+  const signatureFiles = collectFiles(formData, "signatureFiles");
+  const siteFiles = collectFiles(formData, "siteFiles");
+  const workFiles = collectFiles(formData, "workFiles");
+  const actionFiles = collectFiles(formData, "actionFiles");
 
   if (!transcript && !draftText) {
     return NextResponse.json(
@@ -200,9 +317,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const oversizedFile = files.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
-
-  if (oversizedFile) {
+  if (!validateFileSize([signatureFiles, siteFiles, workFiles, actionFiles])) {
     return NextResponse.json(
       { ok: false, error: "file_too_large", message: "사진 1장당 8MB 이하로 첨부해 주세요." },
       { status: 413 }
@@ -218,10 +333,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let uploadedFiles: UploadedTbmFile[] = [];
+  const dateValue = getTodayDateValue();
+  const startTime = getFormText(formData, "startTime") || getTimeValue();
+  const endTime = getTimeValue();
+  const mainText = transcript || draftText;
+
+  let uploadedSignatureFiles: UploadedTbmFile[] = [];
+  let uploadedSiteFiles: UploadedTbmFile[] = [];
+  let uploadedWorkFiles: UploadedTbmFile[] = [];
+  let uploadedActionFiles: UploadedTbmFile[] = [];
 
   try {
-    uploadedFiles = await uploadTbmFiles(files, company.code, dateValue);
+    [uploadedSignatureFiles, uploadedSiteFiles, uploadedWorkFiles, uploadedActionFiles] = await Promise.all([
+      uploadFiles(signatureFiles, company.code, dateValue, "signature"),
+      uploadFiles(siteFiles, company.code, dateValue, "site"),
+      uploadFiles(workFiles, company.code, dateValue, "work"),
+      uploadFiles(actionFiles, company.code, dateValue, "action"),
+    ]);
   } catch {
     return NextResponse.json(
       { ok: false, error: "file_upload_error", message: "사진 업로드 중 오류가 발생했습니다." },
@@ -229,57 +357,56 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const memo = buildTbmMemo({
-    companyName: company.name,
-    transcript,
-    draftText,
-    uploadedFiles,
-  });
+  let meta: Record<string, any>;
 
-  const propertiesMeta = await getTbmDbProperties(notionApiKey, company.tbmDbId);
-
-  const titleProp = findPropertyName(propertiesMeta, ["작업명", "제목", "Name", "이름"], "title");
-  const dateProp = findPropertyName(propertiesMeta, ["날짜", "작성일", "일자", "TBM일자"], "date");
-  const contentProp = findPropertyName(propertiesMeta, ["TBM 내용", "내용", "작업내용", "안전수칙", "주의사항", "특이사항"], "rich_text");
-  const routeProp = findPropertyName(propertiesMeta, ["제출경로", "작성방식", "입력경로"], "rich_text");
-  const fileProp = findPropertyName(propertiesMeta, ["사진/파일", "사진", "첨부", "첨부파일", "현장사진", "증빙사진"], "files");
-
-  if (!titleProp) {
+  try {
+    meta = await getTbmDbProperties(notionApiKey, company.tbmDbId);
+  } catch {
     return NextResponse.json(
-      { ok: false, error: "missing_title_property", message: "TBM DB의 제목 속성을 찾지 못했습니다." },
+      { ok: false, error: "notion_meta_error", message: "TBM DB 속성 조회 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }
 
-  const properties: Record<string, any> = {
-    [titleProp]: notionTitle(`음성 TBM - ${dateValue}`),
-  };
+  const title = inferWorkTitle(mainText);
+  const safetyNotice = buildSafetyNotice(mainText);
+  const hasSpecialIssue = /특이|조치|고장|위험|아차|사고|파손|누락|불량|미흡/.test(mainText);
 
-  if (dateProp) {
-    properties[dateProp] = {
-      date: {
-        start: dateValue,
-      },
-    };
+  const properties: Record<string, any> = {};
+
+  if (hasProp(meta, "작업명", "title")) properties["작업명"] = titleText(title);
+  if (hasProp(meta, "날짜", "date")) properties["날짜"] = { date: { start: dateValue } };
+  if (hasProp(meta, "시작시간", "rich_text")) properties["시작시간"] = richText(startTime);
+  if (hasProp(meta, "종료시간", "rich_text")) properties["종료시간"] = richText(endTime);
+  if (hasProp(meta, "작업 유형", "select")) properties["작업 유형"] = selectValue(inferWorkType(mainText));
+  if (hasProp(meta, "작업 태그", "multi_select")) properties["작업 태그"] = multiSelectValue(inferWorkTags(mainText));
+  if (hasProp(meta, "핵심 위험요인", "multi_select")) properties["핵심 위험요인"] = multiSelectValue(inferRiskTags(mainText));
+  if (hasProp(meta, "오늘의 주의사항", "rich_text")) properties["오늘의 주의사항"] = richText(safetyNotice);
+  if (hasProp(meta, "특이사항", "checkbox")) properties["특이사항"] = { checkbox: hasSpecialIssue };
+  if (hasProp(meta, "특이사항 내용", "rich_text")) {
+    properties["특이사항 내용"] = richText(hasSpecialIssue ? mainText : "특이사항 없음");
+  }
+  if (hasProp(meta, "조치 상태", "select")) {
+    properties["조치 상태"] = selectValue(hasSpecialIssue ? "조치 필요" : "해당 없음");
+  }
+  if (hasProp(meta, "실시자(현장총괄)", "select")) {
+    properties["실시자(현장총괄)"] = selectValue("김일권");
   }
 
-  if (contentProp) {
-    properties[contentProp] = notionRichText(memo);
+  if (hasProp(meta, "서명 사진 (참석자 확인)", "files") && uploadedSignatureFiles.length > 0) {
+    properties["서명 사진 (참석자 확인)"] = filesValue(uploadedSignatureFiles);
   }
 
-  if (routeProp) {
-    properties[routeProp] = notionRichText("voice-tbm-direct-submit");
+  if (hasProp(meta, "현장 사진", "files") && uploadedSiteFiles.length > 0) {
+    properties["현장 사진"] = filesValue(uploadedSiteFiles);
   }
 
-  if (fileProp && uploadedFiles.length > 0) {
-    properties[fileProp] = {
-      files: uploadedFiles.map((file) => ({
-        name: file.name,
-        external: {
-          url: file.url,
-        },
-      })),
-    };
+  if (hasProp(meta, "파일과 미디어", "files") && uploadedWorkFiles.length > 0) {
+    properties["파일과 미디어"] = filesValue(uploadedWorkFiles);
+  }
+
+  if (hasProp(meta, "조치 사진", "files") && uploadedActionFiles.length > 0) {
+    properties["조치 사진"] = filesValue(uploadedActionFiles);
   }
 
   const createRes = await fetch("https://api.notion.com/v1/pages", {
@@ -310,10 +437,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const uploadedFileCount =
+    uploadedSignatureFiles.length + uploadedSiteFiles.length + uploadedWorkFiles.length + uploadedActionFiles.length;
+
   return NextResponse.json({
     ok: true,
     pageId: createData?.id,
-    uploadedFileCount: uploadedFiles.length,
-    message: uploadedFiles.length > 0 ? "TBM 내용과 사진이 저장되었습니다." : "TBM 내용이 저장되었습니다.",
+    uploadedFileCount,
+    message: uploadedFileCount > 0 ? "TBM 내용과 사진이 기존 양식에 맞게 저장되었습니다." : "TBM 내용이 기존 양식에 맞게 저장되었습니다.",
   });
 }
