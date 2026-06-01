@@ -103,19 +103,53 @@ function filesValue(files: UploadedTbmFile[]) {
   };
 }
 
-function hasProp(propertiesMeta: NotionPropertiesMeta, name: string, type?: string) {
-  const prop = propertiesMeta[name];
+function findProp(propertiesMeta: NotionPropertiesMeta, names: string[], type?: string) {
+  return names.find((name) => {
+    const prop = propertiesMeta[name];
 
-  if (!prop) return false;
-  if (!type) return true;
+    if (!prop) return false;
+    if (!type) return true;
 
-  return prop.type === type;
+    return prop.type === type;
+  });
 }
 
-function hasSelectOption(propertiesMeta: NotionPropertiesMeta, name: string, optionName: string) {
-  const prop = propertiesMeta[name];
+function setIfProp(
+  properties: Record<string, NotionPropertyValue>,
+  propertiesMeta: NotionPropertiesMeta,
+  names: string[],
+  type: string,
+  value: NotionPropertyValue
+) {
+  const propName = findProp(propertiesMeta, names, type);
 
-  if (!prop || prop.type !== "select") return false;
+  if (!propName) return undefined;
+
+  properties[propName] = value;
+  return propName;
+}
+
+function appendFilesIfProp(
+  fileProperties: Map<string, UploadedTbmFile[]>,
+  propertiesMeta: NotionPropertiesMeta,
+  names: string[],
+  files: UploadedTbmFile[]
+) {
+  if (files.length === 0) return undefined;
+
+  const propName = findProp(propertiesMeta, names, "files");
+
+  if (!propName) return undefined;
+
+  fileProperties.set(propName, [...(fileProperties.get(propName) ?? []), ...files]);
+  return propName;
+}
+
+function hasSelectOption(propertiesMeta: NotionPropertiesMeta, names: string[], optionName: string) {
+  const propName = findProp(propertiesMeta, names, "select");
+  const prop = propName ? propertiesMeta[propName] : undefined;
+
+  if (!prop) return false;
 
   return Boolean(prop.select?.options?.some((option: { name?: string }) => option.name === optionName));
 }
@@ -426,56 +460,81 @@ export async function POST(req: NextRequest) {
 
   const voiceIntent = detectTbmVoiceIntent(mainText);
   const isSafetyPolicyIntent = voiceIntent === "safety_policy";
-  const shouldInferWorkType = voiceIntent === "work_tbm";
+  const shouldSetWorkType = ["work_tbm", "inspection", "maintenance", "action_completed"].includes(voiceIntent);
   const title = isSafetyPolicyIntent ? "안전보건경영방침 공유" : inferWorkTitle(mainText);
   const safetyNotice = buildSafetyNotice(mainText);
-  const hasSpecialIssue = isSafetyPolicyIntent ? false : /특이|조치|고장|위험|아차|사고|파손|누락|불량|미흡/.test(mainText);
+  const hasSpecialIssue = isSafetyPolicyIntent
+    ? false
+    : includesAny(mainText, [
+        "특이사항",
+        "아차사고",
+        "사고 발생",
+        "고장 발생",
+        "파손",
+        "누락",
+        "불량",
+        "미흡",
+        "조치 필요",
+        "보완 필요",
+        "현장 발견",
+        "이상 발생",
+      ]);
   const workTags = isSafetyPolicyIntent
     ? ["안전보건방침", "경영방침 공유", "근로자 공유"]
     : inferWorkTags(mainText);
   const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(mainText);
 
+  const workTypePropNames = ["작업 유형", "작업유형"];
+  const workTagPropNames = ["작업 태그", "작업태그"];
+  const riskTagPropNames = ["핵심 위험요인", "핵심위험요인"];
+  const safetyNoticePropNames = ["오늘의 주의사항", "오늘주의사항", "오늘 주의사항"];
+  const specialIssueContentPropNames = ["특이사항 내용", "특이사항내용"];
+  const actionStatusPropNames = ["조치 상태", "조치상태"];
+  const signaturePhotoPropNames = ["서명 사진 (참석자 확인)", "참석서명", "참석 서명", "서명사진"];
+  const sitePhotoPropNames = ["현장 사진", "작업 전 현장사진", "사진"];
+  const workPhotoPropNames = ["파일과 미디어", "작업사진", "작업 사진", "사진"];
+  const actionPhotoPropNames = ["조치 사진", "조치사진", "특이사항·조치사진"];
+
   const properties: Record<string, NotionPropertyValue> = {};
 
-  if (hasProp(meta, "작업명", "title")) properties["작업명"] = titleText(title);
-  if (hasProp(meta, "날짜", "date")) properties["날짜"] = { date: { start: dateValue } };
-  if (hasProp(meta, "시작시간", "rich_text")) properties["시작시간"] = richText(startTime);
-  if (hasProp(meta, "종료시간", "rich_text")) properties["종료시간"] = richText(endTime);
-  if (shouldInferWorkType && hasProp(meta, "작업 유형", "select")) properties["작업 유형"] = selectValue(inferWorkType(mainText));
-  if (hasProp(meta, "작업 태그", "multi_select")) properties["작업 태그"] = multiSelectValue(workTags);
-  if (hasProp(meta, "핵심 위험요인", "multi_select")) properties["핵심 위험요인"] = multiSelectValue(riskTags);
-  if (hasProp(meta, "오늘의 주의사항", "rich_text")) properties["오늘의 주의사항"] = richText(safetyNotice);
-  if (hasProp(meta, "특이사항", "checkbox")) properties["특이사항"] = { checkbox: hasSpecialIssue };
-  if (hasProp(meta, "특이사항 내용", "rich_text")) {
-    properties["특이사항 내용"] = richText(hasSpecialIssue ? mainText : "특이사항 없음");
+  setIfProp(properties, meta, ["작업명"], "title", titleText(title));
+  setIfProp(properties, meta, ["날짜"], "date", { date: { start: dateValue } });
+  setIfProp(properties, meta, ["시작시간"], "rich_text", richText(startTime));
+  setIfProp(properties, meta, ["종료시간"], "rich_text", richText(endTime));
+  if (shouldSetWorkType) {
+    setIfProp(properties, meta, workTypePropNames, "select", selectValue(inferWorkType(mainText)));
   }
-  if (hasProp(meta, "조치 상태", "select")) {
-    if (isSafetyPolicyIntent) {
-      if (hasSelectOption(meta, "조치 상태", "조치 불필요")) {
-        properties["조치 상태"] = selectValue("조치 불필요");
-      }
-    } else {
-      properties["조치 상태"] = selectValue(hasSpecialIssue ? "조치 필요" : "해당 없음");
+  setIfProp(properties, meta, workTagPropNames, "multi_select", multiSelectValue(workTags));
+  setIfProp(properties, meta, riskTagPropNames, "multi_select", multiSelectValue(riskTags));
+  setIfProp(properties, meta, safetyNoticePropNames, "rich_text", richText(safetyNotice));
+  setIfProp(properties, meta, ["특이사항"], "checkbox", { checkbox: hasSpecialIssue });
+  setIfProp(
+    properties,
+    meta,
+    specialIssueContentPropNames,
+    "rich_text",
+    richText(hasSpecialIssue ? mainText : "특이사항 없음")
+  );
+
+  if (isSafetyPolicyIntent) {
+    if (hasSelectOption(meta, actionStatusPropNames, "조치 불필요")) {
+      setIfProp(properties, meta, actionStatusPropNames, "select", selectValue("조치 불필요"));
     }
-  }
-  if (hasProp(meta, "실시자(현장총괄)", "select")) {
-    properties["실시자(현장총괄)"] = selectValue(supervisorName);
-  }
-
-  if (hasProp(meta, "서명 사진 (참석자 확인)", "files") && uploadedSignatureFiles.length > 0) {
-    properties["서명 사진 (참석자 확인)"] = filesValue(uploadedSignatureFiles);
+  } else {
+    setIfProp(properties, meta, actionStatusPropNames, "select", selectValue(hasSpecialIssue ? "조치 필요" : "해당 없음"));
   }
 
-  if (hasProp(meta, "현장 사진", "files") && uploadedSiteFiles.length > 0) {
-    properties["현장 사진"] = filesValue(uploadedSiteFiles);
-  }
+  setIfProp(properties, meta, ["실시자(현장총괄)"], "select", selectValue(supervisorName));
 
-  if (hasProp(meta, "파일과 미디어", "files") && uploadedWorkFiles.length > 0) {
-    properties["파일과 미디어"] = filesValue(uploadedWorkFiles);
-  }
+  const fileProperties = new Map<string, UploadedTbmFile[]>();
 
-  if (hasProp(meta, "조치 사진", "files") && uploadedActionFiles.length > 0) {
-    properties["조치 사진"] = filesValue(uploadedActionFiles);
+  appendFilesIfProp(fileProperties, meta, signaturePhotoPropNames, uploadedSignatureFiles);
+  appendFilesIfProp(fileProperties, meta, sitePhotoPropNames, uploadedSiteFiles);
+  appendFilesIfProp(fileProperties, meta, workPhotoPropNames, uploadedWorkFiles);
+  appendFilesIfProp(fileProperties, meta, actionPhotoPropNames, uploadedActionFiles);
+
+  for (const [propName, files] of fileProperties) {
+    properties[propName] = filesValue(files);
   }
 
   const createRes = await fetch("https://api.notion.com/v1/pages", {
