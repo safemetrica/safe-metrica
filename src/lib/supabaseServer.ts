@@ -1,0 +1,112 @@
+type SupabaseInsertResult = {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  message?: string;
+};
+
+type UploadedTbmShadowFile = {
+  name: string;
+  url: string;
+};
+
+export type TbmVoiceSubmissionShadowRecord = {
+  company_code: string;
+  company_name: string;
+  notion_tbm_db_id: string;
+  notion_page_id: string | null;
+  notion_page_url: string | null;
+  date_value: string;
+  start_time: string;
+  end_time: string;
+  voice_intent: string;
+  title: string;
+  transcript: string;
+  draft_text: string;
+  main_text: string;
+  normalized_text: string;
+  supervisor_name: string;
+  work_type: string;
+  work_types: string[];
+  work_tags: string[];
+  risk_tags: string[];
+  safety_notice: string;
+  has_special_issue: boolean;
+  special_issue_content: string;
+  action_status: string;
+  selected_file_count: number;
+  uploaded_file_count: number;
+  uploaded_files: Record<string, UploadedTbmShadowFile[]>;
+  notion_properties_snapshot: Record<string, unknown>;
+  snapshot: Record<string, unknown>;
+};
+
+function getSupabaseUrl() {
+  return process.env.SUPABASE_URL?.replace(/\/+$/, "");
+}
+
+function getSupabaseServiceRoleKey() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY;
+}
+
+function getSupabaseTbmShadowWriteCompanies() {
+  return new Set(
+    (process.env.SUPABASE_TBM_SHADOW_WRITE_COMPANIES ?? "")
+      .split(",")
+      .map((companyCode) => companyCode.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+export function isSupabaseTbmShadowWriteEnabled(companyCode: string) {
+  if (process.env.SUPABASE_TBM_SHADOW_WRITE_ENABLED !== "true") {
+    return false;
+  }
+
+  return getSupabaseTbmShadowWriteCompanies().has(companyCode.toLowerCase());
+}
+
+export async function insertTbmVoiceSubmissionShadowRecord(
+  record: TbmVoiceSubmissionShadowRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/tbm_voice_submissions`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(record),
+  });
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+    };
+  }
+
+  const data = await res.json().catch(() => undefined);
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+  };
+}
