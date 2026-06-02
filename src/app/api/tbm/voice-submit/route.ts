@@ -5,6 +5,10 @@ import { getCompanyConfig, TenantRequiredError, UnknownCompanyError } from "@/li
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { detectTbmVoiceIntent } from "@/lib/tbmVoiceIntent";
 import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
+import {
+  insertTbmVoiceSubmissionShadowRecord,
+  isSupabaseTbmShadowWriteEnabled,
+} from "@/lib/supabaseServer";
 
 const SUPPORTED_COMPANY_CODES = new Set(["daedo", "bubblemon", "hankookgreen", "dongwoo"]);
 const WASTE_COLLECTION_COMPANY_CODES = new Set(["daedo", "hankookgreen", "dongwoo"]);
@@ -816,6 +820,93 @@ export async function POST(req: NextRequest) {
 
   const uploadedFileCount =
     uploadedSignatureFiles.length + uploadedSiteFiles.length + uploadedWorkFiles.length + uploadedActionFiles.length;
+
+  if (isSupabaseTbmShadowWriteEnabled(company.code)) {
+    const actionStatus = isSafetyPolicyIntent ? "조치 불필요" : hasSpecialIssue ? "조치 필요" : "해당 없음";
+    const uploadedFiles = {
+      signature: uploadedSignatureFiles,
+      site: uploadedSiteFiles,
+      work: uploadedWorkFiles,
+      action: uploadedActionFiles,
+    };
+    const notionPageId = createData?.id ?? null;
+    const notionPageUrl = createData?.url ?? null;
+    const snapshot = {
+      notion: {
+        databaseId: company.tbmDbId,
+        pageId: notionPageId,
+        pageUrl: notionPageUrl,
+        properties,
+      },
+      calculations: {
+        dateValue,
+        startTime,
+        endTime,
+        voiceIntent,
+        title,
+        safetyNotice,
+        hasSpecialIssue,
+        actionStatus,
+        supervisorName,
+        workType,
+        workTypes: workTypesMulti,
+        workTags,
+        riskTags,
+        selectedFileCount,
+        uploadedFileCount,
+      },
+      uploadedFiles,
+    };
+
+    try {
+      const shadowWriteResult = await insertTbmVoiceSubmissionShadowRecord({
+        company_code: company.code,
+        company_name: company.name,
+        notion_tbm_db_id: company.tbmDbId,
+        notion_page_id: notionPageId,
+        notion_page_url: notionPageUrl,
+        date_value: dateValue,
+        start_time: startTime,
+        end_time: endTime,
+        voice_intent: voiceIntent,
+        title,
+        transcript,
+        draft_text: draftText,
+        main_text: mainText,
+        normalized_text: normalizedText,
+        supervisor_name: supervisorName,
+        work_type: workType,
+        work_types: workTypesMulti,
+        work_tags: workTags,
+        risk_tags: riskTags,
+        safety_notice: safetyNotice,
+        has_special_issue: hasSpecialIssue,
+        special_issue_content: hasSpecialIssue ? mainText : "특이사항 없음",
+        action_status: actionStatus,
+        selected_file_count: selectedFileCount,
+        uploaded_file_count: uploadedFileCount,
+        uploaded_files: uploadedFiles,
+        notion_properties_snapshot: properties,
+        snapshot,
+      });
+
+      if (!shadowWriteResult.ok) {
+        console.error("Supabase TBM shadow-write failed", {
+          companyCode: company.code,
+          notionPageId,
+          status: shadowWriteResult.status,
+          statusText: shadowWriteResult.statusText,
+          message: shadowWriteResult.message,
+        });
+      }
+    } catch (error) {
+      console.error("Supabase TBM shadow-write failed", {
+        companyCode: company.code,
+        notionPageId,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
+    }
+  }
 
   return NextResponse.json({
     ok: true,
