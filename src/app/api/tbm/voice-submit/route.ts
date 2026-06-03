@@ -926,7 +926,7 @@ export async function POST(req: NextRequest) {
 
   const voiceIntent = detectTbmVoiceIntent(mainText);
   const isSafetyPolicyIntent = voiceIntent === "safety_policy";
-  const shouldSetWorkType = ["work_tbm", "inspection", "maintenance", "action_completed"].includes(voiceIntent);
+  const shouldSetWorkType = !isSafetyPolicyIntent;
   const title = isSafetyPolicyIntent ? "안전보건경영방침 공유" : inferWorkTitle(normalizedText);
   const safetyNotice = buildSafetyNotice(normalizedText, company.code);
   const specialIssueAnalysis = isSafetyPolicyIntent
