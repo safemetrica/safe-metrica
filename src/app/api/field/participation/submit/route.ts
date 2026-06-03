@@ -208,6 +208,22 @@ function hasNotionProperty(propertyNames: Set<string> | null, propertyName: stri
   return !propertyNames || propertyNames.has(propertyName);
 }
 
+function findNotionPropertyName(propertyNames: Set<string> | null, candidates: string[]) {
+  if (!propertyNames) return candidates[0];
+
+  for (const candidate of candidates) {
+    if (propertyNames.has(candidate)) return candidate;
+  }
+
+  const normalizedCandidates = candidates.map((candidate) => candidate.trim());
+
+  return (
+    Array.from(propertyNames).find((propertyName) =>
+      normalizedCandidates.includes(propertyName.trim())
+    ) ?? null
+  );
+}
+
 function getTodayDateValue() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -417,8 +433,10 @@ export async function POST(req: NextRequest) {
     properties["제목"] = titleText(title);
   }
 
-  if (hasNotionProperty(propertyNames, "제출구분")) {
-    properties["제출구분"] = { select: { name: submissionType } };
+  const submissionTypePropName = findNotionPropertyName(propertyNames, ["제출구분"]);
+
+  if (submissionTypePropName) {
+    properties[submissionTypePropName] = { select: { name: submissionType } };
   }
 
   if (hasNotionProperty(propertyNames, "제보유형")) {
@@ -451,12 +469,10 @@ export async function POST(req: NextRequest) {
     properties["내용"] = richText(finalContent);
   }
 
-  if (hasNotionProperty(propertyNames, "처리상태")) {
-    properties["처리상태"] = { select: { name: processingStatus } };
-  } else if (hasNotionProperty(propertyNames, "처리상태_기존")) {
-    properties["처리상태_기존"] = { select: { name: processingStatus } };
-  } else if (hasNotionProperty(propertyNames, "상태")) {
-    properties["상태"] = { select: { name: processingStatus } };
+  const processingStatusPropName = findNotionPropertyName(propertyNames, ["처리상태"]);
+
+  if (processingStatusPropName) {
+    properties[processingStatusPropName] = { select: { name: processingStatus } };
   }
 
   if (contractorName && hasNotionProperty(propertyNames, "협력사명")) {
