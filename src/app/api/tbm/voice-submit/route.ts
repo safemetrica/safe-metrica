@@ -629,6 +629,7 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const transcript = getFormText(formData, "transcript");
   const draftText = getFormText(formData, "draftText");
+  const editedDraftText = getFormText(formData, "editedDraftText");
   const supervisorName = getFormText(formData, "supervisorName") || (company.code === "daedo" ? "김인길" : "현장관리자");
 
   const signatureFiles = collectFiles(formData, TBM_VOICE_UPLOAD_FIELD_KEYS.signature);
@@ -662,7 +663,7 @@ export async function POST(req: NextRequest) {
   const dateValue = getTodayDateValue();
   const startTime = getFormText(formData, "startTime") || getTimeValue();
   const endTime = getTimeValue();
-  const mainText = transcript || draftText;
+  const mainText = editedDraftText || draftText || transcript;
   const normalizedText = normalizeTbmVoiceTranscript(mainText);
 
   const selectedFileCount =
