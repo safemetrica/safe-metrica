@@ -25,6 +25,9 @@ type NotionPropertyMeta = {
   select?: {
     options?: Array<{ name?: string }>;
   };
+  multi_select?: {
+    options?: Array<{ name?: string }>;
+  };
 };
 
 type NotionPropertiesMeta = Record<string, NotionPropertyMeta | undefined>;
@@ -159,6 +162,101 @@ function hasSelectOption(propertiesMeta: NotionPropertiesMeta, names: string[], 
 
   return Boolean(prop.select?.options?.some((option: { name?: string }) => option.name === optionName));
 }
+
+
+function getChoiceOptionNames(prop?: NotionPropertyMeta): string[] {
+  if (!prop) return [];
+
+  const optionNames =
+    prop.type === "select"
+      ? prop.select?.options?.map((option) => option.name)
+      : prop.type === "multi_select"
+        ? prop.multi_select?.options?.map((option) => option.name)
+        : [];
+
+  return (optionNames ?? []).filter((name): name is string => Boolean(name));
+}
+
+function normalizeChoiceName(name: string) {
+  return name.replace(/[·ㆍ\-\s]+/g, "").trim().toLowerCase();
+}
+
+function matchExistingChoiceOption(candidates: string[], existingNames: string[]) {
+  for (const candidate of candidates.map((name) => name.trim()).filter(Boolean)) {
+    const exactMatch = existingNames.find((existingName) => existingName === candidate);
+
+    if (exactMatch) return exactMatch;
+
+    const normalizedCandidate = normalizeChoiceName(candidate);
+    const normalizedMatch = existingNames.find((existingName) => normalizeChoiceName(existingName) === normalizedCandidate);
+
+    if (normalizedMatch) return normalizedMatch;
+  }
+
+  return undefined;
+}
+
+function getWorkTypeCandidates(workType: string, workTypesMulti: string[], transcript: string, companyCode?: string) {
+  const candidates: string[] = [];
+
+  const addCandidate = (candidate: string) => {
+    const trimmedCandidate = candidate.trim();
+
+    if (trimmedCandidate && !candidates.includes(trimmedCandidate)) {
+      candidates.push(trimmedCandidate);
+    }
+  };
+
+  addCandidate(workType);
+  workTypesMulti.forEach(addCandidate);
+
+  if (hasWasteCollectionProfileSignal(transcript, companyCode)) {
+    addCandidate("생활폐기물 수거");
+    addCandidate("생활폐기물 수거·운반");
+    addCandidate("생활폐기물 수거 운반");
+    addCandidate("생활폐기물");
+  }
+
+  return candidates;
+}
+
+function setWorkTypeIfProp(
+  properties: Record<string, NotionPropertyValue>,
+  propertiesMeta: NotionPropertiesMeta,
+  names: string[],
+  workType: string,
+  workTypesMulti: string[],
+  transcript: string,
+  companyCode?: string
+) {
+  const propName = findProp(propertiesMeta, names);
+  const prop = propName ? propertiesMeta[propName] : undefined;
+
+  if (!propName || !prop) return undefined;
+
+  const candidates = getWorkTypeCandidates(workType, workTypesMulti, transcript, companyCode);
+
+  if (candidates.length === 0) return undefined;
+
+  const existingOptionNames = getChoiceOptionNames(prop);
+  const representativeWorkType = matchExistingChoiceOption(candidates, existingOptionNames) ?? candidates[0];
+
+  if (prop.type === "select") {
+    properties[propName] = selectValue(representativeWorkType);
+    return propName;
+  }
+
+  if (prop.type === "multi_select") {
+    const multiCandidates = getWorkTypeCandidates(representativeWorkType, workTypesMulti, transcript, companyCode);
+    const matchedNames = multiCandidates.map((candidate) => matchExistingChoiceOption([candidate], existingOptionNames) ?? candidate);
+
+    properties[propName] = multiSelectValue(matchedNames);
+    return propName;
+  }
+
+  return undefined;
+}
+
 
 function normalizeKoreanText(text: string) {
   return text.replace(/\s+/g, "");
@@ -861,7 +959,7 @@ export async function POST(req: NextRequest) {
   setIfProp(properties, meta, ["시작시간"], "rich_text", richText(startTime));
   setIfProp(properties, meta, ["종료시간"], "rich_text", richText(endTime));
   if (shouldSetWorkType) {
-    setIfProp(properties, meta, workTypePropNames, "select", selectValue(workType));
+    setWorkTypeIfProp(properties, meta, workTypePropNames, workType, workTypesMulti, normalizedText, company.code);
 
     const multiWorkTypes = workTypesMulti.length > 0 ? workTypesMulti : [workType];
     setIfProp(properties, meta, workTypesMultiPropNames, "multi_select", multiSelectValue(multiWorkTypes));
