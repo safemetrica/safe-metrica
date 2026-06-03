@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
 
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
@@ -156,6 +156,8 @@ export default function TbmVoiceDraftHelper({
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimText, setInterimText] = useState("");
+  const [editedDraftText, setEditedDraftText] = useState("");
+  const [hasEditedDraftText, setHasEditedDraftText] = useState(false);
   const [copied, setCopied] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
   const [signatureFiles, setSignatureFiles] = useState<File[]>([]);
@@ -183,6 +185,12 @@ export default function TbmVoiceDraftHelper({
     [companyName, combinedTranscript]
   );
 
+  useEffect(() => {
+    if (!hasEditedDraftText) {
+      setEditedDraftText(draftText);
+    }
+  }, [draftText, hasEditedDraftText]);
+
   function stopRecording() {
     recognitionRef.current?.stop();
     recognitionRef.current = null;
@@ -201,6 +209,8 @@ export default function TbmVoiceDraftHelper({
     setSupportMessage("");
     setSubmitMessage("");
     setHasSubmitted(false);
+    setEditedDraftText("");
+    setHasEditedDraftText(false);
     setRecordingStartTime(getCurrentTimeText());
     clearPhotoFileState();
     clearPhotoInputValues();
@@ -287,7 +297,9 @@ export default function TbmVoiceDraftHelper({
       setSubmitMessage("녹음을 완료한 뒤 저장해 주세요.");
       return;
     }
-    if (!draftText && !combinedTranscript) return;
+    const hasGeneratedVoiceContent = Boolean(combinedTranscript || draftText);
+    const finalText = editedDraftText.trim() || draftText || combinedTranscript;
+    if (!hasGeneratedVoiceContent || !finalText) return;
 
     setIsSubmitting(true);
     setSubmitMessage("");
@@ -295,6 +307,7 @@ export default function TbmVoiceDraftHelper({
     const formData = new FormData();
     formData.append("transcript", combinedTranscript);
     formData.append("draftText", draftText);
+    formData.append("editedDraftText", finalText);
     formData.append("startTime", recordingStartTime || getCurrentTimeText());
     formData.append("supervisorName", defaultSupervisorName);
 
@@ -324,6 +337,8 @@ export default function TbmVoiceDraftHelper({
       setHasSubmitted(true);
       setTranscript("");
       setInterimText("");
+      setEditedDraftText("");
+      setHasEditedDraftText(false);
       clearPhotoFileState();
       clearPhotoInputValues();
       setRecordingStartTime("");
@@ -336,10 +351,11 @@ export default function TbmVoiceDraftHelper({
   }
 
   async function copyDraft() {
-    if (!draftText) return;
+    const textToCopy = editedDraftText.trim() || draftText;
+    if (!textToCopy) return;
 
     try {
-      await navigator.clipboard.writeText(draftText);
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
     } catch {
       setSupportMessage("복사가 차단되었습니다. 인식된 내용을 길게 눌러 직접 복사해 주세요.");
@@ -350,6 +366,8 @@ export default function TbmVoiceDraftHelper({
     stopRecording();
     setTranscript("");
     setInterimText("");
+    setEditedDraftText("");
+    setHasEditedDraftText(false);
     setCopied(false);
     setSupportMessage("");
     setSubmitMessage("");
@@ -357,6 +375,13 @@ export default function TbmVoiceDraftHelper({
     setHasSubmitted(false);
     clearPhotoFileState();
     clearPhotoInputValues();
+  }
+
+  function handleEditedDraftTextChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    setEditedDraftText(event.currentTarget.value);
+    setHasEditedDraftText(true);
+    setHasSubmitted(false);
+    setSubmitMessage("");
   }
 
   function renderPhotoInput(params: {
@@ -395,8 +420,10 @@ export default function TbmVoiceDraftHelper({
     );
   }
 
-  const hasVoiceContent = Boolean(combinedTranscript || draftText);
-  const canSubmit = hasVoiceContent && !isRecording;
+  const hasGeneratedVoiceContent = Boolean(combinedTranscript || draftText);
+  const finalDraftText = editedDraftText.trim() || draftText || combinedTranscript;
+  const hasVoiceContent = hasGeneratedVoiceContent;
+  const canSubmit = hasGeneratedVoiceContent && !isRecording;
   const saveButtonLabel = isSubmitting ? "저장 중..." : hasSubmitted ? "TBM 저장 완료" : "TBM 저장하기";
 
   return (
@@ -456,17 +483,26 @@ export default function TbmVoiceDraftHelper({
 
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
-            <p className="text-xs font-black text-slate-400">인식된 음성</p>
+            <p className="text-xs font-black text-slate-400">원본 음성 인식 내용</p>
             <p className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200">
               {combinedTranscript || "녹음 시작 후 현장 작업 내용을 말해 주세요."}
             </p>
           </div>
 
           <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
-            <p className="text-xs font-black text-slate-400">인식된 TBM 내용</p>
-            <pre className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200 [word-break:keep-all]">
-              {draftText || "음성 인식 후 TBM 내용이 생성됩니다. 사진을 첨부한 뒤 TBM 저장하기를 누르세요."}
-            </pre>
+            <p className="text-xs font-black text-slate-400">녹음 내용 확인 및 수정</p>
+            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+              {hasGeneratedVoiceContent
+                ? "저장 전 내용을 확인해 주세요. 수정한 내용 기준으로 TBM이 저장됩니다."
+                : "녹음 완료 후 수정할 수 있습니다."}
+            </p>
+            <textarea
+              value={editedDraftText}
+              onChange={handleEditedDraftTextChange}
+              disabled={!hasGeneratedVoiceContent}
+              placeholder="녹음 후 생성된 TBM 내용이 여기에 표시됩니다. 오인식된 부분은 저장 전에 수정해 주세요."
+              className="mt-2 min-h-48 max-h-80 w-full resize-y overflow-y-auto rounded-lg border border-slate-700 bg-slate-950/70 p-3 text-sm leading-6 text-slate-200 outline-none [word-break:keep-all] placeholder:text-slate-600 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:bg-slate-950/40 disabled:text-slate-600"
+            />
           </div>
         </div>
 
@@ -476,7 +512,7 @@ export default function TbmVoiceDraftHelper({
             <button
               type="button"
               onClick={copyDraft}
-              disabled={!draftText}
+              disabled={!hasGeneratedVoiceContent || !(editedDraftText.trim() || draftText)}
               className="rounded-xl border border-blue-500 bg-blue-950/50 px-4 py-3 text-sm font-black text-blue-100 disabled:border-slate-700 disabled:text-slate-600"
             >
               {copied ? "복사 완료" : "내용 복사"}

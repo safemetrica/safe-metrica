@@ -532,6 +532,126 @@ function buildSafetyNotice(transcript: string, companyCode?: string) {
   return lines.join("\n");
 }
 
+
+function stripTbmListMarker(line: string) {
+  return line.replace(/^[-•*]\s*/, "").trim();
+}
+
+function escapeRegExp(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractTbmSection(text: string, sectionTitle: string) {
+  const lines = text.split(/\r?\n/);
+  const titlePattern = new RegExp(`^\\s*(?:\\d+\\.\\s*)?${escapeRegExp(sectionTitle)}`);
+  const nextSectionPattern = /^\s*\d+\.\s+/;
+  const startIndex = lines.findIndex((line) => titlePattern.test(line.trim()));
+
+  if (startIndex < 0) return "";
+
+  const sectionLines: string[] = [];
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+
+    if (nextSectionPattern.test(line.trim())) break;
+
+    sectionLines.push(line);
+  }
+
+  return sectionLines.map(stripTbmListMarker).join("\n").trim();
+}
+
+function normalizeSpecialIssueText(text: string) {
+  return text
+    .split(/\r?\n/)
+    .map(stripTbmListMarker)
+    .join("\n")
+    .replace(/[\s.,，。!！?？:：;；()\[\]{}'"“”‘’]+/g, "")
+    .trim();
+}
+
+function isDefaultSpecialIssueText(text: string) {
+  const normalizedText = normalizeSpecialIssueText(text);
+  const defaultTexts = new Set([
+    "현장에서확인후필요시조치사항을추가입력합니다",
+    "특이사항없음",
+    "특이사항은없습니다",
+    "이상없음",
+    "해당없음",
+    "없음",
+  ]);
+
+  if (!normalizedText) return true;
+  if (defaultTexts.has(normalizedText)) return true;
+
+  const normalizedLines = text
+    .split(/\r?\n/)
+    .map(normalizeSpecialIssueText)
+    .filter(Boolean);
+
+  return normalizedLines.length > 0 && normalizedLines.every((line) => defaultTexts.has(line));
+}
+
+function analyzeTbmSpecialIssue(text: string) {
+  const sectionText = extractTbmSection(text, "특이사항/조치 필요");
+  const targetText = sectionText || text;
+  const realIssueKeywords = [
+    "아차사고",
+    "사고 발생",
+    "고장",
+    "고장 발생",
+    "파손",
+    "누유",
+    "미끄럼 발생",
+    "보호구 미착용",
+    "작업 중단",
+    "위험요인 발견",
+    "누락",
+    "불량",
+    "미흡",
+    "현장 발견",
+    "이상 발생",
+    "현장 확인 필요",
+    "조치 필요",
+    "추가 조치 필요",
+    "보완 필요",
+  ];
+  const actionRequiredKeywords = [
+    "조치 필요",
+    "추가 조치 필요",
+    "현장 확인 필요",
+    "보완 필요",
+    "작업 중단",
+    "위험요인 발견",
+    "사고 발생",
+    "고장",
+    "파손",
+    "누유",
+    "미끄럼 발생",
+    "보호구 미착용",
+  ];
+
+  if (isDefaultSpecialIssueText(targetText)) {
+    return {
+      hasSpecialIssue: false,
+      content: "특이사항 없음",
+      needsAction: false,
+    };
+  }
+
+  const hasRealIssueKeyword = includesAny(targetText, realIssueKeywords);
+  const hasNoIssuePhrase = includesAny(targetText, ["특이사항 없음", "특이사항은 없습니다", "이상 없음", "해당 없음", "없음"]);
+  const hasSpecialIssue = sectionText ? Boolean(targetText.trim()) || hasRealIssueKeyword : hasRealIssueKeyword && !hasNoIssuePhrase;
+  const needsAction = hasSpecialIssue && includesAny(targetText, actionRequiredKeywords);
+
+  return {
+    hasSpecialIssue,
+    content: hasSpecialIssue ? targetText.trim() : "특이사항 없음",
+    needsAction,
+  };
+}
+
 async function uploadFiles(files: File[], companyCode: string, dateValue: string, group: string) {
   const uploadedFiles: UploadedTbmFile[] = [];
 
@@ -629,6 +749,7 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const transcript = getFormText(formData, "transcript");
   const draftText = getFormText(formData, "draftText");
+  const editedDraftText = getFormText(formData, "editedDraftText");
   const supervisorName = getFormText(formData, "supervisorName") || (company.code === "daedo" ? "김인길" : "현장관리자");
 
   const signatureFiles = collectFiles(formData, TBM_VOICE_UPLOAD_FIELD_KEYS.signature);
@@ -662,7 +783,7 @@ export async function POST(req: NextRequest) {
   const dateValue = getTodayDateValue();
   const startTime = getFormText(formData, "startTime") || getTimeValue();
   const endTime = getTimeValue();
-  const mainText = transcript || draftText;
+  const mainText = editedDraftText || draftText || transcript;
   const normalizedText = normalizeTbmVoiceTranscript(mainText);
 
   const selectedFileCount =
@@ -710,22 +831,10 @@ export async function POST(req: NextRequest) {
   const shouldSetWorkType = ["work_tbm", "inspection", "maintenance", "action_completed"].includes(voiceIntent);
   const title = isSafetyPolicyIntent ? "안전보건경영방침 공유" : inferWorkTitle(normalizedText);
   const safetyNotice = buildSafetyNotice(normalizedText, company.code);
-  const hasSpecialIssue = isSafetyPolicyIntent
-    ? false
-    : includesAny(normalizedText, [
-        "특이사항",
-        "아차사고",
-        "사고 발생",
-        "고장 발생",
-        "파손",
-        "누락",
-        "불량",
-        "미흡",
-        "조치 필요",
-        "보완 필요",
-        "현장 발견",
-        "이상 발생",
-      ]);
+  const specialIssueAnalysis = isSafetyPolicyIntent
+    ? { hasSpecialIssue: false, content: "특이사항 없음", needsAction: false }
+    : analyzeTbmSpecialIssue(mainText);
+  const hasSpecialIssue = specialIssueAnalysis.hasSpecialIssue;
   const workType = inferWorkType(normalizedText, company.code);
   const workTypesMulti = isSafetyPolicyIntent ? [] : inferWorkTypesMulti(normalizedText, company.code);
   const workTags = isSafetyPolicyIntent
@@ -766,7 +875,7 @@ export async function POST(req: NextRequest) {
     meta,
     specialIssueContentPropNames,
     "rich_text",
-    richText(hasSpecialIssue ? mainText : "특이사항 없음")
+    richText(specialIssueAnalysis.content)
   );
 
   if (isSafetyPolicyIntent) {
@@ -774,7 +883,7 @@ export async function POST(req: NextRequest) {
       setIfProp(properties, meta, actionStatusPropNames, "select", selectValue("조치 불필요"));
     }
   } else {
-    setIfProp(properties, meta, actionStatusPropNames, "select", selectValue(hasSpecialIssue ? "조치 필요" : "해당 없음"));
+    setIfProp(properties, meta, actionStatusPropNames, "select", selectValue(specialIssueAnalysis.needsAction ? "조치 필요" : "해당 없음"));
   }
 
   setIfProp(properties, meta, ["실시자(현장총괄)"], "select", selectValue(supervisorName));
