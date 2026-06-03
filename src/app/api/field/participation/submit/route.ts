@@ -8,6 +8,11 @@ import {
   getCompanyConfigByCode,
 } from "@/lib/company";
 
+import {
+  insertFieldParticipationSubmissionShadowRecord,
+  isSupabaseFieldParticipationShadowWriteEnabled,
+} from "@/lib/supabaseServer";
+
 const STANDARD_FIELD_VOICE_TYPES = new Set(["공유확인", "위험제보", "아차사고", "개선제안", "기타"]);
 
 function normalizeFieldVoiceSubmissionType(rawType: string) {
@@ -541,6 +546,78 @@ export async function POST(req: NextRequest) {
       message: String(response.status),
       detail: text.slice(0, 120),
     });
+  }
+
+  const notionPage = (await response.json().catch(() => null)) as {
+    id?: unknown;
+    url?: unknown;
+  } | null;
+
+  const notionPageId = typeof notionPage?.id === "string" ? notionPage.id : null;
+  const notionUrl = typeof notionPage?.url === "string" ? notionPage.url : null;
+
+  if (isSupabaseFieldParticipationShadowWriteEnabled(company.code)) {
+    try {
+      console.log("[field-participation-submit] supabase shadow-write start", {
+        companyCode: company.code,
+        submissionType,
+        uploadedFileCount: uploadedFiles.length,
+      });
+
+      const supabaseResult = await insertFieldParticipationSubmissionShadowRecord({
+        tenant_code: company.code,
+        company_name: company.name,
+        submission_type: submissionType,
+        legacy_type: type,
+        title,
+        content: finalContent,
+        location,
+        submitter,
+        anonymous,
+        reported_date: reportedDate,
+        status: processingStatus,
+        notion_page_id: notionPageId,
+        notion_url: notionUrl,
+        file_urls: uploadedFiles.map((file) => file.url),
+        raw_payload: {
+          contractorName,
+          sharedRiskSummary,
+          riskCheck,
+          riskAssessmentCheck,
+          safetyMeasureCheck,
+          isAcknowledgementOnly,
+          selectedFileCount: evidenceFiles.length,
+          uploadedFileCount: uploadedFiles.length,
+          uploadedFiles: uploadedFiles.map((file) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          })),
+          notionProperties: Object.keys(properties),
+        },
+      });
+
+      if (supabaseResult.ok) {
+        console.log("[field-participation-submit] supabase shadow-write success", {
+          companyCode: company.code,
+          submissionType,
+          status: supabaseResult.status,
+        });
+      } else {
+        console.warn("[field-participation-submit] supabase shadow-write failed", {
+          companyCode: company.code,
+          submissionType,
+          status: supabaseResult.status,
+          statusText: supabaseResult.statusText,
+        });
+      }
+    } catch (error) {
+      console.warn("[field-participation-submit] supabase shadow-write error", {
+        companyCode: company.code,
+        submissionType,
+        errorName: error instanceof Error ? error.name : "unknown",
+      });
+    }
   }
 
   return redirectTo(req, "/field/participation/submitted", {

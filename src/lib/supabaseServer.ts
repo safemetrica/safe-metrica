@@ -41,6 +41,25 @@ export type TbmVoiceSubmissionShadowRecord = {
   snapshot: Record<string, unknown>;
 };
 
+
+export type FieldParticipationSubmissionShadowRecord = {
+  tenant_code: string;
+  company_name: string;
+  submission_type: string;
+  legacy_type: string;
+  title: string;
+  content: string;
+  location: string;
+  submitter: string;
+  anonymous: boolean;
+  reported_date: string;
+  status: string;
+  notion_page_id: string | null;
+  notion_url: string | null;
+  file_urls: string[];
+  raw_payload: Record<string, unknown>;
+};
+
 function getSupabaseUrl() {
   return process.env.SUPABASE_URL?.replace(/\/+$/, "");
 }
@@ -64,6 +83,24 @@ export function isSupabaseTbmShadowWriteEnabled(companyCode: string) {
   }
 
   return getSupabaseTbmShadowWriteCompanies().has(companyCode.toLowerCase());
+}
+
+
+function getSupabaseFieldParticipationShadowWriteCompanies() {
+  return new Set(
+    (process.env.SUPABASE_FIELD_PARTICIPATION_SHADOW_WRITE_COMPANIES ?? "")
+      .split(",")
+      .map((companyCode) => companyCode.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+export function isSupabaseFieldParticipationShadowWriteEnabled(companyCode: string) {
+  if (process.env.SUPABASE_FIELD_PARTICIPATION_SHADOW_WRITE_ENABLED !== "true") {
+    return false;
+  }
+
+  return getSupabaseFieldParticipationShadowWriteCompanies().has(companyCode.toLowerCase());
 }
 
 export async function insertTbmVoiceSubmissionShadowRecord(
@@ -110,3 +147,49 @@ export async function insertTbmVoiceSubmissionShadowRecord(
     message,
   };
 }
+
+export async function insertFieldParticipationSubmissionShadowRecord(
+  record: FieldParticipationSubmissionShadowRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/field_participation_submissions`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(record),
+  });
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+    };
+  }
+
+  const data = await res.json().catch(() => undefined);
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+  };
+}
+
