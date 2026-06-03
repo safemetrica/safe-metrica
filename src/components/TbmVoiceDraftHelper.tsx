@@ -425,6 +425,13 @@ export default function TbmVoiceDraftHelper({
   const hasVoiceContent = hasGeneratedVoiceContent;
   const canSubmit = hasGeneratedVoiceContent && !isRecording;
   const saveButtonLabel = isSubmitting ? "저장 중..." : hasSubmitted ? "TBM 저장 완료" : "TBM 저장하기";
+  const totalPhotoCount = signatureFiles.length + siteFiles.length + workFiles.length + actionFiles.length;
+  const photoSummaryItems = [
+    { label: "서명사진", count: signatureFiles.length, hint: "참석 확인" },
+    { label: "현장사진", count: siteFiles.length, hint: "작업 전 상태" },
+    { label: "작업사진", count: workFiles.length, hint: "작업 대상" },
+    { label: "조치사진", count: actionFiles.length, hint: "특이사항·개선조치" },
+  ];
 
   return (
     <section
@@ -537,36 +544,59 @@ export default function TbmVoiceDraftHelper({
 
       <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
         <p className="text-xs font-black text-cyan-200">3단계 · 사진 촬영/첨부</p>
-        <p className="mt-1 text-[11px] leading-5 text-slate-500">실시자 {defaultSupervisorName} · 각 항목 최대 6장</p>
+        <p className="mt-1 text-[11px] leading-5 text-slate-500">
+          실시자 {defaultSupervisorName} · 각 항목 최대 6장 · AI 분석 없이 사진 목적만 구분해 저장합니다.
+        </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {renderPhotoInput({
             label: "참석·서명사진",
-            description: "Notion ‘서명 사진 (참석자 확인)’ 필드로 저장",
+            description: "TBM 참석 확인용입니다. 참석자 서명·참석 확인 사진을 첨부하세요. Notion ‘서명 사진 (참석자 확인)’ 필드로 저장됩니다.",
             files: signatureFiles,
             setter: setSignatureFiles,
             inputRef: signatureInputRef,
           })}
           {renderPhotoInput({
             label: "작업 전 현장사진",
-            description: "Notion ‘현장 사진’ 필드로 저장",
+            description: "작업 전 위험요인 확인용입니다. 바닥·통로·차량동선·현장 상태를 첨부하세요. Notion ‘현장 사진’ 필드로 저장됩니다.",
             files: siteFiles,
             setter: setSiteFiles,
             inputRef: siteInputRef,
           })}
           {renderPhotoInput({
             label: "작업사진",
-            description: "Notion ‘파일과 미디어’ 필드로 저장",
+            description: "오늘 실제 작업 대상 또는 작업 상황 증빙용입니다. 장비·차량·작업대상 사진을 첨부하세요. Notion ‘파일과 미디어’ 필드로 저장됩니다.",
             files: workFiles,
             setter: setWorkFiles,
             inputRef: workInputRef,
           })}
           {renderPhotoInput({
             label: "특이사항·조치사진",
-            description: "Notion ‘조치 사진’ 필드로 저장",
+            description: "특이사항이나 개선조치가 있을 때만 첨부하세요. 조치 전·후 사진을 남기면 좋습니다. Notion ‘조치 사진’ 필드로 저장됩니다.",
             files: actionFiles,
             setter: setActionFiles,
             inputRef: actionInputRef,
           })}
+        </div>
+
+        <div className="mt-3 rounded-xl border border-emerald-800/70 bg-emerald-950/20 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-black text-emerald-200">저장 전 첨부 확인</p>
+            <p className="text-[11px] font-bold text-emerald-100">총 {totalPhotoCount}장</p>
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-4">
+            {photoSummaryItems.map((item) => (
+              <div key={item.label} className="rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2">
+                <p className="text-[11px] font-black text-slate-300">{item.label}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{item.hint}</p>
+                <p className={`mt-2 text-xs font-black ${item.count > 0 ? "text-emerald-300" : "text-slate-500"}`}>
+                  {item.count > 0 ? `${item.count}장 선택됨` : "없음"}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] leading-5 text-slate-500">
+            조치사진은 특이사항이나 개선조치가 있을 때만 첨부하면 됩니다. 저장 전 누락 여부만 확인하고, 별도 Vision AI 분석 비용은 발생하지 않습니다.
+          </p>
         </div>
       </div>
 
@@ -582,7 +612,7 @@ export default function TbmVoiceDraftHelper({
             <div className="hidden min-w-0 flex-1 sm:block">
               <p className="text-xs font-black text-emerald-200">4단계 · 하단 고정 저장</p>
               <p className="truncate text-xs text-slate-400">
-                사진 {signatureFiles.length + siteFiles.length + workFiles.length + actionFiles.length}개 선택됨
+                사진 {totalPhotoCount}개 선택됨
               </p>
             </div>
             <button
