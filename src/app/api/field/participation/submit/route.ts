@@ -328,6 +328,7 @@ export async function POST(req: NextRequest) {
     riskAssessmentCheck &&
     safetyMeasureCheck &&
     (!content || content === "오늘은 추가 의견 없음.");
+  const processingStatus = "접수";
 
   const evidenceFiles = formData.getAll("evidenceFiles").filter(isFile);
   const oversizedFile = evidenceFiles.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
@@ -400,6 +401,8 @@ export async function POST(req: NextRequest) {
     finalContent = `${finalContent}\n\n${fileMemoLines.join("\n")}`.slice(0, 1900);
   }
 
+  finalContent = `${finalContent}\n\n[처리 기준]\n- 제출구분: ${submissionType}\n- 처리상태: ${processingStatus}\n- 공유확인은 조치완료 KPI에 포함하지 않습니다.`.slice(0, 1900);
+
   const properties: Record<string, unknown> = {};
 
   if (hasNotionProperty(propertyNames, "제보 제목")) {
@@ -449,11 +452,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (hasNotionProperty(propertyNames, "처리상태")) {
-    properties["처리상태"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
+    properties["처리상태"] = { select: { name: processingStatus } };
   } else if (hasNotionProperty(propertyNames, "처리상태_기존")) {
-    properties["처리상태_기존"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
+    properties["처리상태_기존"] = { select: { name: processingStatus } };
   } else if (hasNotionProperty(propertyNames, "상태")) {
-    properties["상태"] = { select: { name: isAcknowledgementOnly ? "조치완료" : "접수" } };
+    properties["상태"] = { select: { name: processingStatus } };
   }
 
   if (contractorName && hasNotionProperty(propertyNames, "협력사명")) {
