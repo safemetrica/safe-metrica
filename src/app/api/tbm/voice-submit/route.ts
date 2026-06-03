@@ -820,8 +820,16 @@ export async function POST(req: NextRequest) {
 
   const uploadedFileCount =
     uploadedSignatureFiles.length + uploadedSiteFiles.length + uploadedWorkFiles.length + uploadedActionFiles.length;
+  const supabaseShadowWriteEnabled = isSupabaseTbmShadowWriteEnabled(company.code);
 
-  if (isSupabaseTbmShadowWriteEnabled(company.code)) {
+  console.log("[tbm-voice-submit] supabase shadow-write check", {
+    companyCode: company.code,
+    enabledEnv: process.env.SUPABASE_TBM_SHADOW_WRITE_ENABLED,
+    companiesEnvExists: Boolean(process.env.SUPABASE_TBM_SHADOW_WRITE_COMPANIES),
+    isEnabled: supabaseShadowWriteEnabled,
+  });
+
+  if (supabaseShadowWriteEnabled) {
     const actionStatus = isSafetyPolicyIntent ? "조치 불필요" : hasSpecialIssue ? "조치 필요" : "해당 없음";
     const uploadedFiles = {
       signature: uploadedSignatureFiles,
@@ -859,6 +867,12 @@ export async function POST(req: NextRequest) {
     };
 
     try {
+      console.log("[tbm-voice-submit] supabase shadow-write start", {
+        companyCode: company.code,
+        notionPageId,
+        uploadedFileCount,
+      });
+
       const shadowWriteResult = await insertTbmVoiceSubmissionShadowRecord({
         company_code: company.code,
         company_name: company.name,
@@ -897,6 +911,11 @@ export async function POST(req: NextRequest) {
           status: shadowWriteResult.status,
           statusText: shadowWriteResult.statusText,
           message: shadowWriteResult.message,
+        });
+      } else {
+        console.log("[tbm-voice-submit] supabase shadow-write success", {
+          companyCode: company.code,
+          notionPageId,
         });
       }
     } catch (error) {
