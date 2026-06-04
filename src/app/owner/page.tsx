@@ -34,7 +34,7 @@ const tenants = [
     code: "bubblemon",
     name: "버블몬코리아",
     industry: "물류업 · 원청",
-    status: "계약예정",
+    status: "운영중",
     desc: "원청·협력사 안전운영, TBM, 점검·교육, 위험성평가, 월간보고서 운영",
   },
 ];
