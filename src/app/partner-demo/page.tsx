@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "SafeMetrica Partner Demo",
@@ -13,12 +14,14 @@ const demoMenus = [
     description: "말로 TBM을 작성하고, 수정 후 저장하는 흐름을 확인합니다.",
     badge: "TBM",
     accent: "from-blue-500/25 to-cyan-500/10",
+    href: "/partner-demo/tbm",
   },
   {
     title: "현장참여 4단계",
     description: "근로자가 오늘 위험요인과 안전조치를 확인하고 의견을 제출하는 흐름입니다.",
     badge: "참여",
     accent: "from-emerald-500/25 to-teal-500/10",
+    href: "/partner-demo/field-participation",
   },
   {
     title: "현장비서",
@@ -58,7 +61,7 @@ export default function PartnerDemoPage() {
       <div className="mx-auto max-w-6xl">
         <section className="overflow-hidden rounded-3xl border border-blue-500/30 bg-slate-900 shadow-2xl">
           <div className="bg-gradient-to-br from-blue-600/25 via-slate-900 to-cyan-500/10 p-6 md:p-8">
-            <p className="text-sm font-black text-blue-300">Partner Demo v1</p>
+            <p className="text-sm font-black text-blue-300">Partner Demo v2</p>
             <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <h1 className="text-3xl font-black tracking-tight md:text-5xl">
@@ -111,7 +114,7 @@ export default function PartnerDemoPage() {
               <h2 className="mt-1 text-2xl font-black text-white">체험판 메뉴</h2>
             </div>
             <p className="text-xs leading-5 text-slate-400">
-              v1에서는 실제 운영 경로와 실제 고객 company 파라미터를 연결하지 않습니다.
+              v2에서는 실제 운영 경로와 실제 고객 company 파라미터를 연결하지 않습니다.
             </p>
           </div>
 
@@ -135,13 +138,22 @@ export default function PartnerDemoPage() {
                     {menu.description}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled
-                  className="mt-4 w-full cursor-not-allowed rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm font-black text-slate-400"
-                >
-                  샘플 보기 준비중
-                </button>
+                {menu.href ? (
+                  <Link
+                    href={menu.href}
+                    className="mt-4 block w-full rounded-xl border border-blue-400/40 bg-blue-500 px-4 py-3 text-center text-sm font-black text-white shadow-lg shadow-blue-950/40 transition hover:-translate-y-0.5 hover:bg-blue-400"
+                  >
+                    샘플 보기
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="mt-4 w-full cursor-not-allowed rounded-xl border border-slate-600 bg-slate-950 px-4 py-3 text-sm font-black text-slate-400"
+                  >
+                    샘플 보기 준비중
+                  </button>
+                )}
               </article>
             ))}
           </div>
