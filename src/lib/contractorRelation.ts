@@ -8,7 +8,8 @@ export type ContractorRelationStatus =
   | "세팅중"
   | "운영중"
   | "보완필요"
-  | "보류";
+  | "보류"
+  | "레거시";
 
 export type ContractorSafetyStatus =
   | "확인"
@@ -127,7 +128,7 @@ export const SAMPLE_BUBBLEMON_MONS_RELATION: ContractorRelation = {
   contractorCode: "mons",
   contractorName: "몬스",
 
-  status: "계약예정",
+  status: "레거시",
   contractExpectedDate: "2026-05-26",
 
   workScope: [
