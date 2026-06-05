@@ -9,91 +9,113 @@ export const metadata: Metadata = {
 
 const roleCards = [
   {
-    title: "근로자 체험",
-    time: "1분",
-    description: "현장에서 TBM을 확인하고 위험제보를 남깁니다.",
-    flow: "TBM 참여 → 공유확인 완료 → 위험제보",
+    title: "근로자",
+    subtitle: "TBM 확인과 위험제보",
+    description: "현장에서 오늘의 공유사항을 확인하고 샘플 위험제보를 남깁니다.",
     href: "/partner-demo/worker",
-    accent: "from-emerald-500/25 to-teal-500/10",
-    border: "border-emerald-400/40",
-    text: "text-emerald-200",
-    button: "bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 shadow-emerald-950/40",
+    icon: "01",
+    time: "약 1분",
+    iconClass: "border-teal-300/30 bg-teal-400/15 text-teal-100 shadow-teal-950/40",
+    titleClass: "text-teal-100",
+    ctaClass: "bg-teal-400/15 text-teal-100 ring-teal-300/20",
   },
   {
-    title: "현장관리자 체험",
-    time: "1분 30초",
-    description: "근로자 체험 기록을 받아 조치 흐름까지 확인합니다.",
-    flow: "TBM 개시 → 참여확인 → 조치사진 → 현장비서",
+    title: "현장관리자",
+    subtitle: "참여확인과 조치기록",
+    description: "근로자 기록을 이어받아 조치사진과 현장 브리핑을 확인합니다.",
     href: "/partner-demo/manager",
-    accent: "from-blue-500/25 to-cyan-500/10",
-    border: "border-blue-400/40",
-    text: "text-blue-200",
-    button: "bg-blue-500 hover:bg-blue-400 active:bg-blue-600 shadow-blue-950/40",
+    icon: "02",
+    time: "약 1분",
+    iconClass: "border-blue-300/30 bg-blue-400/15 text-blue-100 shadow-blue-950/40",
+    titleClass: "text-blue-100",
+    ctaClass: "bg-blue-400/15 text-blue-100 ring-blue-300/20",
   },
   {
-    title: "대표 체험",
-    time: "1분",
-    description: "현장 기록이 대시보드와 월간보고서로 이어지는 모습을 봅니다.",
-    flow: "대시보드 → 위험성평가표 → 월간보고서",
+    title: "대표",
+    subtitle: "대시보드와 월간보고서",
+    description: "현장 운영기록이 의사결정 화면과 보고서로 이어지는 흐름을 봅니다.",
     href: "/partner-demo/ceo",
-    accent: "from-amber-500/25 to-orange-500/10",
-    border: "border-amber-400/40",
-    text: "text-amber-200",
-    button: "bg-amber-500 text-slate-950 hover:bg-amber-400 active:bg-amber-600 shadow-amber-950/40",
+    icon: "03",
+    time: "약 1분",
+    iconClass: "border-amber-300/30 bg-amber-400/15 text-amber-100 shadow-amber-950/40",
+    titleClass: "text-amber-100",
+    ctaClass: "bg-amber-400/15 text-amber-100 ring-amber-300/20",
   },
 ];
 
 export default function PartnerDemoPage() {
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-5 text-white">
-      <div className="mx-auto w-full max-w-[430px] pb-8">
-        <section className="overflow-hidden rounded-[2rem] border border-blue-500/30 bg-slate-900 shadow-2xl">
-          <div className="bg-gradient-to-br from-blue-600/25 via-slate-900 to-cyan-500/10 p-5">
-            <p className="text-sm font-black text-blue-300">SafeMetrica</p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight">산업안전 운영 흐름 시뮬레이터</h1>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="rounded-full border border-cyan-400/30 bg-cyan-950/40 px-3 py-1 text-xs font-black text-cyan-200">파트너 체험판</span>
-              <span className="rounded-full border border-amber-400/30 bg-amber-950/40 px-3 py-1 text-xs font-black text-amber-100">샘플 데이터</span>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#12345f_0%,#071323_42%,#020617_100%)] px-4 py-6 text-white">
+      <div className="mx-auto flex w-full max-w-[430px] flex-col pb-8">
+        <header className="pt-2">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-lg font-black text-cyan-100 shadow-lg shadow-cyan-950/30">
+              S
             </div>
-            <p className="mt-4 text-base font-bold leading-7 text-slate-100">
-              근로자 → 현장관리자 → 대표 → 월간보고서까지 이어지는 운영 흐름을 브라우저 상태 안에서 체험합니다.
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-slate-700 bg-slate-950/70 p-4">
-                <p className="text-xs font-bold text-slate-400">총 체험시간</p>
-                <p className="mt-1 text-xl font-black text-white">약 3분</p>
-              </div>
-              <div className="rounded-2xl border border-slate-700 bg-slate-950/70 p-4">
-                <p className="text-xs font-bold text-slate-400">저장 방식</p>
-                <p className="mt-1 text-xl font-black text-white">샘플 데이터</p>
-              </div>
+            <div>
+              <p className="text-lg font-black tracking-tight text-white">SafeMetrica</p>
+              <p className="text-xs font-bold text-slate-400">산업안전 운영기록 SaaS</p>
             </div>
-            <PartnerDemoResetButton />
           </div>
-        </section>
 
-        <section className="mt-5 space-y-4">
-          {roleCards.map((role, index) => (
-            <article key={role.title} className={`rounded-[1.75rem] border ${role.border} bg-slate-900 p-4 shadow-lg`}>
-              <div className={`rounded-[1.4rem] bg-gradient-to-br ${role.accent} p-4`}>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950/80 text-base font-black text-white">
-                    {index + 1}
-                  </span>
-                  <span className={`rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-black ${role.text}`}>{role.time}</span>
+          <div className="mt-8">
+            <p className="text-sm font-black text-cyan-200">파트너 체험판</p>
+            <h1 className="mt-3 text-[2rem] font-black leading-tight tracking-[-0.04em] text-white">
+              역할별로 SafeMetrica의 핵심 기능을 직접 체험해보세요.
+            </h1>
+            <p className="mt-3 text-lg font-extrabold text-slate-200">3분이면 충분합니다.</p>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-xs font-black text-cyan-100">
+              총 체험시간 약 3분
+            </span>
+            <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1.5 text-xs font-black text-amber-100">
+              샘플 데이터
+            </span>
+          </div>
+        </header>
+
+        <section className="mt-7 space-y-3" aria-label="파트너 체험 역할 선택">
+          {roleCards.map((role) => (
+            <Link
+              key={role.title}
+              href={role.href}
+              className="group block rounded-[1.6rem] border border-white/10 bg-white/[0.06] p-3 shadow-xl shadow-slate-950/30 outline-none backdrop-blur transition-all duration-150 hover:border-white/20 hover:bg-white/[0.09] focus-visible:ring-2 focus-visible:ring-cyan-200/70 active:scale-[0.985] active:translate-y-0.5"
+            >
+              <article className="flex items-center gap-3">
+                <div
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem] border text-sm font-black shadow-lg ${role.iconClass}`}
+                  aria-hidden="true"
+                >
+                  {role.icon}
                 </div>
-                <h2 className="mt-5 text-2xl font-black text-white">{role.title}</h2>
-                <p className="mt-2 text-base font-bold leading-7 text-slate-100">{role.description}</p>
-                <p className="mt-3 rounded-2xl border border-white/10 bg-slate-950/50 p-3 text-sm font-bold leading-6 text-slate-200">{role.flow}</p>
-              </div>
-              <Link href={role.href} className={`mt-4 flex min-h-14 items-center justify-center rounded-2xl px-5 py-4 text-base font-black shadow-lg transition-all duration-150 active:scale-[0.98] active:translate-y-0.5 ${role.button}`}>
-                체험 시작하기
-              </Link>
-            </article>
+
+                <div className="min-w-0 flex-1 py-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className={`text-lg font-black tracking-tight ${role.titleClass}`}>{role.title}</h2>
+                    <span className="rounded-full bg-slate-950/50 px-2 py-0.5 text-[0.68rem] font-black text-slate-300 ring-1 ring-white/10">
+                      {role.time}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm font-extrabold text-white">{role.subtitle}</p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-slate-400">{role.description}</p>
+                  <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[0.68rem] font-black ring-1 ${role.ctaClass}`}>
+                    체험 시작
+                  </span>
+                </div>
+
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-950/50 text-xl font-black text-slate-300 ring-1 ring-white/10 transition-transform group-hover:translate-x-0.5">
+                  ›
+                </div>
+              </article>
+            </Link>
           ))}
         </section>
 
-        <section className="mt-5 rounded-[1.75rem] border border-slate-700 bg-slate-900/80 p-4">
+        <PartnerDemoResetButton />
+
+        <section className="mt-5 rounded-[1.5rem] border border-slate-700/80 bg-slate-950/40 p-4">
           <details>
             <summary className="cursor-pointer text-sm font-black text-slate-200">보조 샘플 화면 보기</summary>
             <div className="mt-3 grid grid-cols-2 gap-3">
