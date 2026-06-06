@@ -13,19 +13,18 @@ export default function PartnerDemoResetButton() {
   };
 
   return (
-    <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/50 p-3">
+    <div className="mt-2 flex flex-col items-center">
       <button
         type="button"
         onClick={resetDemoState}
-        className="min-h-11 rounded-xl border border-slate-600 bg-slate-900 px-4 py-2 text-xs font-black text-slate-300 shadow-sm transition-all duration-150 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.98] active:translate-y-0.5"
+        className="rounded-full px-3 py-1.5 text-[0.68rem] font-semibold text-slate-600 underline decoration-slate-700 underline-offset-4 transition-colors duration-300 hover:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/70 active:text-slate-300"
       >
         체험 초기화
       </button>
       {resetNoticeVisible && (
-        <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-950/20 px-3 py-2">
-          <p className="text-xs font-black text-amber-100">체험 상태가 초기화되었습니다.</p>
-          <p className="mt-1 text-xs font-bold leading-5 text-slate-300">실제 고객 DB에는 아무 영향이 없습니다.</p>
-        </div>
+        <p role="status" className="mt-1 text-[0.68rem] font-semibold text-teal-400/80">
+          체험 상태가 초기화되었습니다.
+        </p>
       )}
     </div>
   );
