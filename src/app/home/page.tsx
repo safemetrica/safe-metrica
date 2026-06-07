@@ -20,7 +20,9 @@ const menus = [
 type HomeRole = "worker" | "manager" | "ceo";
 
 type RoleTask = {
-  href: string;
+  href?: string;
+  requiresCompanyCode?: boolean;
+  disabled?: boolean;
   icon: string;
   title: string;
   description: string;
@@ -61,10 +63,10 @@ const roleContent: Record<HomeRole, {
     badge: "확인 기록 중심",
     accent: "from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/30",
     tasks: [
-      { href: "/field/participation", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-      { href: "/field/participation", icon: "✅", title: "위험성평가 공유확인", description: "공유된 위험요인과 안전조치 확인 기록을 남깁니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
+      { requiresCompanyCode: true, icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+      { requiresCompanyCode: true, icon: "✅", title: "위험성평가 공유확인", description: "공유된 위험요인과 안전조치 확인 기록을 남깁니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
       { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
-      { href: "/field/participation", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 내용과 개선 의견을 접수합니다.", status: "필요 시 접수", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+      { requiresCompanyCode: true, icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 내용과 개선 의견을 접수합니다.", status: "필요 시 접수", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
     ],
   },
   manager: {
@@ -415,7 +417,6 @@ export default async function Home({
   const activeRole: HomeRole = requestedRole === "worker" || requestedRole === "ceo" || requestedRole === "manager"
     ? requestedRole
     : "manager";
-  const activeRoleContent = roleContent[activeRole];
   const weatherTest = resolvedSearchParams.weatherTest;
 
   const company = await getCompanyConfig().catch(() => null);
@@ -428,6 +429,21 @@ export default async function Home({
     redirect("/contractor/mons");
   }
 
+  const workerParticipationHref = company.code
+    ? `/field/participation?company=${encodeURIComponent(company.code)}`
+    : null;
+  const activeRoleContent = activeRole === "worker"
+    ? {
+        ...roleContent.worker,
+        tasks: roleContent.worker.tasks.map((task) => (
+          task.requiresCompanyCode
+            ? workerParticipationHref
+              ? { ...task, href: workerParticipationHref }
+              : { ...task, disabled: true, status: "고객사 코드 확인 필요" }
+            : task
+        )),
+      }
+    : roleContent[activeRole];
   const tbmFormUrl = getTbmFormUrl(company);
 
   const actualWeather = await getWeather();
@@ -621,24 +637,38 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
               <p className="text-right text-xs leading-5 text-slate-500">실제 현황은 각 메뉴에서 확인</p>
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {activeRoleContent.tasks.map((task) => (
-                <Link key={task.title} href={task.href} className={`group rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-white/30 ${task.accent}`}>
-                  <div className="flex items-start gap-3">
-                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl ${task.iconBg}`} aria-hidden="true">{task.icon}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="font-black text-white">{task.title}</span>
-                        {task.badge ? <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-black text-slate-300">{task.badge}</span> : null}
+              {activeRoleContent.tasks.map((task) => {
+                const cardContent = (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl ${task.iconBg}`} aria-hidden="true">{task.icon}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-black text-white">{task.title}</span>
+                          {task.badge ? <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-black text-slate-300">{task.badge}</span> : null}
+                        </span>
+                        <span className="mt-1 block text-sm leading-5 text-slate-300">{task.description}</span>
                       </span>
-                      <span className="mt-1 block text-sm leading-5 text-slate-300">{task.description}</span>
+                    </div>
+                    <span className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                      <span className="text-xs font-bold text-slate-400">{task.status}</span>
+                      <span className="text-sm font-black text-white transition group-hover:translate-x-0.5">
+                        {task.disabled ? "관리자에게 링크 요청" : "확인하기 →"}
+                      </span>
                     </span>
+                  </>
+                );
+
+                return task.href && !task.disabled ? (
+                  <Link key={task.title} href={task.href} className={`group rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-white/30 ${task.accent}`}>
+                    {cardContent}
+                  </Link>
+                ) : (
+                  <div key={task.title} aria-disabled="true" className={`cursor-not-allowed rounded-2xl border p-4 opacity-70 ${task.accent}`}>
+                    {cardContent}
                   </div>
-                  <span className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
-                    <span className="text-xs font-bold text-slate-400">{task.status}</span>
-                    <span className="text-sm font-black text-white transition group-hover:translate-x-0.5">확인하기 →</span>
-                  </span>
-                </Link>
-              ))}
+                );
+              })}
             </div>
             {activeRole === "manager" ? (
               <TbmFormAction tbmFormUrl={tbmFormUrl} voiceDraftHref="/tbm#tbm-voice-draft" compact className="mt-3" />
