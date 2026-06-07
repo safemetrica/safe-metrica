@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { buildParticipationReviewLabels, type ParticipationReviewLabel } from "@/lib/participationReviewLabels";
 import {
   TenantRequiredError,
   UnknownCompanyError,
@@ -54,6 +55,10 @@ type FieldVoiceRow = {
   riskAssessmentCheck?: boolean;
   safetyMeasureCheck?: boolean;
   files: Array<{ name: string; url: string }>;
+  confirmationType?: string;
+  confirmationStatus?: string;
+  entryIntent?: string;
+  rawPayload?: Record<string, unknown>;
 };
 
 function normalizeNotionId(rawId: string) {
@@ -166,6 +171,28 @@ function getFiles(prop: NotionProperty | undefined) {
       }))
       .filter((file) => file.url) ?? []
   );
+}
+
+function getPropertyText(prop: NotionProperty | undefined) {
+  return getTitleText(prop) || getRichText(prop) || getSelectName(prop);
+}
+
+function getInlineMetadata(content: string, label: string) {
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return content.match(new RegExp(`^\\s*-?\\s*${escapedLabel}\\s*:\\s*(.+?)\\s*$`, "m"))?.[1]?.trim() ?? "";
+}
+
+function parseRawPayload(value: string) {
+  if (!value) return undefined;
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function truncateText(text: string, maxLength = 180) {
@@ -283,9 +310,14 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
   const actionCreatedAtProp = getProp(properties, ["조치 메모 작성일시", "조치메모 작성일시", "처리일시", "검토일시"]);
   const actionUpdatedAtProp = getProp(properties, ["최종 조치 변경일시", "최종조치변경일시", "처리상태 변경일시", "최종 처리일시"]);
   const fileProp = getProp(properties, ["사진/파일", "사진/첨부", "첨부", "첨부파일", "파일", "사진"]);
+  const confirmationTypeProp = getProp(properties, ["confirmationType", "confirmation_type", "확인 유형", "확인유형"]);
+  const confirmationStatusProp = getProp(properties, ["confirmationStatus", "confirmation_status", "확인 상태", "확인상태"]);
+  const entryIntentProp = getProp(properties, ["entryIntent", "entry_intent", "진입 의도", "진입의도"]);
+  const rawPayloadProp = getProp(properties, ["raw_payload", "rawPayload"]);
 
   const title = getTitleText(titleProp) || getRichText(titleProp) || "현장참여 기록";
   const content = getRichText(contentProp);
+  const rawPayload = parseRawPayload(getPropertyText(rawPayloadProp));
 
   return {
     id: page.id,
@@ -303,6 +335,10 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
     riskAssessmentCheck: getCheckboxValue(getProp(properties, ["위험성평가 공유 확인"])),
     safetyMeasureCheck: getCheckboxValue(getProp(properties, ["안전조치 확인"])),
     files: getFiles(fileProp),
+    confirmationType: getPropertyText(confirmationTypeProp) || getInlineMetadata(content, "확인 유형"),
+    confirmationStatus: getPropertyText(confirmationStatusProp) || getInlineMetadata(content, "확인 상태"),
+    entryIntent: getPropertyText(entryIntentProp) || getInlineMetadata(content, "진입 의도"),
+    rawPayload,
   };
 }
 
@@ -322,6 +358,45 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${className}`}>
       {status}
     </span>
+  );
+}
+
+const PARTICIPATION_REVIEW_LABEL_CLASS_NAMES: Record<ParticipationReviewLabel, string> = {
+  "공유확인 후보": "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "확인 필요": "border-amber-200 bg-amber-50 text-amber-900",
+  "신규 제보": "border-red-200 bg-red-50 text-red-800",
+  "제보 의도": "border-orange-200 bg-orange-50 text-orange-800",
+  "사진 있음": "border-purple-200 bg-purple-50 text-purple-800",
+  "익명": "border-slate-300 bg-slate-100 text-slate-700",
+  "월간보고서 후보": "border-blue-200 bg-blue-50 text-blue-800",
+};
+
+function ParticipationReviewBadges({ row }: { row: FieldVoiceRow }) {
+  const labels = buildParticipationReviewLabels({
+    confirmationType: row.confirmationType,
+    confirmationStatus: row.confirmationStatus,
+    entryIntent: row.entryIntent,
+    type: row.type,
+    status: row.status,
+    files: row.files,
+    anonymous: row.anonymous,
+    submitter: row.submitter,
+    rawPayload: row.rawPayload,
+  });
+
+  if (labels.length === 0) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2" aria-label="운영 분류 후보">
+      {labels.map((label) => (
+        <span
+          key={label}
+          className={`rounded-full border px-3 py-1 text-xs font-black ${PARTICIPATION_REVIEW_LABEL_CLASS_NAMES[label]}`}
+        >
+          {label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -378,6 +453,7 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
             ) : null}
           </div>
 
+          <ParticipationReviewBadges row={row} />
           <h2 className="mt-3 text-xl font-black text-slate-950">{row.title}</h2>
         </div>
 
