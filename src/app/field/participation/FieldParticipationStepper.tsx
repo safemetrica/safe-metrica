@@ -42,6 +42,7 @@ type WeatherNotice = {
 
 type Props = {
   companyCode: string;
+  initialStep: 1 | 2 | 3;
   siteValue: string;
   sourceValue: string;
   todayDateValue: string;
@@ -97,14 +98,14 @@ function buildFieldParticipationTtsText(params: {
   return lines.join(" ");
 }
 
-function StepHeader({ step }: { step: number }) {
+function StepHeader({ step, completedSteps }: { step: number; completedSteps: Set<number> }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         {stepLabels.map((label, index) => {
           const stepNo = index + 1;
-          const done = stepNo < step;
           const active = stepNo === step;
+          const done = completedSteps.has(stepNo) && !active;
 
           return (
             <div key={label} className="flex flex-1 items-center gap-2">
@@ -136,6 +137,7 @@ function StepHeader({ step }: { step: number }) {
 
 export default function FieldParticipationStepper({
   companyCode,
+  initialStep,
   siteValue,
   sourceValue,
   todayDateValue,
@@ -144,7 +146,8 @@ export default function FieldParticipationStepper({
   feedbackTypes,
   weatherNotice,
 }: Props) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialStep);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(() => new Set());
   const [riskCheck, setRiskCheck] = useState(false);
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
@@ -269,7 +272,7 @@ export default function FieldParticipationStepper({
           </section>
 
           <div className="mt-4">
-            <StepHeader step={step} />
+            <StepHeader step={step} completedSteps={completedSteps} />
           </div>
 
           <section className="mt-4 flex-1 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -356,8 +359,8 @@ export default function FieldParticipationStepper({
                 <p className="text-sm font-black text-slate-500">Step 2/4</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">위험성평가 공유·주지 확인</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  오늘 작업과 관련된 핵심 위험 및 주의사항이 공유되었습니다.
-                  확인 후 다음 단계로 진행해 주세요.
+                  위험요인 확인 후 공유·주지 확인을 남겨주세요.
+                  아래 항목을 직접 확인해야 기록됩니다.
                 </p>
 
                 <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
@@ -404,7 +407,7 @@ export default function FieldParticipationStepper({
                 <p className="text-sm font-black text-slate-500">Step 3/4</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">의견 / 아차사고 제출</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  작업 중 느낀 위험, 개선 의견, 아차사고가 있다면 알려주세요. 선택사항입니다.
+                  위험, 아차사고, 개선 의견이 있으면 바로 남길 수 있습니다. 선택사항입니다.
                 </p>
 
                 <div className="mt-4">
@@ -495,7 +498,10 @@ export default function FieldParticipationStepper({
             {step === 1 ? (
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  setCompletedSteps((current) => new Set(current).add(1));
+                  setStep(2);
+                }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white"
               >
                 핵심 위험 확인 완료 →
@@ -506,7 +512,10 @@ export default function FieldParticipationStepper({
               <button
                 type="button"
                 disabled={!canGoNextFromStep2}
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  setCompletedSteps((current) => new Set(current).add(2));
+                  setStep(3);
+                }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300"
               >
                 공유 내용 확인 →
@@ -525,7 +534,7 @@ export default function FieldParticipationStepper({
             {step > 1 ? (
               <button
                 type="button"
-                onClick={() => setStep((current) => Math.max(1, current - 1))}
+                onClick={() => setStep((current) => current === 3 ? 2 : 1)}
                 className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-black text-slate-600"
               >
                 이전 단계
