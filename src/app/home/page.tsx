@@ -17,30 +17,83 @@ const menus = [
   { href: "/kosha", icon: "🏅", label: "KOSHA 인정심사", sub: "11개 Gate 이행률", color: "from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600", border: "border-amber-500" },
 ];
 
-const managerMenuHrefs = new Set([
-  "/tbm",
-  "/field/voice",
-  "/risk",
-  "/monthly-report",
-  "/ptw",
-  "/field",
-  "/ebm",
-]);
+type HomeRole = "worker" | "manager" | "ceo";
 
-const managerMenuStatus: Record<string, string> = {
+type RoleTask = {
+  href: string;
+  icon: string;
+  title: string;
+  description: string;
+  status: string;
+  badge?: string;
+  accent: string;
+  iconBg: string;
+};
+
+const menuStatus: Record<string, string> = {
   "/field": "베타",
   "/monthly-report": "베타",
   "/risk": "제한 운영",
   "/ptw": "제한 운영",
   "/ebm": "제한 운영",
+  "/inspection-education": "준비 중",
+  "/kosha": "준비 중",
 };
 
-const managerTasks = [
-  { href: "/tbm", icon: "📋", title: "오늘 TBM 작성", description: "오늘 작업 전 TBM을 작성하거나 확인합니다.", status: "확인 필요", accent: "border-blue-500/50 bg-blue-950/40", iconBg: "bg-blue-500/15" },
-  { href: "/field/voice", icon: "🗣️", title: "현장참여 접수함", description: "근로자 제보와 현장 의견을 확인합니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/30", iconBg: "bg-emerald-500/15" },
-  { href: "/field/voice", icon: "🔎", title: "조치 필요 항목", description: "조치필요·검토중 항목을 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-  { href: "/field", icon: "👷", title: "현장비서", description: "오늘 확인할 누락 가능성과 운영 신호를 참고합니다.", status: "관리자 검토 필요", badge: "베타", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+const roleOptions: Array<{ value: HomeRole; label: string; shortLabel: string }> = [
+  { value: "worker", label: "근로자", shortLabel: "근로자" },
+  { value: "manager", label: "현장관리자", shortLabel: "관리자" },
+  { value: "ceo", label: "대표", shortLabel: "대표" },
 ];
+
+const roleContent: Record<HomeRole, {
+  eyebrow: string;
+  title: string;
+  description: string;
+  badge: string;
+  accent: string;
+  tasks: RoleTask[];
+}> = {
+  worker: {
+    eyebrow: "근로자 오늘 확인",
+    title: "오늘 작업 전 안전 확인",
+    description: "오늘 위험요인과 TBM을 확인하고 현장 의견을 남겨 주세요.",
+    badge: "확인 기록 중심",
+    accent: "from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/30",
+    tasks: [
+      { href: "/field/participation", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+      { href: "/field/participation", icon: "✅", title: "위험성평가 공유확인", description: "공유된 위험요인과 안전조치 확인 기록을 남깁니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
+      { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
+      { href: "/field/participation", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 내용과 개선 의견을 접수합니다.", status: "필요 시 접수", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+    ],
+  },
+  manager: {
+    eyebrow: "현장관리자 1차 확인",
+    title: "오늘 안전운영",
+    description: "작업 전 확인부터 접수 검토와 후속 조치까지 순서대로 살펴보세요.",
+    badge: "운영기록 확인 필요",
+    accent: "from-blue-950/90 via-slate-900 to-slate-950 border-blue-500/30",
+    tasks: [
+      { href: "/tbm", icon: "📋", title: "오늘 TBM 작성", description: "오늘 작업 전 TBM을 작성하거나 확인합니다.", status: "확인 필요", accent: "border-blue-500/50 bg-blue-950/40", iconBg: "bg-blue-500/15" },
+      { href: "/field/voice", icon: "🗣️", title: "현장참여 접수함", description: "근로자 제보와 현장 의견을 확인합니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/30", iconBg: "bg-emerald-500/15" },
+      { href: "/field/voice", icon: "🔎", title: "조치 필요 항목", description: "조치필요·검토중 항목을 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+      { href: "/field", icon: "👷", title: "현장비서", description: "누락 가능성과 운영 신호를 참고하고 직접 검토합니다.", status: "관리자 검토 필요", badge: "베타", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+    ],
+  },
+  ceo: {
+    eyebrow: "대표 오늘 확인",
+    title: "오늘 주요 안전운영 신호",
+    description: "미조치와 현장 접수 현황을 먼저 확인하고 보고 자료로 이동하세요.",
+    badge: "입력된 운영기록 기준",
+    accent: "from-violet-950/90 via-slate-900 to-slate-950 border-violet-500/30",
+    tasks: [
+      { href: "/dashboard", icon: "🔎", title: "오늘 미조치 확인", description: "주요 리스크와 후속 확인이 필요한 운영 신호를 살펴봅니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+      { href: "/field/voice", icon: "🗣️", title: "위험제보 접수 현황", description: "현장에서 접수된 제보와 검토 상태를 확인합니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
+      { href: "/monthly-report", icon: "📑", title: "월간보고서", description: "입력된 운영기록을 월별 요약으로 확인합니다.", status: "데이터 연결 전", badge: "베타", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
+      { href: "/risk/report", icon: "🖨️", title: "위험성평가표 출력지원", description: "위험요인과 개선대책을 출력 형식으로 정리해 검토합니다.", status: "메뉴에서 확인", badge: "제한 운영", accent: "border-violet-500/40 bg-violet-950/25", iconBg: "bg-violet-500/15" },
+    ],
+  },
+};
 async function getWeather() {
   try {
    const now = new Date();
@@ -358,12 +411,12 @@ export default async function Home({
   searchParams?: Promise<{ role?: string; weatherTest?: string }> | { role?: string; weatherTest?: string };
 }) {
   const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
-  const role = resolvedSearchParams.role;
+  const requestedRole = resolvedSearchParams.role;
+  const activeRole: HomeRole = requestedRole === "worker" || requestedRole === "ceo" || requestedRole === "manager"
+    ? requestedRole
+    : "manager";
+  const activeRoleContent = roleContent[activeRole];
   const weatherTest = resolvedSearchParams.weatherTest;
-  const isManagerMode = role === "manager";
-  const visibleMenus = isManagerMode
-    ? menus.filter((menu) => managerMenuHrefs.has(menu.href))
-    : menus;
 
   const company = await getCompanyConfig().catch(() => null);
 
@@ -463,327 +516,274 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
     safetyCases = [];
   } 
   return (
-    <main className="min-h-screen bg-gray-950">
-      <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">🛡️</span>
-          <div>
-            <h1 className="text-white font-bold text-xl leading-tight">SafeMetrica™</h1>
-            <p className="text-gray-400 text-xs">산업안전 통합 관리 플랫폼</p>
+    <main className="min-h-screen bg-slate-950 text-white">
+      <header className="border-b border-slate-800 bg-slate-900/95 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="text-3xl" aria-hidden="true">🛡️</span>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-black sm:text-xl">SafeMetrica™</h1>
+              <p className="truncate text-xs text-slate-400">{company.name} · 실제 고객 운영 모드</p>
+            </div>
+          </div>
+          <div className="hidden text-right sm:block">
+            <p className="text-xs text-slate-400">{today}</p>
+            <p className="mt-0.5 text-xs font-bold text-emerald-400">● 시스템 정상</p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-gray-400 text-xs">{today}</div>
-          <div className="text-emerald-400 text-xs font-medium mt-0.5">● 시스템 정상</div>
+      </header>
+
+      <nav className="border-b border-slate-800 bg-slate-950 px-4 py-3" aria-label="홈 역할 보기">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-800 bg-slate-900/70 p-1.5 sm:flex sm:w-fit">
+            {roleOptions.map((option) => {
+              const isActive = option.value === activeRole;
+              return (
+                <Link
+                  key={option.value}
+                  href={`/home?role=${option.value}`}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-black transition ${
+                    isActive
+                      ? "bg-white text-slate-950 shadow-lg"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  }`}
+                >
+                  <span className="sm:hidden">{option.shortLabel}</span>
+                  <span className="hidden sm:inline">{option.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+          {/* v1 역할 탭은 홈의 우선 업무 보기를 전환하며 실제 사용자 권한 판정을 대체하지 않는다. */}
+          <p className="mt-2 text-[11px] leading-5 text-slate-500">
+            역할 보기는 홈 구성을 전환합니다. 실제 메뉴 이용 범위는 고객사와 사용자 권한 설정을 따릅니다.
+          </p>
         </div>
-      </div>
+      </nav>
 
-      {isManagerMode ? (
-        <section className="border-b border-slate-800 bg-slate-950 px-4 py-5">
-          <div className="mx-auto max-w-5xl">
-            <div className="rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-950/80 to-slate-900 p-5 shadow-lg shadow-blue-950/20">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-blue-400/30 bg-blue-500/10 px-2.5 py-1 text-xs font-bold text-blue-200">현장관리자</span>
-                    <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-100">운영기록 확인 필요</span>
-                  </div>
-                  <p className="mt-4 text-sm font-semibold text-blue-200">{company.name}</p>
-                  <h2 className="mt-1 text-2xl font-black text-white">오늘 안전운영</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">오늘 처리할 안전운영 항목을 먼저 확인하세요.</p>
-                </div>
-                <div className="rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 sm:text-right">
-                  <p className="text-xs font-semibold text-slate-500">오늘 기준</p>
-                  <p className="mt-1 text-sm font-bold text-slate-100">{today}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-blue-300">1차 확인</p>
-                <h2 className="mt-1 text-xl font-black text-white">오늘 할 일</h2>
-              </div>
-              <p className="text-right text-xs text-slate-500">실제 현황은 각 메뉴에서 확인</p>
-            </div>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {managerTasks.map((task) => (
-                <div key={task.title} className={`rounded-2xl border p-4 ${task.accent}`}>
-                  <div className="flex items-start gap-3">
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl ${task.iconBg}`}>{task.icon}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-black text-white">{task.title}</h3>
-                        {task.badge ? <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-black text-cyan-200">{task.badge}</span> : null}
-                      </div>
-                      <p className="mt-1 text-sm leading-5 text-slate-300">{task.description}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="text-xs font-bold text-slate-400">{task.status}</span>
-                    <Link href={task.href} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-slate-950 transition hover:bg-blue-50 active:scale-95">확인하기 →</Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <TbmFormAction tbmFormUrl={tbmFormUrl} voiceDraftHref="/tbm#tbm-voice-draft" compact className="mt-3" />
-
-            <div className="mb-3 mt-8">
-              <p className="text-xs font-bold text-blue-400">2차 메뉴</p>
-              <div className="mt-1 flex items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-black text-white">전체 기능</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">조회·기록·보고 기능을 계속 이용할 수 있습니다.</p>
-                </div>
-                <span className="shrink-0 text-xs font-semibold text-slate-600">실제 고객 운영 모드</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-              {visibleMenus.map((m) => (
-                <Link key={m.href} href={m.href}
-                  className={`relative bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
-                  {managerMenuStatus[m.href] ? (
-                    <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-slate-950/35 px-2 py-1 text-[10px] font-black text-white">{managerMenuStatus[m.href]}</span>
-                  ) : null}
-                  <div className="text-4xl mb-3">{m.icon}</div>
-                  <div className="text-white font-bold text-sm leading-tight">{m.label}</div>
-                  <div className="text-white text-xs mt-1 opacity-75">{m.sub}</div>
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-5 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6 lg:py-7">
+        <aside className="hidden lg:block" aria-label="전체 기능 보조 내비게이션">
+          <div className="sticky top-5 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-black/10">
+            <p className="text-xs font-black text-blue-300">2차 메뉴</p>
+            <h2 className="mt-1 text-lg font-black">전체 기능</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-500">기존 조회·기록·보고 메뉴를 모두 이용할 수 있습니다.</p>
+            <div className="mt-4 space-y-1.5">
+              {menus.map((menu) => (
+                <Link
+                  key={menu.href}
+                  href={menu.href}
+                  className="group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition hover:border-slate-700 hover:bg-slate-800"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-lg group-hover:bg-slate-700" aria-hidden="true">{menu.icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm font-bold text-slate-200">{menu.label}</span>
+                      {menuStatus[menu.href] ? <span className="shrink-0 rounded-full bg-slate-800 px-1.5 py-0.5 text-[9px] font-black text-slate-400">{menuStatus[menu.href]}</span> : null}
+                    </span>
+                    <span className="block truncate text-[11px] text-slate-500">{menu.sub}</span>
+                  </span>
                 </Link>
               ))}
             </div>
-            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-              <p className="text-xs leading-5 text-slate-400">현재 고객사 운영 환경의 메뉴입니다. 홈의 상태 문구는 완료 판정이 아니며, 실제 기록과 처리 상태는 각 메뉴에서 확인하세요.</p>
-            </div>
           </div>
-        </section>
-      ) : (
-        <div className="px-4 py-3 bg-blue-950 border-b border-blue-900">
-          <p className="text-blue-300 text-xs text-center">
-            {company.name} · 오늘도 안전한 하루 되세요 👷
-          </p>
-          <TbmFormAction tbmFormUrl={tbmFormUrl} voiceDraftHref="/tbm#tbm-voice-draft" className="mt-2" />
-        </div>
-      )}
+        </aside>
 
-      {weather.tmp !== null && weather.decision && (() => {
-        const cfg = decisionConfig[weather.decision as keyof typeof decisionConfig];
-        return (
-          <div className={`px-4 py-4 border-b ${cfg.bg}`}>
-            <div className="max-w-2xl mx-auto">
-              {/* 날씨 수치 */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="whitespace-nowrap text-base font-black text-white sm:text-sm">{weather.icon} 현재 날씨</span>
-                <span className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-300 sm:text-xs">
-                  <span className="whitespace-nowrap">기온 {weather.tmp}°C</span>
-                  <span className="whitespace-nowrap">체감 {weather.feelsLike}°C</span>
-                  <span className="whitespace-nowrap">풍속 {weather.wsd}m/s</span>
-                  <span className="whitespace-nowrap">강수확률 {weather.pop}%</span>
-                </span>
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <p className="text-blue-200 text-xs">
-                  {isWeatherTestMode
-                    ? "날씨 테스트 모드"
-                    : `기상청 초단기실황 기준 ${weather.observedAt}`}
-                </p>
-                {isWeatherTestMode ? (
-                  <span className="rounded-full border border-cyan-400/40 bg-cyan-950 px-2 py-0.5 text-[11px] font-black text-cyan-100">
-                    검수용 미리보기
+        <div className="min-w-0">
+          <section className={`rounded-3xl border bg-gradient-to-br p-5 shadow-2xl shadow-black/20 sm:p-6 ${activeRoleContent.accent}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-black text-slate-200">
+                    {roleOptions.find((option) => option.value === activeRole)?.label}
                   </span>
-                ) : null}
-              </div>
-
-              {/* 의사결정 티켓 */}
-              <div className={`rounded-xl border p-3 ${cfg.bg}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${cfg.badge}`}>{cfg.label}</span>
-                  <span className="text-xs text-gray-400">현장 책임자 1명 확인 필수</span>
+                  <span className="rounded-full border border-amber-400/25 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-100">
+                    {activeRoleContent.badge}
+                  </span>
                 </div>
-                <p className="text-white text-xs font-medium mb-1">{cfg.desc}</p>
-                <p className="text-gray-400 text-xs">{cfg.action}</p>
+                <p className="mt-5 text-xs font-black tracking-wide text-blue-300">{activeRoleContent.eyebrow}</p>
+                <h2 className="mt-1 text-2xl font-black sm:text-3xl">{activeRoleContent.title}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{activeRoleContent.description}</p>
               </div>
+              <div className="rounded-xl border border-slate-700/80 bg-slate-950/50 px-4 py-3 sm:text-right">
+                <p className="text-xs font-semibold text-slate-500">오늘 기준</p>
+                <p className="mt-1 text-sm font-bold text-slate-100">{today}</p>
+              </div>
+            </div>
+          </section>
 
-              {/* 경보 목록 */}
-              {weather.alerts.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {weather.alerts.map((a, i) => (
-                    <p key={i} className="text-red-300 text-xs font-medium">{a}</p>
-                  ))}
-                </div>
-              )}
-
-              {weatherActionPlan ? (
-                <div className="mt-3 grid gap-2">
-                  <div className="rounded-xl border border-cyan-500/30 bg-slate-950/60 p-3">
-                    <p className="text-xs font-black text-cyan-200">{weatherActionPlan.title}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-200">{weatherActionPlan.summary}</p>
-                    <ul className="mt-2 space-y-1">
-                      {weatherActionPlan.actions.map((item) => (
-                        <li key={item} className="flex gap-2 text-xs leading-5 text-slate-100">
-                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+          <section className="mt-6" aria-labelledby="today-tasks-title">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-black text-blue-300">1차 내비게이션</p>
+                <h2 id="today-tasks-title" className="mt-1 text-xl font-black sm:text-2xl">오늘 할 일</h2>
+              </div>
+              <p className="text-right text-xs leading-5 text-slate-500">실제 현황은 각 메뉴에서 확인</p>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {activeRoleContent.tasks.map((task) => (
+                <Link key={task.title} href={task.href} className={`group rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-white/30 ${task.accent}`}>
+                  <div className="flex items-start gap-3">
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl ${task.iconBg}`} aria-hidden="true">{task.icon}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-black text-white">{task.title}</span>
+                        {task.badge ? <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-black text-slate-300">{task.badge}</span> : null}
+                      </span>
+                      <span className="mt-1 block text-sm leading-5 text-slate-300">{task.description}</span>
+                    </span>
                   </div>
+                  <span className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                    <span className="text-xs font-bold text-slate-400">{task.status}</span>
+                    <span className="text-sm font-black text-white transition group-hover:translate-x-0.5">확인하기 →</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+            {activeRole === "manager" ? (
+              <TbmFormAction tbmFormUrl={tbmFormUrl} voiceDraftHref="/tbm#tbm-voice-draft" compact className="mt-3" />
+            ) : null}
+          </section>
 
-                  <div className="grid gap-2 sm:grid-cols-2">
+          <details className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 lg:hidden">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+              <span>
+                <span className="block text-xs font-black text-blue-300">2차 메뉴</span>
+                <span className="mt-0.5 block font-black">전체 기능 보기</span>
+              </span>
+              <span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-bold text-slate-300">열기</span>
+            </summary>
+            <div className="grid grid-cols-2 gap-2 border-t border-slate-800 p-3">
+              {menus.map((menu) => (
+                <Link key={menu.href} href={menu.href} className="relative rounded-xl border border-slate-800 bg-slate-950/70 p-3 transition active:scale-[0.98]">
+                  {menuStatus[menu.href] ? <span className="absolute right-2 top-2 rounded-full bg-slate-800 px-1.5 py-0.5 text-[9px] font-black text-slate-400">{menuStatus[menu.href]}</span> : null}
+                  <span className="text-2xl" aria-hidden="true">{menu.icon}</span>
+                  <span className="mt-2 block text-sm font-black">{menu.label}</span>
+                  <span className="mt-1 block text-[11px] leading-4 text-slate-500">{menu.sub}</span>
+                </Link>
+              ))}
+            </div>
+          </details>
+
+          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3">
+            <p className="text-xs leading-5 text-slate-400">
+              현재 고객사의 실제 운영 환경입니다. 홈의 상태 문구는 완료 판정이 아니며 실제 기록과 처리 상태는 각 메뉴에서 확인하세요.
+            </p>
+          </div>
+
+          {weather.tmp !== null && weather.decision && (() => {
+            const cfg = decisionConfig[weather.decision as keyof typeof decisionConfig];
+            return (
+              <section className={`mt-6 rounded-2xl border p-4 ${cfg.bg}`} aria-label="오늘 기상 안전 브리핑">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-black">{weather.icon} 현재 날씨</p>
+                    <p className="mt-1 text-xs text-blue-200">
+                      {isWeatherTestMode ? "날씨 테스트 모드" : `기상청 초단기실황 기준 ${weather.observedAt}`}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300">
+                    <span>기온 {weather.tmp}°C</span>
+                    <span>체감 {weather.feelsLike}°C</span>
+                    <span>풍속 {weather.wsd}m/s</span>
+                    <span>강수확률 {weather.pop}%</span>
+                  </div>
+                </div>
+                <div className={`mt-3 rounded-xl border p-3 ${cfg.bg}`}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${cfg.badge}`}>{cfg.label}</span>
+                    <span className="text-xs text-slate-400">현장 책임자 확인 필요</span>
+                  </div>
+                  <p className="mt-2 text-xs font-medium text-white">{cfg.desc}</p>
+                  <p className="mt-1 text-xs text-slate-400">{cfg.action}</p>
+                </div>
+                {weather.alerts.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    {weather.alerts.map((alert) => <p key={alert} className="text-xs font-medium text-red-300">{alert}</p>)}
+                  </div>
+                ) : null}
+                {weatherActionPlan ? (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border border-cyan-500/30 bg-slate-950/60 p-3 sm:col-span-2">
+                      <p className="text-xs font-black text-cyan-200">{weatherActionPlan.title}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-200">{weatherActionPlan.summary}</p>
+                      <ul className="mt-2 space-y-1">
+                        {weatherActionPlan.actions.map((item) => <li key={item} className="text-xs leading-5 text-slate-100">- {item}</li>)}
+                      </ul>
+                    </div>
                     <div className="rounded-xl border border-blue-500/30 bg-blue-950/40 p-3">
                       <p className="text-xs font-black text-blue-200">오늘 TBM 반영 문장</p>
                       <p className="mt-1 text-xs leading-5 text-blue-50">{weatherActionPlan.tbmSentence}</p>
                     </div>
                     <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 p-3">
-                      <p className="text-xs font-black text-emerald-200">사진 증빙 권장</p>
+                      <p className="text-xs font-black text-emerald-200">사진 기록 권장</p>
                       <ul className="mt-1 space-y-1">
-                        {weatherActionPlan.evidence.map((item) => (
-                          <li key={item} className="text-xs leading-5 text-emerald-50">- {item}</li>
-                        ))}
+                        {weatherActionPlan.evidence.map((item) => <li key={item} className="text-xs leading-5 text-emerald-50">- {item}</li>)}
                       </ul>
                     </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+              </section>
+            );
+          })()}
+
+          <section className="mt-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-yellow-400" aria-hidden="true">⚠️</span>
+              <h2 className="text-sm font-semibold">안전 수칙</h2>
             </div>
-          </div>
-        );
-      })()}
+            <p className="mt-2 text-xs leading-relaxed text-slate-400">특이사항 발생 시 Evidence Book에 기록하고, 고위험작업은 PTW 확인 후 시작하며, 중대재해 발생 시 즉시 119에 신고하세요.</p>
+          </section>
 
-      <div className="p-4 max-w-5xl mx-auto">
-        {!isManagerMode ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-            {visibleMenus.map((m) => (
-              <Link key={m.href} href={m.href}
-                className={`bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
-                <div className="text-4xl mb-3">{m.icon}</div>
-                <div className="text-white font-bold text-sm leading-tight">{m.label}</div>
-                <div className="text-white text-xs mt-1 opacity-75">{m.sub}</div>
-              </Link>
-            ))}
-          </div>
-        ) : null}
-        {/*
-          Legacy external submitter card hidden.
-          Mons is now an independent tenant, not a Bubblemon contractor.
-        */}
-
-        <div className="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-400">⚠️</span>
-            <span className="text-white text-sm font-semibold">안전 수칙</span>
-          </div>
-          <p className="text-gray-400 text-xs leading-relaxed">특이사항 발생 시 반드시 Evidence Book 등록 · 고위험작업은 PTW 제출 후 시작 · 중대재해 발생 즉시 119 신고</p>
-        </div>
-
-                {/* KOSHA TBM 체크포인트 + 산업안전 동향 */}
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 text-sm">●</span>
-                  <span className="text-white text-sm font-semibold">
-                    오늘 TBM 체크포인트
-                  </span>
+          <div className="mt-4 grid gap-3 xl:grid-cols-2">
+            <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">오늘 TBM 체크포인트</h2>
+                  <p className="mt-1 text-xs text-slate-500">최근 안전사고 사례를 참고해 오늘 확인할 항목입니다.</p>
                 </div>
-                <p className="text-gray-500 text-xs mt-1">
-                  최근 안전사고 사례를 참고해 오늘 확인할 항목입니다.
-                </p>
+                <span className="text-xs text-yellow-400">KOSHA</span>
               </div>
-              <span className="text-yellow-400 text-xs shrink-0">KOSHA</span>
-            </div>
-
-            {safetyCases.length === 0 ? (
-              <p className="text-gray-600 text-xs">
-                안전사고 사례를 불러오는 중입니다.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {safetyCases.slice(0, 2).map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-lg bg-gray-950 border border-gray-800 px-3 py-2"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-red-950 text-red-300 text-[11px] font-bold shrink-0">
-                        {item.accidentType}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-white text-xs font-semibold truncate">
-                          {item.title}
-                        </p>
-                        <p className="text-emerald-300 text-xs mt-1 truncate">
-                          {item.action}
-                        </p>
+              {safetyCases.length === 0 ? <p className="text-xs text-slate-600">안전사고 사례를 불러오는 중입니다.</p> : (
+                <div className="space-y-2">
+                  {safetyCases.slice(0, 2).map((item) => (
+                    <div key={item.id} className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <div className="flex items-start gap-2">
+                        <span className="shrink-0 rounded bg-red-950 px-1.5 py-0.5 text-[11px] font-bold text-red-300">{item.accidentType}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold">{item.title}</p>
+                          <p className="mt-1 truncate text-xs text-emerald-300">{item.action}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-slate-600">출처: {item.source === "KOSHA" ? "KOSHA 안전사례" : "예시 사례"}</span>
+                        <Link href={`/tbm?safetyCase=${encodeURIComponent(item.id)}&check=${encodeURIComponent(item.action)}`} className="shrink-0 rounded-full bg-blue-600 px-3 py-1 text-[11px] font-semibold transition hover:bg-blue-500">TBM 체크</Link>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-gray-600 text-[11px]">
-                        출처: {item.source === "KOSHA" ? "KOSHA 안전사례" : "예시 사례"}
-                      </span>
-                      <Link
-                        href={`/tbm?safetyCase=${encodeURIComponent(
-                          item.id
-                        )}&check=${encodeURIComponent(item.action)}`}
-                        className="rounded-full bg-blue-600 hover:bg-blue-500 px-3 py-1 text-[11px] font-semibold text-white transition"
-                      >
-                        TBM 체크
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 text-sm">●</span>
-                  <span className="text-white text-sm font-semibold">
-                    산업안전 동향
-                  </span>
+                  ))}
                 </div>
-                <p className="text-gray-500 text-xs mt-1">
-                  현장 안전관리자가 참고할 최신 안전 이슈입니다.
-                </p>
-              </div>
-              <span className="text-gray-600 text-xs shrink-0">뉴스</span>
-            </div>
+              )}
+            </section>
 
-            {safetyNews.length === 0 ? (
-              <p className="text-gray-600 text-xs">
-                산업안전 동향을 불러오는 중입니다.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {safetyNews.slice(0, 3).map((news, i) => (
-                  <a
-                    key={`${news.link}-${i}`}
-                    href={news.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-lg bg-gray-950 border border-gray-800 px-3 py-2 group"
-                  >
-                    <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${
-                      news.color === "red"
-                        ? "bg-red-950 text-red-400"
-                        : news.color === "orange"
-                        ? "bg-orange-950 text-orange-400"
-                        : "bg-blue-950 text-blue-400"
-                    }`}>
-                      안전 이슈
-                    </span>
-                    <span className="text-gray-400 text-xs group-hover:text-white transition truncate">
-                      {news.title}
-                    </span>
-                  </a>
-                ))}
+            <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">산업안전 동향</h2>
+                  <p className="mt-1 text-xs text-slate-500">현장 안전관리자가 참고할 최신 안전 이슈입니다.</p>
+                </div>
+                <span className="text-xs text-slate-600">뉴스</span>
               </div>
-            )}
+              {safetyNews.length === 0 ? <p className="text-xs text-slate-600">산업안전 동향을 불러오는 중입니다.</p> : (
+                <div className="space-y-2">
+                  {safetyNews.slice(0, 3).map((news, index) => (
+                    <a key={`${news.link}-${index}`} href={news.link} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold ${news.color === "red" ? "bg-red-950 text-red-400" : news.color === "orange" ? "bg-orange-950 text-orange-400" : "bg-blue-950 text-blue-400"}`}>안전 이슈</span>
+                      <span className="truncate text-xs text-slate-400 transition group-hover:text-white">{news.title}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         </div>
       </div>
