@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCompanyConfig } from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
+import HomeSafetyNewsSection, { HomeSafetyNewsFallback } from "./HomeSafetyNewsSection";
 
 import { getTbmFormUrl } from "@/lib/tenantLinks";
 const menus = [
@@ -483,60 +485,6 @@ export default async function Home({
     },
   };
 
-  // RSS 뉴스
-  type NewsItem = {title:string; link:string; tag:string; color:string};
-  const NEWS_SRCS = [
-    {url:'https://news.google.com/rss/search?q=산업재해+사고&hl=ko&gl=KR&ceid=KR:ko', tag:'사고', color:'red'},
-    {url:'https://news.google.com/rss/search?q=안전사고+현장&hl=ko&gl=KR&ceid=KR:ko', tag:'안전', color:'blue'},
-    {url:'https://news.google.com/rss/search?q=중대재해&hl=ko&gl=KR&ceid=KR:ko', tag:'중대', color:'orange'},
-  ];
-  let safetyNews: NewsItem[] = [];
-  try {
-    const rr = await Promise.allSettled(NEWS_SRCS.map(async (s) => {
-      const r = await fetch(s.url);
-      const xml = await r.text();
-      const ms = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
-      return ms.slice(0,4).map(item => {
-        const t = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || item.match(/<title>(.*?)<\/title>/)?.[1] || '';
-        const l = item.match(/<link>(.*?)<\/link>/)?.[1] || '#';
-        return {title:t.replace(/&amp;/g,'&').trim(), link:l.trim(), tag:s.tag, color:s.color};
-      }).filter(x => x.title);
-    }));
-    safetyNews = rr.filter((r): r is PromiseFulfilledResult<NewsItem[]> => r.status==='fulfilled').flatMap(r=>r.value);
-  } catch { safetyNews = []; }
-    type SafetyCaseCard = {
-    id: string;
-    title: string;
-    accidentType: string;
-    action: string;
-    source: "KOSHA" | "SAMPLE";
-  };
-
-  let safetyCases: SafetyCaseCard[] = [];
-
-  try {
-    const baseUrl =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:3000"
-    : "https://safe-metrica.vercel.app";
-
-const safetyNewsParams = new URLSearchParams({
-  companySeed: company.code ?? "",
-  companyName: company.name ?? "",
-  industryTag: company.industryTag ?? "",
-});
-
-const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString()}`, {
-  cache: "no-store",
-});
-
-    if (res.ok) {
-      const data = (await res.json()) as { cards?: SafetyCaseCard[] };
-      safetyCases = data.cards ?? [];
-    }
-  } catch {
-    safetyCases = [];
-  } 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-slate-800 bg-slate-900/95 px-4 py-4 sm:px-6">
@@ -771,56 +719,15 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
             <p className="mt-2 text-xs leading-relaxed text-slate-400">특이사항 발생 시 Evidence Book에 기록하고, 고위험작업은 PTW 확인 후 시작하며, 중대재해 발생 시 즉시 119에 신고하세요.</p>
           </section>
 
-          <div className="mt-4 grid gap-3 xl:grid-cols-2">
-            <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold">오늘 TBM 체크포인트</h2>
-                  <p className="mt-1 text-xs text-slate-500">최근 안전사고 사례를 참고해 오늘 확인할 항목입니다.</p>
-                </div>
-                <span className="text-xs text-yellow-400">KOSHA</span>
-              </div>
-              {safetyCases.length === 0 ? <p className="text-xs text-slate-600">안전사고 사례를 불러오는 중입니다.</p> : (
-                <div className="space-y-2">
-                  {safetyCases.slice(0, 2).map((item) => (
-                    <div key={item.id} className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <div className="flex items-start gap-2">
-                        <span className="shrink-0 rounded bg-red-950 px-1.5 py-0.5 text-[11px] font-bold text-red-300">{item.accidentType}</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-semibold">{item.title}</p>
-                          <p className="mt-1 truncate text-xs text-emerald-300">{item.action}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-slate-600">출처: {item.source === "KOSHA" ? "KOSHA 안전사례" : "예시 사례"}</span>
-                        <Link href={`/tbm?safetyCase=${encodeURIComponent(item.id)}&check=${encodeURIComponent(item.action)}`} className="shrink-0 rounded-full bg-blue-600 px-3 py-1 text-[11px] font-semibold transition hover:bg-blue-500">TBM 체크</Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold">산업안전 동향</h2>
-                  <p className="mt-1 text-xs text-slate-500">현장 안전관리자가 참고할 최신 안전 이슈입니다.</p>
-                </div>
-                <span className="text-xs text-slate-600">뉴스</span>
-              </div>
-              {safetyNews.length === 0 ? <p className="text-xs text-slate-600">산업안전 동향을 불러오는 중입니다.</p> : (
-                <div className="space-y-2">
-                  {safetyNews.slice(0, 3).map((news, index) => (
-                    <a key={`${news.link}-${index}`} href={news.link} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold ${news.color === "red" ? "bg-red-950 text-red-400" : news.color === "orange" ? "bg-orange-950 text-orange-400" : "bg-blue-950 text-blue-400"}`}>안전 이슈</span>
-                      <span className="truncate text-xs text-slate-400 transition group-hover:text-white">{news.title}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
+          <Suspense fallback={<HomeSafetyNewsFallback />}>
+            <HomeSafetyNewsSection
+              company={{
+                code: company.code,
+                name: company.name,
+                industryTag: company.industryTag,
+              }}
+            />
+          </Suspense>
         </div>
       </div>
     </main>
