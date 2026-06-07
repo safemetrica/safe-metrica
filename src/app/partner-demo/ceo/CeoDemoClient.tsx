@@ -41,12 +41,10 @@ export default function CeoDemoClient() {
   const [outputNotice, setOutputNotice] = useState(false);
 
   useEffect(() => {
-    window.setTimeout(() => {
-      const savedState = readDemoState();
-      const viewedState = { ...savedState, ceoDashboardViewed: true };
-      setDemoState(viewedState);
-      writeDemoState(viewedState);
-    }, 0);
+    const savedState = readDemoState();
+    const viewedState = { ...savedState, ceoDashboardViewed: true };
+    setDemoState(viewedState);
+    writeDemoState(viewedState);
   }, []);
 
   const confirmMonthlyReport = () => {
