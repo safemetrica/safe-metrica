@@ -19,11 +19,28 @@ const menus = [
 
 const managerMenuHrefs = new Set([
   "/tbm",
-  "/ptw",
-  "/field",
+  "/field/voice",
   "/risk",
   "/monthly-report",
-  "/field/voice",]);
+  "/ptw",
+  "/field",
+  "/ebm",
+]);
+
+const managerMenuStatus: Record<string, string> = {
+  "/field": "베타",
+  "/monthly-report": "베타",
+  "/risk": "제한 운영",
+  "/ptw": "제한 운영",
+  "/ebm": "제한 운영",
+};
+
+const managerTasks = [
+  { href: "/tbm", icon: "📋", title: "오늘 TBM 작성", description: "오늘 작업 전 TBM을 작성하거나 확인합니다.", status: "확인 필요", accent: "border-blue-500/50 bg-blue-950/40", iconBg: "bg-blue-500/15" },
+  { href: "/field/voice", icon: "🗣️", title: "현장참여 접수함", description: "근로자 제보와 현장 의견을 확인합니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/30", iconBg: "bg-emerald-500/15" },
+  { href: "/field/voice", icon: "🔎", title: "조치 필요 항목", description: "조치필요·검토중 항목을 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+  { href: "/field", icon: "👷", title: "현장비서", description: "오늘 확인할 누락 가능성과 운영 신호를 참고합니다.", status: "관리자 검토 필요", badge: "베타", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+];
 async function getWeather() {
   try {
    const now = new Date();
@@ -461,17 +478,94 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
         </div>
       </div>
 
-      <div className="px-4 py-3 bg-blue-950 border-b border-blue-900">
-        <p className="text-blue-300 text-xs text-center">
-  {company.name} · 오늘도 안전한 하루 되세요 👷
-</p>
-<TbmFormAction
-  tbmFormUrl={tbmFormUrl}
-  voiceDraftHref="/tbm#tbm-voice-draft"
-  className="mt-2"
-/>
+      {isManagerMode ? (
+        <section className="border-b border-slate-800 bg-slate-950 px-4 py-5">
+          <div className="mx-auto max-w-5xl">
+            <div className="rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-950/80 to-slate-900 p-5 shadow-lg shadow-blue-950/20">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-blue-400/30 bg-blue-500/10 px-2.5 py-1 text-xs font-bold text-blue-200">현장관리자</span>
+                    <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-100">운영기록 확인 필요</span>
+                  </div>
+                  <p className="mt-4 text-sm font-semibold text-blue-200">{company.name}</p>
+                  <h2 className="mt-1 text-2xl font-black text-white">오늘 안전운영</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">오늘 처리할 안전운영 항목을 먼저 확인하세요.</p>
+                </div>
+                <div className="rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 sm:text-right">
+                  <p className="text-xs font-semibold text-slate-500">오늘 기준</p>
+                  <p className="mt-1 text-sm font-bold text-slate-100">{today}</p>
+                </div>
+              </div>
+            </div>
 
-      </div>
+            <div className="mt-6 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-blue-300">1차 확인</p>
+                <h2 className="mt-1 text-xl font-black text-white">오늘 할 일</h2>
+              </div>
+              <p className="text-right text-xs text-slate-500">실제 현황은 각 메뉴에서 확인</p>
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {managerTasks.map((task) => (
+                <div key={task.title} className={`rounded-2xl border p-4 ${task.accent}`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl ${task.iconBg}`}>{task.icon}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-black text-white">{task.title}</h3>
+                        {task.badge ? <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-black text-cyan-200">{task.badge}</span> : null}
+                      </div>
+                      <p className="mt-1 text-sm leading-5 text-slate-300">{task.description}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <span className="text-xs font-bold text-slate-400">{task.status}</span>
+                    <Link href={task.href} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-slate-950 transition hover:bg-blue-50 active:scale-95">확인하기 →</Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <TbmFormAction tbmFormUrl={tbmFormUrl} voiceDraftHref="/tbm#tbm-voice-draft" compact className="mt-3" />
+
+            <div className="mb-3 mt-8">
+              <p className="text-xs font-bold text-blue-400">2차 메뉴</p>
+              <div className="mt-1 flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-black text-white">전체 기능</h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">조회·기록·보고 기능을 계속 이용할 수 있습니다.</p>
+                </div>
+                <span className="shrink-0 text-xs font-semibold text-slate-600">실제 고객 운영 모드</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              {visibleMenus.map((m) => (
+                <Link key={m.href} href={m.href}
+                  className={`relative bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
+                  {managerMenuStatus[m.href] ? (
+                    <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-slate-950/35 px-2 py-1 text-[10px] font-black text-white">{managerMenuStatus[m.href]}</span>
+                  ) : null}
+                  <div className="text-4xl mb-3">{m.icon}</div>
+                  <div className="text-white font-bold text-sm leading-tight">{m.label}</div>
+                  <div className="text-white text-xs mt-1 opacity-75">{m.sub}</div>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3">
+              <p className="text-xs leading-5 text-slate-400">현재 고객사 운영 환경의 메뉴입니다. 홈의 상태 문구는 완료 판정이 아니며, 실제 기록과 처리 상태는 각 메뉴에서 확인하세요.</p>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <div className="px-4 py-3 bg-blue-950 border-b border-blue-900">
+          <p className="text-blue-300 text-xs text-center">
+            {company.name} · 오늘도 안전한 하루 되세요 👷
+          </p>
+          <TbmFormAction tbmFormUrl={tbmFormUrl} voiceDraftHref="/tbm#tbm-voice-draft" className="mt-2" />
+        </div>
+      )}
 
       {weather.tmp !== null && weather.decision && (() => {
         const cfg = decisionConfig[weather.decision as keyof typeof decisionConfig];
@@ -557,16 +651,18 @@ const res = await fetch(`${baseUrl}/api/safety-news?${safetyNewsParams.toString(
       })()}
 
       <div className="p-4 max-w-5xl mx-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-          {visibleMenus.map((m) => (
-            <Link key={m.href} href={m.href}
-              className={`bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
-              <div className="text-4xl mb-3">{m.icon}</div>
-              <div className="text-white font-bold text-sm leading-tight">{m.label}</div>
-              <div className="text-white text-xs mt-1 opacity-75">{m.sub}</div>
-            </Link>
-          ))}
-        </div>
+        {!isManagerMode ? (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+            {visibleMenus.map((m) => (
+              <Link key={m.href} href={m.href}
+                className={`bg-gradient-to-br ${m.color} border ${m.border} border-opacity-40 rounded-2xl p-5 transition-all duration-200 active:scale-95 shadow-lg`}>
+                <div className="text-4xl mb-3">{m.icon}</div>
+                <div className="text-white font-bold text-sm leading-tight">{m.label}</div>
+                <div className="text-white text-xs mt-1 opacity-75">{m.sub}</div>
+              </Link>
+            ))}
+          </div>
+        ) : null}
         {/*
           Legacy external submitter card hidden.
           Mons is now an independent tenant, not a Bubblemon contractor.
