@@ -216,7 +216,7 @@ export default function ManagerDemoClient() {
           {step === 1 && <button type="button" onClick={() => setStep(2)} disabled={!demoState.managerBriefingChecked} className={managerCtaClass}>{demoState.managerBriefingChecked ? "다음: 조치사진 샘플" : "공유확인 후 다음 단계로 이동할 수 있습니다"}</button>}
           {step === 2 && <button type="button" onClick={() => setStep(3)} disabled={!demoState.managerActionPhotoSaved} className={managerCtaClass}>{demoState.managerActionPhotoSaved ? "다음 단계로 이동" : "조치사진 체험 후 현장비서로 이동합니다"}</button>}
           {step === 3 && <button type="button" onClick={() => setStep(4)} className={managerCtaClass}>체험 완료</button>}
-          {step === 4 && <Link href="/partner-demo" className={managerCtaClass}>다른 역할도 체험해보세요</Link>}
+          {step === 4 && <Link href="/partner-demo/ceo" className={managerCtaClass}>대표 체험으로 이동</Link>}
           <p className="mt-3 rounded-2xl border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-center text-xs font-black text-amber-100">
             체험 모드 · 샘플 데이터 · 실제 고객 DB 미연결
           </p>
