@@ -55,12 +55,10 @@ export default function WorkerDemoClient() {
   const [content, setContent] = useState("지게차 이동 구역 주변 적재물을 정리하면 보행자 동선 확인이 더 쉬울 것 같습니다.");
 
   useEffect(() => {
-    window.setTimeout(() => {
-      const savedState = readDemoState();
-      setDemoState(savedState);
-      setStep(getResumeStep(savedState));
-      setShowResumeHandoff(savedState.workerReportSubmitted);
-    }, 0);
+    const savedState = readDemoState();
+    setDemoState(savedState);
+    setStep(getResumeStep(savedState));
+    setShowResumeHandoff(savedState.workerReportSubmitted);
   }, []);
 
   const updateDemoState = (nextPartial: Partial<DemoState>) => {

@@ -89,7 +89,7 @@ export default function ManagerDemoClient() {
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   useEffect(() => {
-    window.setTimeout(() => setDemoState(readDemoState()), 0);
+    setDemoState(readDemoState());
   }, []);
 
   const updateDemoState = (nextPartial: Partial<DemoState>) => {
