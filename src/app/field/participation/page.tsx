@@ -10,6 +10,18 @@ export const revalidate = 0;
 
 const feedbackTypes = ["위험 제보", "아차사고", "개선 제안", "기타"];
 
+type ParticipationIntent = "risk" | "share" | "report";
+
+const intentInitialSteps: Record<ParticipationIntent, 1 | 2 | 3> = {
+  risk: 1,
+  share: 2,
+  report: 3,
+};
+
+function getParticipationIntent(value?: string): ParticipationIntent | undefined {
+  return value === "risk" || value === "share" || value === "report" ? value : undefined;
+}
+
 type FieldWeatherNotice = {
   level: "danger" | "warning" | "info";
   icon: string;
@@ -21,6 +33,7 @@ type FieldWeatherNotice = {
 type PageProps = {
   searchParams?: Promise<{
     company?: string;
+    intent?: string;
     site?: string;
     source?: string;
     weatherTest?: string;
@@ -178,6 +191,8 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
 
   const todayDateValue = getTodayDateValue();
   const companyCode = params.company ?? "";
+  const intent = getParticipationIntent(params.intent);
+  const initialStep = intent ? intentInitialSteps[intent] : 1;
   const workerCopy = getOperatingFieldWorkerCopy(companyCode);
   const riskSummary: FieldWorkerRiskSummary = {
     hasDb: false,
@@ -219,6 +234,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
     return (
       <FieldParticipationStepper
         companyCode={companyCode}
+        initialStep={initialStep}
         siteValue={siteValue}
         sourceValue={sourceValue}
         todayDateValue={todayDateValue}

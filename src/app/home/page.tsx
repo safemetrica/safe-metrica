@@ -19,8 +19,11 @@ const menus = [
 
 type HomeRole = "worker" | "manager" | "ceo";
 
+type WorkerParticipationIntent = "risk" | "share" | "report";
+
 type RoleTask = {
   href?: string;
+  participationIntent?: WorkerParticipationIntent;
   requiresCompanyCode?: boolean;
   disabled?: boolean;
   icon: string;
@@ -63,10 +66,10 @@ const roleContent: Record<HomeRole, {
     badge: "확인 기록 중심",
     accent: "from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/30",
     tasks: [
-      { requiresCompanyCode: true, icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-      { requiresCompanyCode: true, icon: "✅", title: "위험성평가 공유확인", description: "공유된 위험요인과 안전조치 확인 기록을 남깁니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
+      { requiresCompanyCode: true, participationIntent: "risk", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+      { requiresCompanyCode: true, participationIntent: "share", icon: "✅", title: "위험성평가 공유확인", description: "공유된 위험요인과 안전조치 확인 기록을 남깁니다.", status: "메뉴에서 확인", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
       { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
-      { requiresCompanyCode: true, icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 내용과 개선 의견을 접수합니다.", status: "필요 시 접수", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+      { requiresCompanyCode: true, participationIntent: "report", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 내용과 개선 의견을 접수합니다.", status: "필요 시 접수", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
     ],
   },
   manager: {
@@ -429,19 +432,22 @@ export default async function Home({
     redirect("/contractor/mons");
   }
 
-  const workerParticipationHref = company.code
-    ? `/field/participation?company=${encodeURIComponent(company.code)}`
-    : null;
+  const getWorkerParticipationHref = (intent?: WorkerParticipationIntent) => {
+    if (!company.code || !intent) return null;
+
+    return `/field/participation?company=${encodeURIComponent(company.code)}&intent=${intent}`;
+  };
   const activeRoleContent = activeRole === "worker"
     ? {
         ...roleContent.worker,
-        tasks: roleContent.worker.tasks.map((task) => (
-          task.requiresCompanyCode
-            ? workerParticipationHref
-              ? { ...task, href: workerParticipationHref }
-              : { ...task, disabled: true, status: "고객사 코드 확인 필요" }
-            : task
-        )),
+        tasks: roleContent.worker.tasks.map((task) => {
+          if (!task.requiresCompanyCode) return task;
+
+          const participationHref = getWorkerParticipationHref(task.participationIntent);
+          return participationHref
+            ? { ...task, href: participationHref }
+            : { ...task, disabled: true, status: "고객사 코드 확인 필요" };
+        }),
       }
     : roleContent[activeRole];
   const tbmFormUrl = getTbmFormUrl(company);
