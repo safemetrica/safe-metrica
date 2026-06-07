@@ -43,6 +43,7 @@ type WeatherNotice = {
 type Props = {
   companyCode: string;
   initialStep: 1 | 2 | 3;
+  entryIntent: "risk" | "share" | "report" | "default";
   siteValue: string;
   sourceValue: string;
   todayDateValue: string;
@@ -138,6 +139,7 @@ function StepHeader({ step, completedSteps }: { step: number; completedSteps: Se
 export default function FieldParticipationStepper({
   companyCode,
   initialStep,
+  entryIntent,
   siteValue,
   sourceValue,
   todayDateValue,
@@ -186,6 +188,8 @@ export default function FieldParticipationStepper({
   const finalTitle = hasOpinion
     ? reportTitle.trim() || `${finalFeedbackType} - 현장근로자 참여`
     : "위험성평가 공유확인 완료";
+  const confirmationType = hasOpinion ? "worker_report" : "risk_share_confirm";
+  const confirmationStatus = canGoNextFromStep2 ? "confirmed" : "pending";
 
   const ttsText = useMemo(
     () =>
@@ -251,6 +255,10 @@ export default function FieldParticipationStepper({
         <input type="hidden" name="type" value={finalFeedbackType} />
         <input type="hidden" name="title" value={finalTitle} />
         <input type="hidden" name="content" value={finalContent} />
+        <input type="hidden" name="confirmation_type" value={confirmationType} />
+        <input type="hidden" name="confirmation_status" value={confirmationStatus} />
+        <input type="hidden" name="source_step" value={String(step)} />
+        <input type="hidden" name="entry_intent" value={entryIntent} />
         <input type="hidden" name="location" value={location} />
         <input type="hidden" name="submitter" value={submitter} />
         {anonymous ? <input type="hidden" name="anonymous" value="on" /> : null}

@@ -62,6 +62,28 @@ function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
 
+function normalizeConfirmationType(rawType: string, submissionType: string) {
+  const expectedType = submissionType === "공유확인" ? "risk_share_confirm" : "worker_report";
+
+  return rawType === expectedType ? rawType : expectedType;
+}
+
+function normalizeConfirmationStatus(rawStatus: string, allChecksConfirmed: boolean) {
+  if (allChecksConfirmed && rawStatus === "confirmed") {
+    return "confirmed";
+  }
+
+  return rawStatus === "skipped" ? "skipped" : "pending";
+}
+
+function normalizeSourceStep(rawStep: string) {
+  return /^[1-3]$/.test(rawStep) ? rawStep : "form_submit";
+}
+
+function normalizeEntryIntent(rawIntent: string) {
+  return ["risk", "share", "report"].includes(rawIntent) ? rawIntent : "default";
+}
+
 function isFile(value: FormDataEntryValue): value is File {
   return value instanceof File && value.size > 0;
 }
@@ -343,6 +365,17 @@ export async function POST(req: NextRequest) {
   const riskAssessmentCheck = getFormChecked(formData, "riskAssessmentCheck");
   const safetyMeasureCheck = getFormChecked(formData, "safetyMeasureCheck");
   const sharedRiskSummary = getFormText(formData, "sharedRiskSummary");
+  const allChecksConfirmed = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
+  const confirmationType = normalizeConfirmationType(
+    getFormText(formData, "confirmation_type"),
+    submissionType
+  );
+  const confirmationStatus = normalizeConfirmationStatus(
+    getFormText(formData, "confirmation_status"),
+    allChecksConfirmed
+  );
+  const sourceStep = normalizeSourceStep(getFormText(formData, "source_step"));
+  const entryIntent = normalizeEntryIntent(getFormText(formData, "entry_intent"));
   const isAcknowledgementOnly =
     submissionType === "공유확인" &&
     riskCheck &&
@@ -422,7 +455,21 @@ export async function POST(req: NextRequest) {
     finalContent = `${finalContent}\n\n${fileMemoLines.join("\n")}`.slice(0, 1900);
   }
 
-  finalContent = `${finalContent}\n\n[처리 기준]\n- 제출구분: ${submissionType}\n- 처리상태: ${processingStatus}\n- 공유확인은 조치완료 KPI에 포함하지 않습니다.`.slice(0, 1900);
+  const operationalMetadata = [
+    "[공유확인 메타]",
+    `- 확인 유형: ${confirmationType}`,
+    `- 확인 상태: ${confirmationStatus}`,
+    `- 제출 출처: ${sourceStep}`,
+    `- 진입 의도: ${entryIntent}`,
+    "",
+    "[처리 기준]",
+    `- 제출구분: ${submissionType}`,
+    `- 처리상태: ${processingStatus}`,
+    "- 공유확인은 조치완료 KPI에 포함하지 않습니다.",
+    "- 확인 상태는 운영기록 분류용이며 관리자 확인과 사업주 최종 판단을 대신하지 않습니다.",
+  ].join("\n");
+
+  finalContent = `${finalContent.slice(0, Math.max(0, 1898 - operationalMetadata.length))}\n\n${operationalMetadata}`;
 
   const properties: Record<string, unknown> = {};
 
@@ -585,6 +632,10 @@ export async function POST(req: NextRequest) {
           riskCheck,
           riskAssessmentCheck,
           safetyMeasureCheck,
+          confirmationType,
+          confirmationStatus,
+          sourceStep,
+          entryIntent,
           isAcknowledgementOnly,
           selectedFileCount: evidenceFiles.length,
           uploadedFileCount: uploadedFiles.length,
