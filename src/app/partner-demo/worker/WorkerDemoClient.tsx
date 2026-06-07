@@ -49,6 +49,7 @@ export default function WorkerDemoClient() {
   const [step, setStep] = useState(0);
   const [demoState, setDemoState] = useState<DemoState>(defaultDemoState);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [showResumeHandoff, setShowResumeHandoff] = useState(false);
   const [reportType, setReportType] = useState(reportTypes[0]);
   const [location, setLocation] = useState("창고 출입구 앞 보행 통로");
   const [content, setContent] = useState("지게차 이동 구역 주변 적재물을 정리하면 보행자 동선 확인이 더 쉬울 것 같습니다.");
@@ -58,6 +59,7 @@ export default function WorkerDemoClient() {
       const savedState = readDemoState();
       setDemoState(savedState);
       setStep(getResumeStep(savedState));
+      setShowResumeHandoff(savedState.workerReportSubmitted);
     }, 0);
   }, []);
 
@@ -75,6 +77,16 @@ export default function WorkerDemoClient() {
       updateDemoState(nextPartial);
       setPendingAction(null);
     }, 450);
+  };
+
+  const handleRestart = () => {
+    updateDemoState({
+      tbmConfirmed: false,
+      riskSharedConfirmed: false,
+      workerReportSubmitted: false,
+    });
+    setShowResumeHandoff(false);
+    setStep(0);
   };
 
   const progress = ((step + 1) / steps.length) * 100;
@@ -221,6 +233,19 @@ export default function WorkerDemoClient() {
 
           {step === 3 && (
             <div>
+              {showResumeHandoff && (
+                <div className="mb-5 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4">
+                  <p className="text-sm font-black text-amber-100">이전 체험 기록이 남아 있습니다.</p>
+                  <div className="mt-3 grid gap-2">
+                    <button type="button" onClick={handleRestart} className="min-h-12 rounded-2xl border border-amber-400/40 bg-slate-950/40 px-4 py-3 text-sm font-black text-amber-100 transition hover:bg-slate-950/70 active:scale-[0.98]">
+                      처음부터 다시 체험
+                    </button>
+                    <Link href="/partner-demo/manager" className="flex min-h-12 items-center justify-center rounded-2xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-300 active:scale-[0.98]">
+                      현장관리자 체험으로 이동
+                    </Link>
+                  </div>
+                </div>
+              )}
               <div className="rounded-3xl border border-emerald-500/30 bg-emerald-950/20 p-5 text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400 text-2xl font-black text-slate-950">✓</div>
                 <p className="mt-4 text-sm font-black text-emerald-200">근로자 체험 완료</p>
