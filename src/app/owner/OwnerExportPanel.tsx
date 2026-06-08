@@ -35,6 +35,10 @@ function getErrorMessage(status: number) {
   return "Export 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
+function isExportResponse(payload: unknown): payload is ExportResponse {
+  return payload !== null && typeof payload === "object" && !Array.isArray(payload);
+}
+
 function getExportSummary(payload: ExportResponse): ExportSummary | null {
   const { sources } = payload;
 
@@ -97,16 +101,16 @@ export default function OwnerExportPanel() {
         return;
       }
 
-      const exportText = await response.text();
+      const payload: unknown = await response.json();
 
-      try {
-        const payload = JSON.parse(exportText) as ExportResponse;
-        setSummary(getExportSummary(payload));
-      } catch {
-        setSummary(null);
+      if (!isExportResponse(payload)) {
+        throw new Error("Export response must be a JSON object.");
       }
 
-      const blob = new Blob([exportText], { type: "application/json;charset=utf-8" });
+      setSummary(getExportSummary(payload));
+
+      const prettyJson = JSON.stringify(payload, null, 2);
+      const blob = new Blob([prettyJson], { type: "application/json;charset=utf-8" });
       const downloadUrl = URL.createObjectURL(blob);
       const downloadLink = document.createElement("a");
       downloadLink.href = downloadUrl;
