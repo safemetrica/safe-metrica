@@ -1,3 +1,5 @@
+import "server-only";
+
 type SupabaseInsertResult = {
   ok: boolean;
   status: number;
@@ -101,6 +103,72 @@ export function isSupabaseFieldParticipationShadowWriteEnabled(companyCode: stri
   }
 
   return getSupabaseFieldParticipationShadowWriteCompanies().has(companyCode.toLowerCase());
+}
+
+
+type SupabaseExportTable =
+  | "field_participation_submissions"
+  | "tbm_voice_submissions";
+
+export class SupabaseReadError extends Error {
+  status: number;
+  statusText: string;
+
+  constructor(status: number, statusText: string, message: string) {
+    super(message);
+    this.name = "SupabaseReadError";
+    this.status = status;
+    this.statusText = statusText;
+  }
+}
+
+const SUPABASE_EXPORT_PAGE_SIZE = 1000;
+
+export async function selectSupabaseExportRows<T extends Record<string, unknown>>(
+  table: SupabaseExportTable,
+  query: URLSearchParams
+): Promise<T[]> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new SupabaseReadError(
+      0,
+      "missing_supabase_server_config",
+      "Supabase server configuration is missing."
+    );
+  }
+
+  const rows: T[] = [];
+
+  for (let offset = 0; ; offset += SUPABASE_EXPORT_PAGE_SIZE) {
+    const res = await fetch(`${supabaseUrl}/rest/v1/${table}?${query.toString()}`, {
+      method: "GET",
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+        Range: `${offset}-${offset + SUPABASE_EXPORT_PAGE_SIZE - 1}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => undefined);
+      const message =
+        typeof data?.message === "string"
+          ? data.message
+          : "Supabase export query failed.";
+
+      throw new SupabaseReadError(res.status, res.statusText, message);
+    }
+
+    const page = (await res.json()) as T[];
+    rows.push(...page);
+
+    if (page.length < SUPABASE_EXPORT_PAGE_SIZE) {
+      return rows;
+    }
+  }
 }
 
 export async function insertTbmVoiceSubmissionShadowRecord(
