@@ -110,6 +110,10 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(downloadUrl);
 }
 
+function getCustomerCsvDatasetLabel(dataset: CustomerCsvDataset) {
+  return CUSTOMER_CSV_DATASETS.find((option) => option.value === dataset)?.label ?? "고객용 CSV";
+}
+
 export default function OwnerExportPanel() {
   const [companyKey, setCompanyKey] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -229,7 +233,10 @@ export default function OwnerExportPanel() {
 
       downloadBlob(blob, filename);
       setCompanyKey(normalizedCompanyKey);
-      setNotice({ tone: "success", message: "고객용 CSV 다운로드가 완료되었습니다." });
+      setNotice({
+        tone: "success",
+        message: `${getCustomerCsvDatasetLabel(dataset)} 다운로드가 완료되었습니다.`,
+      });
     } catch {
       setNotice({
         tone: "error",
@@ -405,7 +412,8 @@ export default function OwnerExportPanel() {
 
         <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-950/20 p-3 text-xs leading-5 text-amber-100">
           고객에게는 이 Owner 화면이나 API 링크를 공유하지 않습니다. 내려받은 CSV, 향후 Excel, PDF,
-          증빙 ZIP만 별도 정제 후 전달합니다.
+          증빙 ZIP만 별도 정제 후 전달합니다. 해당 기간에 데이터가 없으면 헤더만 있는 CSV가 내려받아질 수
+          있습니다.
         </div>
       </section>
 

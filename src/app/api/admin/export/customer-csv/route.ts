@@ -212,6 +212,29 @@ function formatKstDateTime(value: string) {
   return kstDate.toISOString().slice(0, 16).replace("T", " ");
 }
 
+function formatCustomerTime(value: string) {
+  const text = cleanText(value);
+
+  if (!text) {
+    return "";
+  }
+
+  const timeMatch = text.match(/^(\\d{1,2}):(\\d{2})(?::\\d{2}(?:\\.\\d+)?)?$/);
+
+  if (timeMatch) {
+    return `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}`;
+  }
+
+  const date = new Date(text);
+
+  if (!Number.isNaN(date.getTime())) {
+    const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    return kstDate.toISOString().slice(11, 16);
+  }
+
+  return text;
+}
+
 function normalizeSubmissionType(value: string) {
   const text = cleanText(value).toLowerCase();
 
@@ -370,8 +393,8 @@ function buildTbmRows(tbmRows: ExportRow[]) {
 
   const rows = tbmRows.map((row) => [
     formatKstDate(getString(row, ["date_value", "work_date", "created_at"])),
-    getString(row, ["start_time", "startTime"]),
-    getString(row, ["end_time", "endTime"]),
+    formatCustomerTime(getString(row, ["start_time", "startTime"])),
+    formatCustomerTime(getString(row, ["end_time", "endTime"])),
     summarize(getString(row, ["work_name", "title"])),
     getString(row, ["work_type"]),
     joinList(row, ["work_types", "work_type_multi", "work_type_multi_select"]),
