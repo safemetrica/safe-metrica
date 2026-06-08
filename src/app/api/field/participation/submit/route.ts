@@ -327,6 +327,7 @@ function buildContentWithConfirmation(params: {
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const contractorName = getFormText(formData, "contractorName");
+  const clientSubmissionId = getFormText(formData, "clientSubmissionId");
 
   let company;
 
@@ -627,6 +628,7 @@ export async function POST(req: NextRequest) {
         notion_url: notionUrl,
         file_urls: uploadedFiles.map((file) => file.url),
         raw_payload: {
+          clientSubmissionId,
           contractorName,
           sharedRiskSummary,
           riskCheck,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 
@@ -54,6 +54,14 @@ type Props = {
 };
 
 const stepLabels = ["위험 확인", "주지 확인", "의견 제출", "완료"];
+
+function createClientSubmissionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 function normalizeParticipationType(rawType: string) {
   const value = rawType.trim();
@@ -167,7 +175,11 @@ export default function FieldParticipationStepper({
   const [submitter, setSubmitter] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [content, setContent] = useState("");
+  const [hasEvidenceFiles, setHasEvidenceFiles] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clientSubmissionId] = useState(createClientSubmissionId);
+  const isSubmittingRef = useRef(false);
 
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const normalizedCompanyCode = companyCode.trim().toLowerCase();
@@ -182,7 +194,11 @@ export default function FieldParticipationStepper({
     "bubblemon",
   ].includes(normalizedCompanyCode);
   const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
-  const hasOpinion = reportTitle.trim().length > 0 || content.trim().length > 0;
+  const hasOpinion =
+    reportTitle.trim().length > 0 ||
+    content.trim().length > 0 ||
+    location.trim().length > 0 ||
+    hasEvidenceFiles;
   const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : "공유확인";
   const finalContent = hasOpinion ? content.trim() || "상세 내용 미입력" : "오늘은 추가 의견 없음.";
   const finalTitle = hasOpinion
@@ -217,6 +233,25 @@ export default function FieldParticipationStepper({
         ? "border-orange-200 bg-orange-50 text-orange-900"
         : "border-cyan-200 bg-cyan-50 text-cyan-900";
 
+  function handleFormChange(event: FormEvent<HTMLFormElement>) {
+    const target = event.target;
+
+    if (!(target instanceof HTMLInputElement) || target.type !== "file") return;
+
+    const fileInputs = event.currentTarget.querySelectorAll<HTMLInputElement>('input[type="file"]');
+    setHasEvidenceFiles(Array.from(fileInputs).some((input) => (input.files?.length ?? 0) > 0));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (isSubmittingRef.current) {
+      event.preventDefault();
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+  }
+
   function handlePlayTts() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       alert("이 브라우저에서는 음성 안내를 지원하지 않습니다.");
@@ -247,8 +282,15 @@ export default function FieldParticipationStepper({
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <form action="/api/field/participation/submit" method="post" encType="multipart/form-data">
+      <form
+        action="/api/field/participation/submit"
+        method="post"
+        encType="multipart/form-data"
+        onChange={handleFormChange}
+        onSubmit={handleSubmit}
+      >
         <input type="hidden" name="companyCode" value={companyCode} />
+        <input type="hidden" name="clientSubmissionId" value={clientSubmissionId} />
         <input type="hidden" name="source" value={sourceValue} />
         <input type="hidden" name="sharedRiskSummary" value={riskSummary.memo ?? ""} />
         <input type="hidden" name="reportedDate" value={todayDateValue} />
@@ -533,9 +575,14 @@ export default function FieldParticipationStepper({
             {step === 3 ? (
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white"
+                disabled={isSubmitting}
+                className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-slate-100 disabled:opacity-80"
               >
-                {hasOpinion ? "제출하기 →" : "의견 없이 완료하기 →"}
+                {isSubmitting
+                  ? "제출 중입니다..."
+                  : hasOpinion
+                    ? "의견 제출하기 →"
+                    : "의견 없이 완료하기 →"}
               </button>
             ) : null}
 
