@@ -1,3 +1,4 @@
+import OwnerExportPanel from "./OwnerExportPanel";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -106,6 +107,8 @@ export default async function OwnerConsolePage({
             </article>
           ))}
         </section>
+
+        <OwnerExportPanel />
 
         <section className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5">
           <p className="text-sm font-bold text-amber-200">Principal · Contractor</p>
