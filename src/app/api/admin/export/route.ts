@@ -76,7 +76,7 @@ function withoutNotionLinks(value: unknown): unknown {
 
   return Object.fromEntries(
     Object.entries(value).flatMap(([key, nestedValue]) =>
-      key === "notion_url" || key === "notion_page_url"
+      key === "notion_url" || key === "notion_page_url" || key === "pageUrl"
         ? []
         : [[key, withoutNotionLinks(nestedValue)]]
     )

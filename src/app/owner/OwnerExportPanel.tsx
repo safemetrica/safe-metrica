@@ -97,15 +97,10 @@ export default function OwnerExportPanel() {
         return;
       }
 
-      const exportText = await response.text();
+      const payload = (await response.json()) as ExportResponse;
+      setSummary(getExportSummary(payload));
 
-      try {
-        const payload = JSON.parse(exportText) as ExportResponse;
-        setSummary(getExportSummary(payload));
-      } catch {
-        setSummary(null);
-      }
-
+      const exportText = JSON.stringify(payload, null, 2);
       const blob = new Blob([exportText], { type: "application/json;charset=utf-8" });
       const downloadUrl = URL.createObjectURL(blob);
       const downloadLink = document.createElement("a");
