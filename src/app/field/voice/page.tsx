@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { buildParticipationReviewLabels, type ParticipationReviewLabel } from "@/lib/participationReviewLabels";
+import { riskShareLinkCopy } from "@/lib/risk-share-link/copy";
 import {
   TenantRequiredError,
   UnknownCompanyError,
@@ -519,16 +520,20 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
         <input type="hidden" name="pageId" value={row.id} />
         <input type="hidden" name="actionAuthor" value="SafeMetrica 관리자" />
         <label htmlFor={`memo-${row.id}`} className="text-xs font-black text-slate-500">
-          상태 변경 / 조치 메모
+          관리자 검토 / 조치 메모
         </label>
         <textarea
           id={`memo-${row.id}`}
           name="memo"
           rows={3}
           defaultValue={row.actionMemo ?? ""}
-          placeholder="예: 현장 확인 후 미끄럼 구간 청소 완료 / 담당자에게 보완 요청 / 위험성평가 반영 검토"
+          placeholder={riskShareLinkCopy.manager.actionMemoPlaceholder}
           className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
+        <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+          공유확인은 근로자 확인 기록이며 조치완료 성과로 집계하지 않습니다. 위험제보·아차사고·개선제안은
+          현장 확인 결과와 필요한 조치 내용을 남겨 주세요.
+        </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {FIELD_VOICE_STATUS_OPTIONS.map((nextStatus) => (
             <button
@@ -693,14 +698,37 @@ export default async function FieldVoiceReviewPage() {
               <p className="text-xs font-black text-blue-700">SafeMetrica 현장참여</p>
               <h1 className="mt-2 text-2xl font-black text-slate-950">현장참여 접수함</h1>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                제출구분 기준으로 공유확인은 기록으로 분리하고, 위험제보·아차사고·개선제안은
-                검토 필요 또는 조치 필요 항목으로 구분합니다.
+                {riskShareLinkCopy.manager.guide} 공유확인은 조치완료 KPI와 분리해 확인합니다.
               </p>
             </div>
 
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm">
               <p className="font-black text-blue-900">{company.name}</p>
               <p className="mt-1 whitespace-nowrap text-blue-700">최근 접수 {rows.length}건</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+          <p className="text-sm font-black text-blue-900">Risk Share Link 운영 기준</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl bg-white p-3">
+              <p className="text-xs font-black text-emerald-700">공유확인</p>
+              <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+                위험성평가와 안전조치 내용을 확인한 기록입니다. 조치완료 KPI에는 포함하지 않습니다.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-3">
+              <p className="text-xs font-black text-blue-700">관리자 검토대상</p>
+              <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+                위험제보·아차사고·개선제안은 현장 확인 후 처리상태와 조치 메모를 남깁니다.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-3">
+              <p className="text-xs font-black text-amber-700">조치 필요</p>
+              <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+                조치필요·검토중·미조치 항목은 후속 확인 대상으로 관리합니다.
+              </p>
             </div>
           </div>
         </section>
@@ -713,8 +741,8 @@ export default async function FieldVoiceReviewPage() {
                 {company.name} 근로자 안전참여 링크
               </h2>
               <p className="mt-2 text-sm leading-6 text-emerald-900">
-                이 링크는 근로자가 위험성평가 공유확인, 아차사고, 개선제안을 제출하는
-                공개 QR용 링크입니다. 관리자 접수함과 구분해서 사용하세요.
+                이 링크는 근로자가 위험성평가 공유확인, 위험제보, 아차사고, 개선제안을 제출하는
+                공개 QR용 링크입니다. 관리자 접수함과 원본 DB 관리 화면은 분리해 사용하세요.
               </p>
             </div>
 
@@ -738,11 +766,11 @@ export default async function FieldVoiceReviewPage() {
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-            <p className="text-xs font-black text-emerald-700">공유확인 기록</p>
+            <p className="text-xs font-black text-emerald-700">공유확인 기록 · KPI 제외</p>
             <p className="mt-2 text-2xl font-black text-emerald-950">{acknowledgementRows.length}</p>
           </div>
           <div className="rounded-3xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
-            <p className="text-xs font-black text-blue-700">검토 필요 접수</p>
+            <p className="text-xs font-black text-blue-700">관리자 검토대상</p>
             <p className="mt-2 text-2xl font-black text-blue-950">{reviewRequiredRows.length}</p>
           </div>
           <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
@@ -765,10 +793,10 @@ export default async function FieldVoiceReviewPage() {
         </section>
 
         <section className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-          <p className="text-sm font-black text-amber-900">상태 변경 v1</p>
+          <p className="text-sm font-black text-amber-900">관리자 검토 / 조치 메모 v1</p>
           <p className="mt-2 text-sm leading-6 text-amber-900">
-            현재는 접수함 분류와 상태 변경, 조치 메모 이력 저장까지 처리합니다. 담당자 지정, 완료사진,
-            위험성평가 반영 후보 연결은 후속 단계에서 분리 구현합니다.
+            현재는 접수함 분류와 처리상태 변경, 조치 메모 저장까지 처리합니다. 공유확인은 조치완료 성과와
+            분리하고, 담당자 지정·완료사진·위험성평가 반영 후보 연결은 후속 단계에서 분리 구현합니다.
           </p>
         </section>
 
@@ -781,7 +809,7 @@ export default async function FieldVoiceReviewPage() {
             <>
               <VoiceSection
                 title="공유확인 기록"
-                description="의견 없이 위험요인·위험성평가·안전조치 확인만 완료한 주지확인 기록입니다."
+                description="의견 없이 위험요인·위험성평가·안전조치 확인만 완료한 주지확인 기록입니다. 조치완료 KPI에는 포함하지 않습니다."
                 rows={acknowledgementRows}
                 emptyText="공유확인 기록이 아직 없습니다."
                 badgeClassName="bg-emerald-100 text-emerald-800"
@@ -789,7 +817,7 @@ export default async function FieldVoiceReviewPage() {
 
               <VoiceSection
                 title="검토 필요 접수"
-                description="위험제보, 아차사고, 개선제안 중 접수·완료·기타 상태로 분류된 항목입니다."
+                description="위험제보·아차사고·개선제안 중 관리자 확인이 필요한 항목입니다. 현장 확인 후 처리상태와 조치 메모를 남겨 주세요."
                 rows={reviewRequiredRows}
                 emptyText="검토할 현장 제보가 없습니다."
                 badgeClassName="bg-blue-100 text-blue-800"
@@ -797,7 +825,7 @@ export default async function FieldVoiceReviewPage() {
 
               <VoiceSection
                 title="조치 필요 / 미조치"
-                description="검토중, 조치필요, 미조치, 보완필요, 미완료 성격의 항목입니다."
+                description="위험제보·아차사고·개선제안 중 현장 조치 또는 추가 확인이 필요한 항목입니다."
                 rows={actionNeededRows}
                 emptyText="현재 조치 필요로 분류된 현장 제보가 없습니다."
                 badgeClassName="bg-amber-100 text-amber-900"
