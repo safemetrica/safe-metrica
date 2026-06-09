@@ -1,4 +1,5 @@
 "use client";
+import { riskShareLinkCopy, riskShareLinkSubmissionTypeLabels } from "@/lib/risk-share-link/copy";
 
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
@@ -162,7 +163,12 @@ export default function FieldParticipationStepper({
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
   const feedbackTypeOptions = useMemo(() => {
-    const source = feedbackTypes.length > 0 ? feedbackTypes : ["위험제보", "아차사고", "개선제안"];
+    const source =
+    feedbackTypes.length > 0
+      ? feedbackTypes
+      : riskShareLinkSubmissionTypeLabels.filter(
+          (type) => type !== riskShareLinkCopy.submissionTypes.shareConfirmation.label
+        );
     return Array.from(new Set(source.map(normalizeParticipationType))).filter(
       (type) => type !== "공유확인"
     );
@@ -407,7 +413,7 @@ export default function FieldParticipationStepper({
             {step === 2 ? (
               <div>
                 <p className="text-sm font-black text-slate-500">Step 2/4</p>
-                <h2 className="mt-1 text-xl font-black text-slate-950">위험성평가 공유·주지 확인</h2>
+                <h2 className="mt-1 text-xl font-black text-slate-950">{riskShareLinkCopy.worker.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   위험요인 확인 후 공유·주지 확인을 남겨주세요.
                   아래 항목을 직접 확인해야 기록됩니다.
@@ -437,7 +443,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setRiskAssessmentCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>위험성평가 주요 내용을 공유받았습니다.</span>
+                    <span>{riskShareLinkCopy.worker.checks.riskAssessment}</span>
                   </label>
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
                     <input
@@ -446,7 +452,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setSafetyMeasureCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>필요한 안전조치와 주의사항을 확인했습니다.</span>
+                    <span>{riskShareLinkCopy.worker.checks.safetyMeasure}</span>
                   </label>
                 </div>
               </div>
@@ -457,7 +463,7 @@ export default function FieldParticipationStepper({
                 <p className="text-sm font-black text-slate-500">Step 3/4</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">의견 / 아차사고 제출</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  위험, 아차사고, 개선 의견이 있으면 바로 남길 수 있습니다. 선택사항입니다.
+                  {riskShareLinkCopy.worker.intro}
                 </p>
 
                 <div className="mt-4">
