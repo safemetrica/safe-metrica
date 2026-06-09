@@ -51,6 +51,19 @@ type HomeRoleShellProps = {
   children: ReactNode;
 };
 
+const menuAccentBorder: Record<string, string> = {
+  "/tbm": "border-l-blue-500",
+  "/field/voice": "border-l-emerald-500",
+  "/ebm": "border-l-emerald-500",
+  "/field": "border-l-teal-500",
+  "/monthly-report": "border-l-sky-500",
+  "/dashboard": "border-l-purple-500",
+  "/risk": "border-l-red-500",
+  "/ptw": "border-l-orange-500",
+  "/inspection-education": "border-l-cyan-500",
+  "/kosha": "border-l-amber-500",
+};
+
 export default function HomeRoleShell({
   initialRole,
   roleOptions,
@@ -114,7 +127,7 @@ export default function HomeRoleShell({
                 <Link
                   key={menu.href}
                   href={menu.href}
-                  className="group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition hover:border-slate-700 hover:bg-slate-800"
+                  className={`group flex items-center gap-3 rounded-xl border border-slate-800 border-l-4 px-3 py-2.5 transition hover:border-slate-700 hover:bg-slate-800 ${menuAccentBorder[menu.href] ?? "border-l-slate-700"}`}
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-lg group-hover:bg-slate-700" aria-hidden="true">
                     {menu.icon}
@@ -198,11 +211,11 @@ export default function HomeRoleShell({
                 );
 
                 return task.href && !task.disabled ? (
-                  <Link key={task.title} href={task.href} className={`group rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-white/30 ${task.accent}`}>
+                  <Link key={task.title} href={task.href} className={`group rounded-2xl border border-l-4 p-4 transition hover:-translate-y-0.5 hover:border-white/30 ${task.accent}`}>
                     {cardContent}
                   </Link>
                 ) : (
-                  <div key={task.title} aria-disabled="true" className={`cursor-not-allowed rounded-2xl border p-4 opacity-70 ${task.accent}`}>
+                  <div key={task.title} aria-disabled="true" className={`cursor-not-allowed rounded-2xl border border-l-4 p-4 opacity-70 ${task.accent}`}>
                     {cardContent}
                   </div>
                 );
@@ -222,7 +235,7 @@ export default function HomeRoleShell({
             </summary>
             <div className="grid grid-cols-2 gap-2 border-t border-slate-800 p-3">
               {menus.map((menu) => (
-                <Link key={menu.href} href={menu.href} className="relative rounded-xl border border-slate-800 bg-slate-950/70 p-3 transition active:scale-[0.98]">
+                <Link key={menu.href} href={menu.href} className={`relative rounded-xl border border-slate-800 border-l-4 bg-slate-950/70 p-3 transition active:scale-[0.98] ${menuAccentBorder[menu.href] ?? "border-l-slate-700"}`}>
                   {menuStatus[menu.href] ? (
                     <span className="absolute right-2 top-2 rounded-full bg-slate-800 px-1.5 py-0.5 text-[9px] font-black text-slate-400">
                       {menuStatus[menu.href]}
