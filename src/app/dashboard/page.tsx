@@ -500,52 +500,52 @@ function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
   ].filter((signal) => signal.value > 0);
 
   return (
-    <section className="rounded-3xl border border-blue-500/25 bg-slate-900/80 p-5 shadow-xl">
-      <div className="flex items-start justify-between gap-4">
+    <section className="rounded-2xl border border-blue-500/25 bg-slate-900/80 p-4 shadow-xl md:rounded-3xl md:p-5">
+      <div className="flex items-start justify-between gap-3 md:gap-4">
         <div>
           <p className="text-xs font-bold text-blue-300">대표 의사결정</p>
-          <h2 className="mt-1 text-lg font-bold text-white">
+          <h2 className="mt-0.5 text-base font-bold text-white md:mt-1 md:text-lg">
             대표 Risk 확인 신호
           </h2>
-          <p className="mt-1 text-xs leading-5 text-slate-400">
+          <p className="mt-0.5 text-xs leading-5 text-slate-400 md:mt-1">
             오늘 대표가 우선 확인할 Risk만 요약합니다.
           </p>
         </div>
         <Link
           href="/risk"
-          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-blue-400/40 bg-blue-600/90 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-500"
+          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-blue-400/40 bg-blue-600/90 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-blue-500 md:px-3 md:py-1.5 md:text-xs"
         >
           Risk 상세 보기 →
         </Link>
       </div>
 
       {executiveSignals.length > 0 ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {executiveSignals.slice(0, 3).map((signal) => (
+        <div className="mt-3 grid grid-cols-2 gap-2 md:mt-4 md:grid-cols-3 md:gap-3">
+          {executiveSignals.slice(0, 3).map((signal, index) => (
             <div
               key={signal.label}
-              className={`rounded-2xl border p-4 ${signal.accent}`}
+              className={`${index >= 2 ? "hidden md:block" : "block"} rounded-xl border p-3 md:rounded-2xl md:p-4 ${signal.accent}`}
             >
               <div className="flex items-end justify-between gap-3">
-                <span className="text-sm font-bold text-white">
+                <span className="text-xs font-bold text-white md:text-sm">
                   {signal.label}
                 </span>
-                <span className="text-3xl font-black leading-none">
+                <span className="text-2xl font-black leading-none md:text-3xl">
                   {signal.value}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-slate-300">{signal.hint}</p>
+              <p className="mt-2 hidden text-xs text-slate-300 md:block">{signal.hint}</p>
             </div>
           ))}
         </div>
       ) : (
-        <div className="mt-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-200">
+        <div className="mt-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-200 md:mt-4 md:rounded-2xl md:p-4">
           대표 확인이 필요한 Risk 신호가 없습니다.
         </div>
       )}
 
       {risk.highRiskItems.length > 0 && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 hidden space-y-2 md:block">
           {risk.highRiskItems.slice(0, 3).map((item) => (
             <Link
               key={item.id}
@@ -588,16 +588,16 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 pb-10 text-slate-100">
+    <main className="min-h-screen bg-slate-950 pb-8 text-slate-100 md:pb-10">
       <SafeNav />
 
-      <div className="mx-auto max-w-6xl px-5 py-6">
-        <div className="mb-5 flex items-center justify-between gap-4">
+      <div className="mx-auto max-w-6xl px-4 py-4 md:px-5 md:py-6">
+        <div className="mb-3 flex items-center justify-between gap-3 md:mb-5 md:gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <h1 className="text-xl font-bold tracking-tight text-white md:text-2xl">
               📊 대표 대시보드
             </h1>
-            <p className="mt-1 text-sm text-slate-400 [word-break:keep-all]">
+            <p className="mt-0.5 text-xs text-slate-400 [word-break:keep-all] md:mt-1 md:text-sm">
               오늘 대표 확인이 필요한 신호부터 보여드립니다.
             </p>
           </div>
@@ -610,10 +610,10 @@ export default async function DashboardPage() {
         </div>
 
         {/* 1. 오늘 확인 필요 */}
-        <section className="mb-5 rounded-3xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-5 shadow-2xl">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <section className="mb-3 rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-4 shadow-2xl md:mb-5 md:rounded-3xl md:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
             <div className="max-w-3xl">
-              <div className="mb-2 flex items-center gap-2">
+              <div className="mb-1.5 flex items-center gap-2 md:mb-2">
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-bold ${
                     hasItemsToReview
@@ -625,18 +625,18 @@ export default async function DashboardPage() {
                 </span>
                 <span className="text-xs text-slate-400">대표 우선 확인</span>
               </div>
-              <h2 className="text-2xl font-bold leading-tight text-white [word-break:keep-all]">
+              <h2 className="text-xl font-bold leading-tight text-white [word-break:keep-all] md:text-2xl">
                 {hasItemsToReview
                   ? `오늘 확인할 항목이 ${s.todayTasks.length}건 있습니다.`
                   : "현재 주요 관리 항목은 안정적입니다."}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300 [word-break:keep-all]">
+              <p className="mt-1.5 text-xs leading-5 text-slate-300 [word-break:keep-all] md:mt-2 md:text-sm md:leading-6">
                 조치 필요 {s.조치필요}건 · 증빙 누락 {s.EB누락}건 · PTW 승인
                 대기 {s.PTW미승인}건
               </p>
             </div>
             <div
-              className={`flex w-full shrink-0 items-center justify-between rounded-2xl border px-4 py-3 lg:w-44 lg:block ${
+              className={`hidden w-full shrink-0 items-center justify-between rounded-2xl border px-4 py-3 lg:block lg:w-44 ${
                 hasItemsToReview
                   ? "border-amber-500/30 bg-amber-500/10"
                   : "border-emerald-500/30 bg-emerald-500/10"
@@ -655,15 +655,15 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="mt-4 border-t border-slate-700/80 pt-4">
+          <div className="mt-3 border-t border-slate-700/80 pt-3 md:mt-4 md:pt-4">
             <TodayTasksCard tasks={s.todayTasks} />
           </div>
         </section>
 
-        <section className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
+        <section className="mb-3 grid gap-3 md:mb-5 md:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
           {/* 2. AI 운영브리핑: 문구·생성 로직·표시 조건 유지 */}
-          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-3 shadow-xl md:rounded-3xl md:p-4">
+            <div className="mb-2 flex items-center justify-between gap-2 md:mb-3">
               <h2 className="text-base font-bold text-white">
                 오늘 운영 브리핑
               </h2>
@@ -674,7 +674,7 @@ export default async function DashboardPage() {
                 TBM · 증빙 · PTW 기준
               </span>
             </div>
-            <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-950/20 px-4 py-3">
+            <div className="mb-2 rounded-xl border border-cyan-500/30 bg-cyan-950/20 px-3 py-2.5 md:mb-3 md:px-4 md:py-3">
               <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs font-black text-cyan-200">
@@ -689,13 +689,13 @@ export default async function DashboardPage() {
                 </span>
               </div>
 
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-1.5 md:gap-2">
                 {s.dailySafetyBriefing.executiveMessages
                   .slice(0, 3)
                   .map((message: string) => (
                     <span
                       key={message}
-                      className="rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-xs text-slate-200"
+                      className="rounded-full border border-slate-700 bg-slate-950/60 px-2.5 py-1 text-[11px] text-slate-200 md:px-3 md:text-xs"
                     >
                       {message}
                     </span>
@@ -706,7 +706,7 @@ export default async function DashboardPage() {
                   .map((message: string) => (
                     <span
                       key={message}
-                      className="rounded-full border border-rose-400/40 bg-rose-950/30 px-3 py-1 text-xs font-bold text-rose-200"
+                      className="rounded-full border border-rose-400/40 bg-rose-950/30 px-2.5 py-1 text-[11px] font-bold text-rose-200 md:px-3 md:text-xs"
                     >
                       {message}
                     </span>
@@ -722,32 +722,32 @@ export default async function DashboardPage() {
         </section>
 
         {/* 4. 상세 메뉴 진입 */}
-        <section className="mb-5 rounded-3xl border border-slate-700 bg-slate-900/70 p-5">
-          <div className="mb-4">
+        <section className="mb-3 rounded-2xl border border-slate-700 bg-slate-900/70 p-3 md:mb-5 md:rounded-3xl md:p-5">
+          <div className="mb-2 md:mb-4">
             <h2 className="text-base font-bold text-white">상세 메뉴</h2>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 hidden text-xs text-slate-400 md:block">
               세부 처리 현황과 전체 목록은 각 메뉴에서 확인하세요.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-4">
             {detailMenus.map((menu) => (
               <Link
                 key={menu.href}
                 href={menu.href}
-                className="rounded-2xl border border-slate-700 bg-slate-800/70 p-4 transition hover:border-blue-500/60 hover:bg-slate-800"
+                className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/70 px-3 py-2.5 transition hover:border-blue-500/60 hover:bg-slate-800 md:block md:rounded-2xl md:p-4"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xl" aria-hidden="true">
+                <div className="flex items-center justify-between gap-2 md:gap-3">
+                  <span className="text-base md:text-xl" aria-hidden="true">
                     {menu.icon}
                   </span>
-                  <span className="text-xs font-bold text-slate-500">
+                  <span className="hidden text-xs font-bold text-slate-500 md:inline">
                     열기 →
                   </span>
                 </div>
-                <div className="mt-3 text-sm font-bold text-white">
+                <div className="text-sm font-bold text-white md:mt-3">
                   {menu.label}
                 </div>
-                <div className="mt-1 text-xs text-slate-400">
+                <div className="mt-1 hidden text-xs text-slate-400 md:block">
                   {menu.description}
                 </div>
               </Link>
@@ -756,8 +756,8 @@ export default async function DashboardPage() {
         </section>
 
         {/* 기본 비노출 운영 정보 */}
-        <details className="group rounded-3xl border border-slate-800 bg-slate-900/50">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-bold text-slate-300 marker:content-none">
+        <details className="group rounded-2xl border border-slate-800 bg-slate-900/50 md:rounded-3xl">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-slate-300 marker:content-none md:gap-4 md:px-5 md:py-4">
             <span>운영 상세 펼쳐보기</span>
             <span className="text-xs font-medium text-slate-500 group-open:hidden">
               KPI · 증거 완결성 · PTW
