@@ -405,21 +405,6 @@ async function getDashboardData() {
     });
   }
 
-  const primaryExecutiveTask = dailySafetyBriefing.executiveTasks[0];
-  const isPrimaryExecutiveTaskUrgent =
-    primaryExecutiveTask?.urgent ??
-    (dailySafetyBriefing.priority === "critical" ||
-      dailySafetyBriefing.priority === "warning");
-
-  if (dailySafetyBriefing.priority !== "normal") {
-    todayTasks.unshift({
-      icon: primaryExecutiveTask?.icon ?? "🧭",
-      text: dailySafetyBriefing.executiveHeadline,
-      href: primaryExecutiveTask?.href ?? "/dashboard",
-      urgent: isPrimaryExecutiveTaskUrgent,
-    });
-  }
-
   const tbm전체 = rows.length;
   const 특이사항건 = rows.filter((row) => row.특이사항).length;
   const EB연결건 = rows.filter((row) => needsTbmEvidenceBook(row.rawProps ?? {}) && row.연결EB > 0).length;
