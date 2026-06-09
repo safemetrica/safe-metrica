@@ -478,190 +478,127 @@ async function getDashboardData() {
 }
 
 function RiskIntelligenceSection({ risk }: { risk: RiskSummary }) {
-  if (!risk.hasDb) {
-    return (
-      <section className="rounded-2xl border border-slate-600/80 bg-slate-800/70 p-5 shadow-lg">
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-white">위험관리 요약</h2>
-          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">위험성평가 관리현황</p>
-            <p className="mt-1 text-xs text-gray-400">위험성평가 항목 기반 관리 신호</p>
-          </div>
-          <span className="rounded-full bg-gray-800 px-3 py-1 text-xs text-gray-400">준비 중</span>
-        </div>
-        <div className="rounded-xl bg-gray-800/70 p-4 text-sm text-gray-300">
-          위험성평가 항목 등록 후 표시됩니다.
-        </div>
-      </section>
-    );
-  }
-
-  const primaryCards = [
+  const executiveSignals = [
     {
-      label: "지금 위험한 항목",
+      label: "고위험 항목",
       value: risk.highRiskCount,
-      hint: "대표·현장감독자 우선 확인",
-      accent: "text-red-200",
-      role: "대표 보고",
+      hint: "즉시 위험 수준 확인",
+      accent: "border-rose-500/30 bg-rose-500/10 text-rose-200",
     },
     {
-      label: "조치가 필요한 항목",
+      label: "조치 필요",
       value: risk.actionNeededCount,
-      hint: "담당자 조치 계획 확인",
-      accent: "text-yellow-200",
-      role: "담당자 처리",
+      hint: "지연 또는 미조치 확인",
+      accent: "border-amber-500/30 bg-amber-500/10 text-amber-200",
     },
     {
-      label: "관리자 확인 대기",
-      value: risk.approvalReadyCount,
-      hint: "완료 후보 승인 필요",
-      accent: "text-cyan-200",
-      role: "관리자 확인",
-    },
-    {
-      label: "개선 반영 대기",
-      value: risk.riskDbPendingCount,
-      hint: "조치 후 반영 확인 필요",
-      accent: "text-amber-200",
-      role: "현장 확인",
-    },
-  ];
-
-  const statusBadges = [
-    {
-      label: "확인 완료",
-      value: risk.approvalCompletedCount,
-      hint: "관리자 승인 완료",
-      accent: "text-emerald-200",
-    },
-    {
-      label: "개선 반영 완료",
-      value: risk.riskDbReflectedCount,
-      hint: "Risk DB 반영 완료",
-      accent: "text-emerald-200",
-    },
-    {
-      label: "다시 확인할 항목",
-      value: risk.reassessmentDueCount,
-      hint: "30일 이내 재확인",
-      accent: "text-blue-200",
-    },
-    {
-      label: "비용 검토 필요",
+      label: "비용 검토",
       value: risk.budgetNeededCount,
-      hint: "예산 수반 항목",
-      accent: "text-orange-200",
+      hint: "대표 의사결정 가능 항목",
+      accent: "border-orange-500/30 bg-orange-500/10 text-orange-200",
     },
-  ];
+  ].filter((signal) => signal.value > 0);
 
   return (
-    <section className="rounded-2xl border border-slate-600/80 bg-slate-800/70 p-5 shadow-lg">
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <section className="rounded-3xl border border-blue-500/25 bg-slate-900/80 p-5 shadow-xl">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-white">위험관리 요약</h2>
-          <p className="mt-0.5 text-[11px] font-semibold text-blue-200">
-            대표 · 현장감독자 · 담당자 공통 확인
-          </p>
-          <p className="mt-1 text-xs text-gray-400">
-            위험성평가 항목 {risk.total}건 중 오늘 확인할 항목을 쉽게 정리했습니다.
+          <p className="text-xs font-bold text-blue-300">대표 의사결정</p>
+          <h2 className="mt-1 text-lg font-bold text-white">
+            대표 Risk 확인 신호
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-slate-400">
+            오늘 대표가 우선 확인할 Risk만 요약합니다.
           </p>
         </div>
         <Link
           href="/risk"
-          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-blue-400/40 bg-blue-600/90 px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-blue-500"
+          className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-blue-400/40 bg-blue-600/90 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-500"
         >
           Risk 상세 보기 →
         </Link>
       </div>
 
-      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {primaryCards.map((card) => (
-          <div
-            key={card.label}
-            className="rounded-xl border border-slate-600/80 bg-slate-800/80 p-4 shadow-sm"
-          >
-            <div className="mb-2 inline-flex rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-bold text-slate-300">
-              {card.role}
-            </div>
-            <div className={`text-4xl font-black leading-none ${card.accent}`}>{card.value}</div>
-            <div className="mt-2 text-base font-bold text-white [word-break:keep-all]">{card.label}</div>
-            <div className="mt-1 text-xs leading-relaxed text-slate-300 [word-break:keep-all]">{card.hint}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/60 p-3">
-        <div className="mb-2 text-xs font-bold text-slate-300">처리 현황</div>
-        <div className="grid grid-cols-2 gap-2">
-          {statusBadges.map((badge) => (
+      {executiveSignals.length > 0 ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {executiveSignals.slice(0, 3).map((signal) => (
             <div
-              key={badge.label}
-              className="rounded-lg border border-slate-700/80 bg-slate-950/40 p-2"
+              key={signal.label}
+              className={`rounded-2xl border p-4 ${signal.accent}`}
             >
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[11px] font-semibold text-slate-400 [word-break:keep-all]">
-                  {badge.label}
+              <div className="flex items-end justify-between gap-3">
+                <span className="text-sm font-bold text-white">
+                  {signal.label}
                 </span>
-                <span className={`text-lg font-black ${badge.accent}`}>{badge.value}</span>
+                <span className="text-3xl font-black leading-none">
+                  {signal.value}
+                </span>
               </div>
-              <div className="mt-0.5 text-[10px] leading-relaxed text-slate-500 [word-break:keep-all]">
-                {badge.hint}
-              </div>
+              <p className="mt-2 text-xs text-slate-300">{signal.hint}</p>
             </div>
           ))}
         </div>
-      </div>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-200">
+          대표 확인이 필요한 Risk 신호가 없습니다.
+        </div>
+      )}
 
-      {risk.highRiskItems.length > 0 ? (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-4">
-          <div className="mb-2 text-xs font-semibold text-gray-400 [word-break:keep-all]">
-            먼저 볼 고위험 항목
-          </div>
-          <div className="space-y-2">
-            {risk.highRiskItems.map((item) => (
-              <div key={item.id} className="rounded-lg border border-slate-600/70 bg-slate-900/80 p-3">
-                <div className="text-sm font-medium leading-snug text-white [word-break:keep-all]">
-                  {item.no ? `${item.no}. ` : ""}
-                  {item.title || item.processName || "위험성평가 항목"}
-                </div>
-                <div className="mt-1 text-xs leading-relaxed text-slate-300">
+      {risk.highRiskItems.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {risk.highRiskItems.slice(0, 3).map((item) => (
+            <Link
+              key={item.id}
+              href="/risk"
+              className="block rounded-xl border border-slate-700 bg-slate-950/50 p-3 transition hover:border-blue-500/50 hover:bg-slate-900"
+            >
+              <div className="text-sm font-semibold leading-snug text-white [word-break:keep-all]">
+                {item.no ? `${item.no}. ` : ""}
+                {item.title || item.processName || "위험성평가 항목"}
+              </div>
+              {(item.processName || item.hazard) && (
+                <div className="mt-1 text-xs leading-relaxed text-slate-400">
                   {item.processName}
                   {item.hazard ? ` · ${item.hazard}` : ""}
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl bg-gray-800/70 p-4 text-sm text-gray-300">
-          현재 먼저 볼 고위험 항목이 없습니다.
+              )}
+            </Link>
+          ))}
         </div>
       )}
     </section>
   );
 }
-
 export default async function DashboardPage() {
   const s = await getDashboardData();
-  const 리스크색 =
-    s.리스크점수 >= 60
-      ? "text-red-400"
-      : s.리스크점수 >= 30
-        ? "text-yellow-400"
-        : "text-green-400";
-  const 리스크라벨 =
-    s.리스크점수 >= 60 ? "🔴 관리 필요" : s.리스크점수 >= 30 ? "🟡 확인 필요" : "🟢 양호";
+  const hasItemsToReview = s.todayTasks.length > 0;
+  const hasPtwExceptions =
+    s.PTW위험목록.length > 0 || s.PTW미승인목록.length > 0;
+
+  const detailMenus = [
+    {
+      href: "/risk",
+      icon: "⚠️",
+      label: "Risk",
+      description: "위험성평가 상세",
+    },
+    { href: "/ptw", icon: "🧾", label: "PTW", description: "허가·승인 상세" },
+    { href: "/tbm", icon: "📋", label: "TBM", description: "작업 전 기록" },
+    { href: "/ebm", icon: "📚", label: "EB", description: "증빙 상세" },
+  ];
 
   return (
     <main className="min-h-screen bg-slate-950 pb-10 text-slate-100">
       <SafeNav />
 
-      <div className="mx-auto max-w-7xl px-5 py-6">
-        <div className="mb-5 flex items-center justify-between">
+      <div className="mx-auto max-w-6xl px-5 py-6">
+        <div className="mb-5 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">📊 대표 대시보드</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              📊 대표 대시보드
+            </h1>
             <p className="mt-1 text-sm text-slate-400 [word-break:keep-all]">
-              오늘의 운영 상태와 관리 필요 신호를 요약합니다.
+              오늘 대표 확인이 필요한 신호부터 보여드립니다.
             </p>
           </div>
           <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300">
@@ -669,268 +606,245 @@ export default async function DashboardPage() {
               .toLocaleDateString("ko-KR")
               .replace(/\.\s*/g, ".")
               .replace(/\.$/, "")}
-         </span>
+          </span>
         </div>
 
-        {/* ZONE 1: 오늘의 결론 */}
-        <section className="mb-5 rounded-3xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 p-5 shadow-2xl">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px_240px]">
-            <div>
+        {/* 1. 오늘 확인 필요 */}
+        <section className="mb-5 rounded-3xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-5 shadow-2xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
               <div className="mb-2 flex items-center gap-2">
-                <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300">
-                  오늘의 결론
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    hasItemsToReview
+                      ? "bg-amber-500/15 text-amber-300"
+                      : "bg-emerald-500/15 text-emerald-300"
+                  }`}
+                >
+                  오늘 확인 필요
                 </span>
-                <span className="text-xs text-slate-400">오늘 확인 요약</span>
+                <span className="text-xs text-slate-400">대표 우선 확인</span>
               </div>
-
               <h2 className="text-2xl font-bold leading-tight text-white [word-break:keep-all]">
-                {s.조치필요 > 0 || s.EB누락 > 0 || s.PTW미승인 > 0 || s.risk.highRiskCount > 0
-                  ? "오늘 확인할 항목이 있습니다."
+                {hasItemsToReview
+                  ? `오늘 확인할 항목이 ${s.todayTasks.length}건 있습니다.`
                   : "현재 주요 관리 항목은 안정적입니다."}
               </h2>
-
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 [word-break:keep-all]">
-                오늘 조치가 필요한 항목 {s.조치필요}건, 증빙 누락 {s.EB누락}건, PTW 승인 대기 {s.PTW미승인}건,
-                고위험 항목 {s.risk.highRiskCount}건입니다.
+              <p className="mt-2 text-sm leading-6 text-slate-300 [word-break:keep-all]">
+                조치 필요 {s.조치필요}건 · 증빙 누락 {s.EB누락}건 · PTW 승인
+                대기 {s.PTW미승인}건
               </p>
             </div>
-
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <div className="text-xs font-medium text-emerald-300">오늘 현장 위험도</div>
-              <div className={`mt-2 text-5xl font-black leading-none ${리스크색}`}>{s.리스크점수}점</div>
-              <div className={`mt-2 text-sm font-semibold ${리스크색}`}>{리스크라벨}</div>
-              <div className="mt-3 text-xs text-slate-400">미조치·증빙누락 기준</div>
-            </div>
-
-            <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4">
-              <div className="text-xs font-medium text-blue-300">고위험 항목</div>
-              <div className="mt-2 flex items-end gap-2">
-                <span className="text-5xl font-black leading-none text-white">{s.risk.highRiskCount}</span>
-                <span className="pb-1 text-sm text-slate-300">고위험</span>
+            <div
+              className={`flex w-full shrink-0 items-center justify-between rounded-2xl border px-4 py-3 lg:w-44 lg:block ${
+                hasItemsToReview
+                  ? "border-amber-500/30 bg-amber-500/10"
+                  : "border-emerald-500/30 bg-emerald-500/10"
+              }`}
+            >
+              <div className="text-xs font-medium text-slate-300">
+                확인 필요
               </div>
-              <div className="mt-3 text-xs text-slate-400">
-                조치 필요 {s.risk.actionNeededCount}건 · 비용 검토 {s.risk.budgetNeededCount}건
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ZONE 2: 핵심 의사결정 영역 */}
-        <section className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(460px,0.95fr)]">
-          {/* 좌측: 운영 브리핑 + 오늘 처리할 항목 */}
-          <div className="space-y-5">
-            <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-bold text-white">오늘 운영 브리핑</h2>
-                <span className="rounded-full border border-cyan-400/40 px-2 py-0.5 text-[11px] font-black text-cyan-200">
-                  {s.dailySafetyBriefing.statusLabel}
-                </span>
-                <span className="text-xs text-slate-500">TBM · 증빙 · PTW 기준</span>
-              </div>
-              <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-950/20 px-4 py-3">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <p className="text-xs font-black text-cyan-200">오늘 먼저 볼 신호</p>
-                      <p className="mt-1 text-sm font-bold leading-6 text-cyan-50">
-                        {s.dailySafetyBriefing.executiveHeadline}
-                      </p>
-                    </div>
-                    <span className="w-fit rounded-full border border-cyan-400/40 px-2 py-0.5 text-[11px] font-black text-cyan-200">
-                      {s.dailySafetyBriefing.statusLabel}
-                    </span>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {s.dailySafetyBriefing.executiveMessages.slice(0, 3).map((message: string) => (
-                      <span key={message} className="rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-xs text-slate-200">
-                        {message}
-                      </span>
-                    ))}
-                    {s.dailySafetyBriefing.partnerMessages
-                      .filter((message: string) => !message.includes("신호 없음"))
-                      .slice(0, 1)
-                      .map((message: string) => (
-                        <span key={message} className="rounded-full border border-rose-400/40 bg-rose-950/30 px-3 py-1 text-xs font-bold text-rose-200">
-                          {message}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-
-                <AiDiagnosisCard />
-            </div>
-
-            <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5 shadow-xl">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-white">오늘 처리할 항목</h2>
-                  <p className="mt-1 text-xs text-slate-400">
-                    조치·증빙·승인 중 오늘 처리할 항목입니다.
-                  </p>
-                </div>
-                <span className="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-amber-500/15 px-3 py-1 text-sm font-bold leading-none text-amber-300">
-                  {s.조치필요 + s.EB누락 + s.PTW미승인 + s.PTW위험}건
-                </span>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">조치 필요</span>
-                    <span className="text-2xl font-black text-amber-300">{s.조치필요}</span>
-                  </div>
-                  {s.조치필요목록[0] ? (
-                    <Link href={`/tbm/${s.조치필요목록[0].id}`}>
-                      <div className="mt-3 rounded-xl bg-slate-950/60 p-3 text-xs text-slate-300 hover:bg-slate-950">
-                        <div className="font-semibold text-white">{s.조치필요목록[0].작업명}</div>
-                        <div className="mt-1 text-amber-300">{s.조치필요목록[0].날짜}</div>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div className="mt-3 text-xs text-slate-400">조치 필요 없음 ✅</div>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">증빙 누락</span>
-                    <span className="text-2xl font-black text-rose-300">{s.EB누락}</span>
-                  </div>
-                  {s.EB누락목록[0] ? (
-                    <Link href={`/tbm/${s.EB누락목록[0].id}`}>
-                      <div className="mt-3 rounded-xl bg-slate-950/60 p-3 text-xs text-slate-300 hover:bg-slate-950">
-                        <div className="font-semibold text-white">{s.EB누락목록[0].작업명}</div>
-                        <div className="mt-1 text-rose-300">{s.EB누락목록[0].날짜}</div>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div className="mt-3 text-xs text-slate-400">누락 없음 ✅</div>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-blue-500/25 bg-blue-500/10 p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">PTW 확인</span>
-                    <span className="text-2xl font-black text-blue-300">{s.PTW미승인 + s.PTW위험}</span>
-                  </div>
-                  <div className="mt-3 text-xs leading-5 text-slate-300">
-                    위험 {s.PTW위험}건 · 승인대기 {s.PTW미승인}건
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-600 bg-slate-800/70 p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">대표 보고</span>
-                    <span className="text-2xl font-black text-slate-200">
-                      {s.최악건 ? `R=${s.최악R}` : "-"}
-                    </span>
-                  </div>
-                  <div className="mt-3 text-xs leading-5 text-slate-400">
-                    {s.최악건 ? s.최악건.작업명 : "추가 보고 항목 없음"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 우측: 위험관리 요약 */}
-          <div className="space-y-5">
-            <RiskIntelligenceSection risk={s.risk} />
-          </div>
-        </section>
-
-        {/* ZONE 3: 증빙/운영 상태 */}
-        <section className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-white">증거 완결성</h2>
-              <span className="text-xs text-slate-500">기록 · 증빙 · 승인</span>
-            </div>
-            <EvidenceScoreCard score={s.증거점수} breakdown={s.증거분석} />
-          </div>
-
-          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-bold text-white">운영 KPI</h2>
-              <span className="text-xs text-slate-500">TBM · EB · PTW</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
-                <div className="text-3xl font-black text-white">{s.전체}</div>
-                <div className="mt-1 text-xs text-blue-300">전체 TBM</div>
-              </div>
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                <div className="text-3xl font-black text-white">{s.이번달}</div>
-                <div className="mt-1 text-xs text-emerald-300">이번 달 TBM</div>
-              </div>
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-                <div className="text-3xl font-black text-white">{s.특이사항}</div>
-                <div className="mt-1 text-xs text-amber-300">이번 달 특이사항</div>
-              </div>
-              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
-                <div className="text-3xl font-black text-white">{s.EB누락}</div>
-                <div className="mt-1 text-xs text-rose-300">증빙 누락</div>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <Link
-                href="/tbm"
-                className="rounded-2xl border border-slate-700 bg-slate-800/80 p-4 text-center transition hover:border-blue-500 hover:bg-slate-800"
+              <div
+                className={`text-4xl font-black leading-none lg:mt-2 ${
+                  hasItemsToReview ? "text-amber-300" : "text-emerald-300"
+                }`}
               >
-                <div className="text-2xl">📋</div>
-                <div className="mt-1 text-sm font-semibold text-white">TBM 목록</div>
-              </Link>
-              <Link
-                href="/ebm"
-                className="rounded-2xl border border-slate-700 bg-slate-800/80 p-4 text-center transition hover:border-emerald-500 hover:bg-slate-800"
-              >
-                <div className="text-2xl">📚</div>
-                <div className="mt-1 text-sm font-semibold text-white">EB 목록</div>
-              </Link>
+                {s.todayTasks.length}
+              </div>
             </div>
           </div>
-        </section>
 
-        {/* ZONE 4: 상세 상태 */}
-        <section className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-white">PTW 현황</h2>
-              <span className="text-xs text-slate-400">
-                {s.PTW위험 === 0 && s.PTW미승인 === 0 ? "이상 없음 ✅" : "확인 필요"}
-              </span>
-            </div>
-
-            {s.PTW위험목록.length === 0 && s.PTW미승인목록.length === 0 ? (
-              <div className="rounded-2xl bg-slate-800/70 p-4 text-sm text-slate-400">
-                현재 승인대기 또는 반려 항목이 없습니다.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {[...s.PTW위험목록, ...s.PTW미승인목록].map((row) => (
-                  <Link key={row.id} href={`/ptw/${row.id}`}>
-                    <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-3 text-sm text-white hover:bg-slate-800">
-                      {row.제목 || "제목 없음"}
-                      <div className="mt-1 text-xs text-slate-400">
-                        {row.작업일} · {row.작업유형} · {row.승인상태 || row.허용여부}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-white">오늘 할 일</h2>
-              <span className="text-xs text-slate-400">{s.todayTasks.length}건</span>
-            </div>
+          <div className="mt-4 border-t border-slate-700/80 pt-4">
             <TodayTasksCard tasks={s.todayTasks} />
           </div>
         </section>
+
+        <section className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
+          {/* 2. AI 운영브리핑: 문구·생성 로직·표시 조건 유지 */}
+          <div className="rounded-3xl border border-slate-700 bg-slate-900/80 p-4 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-bold text-white">
+                오늘 운영 브리핑
+              </h2>
+              <span className="rounded-full border border-cyan-400/40 px-2 py-0.5 text-[11px] font-black text-cyan-200">
+                {s.dailySafetyBriefing.statusLabel}
+              </span>
+              <span className="text-xs text-slate-500">
+                TBM · 증빙 · PTW 기준
+              </span>
+            </div>
+            <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-950/20 px-4 py-3">
+              <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs font-black text-cyan-200">
+                    오늘 먼저 볼 신호
+                  </p>
+                  <p className="mt-1 text-sm font-bold leading-6 text-cyan-50">
+                    {s.dailySafetyBriefing.executiveHeadline}
+                  </p>
+                </div>
+                <span className="w-fit rounded-full border border-cyan-400/40 px-2 py-0.5 text-[11px] font-black text-cyan-200">
+                  {s.dailySafetyBriefing.statusLabel}
+                </span>
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-2">
+                {s.dailySafetyBriefing.executiveMessages
+                  .slice(0, 3)
+                  .map((message: string) => (
+                    <span
+                      key={message}
+                      className="rounded-full border border-slate-700 bg-slate-950/60 px-3 py-1 text-xs text-slate-200"
+                    >
+                      {message}
+                    </span>
+                  ))}
+                {s.dailySafetyBriefing.partnerMessages
+                  .filter((message: string) => !message.includes("신호 없음"))
+                  .slice(0, 1)
+                  .map((message: string) => (
+                    <span
+                      key={message}
+                      className="rounded-full border border-rose-400/40 bg-rose-950/30 px-3 py-1 text-xs font-bold text-rose-200"
+                    >
+                      {message}
+                    </span>
+                  ))}
+              </div>
+            </div>
+
+            <AiDiagnosisCard />
+          </div>
+
+          {/* 3. 대표 Risk 확인 신호 */}
+          <RiskIntelligenceSection risk={s.risk} />
+        </section>
+
+        {/* 4. 상세 메뉴 진입 */}
+        <section className="mb-5 rounded-3xl border border-slate-700 bg-slate-900/70 p-5">
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-white">상세 메뉴</h2>
+            <p className="mt-1 text-xs text-slate-400">
+              세부 처리 현황과 전체 목록은 각 메뉴에서 확인하세요.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {detailMenus.map((menu) => (
+              <Link
+                key={menu.href}
+                href={menu.href}
+                className="rounded-2xl border border-slate-700 bg-slate-800/70 p-4 transition hover:border-blue-500/60 hover:bg-slate-800"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xl" aria-hidden="true">
+                    {menu.icon}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">
+                    열기 →
+                  </span>
+                </div>
+                <div className="mt-3 text-sm font-bold text-white">
+                  {menu.label}
+                </div>
+                <div className="mt-1 text-xs text-slate-400">
+                  {menu.description}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* 기본 비노출 운영 정보 */}
+        <details className="group rounded-3xl border border-slate-800 bg-slate-900/50">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-bold text-slate-300 marker:content-none">
+            <span>운영 상세 펼쳐보기</span>
+            <span className="text-xs font-medium text-slate-500 group-open:hidden">
+              KPI · 증거 완결성 · PTW
+            </span>
+            <span className="hidden text-xs font-medium text-slate-500 group-open:inline">
+              접기 ↑
+            </span>
+          </summary>
+
+          <div className="grid gap-5 border-t border-slate-800 p-5 xl:grid-cols-2">
+            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-bold text-white">증거 완결성</h2>
+                <span className="text-xs text-slate-500">
+                  기록 · 증빙 · 승인
+                </span>
+              </div>
+              <EvidenceScoreCard score={s.증거점수} breakdown={s.증거분석} />
+            </div>
+
+            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-bold text-white">운영 KPI</h2>
+                <span className="text-xs text-slate-500">TBM · EB · PTW</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-slate-800/80 p-3">
+                  <div className="text-2xl font-black text-white">{s.전체}</div>
+                  <div className="mt-1 text-xs text-slate-400">전체 TBM</div>
+                </div>
+                <div className="rounded-xl bg-slate-800/80 p-3">
+                  <div className="text-2xl font-black text-white">
+                    {s.이번달}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400">이번 달 TBM</div>
+                </div>
+                <div className="rounded-xl bg-slate-800/80 p-3">
+                  <div className="text-2xl font-black text-white">
+                    {s.특이사항}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400">
+                    이번 달 특이사항
+                  </div>
+                </div>
+                <div className="rounded-xl bg-slate-800/80 p-3">
+                  <div className="text-2xl font-black text-white">
+                    {s.EB누락}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400">증빙 누락</div>
+                </div>
+              </div>
+            </div>
+
+            {hasPtwExceptions && (
+              <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 xl:col-span-2">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-base font-bold text-white">
+                    PTW 확인 필요
+                  </h2>
+                  <Link
+                    href="/ptw"
+                    className="text-xs font-bold text-amber-300 hover:text-amber-200"
+                  >
+                    PTW 상세 보기 →
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {[...s.PTW위험목록, ...s.PTW미승인목록]
+                    .slice(0, 3)
+                    .map((row) => (
+                      <Link
+                        key={row.id}
+                        href={`/ptw/${row.id}`}
+                        className="block rounded-xl border border-slate-700 bg-slate-900/80 p-3 text-sm text-white hover:bg-slate-800"
+                      >
+                        {row.제목 || "제목 없음"}
+                        <div className="mt-1 text-xs text-slate-400">
+                          {row.작업일} · {row.작업유형} ·{" "}
+                          {row.승인상태 || row.허용여부}
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </details>
       </div>
     </main>
   );
