@@ -750,7 +750,7 @@ export default async function FieldVoiceReviewPage() {
               href={fieldWorkerParticipationPath}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-emerald-600"
+              className="inline-flex min-h-12 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-emerald-600"
             >
               근로자 화면 열기
             </a>
