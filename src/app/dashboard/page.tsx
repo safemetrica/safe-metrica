@@ -405,12 +405,18 @@ async function getDashboardData() {
     });
   }
 
+  const primaryExecutiveTask = dailySafetyBriefing.executiveTasks[0];
+  const isPrimaryExecutiveTaskUrgent =
+    primaryExecutiveTask?.urgent ??
+    (dailySafetyBriefing.priority === "critical" ||
+      dailySafetyBriefing.priority === "warning");
+
   if (dailySafetyBriefing.priority !== "normal") {
     todayTasks.unshift({
-      icon: "🧭",
+      icon: primaryExecutiveTask?.icon ?? "🧭",
       text: dailySafetyBriefing.executiveHeadline,
-      href: "/dashboard",
-      urgent: dailySafetyBriefing.priority === "critical" || dailySafetyBriefing.priority === "warning",
+      href: primaryExecutiveTask?.href ?? "/dashboard",
+      urgent: isPrimaryExecutiveTaskUrgent,
     });
   }
 
