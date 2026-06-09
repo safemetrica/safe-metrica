@@ -203,7 +203,6 @@ export default function FieldParticipationStepper({
   const hasOpinion =
     reportTitle.trim().length > 0 ||
     content.trim().length > 0 ||
-    location.trim().length > 0 ||
     hasEvidenceFiles;
   const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : "공유확인";
   const finalContent = hasOpinion ? content.trim() || "상세 내용 미입력" : "오늘은 추가 의견 없음.";
@@ -466,6 +465,21 @@ export default function FieldParticipationStepper({
                   {riskShareLinkCopy.worker.intro}
                 </p>
 
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="text-sm font-black text-emerald-800">의견 없음</p>
+                    <p className="mt-2 text-sm font-bold leading-6 text-emerald-900">
+                      제목, 내용, 사진을 입력하지 않고 제출하면 공유확인 기록으로 저장됩니다.
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-black text-amber-800">위험·아차사고·개선의견 있음</p>
+                    <p className="mt-2 text-sm font-bold leading-6 text-amber-900">
+                      제목, 내용 또는 사진을 입력하면 관리자 검토대상으로 저장됩니다.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="mt-4">
                   <label className="text-sm font-bold text-slate-700">제보 제목</label>
                   <input
@@ -498,6 +512,9 @@ export default function FieldParticipationStepper({
                     placeholder="예: 상차장, 분리수거장, A구역"
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
+                  <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+                    위치/구역은 기록 보조항목입니다. 제목, 내용 또는 사진이 있을 때만 관리자 검토대상으로 분류됩니다.
+                  </p>
                 </div>
 
                 <div className="mt-4">
@@ -585,10 +602,10 @@ export default function FieldParticipationStepper({
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-slate-100 disabled:opacity-80"
               >
                 {isSubmitting
-                  ? "제출 중입니다..."
+                  ? riskShareLinkCopy.worker.buttons.submitting
                   : hasOpinion
-                    ? "의견 제출하기 →"
-                    : "의견 없이 완료하기 →"}
+                    ? "위험 또는 개선의견 제출 →"
+                    : riskShareLinkCopy.worker.buttons.confirmOnly}
               </button>
             ) : null}
 
