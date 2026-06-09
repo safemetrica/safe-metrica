@@ -35,7 +35,7 @@ export default function TodayTasksCard({ tasks }: Props) {
       </div>
       <div className="space-y-2">
         {tasks.map((t, i) => (
-          <Link key={i} href={t.href}>
+          <Link key={i} href={t.href} className="block">
             <div className={`rounded-lg p-3 flex items-center gap-2 hover:opacity-80 transition cursor-pointer ${t.urgent ? "bg-red-900/50 border border-red-700" : "bg-orange-900/40"}`}>
               <span>{t.icon}</span>
               <span className={`text-sm ${t.urgent ? "text-red-200 font-medium" : "text-orange-100"}`}>{t.text}</span>
