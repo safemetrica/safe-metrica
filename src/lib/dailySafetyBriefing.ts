@@ -120,15 +120,19 @@ export function buildDailySafetyBriefing(input: DailySafetyBriefingInput): Daily
   }
 
   if (input.riskActionNeededCount > 0 || input.actionNeededCount > 0) {
-    const count = Math.max(input.riskActionNeededCount, input.actionNeededCount);
-    pushUnique(fieldMessages, `조치가 필요한 항목 ${count}건은 작업 전 상태를 확인하고 조치 후 증빙을 남겨야 합니다.`);
-    pushUnique(executiveMessages, `조치 필요 항목 ${count}건이 있어 담당자 처리 상태 확인이 필요합니다.`);
+    const isRiskActionTask = input.riskActionNeededCount > 0;
+    const count = isRiskActionTask ? input.riskActionNeededCount : input.actionNeededCount;
+    const taskLabel = isRiskActionTask ? "위험성평가 개선대책" : "TBM 조치필요";
+    const taskHref = isRiskActionTask ? "/risk" : "/tbm";
+
+    pushUnique(fieldMessages, `${taskLabel} ${count}건은 작업 전 상태를 확인하고 조치 후 증빙을 남겨야 합니다.`);
+    pushUnique(executiveMessages, `${taskLabel} ${count}건이 있어 담당자 처리 상태 확인이 필요합니다.`);
     executiveTasks.push({
       icon: "🛠️",
-      text: `조치 필요 항목 ${count}건 — 처리 상태 확인`,
-      href: "/dashboard",
+      text: `${taskLabel} ${count}건 — 처리 상태 확인`,
+      href: taskHref,
       urgent: input.highRiskCount > 0,
-      source: "risk",
+      source: isRiskActionTask ? "risk" : "tbm",
     });
   }
 
