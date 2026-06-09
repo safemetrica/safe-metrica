@@ -1,3 +1,4 @@
+import { riskShareLinkCopy } from "@/lib/risk-share-link/copy";
 import Link from "next/link";
 import { getOperatingFieldWorkerCopy } from "../operatingFieldWorkerCopy";
 
@@ -92,7 +93,7 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
           <div className={`mt-4 rounded-2xl border p-4 ${toneClass}`}>
             <p className="text-sm font-bold">
               {workerCopy?.submittedMessage ??
-                "안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다."}
+                riskShareLinkCopy.worker.completion.report}
             </p>
             {params.message ? (
               <p className="mt-2 text-xs leading-5">

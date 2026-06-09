@@ -1,3 +1,4 @@
+import { riskShareLinkCopy, riskShareLinkSubmissionTypeLabels } from "@/lib/risk-share-link/copy";
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import FieldParticipationStepper from "./FieldParticipationStepper";
 import { getOperatingFieldWorkerCopy } from "./operatingFieldWorkerCopy";
@@ -8,7 +9,9 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 
-const feedbackTypes = ["위험 제보", "아차사고", "개선 제안", "기타"];
+const feedbackTypes = riskShareLinkSubmissionTypeLabels.filter(
+  (type) => type !== riskShareLinkCopy.submissionTypes.shareConfirmation.label
+);
 
 type ParticipationIntent = "risk" | "share" | "report";
 
@@ -259,7 +262,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
             {workerCopy?.description ??
-              "오늘 작업의 위험요인을 확인하고, 현장 의견이나 아차사고를 남겨주세요. 제보 내용은 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다."}
+              riskShareLinkCopy.worker.intro}
           </p>
         </section>
 
@@ -269,8 +272,8 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
           <div className="mt-4 space-y-3">
             {[
               "오늘 작업의 주요 위험요인을 확인했습니다.",
-              "위험성평가 주요 내용을 공유받았습니다.",
-              "필요한 안전조치와 주의사항을 확인했습니다.",
+              riskShareLinkCopy.worker.checks.riskAssessment,
+              riskShareLinkCopy.worker.checks.safetyMeasure,
             ].map((label) => (
               <label key={label} className="flex gap-3 rounded-2xl border border-blue-100 bg-white p-4 text-sm font-bold text-slate-800">
                 <input
@@ -416,7 +419,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
             type="submit"
             className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-blue-700 px-5 py-4 text-center text-base font-black text-white shadow-sm transition active:scale-95"
           >
-            {workerCopy?.submitButtonLabel ?? "현장 의견·사진 제출하기"}
+            {workerCopy?.submitButtonLabel ?? riskShareLinkCopy.worker.buttons.submitReport}
           </button>
         </form>
 
