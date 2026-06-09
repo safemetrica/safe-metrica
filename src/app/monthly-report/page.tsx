@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { riskShareLinkCopy } from "@/lib/risk-share-link/copy";
 import PrintReportButton from "@/components/PrintReportButton";
 import { getCompanyConfig } from "@/lib/company";
 import { getRiskIntelligenceData } from "@/lib/risk";
@@ -614,6 +615,11 @@ export default async function MonthlySafetyReportPage({
     ["접수", "검토중", "조치필요", "상태 미지정"].includes(getFieldVoiceStatus(row))
   );
   const fieldVoiceMemoCount = fieldVoiceRows.filter((row) => Boolean(getFieldVoiceMemo(row))).length;
+  const fieldVoiceCeoSummarySentence = riskShareLinkCopy.ceoSummary.sentence
+    .replace("{shareCount}", String(fieldVoiceAcknowledgementRows.length))
+    .replace("{reportCount}", String(fieldVoiceReviewRows.length))
+    .replace("{doneCount}", String(fieldVoiceDoneRows.length))
+    .replace("{pendingCount}", String(fieldVoiceFollowUpRows.length));
 
   const validPtwRows = ptwRows.filter(isValidPtwRow);
 
@@ -1057,7 +1063,7 @@ export default async function MonthlySafetyReportPage({
 
         <Section
           title="현장참여 및 위험성평가 공유확인"
-          desc="근로자 현장참여 QR을 통해 접수된 기록을 제출구분 기준으로 공유확인, 위험제보, 아차사고, 개선제안으로 분리합니다."
+          desc="근로자 현장참여 QR 기록을 공유확인과 위험제보·아차사고·개선제안으로 분리합니다. 공유확인은 조치완료 KPI와 구분합니다."
           defaultOpen={isDetailView || fieldVoiceFollowUpRows.length > 0}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -1068,7 +1074,7 @@ export default async function MonthlySafetyReportPage({
               tone="border-cyan-800"
             />
             <StatCard
-              label="공유확인"
+              label={riskShareLinkCopy.ceoSummary.labels.monthlyShareConfirmation}
               value={`${fieldVoiceAcknowledgementRows.length}건`}
               hint="위험성평가 주지확인 기록"
               tone="border-emerald-800"
@@ -1076,11 +1082,11 @@ export default async function MonthlySafetyReportPage({
             <StatCard
               label="검토 대상"
               value={`${fieldVoiceReviewRows.length}건`}
-              hint="위험제보·아차사고·개선제안"
+              hint="위험제보·아차사고·개선제안 검토대상"
               tone="border-blue-800"
             />
             <StatCard
-              label="조치완료"
+              label={riskShareLinkCopy.ceoSummary.labels.completed}
               value={`${fieldVoiceDoneRows.length}건`}
               hint="관리자 처리 완료"
               tone="border-emerald-800"
@@ -1096,13 +1102,11 @@ export default async function MonthlySafetyReportPage({
           <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
             <h3 className="text-base font-black text-white print:text-slate-950">월간 현장참여 확인</h3>
             <p className="mt-2 text-sm leading-6 text-slate-300 print:text-slate-700">
-              이번 달 현장참여 접수는 총 {fieldVoiceRows.length}건입니다.
-              제출구분 기준 공유확인 {fieldVoiceAcknowledgementRows.length}건, 위험제보·아차사고·개선제안 {fieldVoiceReviewRows.length}건,
-              조치완료 {fieldVoiceDoneRows.length}건으로 확인됩니다.
+              {fieldVoiceCeoSummarySentence}
             </p>
             <p className="mt-2 text-xs leading-5 text-slate-500 print:text-slate-600">
               근로자 참여 기록은 위험성평가 공유 여부와 현장 위험 신호를 확인하기 위한 운영기록입니다.
-              조치완료 여부는 관리자 확인 기준이며, 법적 판단 또는 면책을 보장하지 않습니다.
+              {riskShareLinkCopy.ceoSummary.caution} 조치완료 여부는 관리자 확인 기준이며, 법적 판단 또는 면책을 보장하지 않습니다.
             </p>
           </div>
 
@@ -1150,8 +1154,8 @@ export default async function MonthlySafetyReportPage({
             <div className="mt-4 rounded-2xl border border-amber-900/70 bg-amber-950/20 p-4 print:border-amber-200 print:bg-amber-50">
               <h3 className="text-base font-black text-amber-200 print:text-amber-900">다음 달 확인 필요</h3>
               <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
-                <li>• 접수·검토중·조치필요 상태의 현장참여 {fieldVoiceFollowUpRows.length}건은 관리자 검토가 필요합니다.</li>
-                <li>• 조치 메모가 필요한 경우 현장참여 접수함에서 처리 경과를 남깁니다.</li>
+                <li>• 접수·검토중·조치필요 상태의 위험제보·아차사고·개선제안 {fieldVoiceFollowUpRows.length}건은 관리자 검토가 필요합니다.</li>
+                <li>• 공유확인은 주지·확인 기록으로 보고, 위험제보·아차사고·개선제안은 처리 경과와 조치 메모를 남깁니다.</li>
                 <li>• 반복 제보는 위험성평가 개선대책 반영 후보로 검토합니다.</li>
               </ul>
             </div>
