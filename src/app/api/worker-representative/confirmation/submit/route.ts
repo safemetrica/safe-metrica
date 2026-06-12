@@ -6,12 +6,29 @@ import {
   validateWorkerRepresentativeConfirmation,
 } from "@/lib/workerRepresentativeConfirmation";
 import { storeWorkerRepresentativeConfirmation } from "@/lib/workerRepresentativeConfirmationStorage";
+import { validateWorkerRepresentativeConfirmationTenant } from "@/lib/workerRepresentativeConfirmationTenant";
 
 const INVALID_RESPONSE = {
   ok: false,
   error: {
     code: "invalid_representative_confirmation",
     message: "필수 확인 항목을 확인해주세요.",
+  },
+} as const;
+
+const TENANT_INVALID_RESPONSE = {
+  ok: false,
+  error: {
+    code: "representative_confirmation_tenant_invalid",
+    message: "근로자대표 참여확인 대상 사업장을 확인할 수 없습니다.",
+  },
+} as const;
+
+const TENANT_VALIDATION_FAILED_RESPONSE = {
+  ok: false,
+  error: {
+    code: "representative_confirmation_tenant_validation_failed",
+    message: "근로자대표 참여확인 대상 사업장 검증을 완료하지 못했습니다.",
   },
 } as const;
 
@@ -91,12 +108,28 @@ export async function POST(request: Request) {
     return NextResponse.json(INVALID_RESPONSE, { status: 400 });
   }
 
+  const tenantValidation = await validateWorkerRepresentativeConfirmationTenant(
+    validation.value
+  ).catch(() => null);
+
+  if (!tenantValidation) {
+    return NextResponse.json(TENANT_VALIDATION_FAILED_RESPONSE, { status: 503 });
+  }
+
+  if (!tenantValidation.ok) {
+    return NextResponse.json(TENANT_INVALID_RESPONSE, { status: 403 });
+  }
+
+  const tenantValidatedInput = {
+    ...validation.value,
+    companyCode: tenantValidation.companyCode,
+  };
   const submittedAt = new Date().toISOString();
   const result = await storeWorkerRepresentativeConfirmation({
-    input: validation.value,
+    input: tenantValidatedInput,
     submittedAt,
     auditEventCandidate: createWorkerRepresentativeConfirmationAuditEventCandidate(
-      validation.value,
+      tenantValidatedInput,
       submittedAt
     ),
   }).catch(() => ({ status: "failed" as const }));
