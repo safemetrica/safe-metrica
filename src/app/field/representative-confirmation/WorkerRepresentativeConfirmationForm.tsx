@@ -90,6 +90,8 @@ export default function WorkerRepresentativeConfirmationForm({
   initialConfirmationScope,
   initialRiskAssessmentId,
 }: Props) {
+  const [siteName, setSiteName] = useState(initialSiteName);
+  const [confirmationScope, setConfirmationScope] = useState(initialConfirmationScope || "오늘 공유받은 위험성평가와 안전조치");
   const [hasObjection, setHasObjection] = useState(false);
   const [opinion, setOpinion] = useState("");
   const [consentChecked, setConsentChecked] = useState(false);
@@ -103,15 +105,26 @@ export default function WorkerRepresentativeConfirmationForm({
     const form = event.currentTarget;
     const formData = new FormData(form);
     const riskAssessmentId = String(formData.get("riskAssessmentId") ?? "").trim();
+    const siteNameValue = String(formData.get("siteName") ?? "").trim();
     const confirmationScope = String(formData.get("confirmationScope") ?? "").trim();
     const opinionValue = opinion.trim();
+
+    if (!siteNameValue) {
+      setSubmission({ status: "error", message: "현장명을 확인해주세요." });
+      const editor = document.getElementById("confirmationTargetEditor");
+      if (editor instanceof HTMLDetailsElement) editor.open = true;
+      focusField(form, "editSiteName");
+      return;
+    }
 
     if (!riskAssessmentId && !confirmationScope) {
       setSubmission({
         status: "error",
         message: "오늘 확인할 내용을 입력해주세요.",
       });
-      focusField(form, "confirmationScope");
+      const editor = document.getElementById("confirmationTargetEditor");
+      if (editor instanceof HTMLDetailsElement) editor.open = true;
+      focusField(form, "editConfirmationScope");
       return;
     }
 
@@ -139,7 +152,7 @@ export default function WorkerRepresentativeConfirmationForm({
 
     const payload = {
       companyCode: String(formData.get("companyCode") ?? "").trim(),
-      siteName: String(formData.get("siteName") ?? "").trim(),
+      siteName: siteNameValue,
       riskAssessmentId: riskAssessmentId || null,
       confirmationScope: confirmationScope || null,
       representativeName: String(formData.get("representativeName") ?? "").trim(),
@@ -240,17 +253,35 @@ export default function WorkerRepresentativeConfirmationForm({
 
             <input type="hidden" name="companyCode" value={initialCompanyCode} />
             <input type="hidden" name="riskAssessmentId" value={initialRiskAssessmentId} />
+            <input type="hidden" name="siteName" value={siteName} />
+            <input type="hidden" name="confirmationScope" value={confirmationScope} />
 
-            <div className="mt-5">
-              <label className={labelClassName} htmlFor="siteName">현장명 <span className="text-red-600">*</span></label>
-              <input id="siteName" name="siteName" required maxLength={200} defaultValue={initialSiteName} autoComplete="organization-title" placeholder="예: 물류센터 A동" className={inputClassName} />
-            </div>
+            <dl className="mt-5 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/70">
+              <div className="border-b border-blue-100 px-4 py-4 sm:px-5">
+                <dt className="text-xs font-black tracking-wide text-blue-700">현장명</dt>
+                <dd className="mt-1 text-base font-black leading-6 text-slate-950">{siteName || "현장명을 확인해주세요."}</dd>
+              </div>
+              <div className="px-4 py-4 sm:px-5">
+                <dt className="text-xs font-black tracking-wide text-blue-700">오늘 확인할 내용</dt>
+                <dd className="mt-1 whitespace-pre-wrap text-sm font-bold leading-6 text-slate-800">{confirmationScope || "확인할 내용을 확인해주세요."}</dd>
+              </div>
+            </dl>
 
-            <div className="mt-5">
-              <label className={labelClassName} htmlFor="confirmationScope">오늘 확인할 내용 <span className="text-red-600">*</span></label>
-              <textarea id="confirmationScope" name="confirmationScope" required maxLength={2000} rows={4} defaultValue={initialConfirmationScope || "오늘 공유받은 위험성평가와 안전조치"} placeholder="예: 상하차 작업 위험성평가 및 안전조치" className={`${inputClassName} resize-y leading-6`} />
-              <p className="mt-2 text-xs leading-5 text-slate-500">공유받은 위험성평가의 기간이나 작업명을 확인해주세요. 내용이 다르면 수정할 수 있습니다.</p>
-            </div>
+            <p className="mt-3 text-xs font-medium leading-5 text-slate-500">공유받은 내용이 다르면 수정하거나 관리자에게 문의해주세요.</p>
+
+            <details id="confirmationTargetEditor" className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <summary className="cursor-pointer font-bold text-slate-700">내용이 다르면 수정하기</summary>
+              <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
+                <div>
+                  <label className={labelClassName} htmlFor="editSiteName">현장명 <span className="text-red-600">*</span></label>
+                  <input id="editSiteName" maxLength={200} value={siteName} onChange={(event) => setSiteName(event.target.value)} autoComplete="organization-title" placeholder="예: 물류센터 A동" className={inputClassName} />
+                </div>
+                <div>
+                  <label className={labelClassName} htmlFor="editConfirmationScope">오늘 확인할 내용 <span className="text-red-600">*</span></label>
+                  <textarea id="editConfirmationScope" maxLength={2000} rows={4} value={confirmationScope} onChange={(event) => setConfirmationScope(event.target.value)} placeholder="예: 상하차 작업 위험성평가 및 안전조치" className={`${inputClassName} resize-y leading-6`} />
+                </div>
+              </div>
+            </details>
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
@@ -266,21 +297,21 @@ export default function WorkerRepresentativeConfirmationForm({
               <label className={labelClassName} htmlFor="representativeName">성명 <span className="text-red-600">*</span></label>
               <input id="representativeName" name="representativeName" required maxLength={100} autoComplete="name" placeholder="성명을 입력해주세요." className={inputClassName} />
             </div>
-            <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <div>
-                <label className={labelClassName} htmlFor="representativeDepartment">소속 / 작업조</label>
-                <input id="representativeDepartment" name="representativeDepartment" maxLength={200} autoComplete="organization-title" placeholder="예: 생산1팀 / 주간조" className={inputClassName} />
-              </div>
-              <div>
-                <label className={labelClassName} htmlFor="representativeRole">직책 / 역할 <span className="text-red-600">*</span></label>
-                <input id="representativeRole" name="representativeRole" required maxLength={200} defaultValue="근로자대표" placeholder="예: 근로자대표, 작업조 대표" className={inputClassName} />
-              </div>
+            <div className="mt-5">
+              <label className={labelClassName} htmlFor="representativeDepartment">소속 / 작업조</label>
+              <input id="representativeDepartment" name="representativeDepartment" maxLength={200} autoComplete="organization-title" placeholder="예: 생산1팀 / 주간조" className={inputClassName} />
             </div>
             <details className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <summary className="cursor-pointer font-bold text-slate-700">확인 일시는 현재 시각으로 자동 기록됩니다.</summary>
-              <div className="mt-3">
-                <label className={labelClassName} htmlFor="confirmedAt">확인 일시</label>
-                <input id="confirmedAt" name="confirmedAt" type="datetime-local" required defaultValue={confirmedAt} className={inputClassName} />
+              <summary className="cursor-pointer font-bold text-slate-700">역할과 확인 일시는 자동 입력됩니다.</summary>
+              <div className="mt-3 grid gap-4 border-t border-slate-200 pt-3 sm:grid-cols-2">
+                <div>
+                  <label className={labelClassName} htmlFor="representativeRole">직책 / 역할</label>
+                  <input id="representativeRole" name="representativeRole" required maxLength={200} defaultValue="근로자대표" placeholder="예: 근로자대표, 작업조 대표" className={inputClassName} />
+                </div>
+                <div>
+                  <label className={labelClassName} htmlFor="confirmedAt">확인 일시</label>
+                  <input id="confirmedAt" name="confirmedAt" type="datetime-local" required defaultValue={confirmedAt} className={inputClassName} />
+                </div>
               </div>
             </details>
           </section>
