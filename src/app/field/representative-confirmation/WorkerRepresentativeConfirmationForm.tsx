@@ -60,7 +60,7 @@ function getErrorMessage(response: SubmitResponse, status: number) {
   }
 
   if (code === "representative_confirmation_tenant_invalid" || status === 403) {
-    return "근로자대표 참여확인 대상 사업장을 확인할 수 없습니다. 회사 코드와 확인 대상을 확인해주세요.";
+    return "참여확인 대상 사업장을 확인할 수 없습니다. 공유받은 링크를 확인하거나 관리자에게 문의해주세요.";
   }
 
   if (
@@ -99,7 +99,7 @@ export default function WorkerRepresentativeConfirmationForm({
     if (!riskAssessmentId && !confirmationScope) {
       setSubmission({
         status: "error",
-        message: "확인 범위 또는 위험성평가 식별정보 중 하나를 입력해주세요.",
+        message: "오늘 확인할 내용을 입력해주세요.",
       });
       focusField(form, "confirmationScope");
       return;
@@ -159,7 +159,7 @@ export default function WorkerRepresentativeConfirmationForm({
 
       setSubmission({
         status: "submitted",
-        message: result.message || "근로자대표 참여확인 기록이 접수되었습니다.",
+        message: "관리자가 제출 내용을 확인할 수 있습니다.",
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
@@ -178,10 +178,10 @@ export default function WorkerRepresentativeConfirmationForm({
             ✓
           </div>
           <p className="mt-6 text-sm font-black tracking-wide text-emerald-700">접수 완료</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">참여확인이 접수되었습니다</h1>
+          <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">참여확인이 접수되었습니다.</h1>
           <p className="mt-4 text-base leading-7 text-slate-600">{submission.message}</p>
           <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-left text-sm leading-6 text-slate-600">
-            제출된 내용은 담당자가 확인합니다. 의견 또는 이견에 대한 검토 결과와 후속 조치는 별도로 관리될 수 있습니다.
+            관리자가 제출 내용을 확인할 수 있습니다. 남겨주신 의견은 검토가 필요한 내용과 함께 전달됩니다.
           </div>
         </section>
       </main>
@@ -199,10 +199,10 @@ export default function WorkerRepresentativeConfirmationForm({
           </div>
           <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">근로자대표 참여확인</h1>
           <p className="mt-3 text-base leading-7 text-slate-200">
-            위험성평가 공유 및 의견 확인 기록을 남기는 화면입니다.
+            관리자가 공유한 위험성평가와 안전조치 내용을 확인하고, 의견이 있으면 남겨주세요.
           </p>
           <p className="mt-4 border-t border-white/15 pt-4 text-sm leading-6 text-slate-300">
-            입력한 의견과 이견은 담당자의 검토 자료로 사용됩니다. 확인 기록과 후속 조치 판단은 서로 구분됩니다.
+            이 기록은 공유·확인 및 의견 검토를 돕기 위한 운영기록입니다.
           </p>
         </header>
 
@@ -214,31 +214,22 @@ export default function WorkerRepresentativeConfirmationForm({
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 text-sm font-black text-white">1</span>
               <div>
                 <h2 className="text-lg font-black">확인 대상</h2>
-                <p className="mt-1 text-sm text-slate-500">회사, 현장 및 확인할 위험성평가 범위를 확인해주세요.</p>
+                <p className="mt-1 text-sm text-slate-500">공유받은 현장과 오늘 확인할 내용을 확인해주세요.</p>
               </div>
             </div>
 
-            <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <div>
-                <label className={labelClassName} htmlFor="companyCode">회사 코드 <span className="text-red-600">*</span></label>
-                <input id="companyCode" name="companyCode" required maxLength={50} defaultValue={initialCompanyCode} autoComplete="organization" placeholder="예: company-code" className={inputClassName} />
-              </div>
-              <div>
-                <label className={labelClassName} htmlFor="siteName">현장명 <span className="text-red-600">*</span></label>
-                <input id="siteName" name="siteName" required maxLength={200} defaultValue={initialSiteName} autoComplete="organization-title" placeholder="예: 물류센터 A동" className={inputClassName} />
-              </div>
+            <input type="hidden" name="companyCode" value={initialCompanyCode} />
+            <input type="hidden" name="riskAssessmentId" value={initialRiskAssessmentId} />
+
+            <div className="mt-5">
+              <label className={labelClassName} htmlFor="siteName">현장명 <span className="text-red-600">*</span></label>
+              <input id="siteName" name="siteName" required maxLength={200} defaultValue={initialSiteName} autoComplete="organization-title" placeholder="예: 물류센터 A동" className={inputClassName} />
             </div>
 
             <div className="mt-5">
-              <label className={labelClassName} htmlFor="riskAssessmentId">위험성평가 식별정보</label>
-              <input id="riskAssessmentId" name="riskAssessmentId" maxLength={200} defaultValue={initialRiskAssessmentId} placeholder="전용 링크에 포함된 경우 자동 표시됩니다." className={inputClassName} />
-              <p className="mt-2 text-xs leading-5 text-slate-500">내부 식별번호나 공유받은 위험성평가 번호가 있으면 입력해주세요.</p>
-            </div>
-
-            <div className="mt-5">
-              <label className={labelClassName} htmlFor="confirmationScope">확인 범위 <span className="text-red-600">*</span></label>
-              <textarea id="confirmationScope" name="confirmationScope" maxLength={2000} rows={4} defaultValue={initialConfirmationScope} placeholder="예: 2026년 6월 정기 위험성평가 중 상차·하역 작업 항목" className={`${inputClassName} resize-y leading-6`} />
-              <p className="mt-2 text-xs leading-5 text-slate-500">식별정보가 없다면 확인한 기간·버전·작업·항목 범위를 반드시 적어주세요. 불필요한 개인정보는 입력하지 마세요.</p>
+              <label className={labelClassName} htmlFor="confirmationScope">오늘 확인할 내용 <span className="text-red-600">*</span></label>
+              <textarea id="confirmationScope" name="confirmationScope" required maxLength={2000} rows={4} defaultValue={initialConfirmationScope || "오늘 공유받은 위험성평가와 안전조치"} placeholder="예: 상하차 작업 위험성평가 및 안전조치" className={`${inputClassName} resize-y leading-6`} />
+              <p className="mt-2 text-xs leading-5 text-slate-500">공유받은 위험성평가의 기간이나 작업명을 확인해주세요. 내용이 다르면 수정할 수 있습니다.</p>
             </div>
           </section>
 
@@ -265,10 +256,13 @@ export default function WorkerRepresentativeConfirmationForm({
                 <input id="representativeRole" name="representativeRole" required maxLength={200} placeholder="예: 근로자대표, 작업조 대표" className={inputClassName} />
               </div>
             </div>
-            <div className="mt-5">
-              <label className={labelClassName} htmlFor="confirmedAt">확인 일시 <span className="text-red-600">*</span></label>
-              <input id="confirmedAt" name="confirmedAt" type="datetime-local" required defaultValue={confirmedAt} className={inputClassName} />
-            </div>
+            <details className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <summary className="cursor-pointer font-bold text-slate-700">확인 일시는 현재 시각으로 자동 기록됩니다.</summary>
+              <div className="mt-3">
+                <label className={labelClassName} htmlFor="confirmedAt">확인 일시</label>
+                <input id="confirmedAt" name="confirmedAt" type="datetime-local" required defaultValue={confirmedAt} className={inputClassName} />
+              </div>
+            </details>
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
@@ -287,14 +281,20 @@ export default function WorkerRepresentativeConfirmationForm({
 
             <fieldset className="mt-5">
               <legend className={labelClassName}>이견 여부 <span className="text-red-600">*</span></legend>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl border p-4 text-sm font-black transition ${!hasObjection ? "border-blue-600 bg-blue-50 text-blue-800 ring-2 ring-blue-100" : "border-slate-200 bg-white text-slate-600"}`}>
-                  <input type="radio" name="hasObjection" value="false" checked={!hasObjection} onChange={() => setHasObjection(false)} className="h-4 w-4 accent-blue-700" />
-                  이견 없음
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${!hasObjection ? "border-blue-600 bg-blue-50 text-blue-800 ring-2 ring-blue-100" : "border-slate-200 bg-white text-slate-600"}`}>
+                  <input type="radio" name="hasObjection" value="false" checked={!hasObjection} onChange={() => setHasObjection(false)} className="mt-1 h-4 w-4 shrink-0 accent-blue-700" />
+                  <span>
+                    <span className="block text-sm font-black">이견 없음</span>
+                    <span className="mt-1 block text-xs font-medium leading-5">공유된 내용을 확인했고 별도 이견이 없습니다.</span>
+                  </span>
                 </label>
-                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl border p-4 text-sm font-black transition ${hasObjection ? "border-amber-600 bg-amber-50 text-amber-900 ring-2 ring-amber-100" : "border-slate-200 bg-white text-slate-600"}`}>
-                  <input type="radio" name="hasObjection" value="true" checked={hasObjection} onChange={() => setHasObjection(true)} className="h-4 w-4 accent-amber-700" />
-                  이견 있음
+                <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${hasObjection ? "border-amber-600 bg-amber-50 text-amber-900 ring-2 ring-amber-100" : "border-slate-200 bg-white text-slate-600"}`}>
+                  <input type="radio" name="hasObjection" value="true" checked={hasObjection} onChange={() => setHasObjection(true)} className="mt-1 h-4 w-4 shrink-0 accent-amber-700" />
+                  <span>
+                    <span className="block text-sm font-black">이견 있음</span>
+                    <span className="mt-1 block text-xs font-medium leading-5">추가 검토가 필요한 의견이 있습니다.</span>
+                  </span>
                 </label>
               </div>
             </fieldset>
@@ -313,7 +313,7 @@ export default function WorkerRepresentativeConfirmationForm({
               <h2 className="text-lg font-black">개인정보 수집·이용 안내</h2>
             </div>
             <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-              참여확인 기록의 접수와 담당자 검토를 위해 성명, 소속·작업조, 직책·역할, 의견 및 확인 일시를 수집·이용합니다. 입력 정보는 해당 기록의 관리 목적 범위에서 처리됩니다.
+              제출 내용 확인과 관리자 검토를 위해 입력한 정보를 기록합니다.
             </div>
             <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 text-sm font-bold leading-6 text-slate-800">
               <input type="checkbox" name="consentChecked" required checked={consentChecked} onChange={(event) => setConsentChecked(event.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 accent-blue-700" />
