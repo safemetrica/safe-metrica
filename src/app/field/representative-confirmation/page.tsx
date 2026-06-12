@@ -7,7 +7,7 @@ export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "근로자대표 참여확인 | SafeMetrica",
-  description: "위험성평가 공유 및 의견 확인 기록을 남기는 근로자대표 전용 화면",
+  description: "공유받은 위험성평가와 안전조치를 확인하고 의견을 남기는 근로자대표 전용 화면",
 };
 
 type PageProps = {
