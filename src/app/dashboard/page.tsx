@@ -585,6 +585,12 @@ export default async function DashboardPage() {
     { href: "/ptw", icon: "🧾", label: "PTW", description: "허가·승인 상세" },
     { href: "/tbm", icon: "📋", label: "TBM", description: "작업 전 기록" },
     { href: "/ebm", icon: "📚", label: "EB", description: "증빙 상세" },
+    {
+      href: "/manager/representative-confirmations",
+      icon: "🤝",
+      label: "근로자대표 참여확인",
+      description: "확인·보완 의견 접수함",
+    },
   ];
 
   return (
