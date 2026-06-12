@@ -30,6 +30,15 @@ const inputClassName =
 
 const labelClassName = "text-sm font-black text-slate-800";
 
+const opinionExamples = [
+  "보행자 통로 표시 보완 필요",
+  "지게차 이동구역 구분 필요",
+  "작업 전 공유 한 번 더 필요",
+  "보호구 착용 안내 필요",
+  "바닥 미끄럼 주의 표시 필요",
+  "야간/조명 확인 필요",
+];
+
 function createClientSubmissionId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `representative:${crypto.randomUUID()}`;
@@ -56,7 +65,7 @@ function getErrorMessage(response: SubmitResponse, status: number) {
   const code = response.error?.code;
 
   if (code === "invalid_representative_confirmation" || status === 400) {
-    return "필수 항목과 입력 형식을 확인해주세요. 이견이 있으면 상세 내용도 입력해야 합니다.";
+    return "필수 항목과 입력 형식을 확인해주세요. 보완 의견이 있으면 내용도 입력해야 합니다.";
   }
 
   if (code === "representative_confirmation_tenant_invalid" || status === 403) {
@@ -82,6 +91,7 @@ export default function WorkerRepresentativeConfirmationForm({
   initialRiskAssessmentId,
 }: Props) {
   const [hasObjection, setHasObjection] = useState(false);
+  const [opinion, setOpinion] = useState("");
   const [consentChecked, setConsentChecked] = useState(false);
   const [submission, setSubmission] = useState<SubmissionState>({ status: "idle" });
   const [clientSubmissionId] = useState(createClientSubmissionId);
@@ -94,7 +104,7 @@ export default function WorkerRepresentativeConfirmationForm({
     const formData = new FormData(form);
     const riskAssessmentId = String(formData.get("riskAssessmentId") ?? "").trim();
     const confirmationScope = String(formData.get("confirmationScope") ?? "").trim();
-    const objectionDetail = String(formData.get("objectionDetail") ?? "").trim();
+    const opinionValue = opinion.trim();
 
     if (!riskAssessmentId && !confirmationScope) {
       setSubmission({
@@ -105,9 +115,9 @@ export default function WorkerRepresentativeConfirmationForm({
       return;
     }
 
-    if (hasObjection && !objectionDetail) {
-      setSubmission({ status: "error", message: "이견이 있으면 이견 상세 내용을 입력해주세요." });
-      focusField(form, "objectionDetail");
+    if (hasObjection && !opinionValue) {
+      setSubmission({ status: "error", message: "보완 의견 내용을 입력해주세요." });
+      focusField(form, "opinion");
       return;
     }
 
@@ -137,9 +147,9 @@ export default function WorkerRepresentativeConfirmationForm({
         String(formData.get("representativeDepartment") ?? "").trim() || null,
       representativeRole: String(formData.get("representativeRole") ?? "").trim(),
       confirmedAt: confirmedAtDate.toISOString(),
-      opinion: String(formData.get("opinion") ?? "").trim() || null,
+      opinion: opinionValue || null,
       hasObjection,
-      objectionDetail: hasObjection ? objectionDetail : null,
+      objectionDetail: hasObjection ? opinionValue : null,
       consentChecked,
       clientSubmissionId,
     };
@@ -170,6 +180,19 @@ export default function WorkerRepresentativeConfirmationForm({
     }
   }
 
+  function addOpinionExample(example: string) {
+    setHasObjection(true);
+    setOpinion((current) => {
+      const trimmed = current.trim();
+
+      if (!trimmed) {
+        return example;
+      }
+
+      return `${trimmed}${trimmed.endsWith(".") ? "" : "."} ${example}`;
+    });
+  }
+
   if (submission.status === "submitted") {
     return (
       <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950 sm:py-16">
@@ -180,9 +203,6 @@ export default function WorkerRepresentativeConfirmationForm({
           <p className="mt-6 text-sm font-black tracking-wide text-emerald-700">접수 완료</p>
           <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">참여확인이 접수되었습니다.</h1>
           <p className="mt-4 text-base leading-7 text-slate-600">{submission.message}</p>
-          <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-left text-sm leading-6 text-slate-600">
-            관리자가 제출 내용을 확인할 수 있습니다. 남겨주신 의견은 검토가 필요한 내용과 함께 전달됩니다.
-          </div>
         </section>
       </main>
     );
@@ -253,7 +273,7 @@ export default function WorkerRepresentativeConfirmationForm({
               </div>
               <div>
                 <label className={labelClassName} htmlFor="representativeRole">직책 / 역할 <span className="text-red-600">*</span></label>
-                <input id="representativeRole" name="representativeRole" required maxLength={200} placeholder="예: 근로자대표, 작업조 대표" className={inputClassName} />
+                <input id="representativeRole" name="representativeRole" required maxLength={200} defaultValue="근로자대표" placeholder="예: 근로자대표, 작업조 대표" className={inputClassName} />
               </div>
             </div>
             <details className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
@@ -269,42 +289,47 @@ export default function WorkerRepresentativeConfirmationForm({
             <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 text-sm font-black text-white">3</span>
               <div>
-                <h2 className="text-lg font-black">의견 및 이견</h2>
-                <p className="mt-1 text-sm text-slate-500">확인한 내용에 대한 의견과 이견 여부를 남겨주세요.</p>
+                <h2 className="text-lg font-black">확인 의견</h2>
+                <p className="mt-1 text-sm text-slate-500">추가로 전달할 내용이 있는지만 선택해주세요.</p>
               </div>
             </div>
 
-            <div className="mt-5">
-              <label className={labelClassName} htmlFor="opinion">의견</label>
-              <textarea id="opinion" name="opinion" maxLength={5000} rows={5} placeholder="공유받은 내용에 대한 의견이나 추가 검토가 필요한 사항을 적어주세요." className={`${inputClassName} resize-y leading-6`} />
-            </div>
-
             <fieldset className="mt-5">
-              <legend className={labelClassName}>이견 여부 <span className="text-red-600">*</span></legend>
+              <legend className={labelClassName}>추가 의견 <span className="text-red-600">*</span></legend>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${!hasObjection ? "border-blue-600 bg-blue-50 text-blue-800 ring-2 ring-blue-100" : "border-slate-200 bg-white text-slate-600"}`}>
                   <input type="radio" name="hasObjection" value="false" checked={!hasObjection} onChange={() => setHasObjection(false)} className="mt-1 h-4 w-4 shrink-0 accent-blue-700" />
                   <span>
-                    <span className="block text-sm font-black">이견 없음</span>
-                    <span className="mt-1 block text-xs font-medium leading-5">공유된 내용을 확인했고 별도 이견이 없습니다.</span>
+                    <span className="block text-sm font-black">별도 의견 없음</span>
+                    <span className="mt-1 block text-xs font-medium leading-5">공유된 내용을 확인했고, 현재 추가 의견은 없습니다.</span>
                   </span>
                 </label>
                 <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${hasObjection ? "border-amber-600 bg-amber-50 text-amber-900 ring-2 ring-amber-100" : "border-slate-200 bg-white text-slate-600"}`}>
                   <input type="radio" name="hasObjection" value="true" checked={hasObjection} onChange={() => setHasObjection(true)} className="mt-1 h-4 w-4 shrink-0 accent-amber-700" />
                   <span>
-                    <span className="block text-sm font-black">이견 있음</span>
-                    <span className="mt-1 block text-xs font-medium leading-5">추가 검토가 필요한 의견이 있습니다.</span>
+                    <span className="block text-sm font-black">보완 의견 있음</span>
+                    <span className="mt-1 block text-xs font-medium leading-5">현장에서 보완하거나 다시 확인했으면 하는 내용이 있습니다.</span>
                   </span>
                 </label>
               </div>
             </fieldset>
 
-            {hasObjection ? (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <label className="text-sm font-black text-amber-950" htmlFor="objectionDetail">이견 상세 <span className="text-red-600">*</span></label>
-                <textarea id="objectionDetail" name="objectionDetail" required maxLength={5000} rows={5} placeholder="동의하기 어려운 항목과 이유, 추가 검토가 필요한 내용을 구체적으로 적어주세요." className={`${inputClassName} border-amber-300 resize-y leading-6`} />
+            <div className={`mt-5 rounded-2xl border p-4 ${hasObjection ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
+              <label className={hasObjection ? "text-sm font-black text-amber-950" : labelClassName} htmlFor="opinion">
+                {hasObjection ? "보완 의견" : "의견"} {hasObjection ? <span className="text-red-600">*</span> : <span className="font-medium text-slate-500">(선택)</span>}
+              </label>
+              <textarea id="opinion" name="opinion" required={hasObjection} maxLength={5000} rows={5} value={opinion} onChange={(event) => setOpinion(event.target.value)} placeholder={hasObjection ? "보완하거나 다시 확인했으면 하는 내용을 적어주세요." : "추가로 전달할 내용이 있다면 적어주세요."} className={`${inputClassName} resize-y leading-6 ${hasObjection ? "border-amber-300" : ""}`} />
+              <div className="mt-4">
+                <p className="text-xs font-bold text-slate-600">예시를 누르면 보완 의견으로 선택되고 입력칸에 추가됩니다.</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {opinionExamples.map((example) => (
+                    <button key={example} type="button" onClick={() => addOpinionExample(example)} className="rounded-full border border-slate-300 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800">
+                      + {example}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ) : null}
+            </div>
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
