@@ -461,11 +461,38 @@ function getIdentityMode(row: ExportRow) {
     return mode;
   }
 
-  return getBoolean(row, ["anonymous", "is_anonymous"]) ? "anonymous" : "identified";
+  if (getBoolean(row, ["anonymous", "is_anonymous"])) {
+    return "anonymous";
+  }
+
+  const submitter = cleanText(getString(row, ["submitter", "worker_name", "workerName"]));
+
+  if (!submitter || submitter === "미입력" || submitter === "익명" || submitter === "제출자 미입력") {
+    return "legacy_unidentified";
+  }
+
+  return "legacy_identified";
+}
+
+function getIdentityModeLabel(row: ExportRow) {
+  const mode = getIdentityMode(row);
+
+  if (mode === "identified") return "확인정보 있음";
+  if (mode === "anonymous") return "익명";
+  if (mode === "legacy_unidentified") return "기존기록/확인정보 미입력";
+  if (mode === "legacy_identified") return "기존기록/제출자 표시 있음";
+
+  return mode;
+}
+
+function shouldHideWorkerIdentity(row: ExportRow) {
+  const mode = getIdentityMode(row);
+
+  return mode === "anonymous" || mode === "legacy_unidentified";
 }
 
 function getExportWorkerName(row: ExportRow) {
-  if (getIdentityMode(row) === "anonymous") {
+  if (shouldHideWorkerIdentity(row)) {
     return "";
   }
 
@@ -476,7 +503,7 @@ function getExportWorkerName(row: ExportRow) {
 }
 
 function getExportWorkerTeam(row: ExportRow) {
-  if (getIdentityMode(row) === "anonymous") {
+  if (shouldHideWorkerIdentity(row)) {
     return "";
   }
 
@@ -487,7 +514,7 @@ function getExportWorkerTeam(row: ExportRow) {
 }
 
 function getExportWorkerPhoneLast4(row: ExportRow) {
-  if (getIdentityMode(row) === "anonymous") {
+  if (shouldHideWorkerIdentity(row)) {
     return "";
   }
 
@@ -498,7 +525,7 @@ function getExportWorkerPhoneLast4(row: ExportRow) {
 }
 
 function getExportWorkerEmployeeNo(row: ExportRow) {
-  if (getIdentityMode(row) === "anonymous") {
+  if (shouldHideWorkerIdentity(row)) {
     return "";
   }
 
@@ -610,7 +637,7 @@ function buildFieldParticipationRows(fieldRows: ExportRow[], dataset: Dataset) {
       summarize(getString(row, ["location", "area", "place"]), 120),
       summarize(getString(row, ["content", "body", "message", "description"]), 240),
       yesNo(getBoolean(row, ["anonymous", "is_anonymous"])),
-      getIdentityMode(row),
+      getIdentityModeLabel(row),
       summarize(getExportWorkerName(row), 80),
       summarize(getExportWorkerTeam(row), 120),
       summarize(getExportWorkerPhoneLast4(row), 20),
