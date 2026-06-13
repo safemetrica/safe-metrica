@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCompanyConfig } from "@/lib/company";
+import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationLinks,
   type WorkerRepresentativeConfirmationLink,
@@ -12,6 +13,25 @@ import {
 } from "@/lib/workerRepresentativeConfirmationRecords";
 
 export const dynamic = "force-dynamic";
+
+const FIELD_PARTICIPATION_SUMMARY_LIMIT = 500;
+
+type FieldParticipationSummaryRow = {
+  tenant_code?: unknown;
+  submission_type?: unknown;
+  legacy_type?: unknown;
+  title?: unknown;
+  status?: unknown;
+  reported_date?: unknown;
+  created_at?: unknown;
+};
+
+type FieldParticipationSummary = {
+  status: "ok" | "not_configured" | "failed";
+  shareConfirmationCount: number;
+  workerReportCount: number;
+  fieldReviewNeededCount: number;
+};
 
 const actionCards = [
   {
@@ -36,6 +56,114 @@ const actionCards = [
 
 function getCompanyDisplayName(company: { name?: string; companyName?: string; code: string }) {
   return company.name || company.companyName || company.code;
+}
+
+function readText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeSubmissionType(value: unknown) {
+  const text = readText(value).toLowerCase();
+
+  if (text.includes("공유확인") || text.includes("share")) {
+    return "공유확인";
+  }
+
+  if (text.includes("위험제보") || text.includes("위험 제보") || text.includes("risk")) {
+    return "위험제보";
+  }
+
+  if (text.includes("아차") || text.includes("near")) {
+    return "아차사고";
+  }
+
+  if (text.includes("개선제안") || text.includes("개선 제안") || text.includes("improvement")) {
+    return "개선제안";
+  }
+
+  return text ? "기타" : "확인 필요";
+}
+
+function normalizeFieldStatus(value: unknown) {
+  const text = readText(value).toLowerCase();
+
+  if (text.includes("조치완료") || text.includes("완료") || text.includes("done") || text.includes("completed")) {
+    return "조치완료";
+  }
+
+  if (text.includes("반려") || text.includes("reject")) {
+    return "반려";
+  }
+
+  if (text.includes("조치필요") || text.includes("필요") || text.includes("action_required")) {
+    return "조치필요";
+  }
+
+  if (text.includes("검토") || text.includes("review")) {
+    return "검토중";
+  }
+
+  if (text.includes("접수") || text.includes("received")) {
+    return "접수";
+  }
+
+  return text ? "확인 필요" : "확인 필요";
+}
+
+function getFieldSubmissionType(row: FieldParticipationSummaryRow) {
+  return normalizeSubmissionType(row.submission_type || row.legacy_type);
+}
+
+function isShareConfirmation(row: FieldParticipationSummaryRow) {
+  return getFieldSubmissionType(row) === "공유확인";
+}
+
+function isFieldReviewNeeded(row: FieldParticipationSummaryRow) {
+  if (isShareConfirmation(row)) {
+    return false;
+  }
+
+  const status = normalizeFieldStatus(row.status);
+
+  return status !== "조치완료" && status !== "반려";
+}
+
+async function fetchFieldParticipationSummary(
+  companyCode: string,
+): Promise<FieldParticipationSummary> {
+  const query = new URLSearchParams({
+    select: "tenant_code,submission_type,legacy_type,title,status,reported_date,created_at",
+    tenant_code: `eq.${companyCode}`,
+    order: "reported_date.desc",
+    limit: String(FIELD_PARTICIPATION_SUMMARY_LIMIT),
+  });
+
+  try {
+    const rows = await selectSupabaseExportRows<FieldParticipationSummaryRow>(
+      "field_participation_submissions",
+      query,
+    );
+
+    const shareConfirmationCount = rows.filter(isShareConfirmation).length;
+    const workerReportRows = rows.filter((row) => !isShareConfirmation(row));
+    const fieldReviewNeededCount = workerReportRows.filter(isFieldReviewNeeded).length;
+
+    return {
+      status: "ok",
+      shareConfirmationCount,
+      workerReportCount: workerReportRows.length,
+      fieldReviewNeededCount,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      shareConfirmationCount: 0,
+      workerReportCount: 0,
+      fieldReviewNeededCount: 0,
+    };
+  }
 }
 
 function getLinkStatus(link: WorkerRepresentativeConfirmationLink) {
@@ -66,16 +194,47 @@ function isRepresentativeReviewNeeded(record: WorkerRepresentativeConfirmationRe
 }
 
 function buildSummaryCards(params: {
+  fieldSummary: FieldParticipationSummary;
   representativeRecords: WorkerRepresentativeConfirmationRecord[];
   representativeLinks: WorkerRepresentativeConfirmationLink[];
   linkLoadFailed: boolean;
 }) {
-  const { representativeRecords, representativeLinks, linkLoadFailed } = params;
+  const {
+    fieldSummary,
+    representativeRecords,
+    representativeLinks,
+    linkLoadFailed,
+  } = params;
+
   const objectionCount = representativeRecords.filter((record) => record.hasObjection).length;
-  const reviewNeededCount = representativeRecords.filter(isRepresentativeReviewNeeded).length;
+  const representativeReviewNeededCount = representativeRecords.filter(isRepresentativeReviewNeeded).length;
   const activeLinkCount = representativeLinks.filter((link) => getLinkStatus(link) === "active").length;
+  const fieldLoadFailed = fieldSummary.status !== "ok";
+  const totalReviewNeededCount =
+    fieldSummary.fieldReviewNeededCount + representativeReviewNeededCount;
 
   return [
+    {
+      label: "근로자 공유확인",
+      value: fieldLoadFailed ? "확인 필요" : `${fieldSummary.shareConfirmationCount}건`,
+      description: fieldLoadFailed
+        ? "현장참여 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
+        : "공유확인 제출 건수입니다. 조치 KPI에는 섞지 않습니다.",
+    },
+    {
+      label: "위험제보·개선의견",
+      value: fieldLoadFailed ? "확인 필요" : `${fieldSummary.workerReportCount}건`,
+      description: fieldLoadFailed
+        ? "현장참여 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
+        : "위험제보, 아차사고, 개선제안 등 관리자 검토대상 제출 건수입니다.",
+    },
+    {
+      label: "관리자 검토 필요",
+      value: fieldLoadFailed ? "확인 필요" : `${totalReviewNeededCount}건`,
+      description: fieldLoadFailed
+        ? "현장참여 원장 조회가 실패해 검토 필요 건수를 확정하지 않았습니다."
+        : "공유확인을 제외한 현장 의견과 근로자대표 보완 의견 중 검토가 필요한 기록입니다.",
+    },
     {
       label: "근로자대표 참여확인",
       value: `${representativeRecords.length}건`,
@@ -85,11 +244,6 @@ function buildSummaryCards(params: {
       label: "보완 의견 있음",
       value: `${objectionCount}건`,
       description: "별도 의견 또는 보완 의견이 포함된 근로자대표 참여확인 기록입니다.",
-    },
-    {
-      label: "관리자 검토 필요",
-      value: `${reviewNeededCount}건`,
-      description: "미확인, 검토 필요, 보완 요청 또는 보완 의견이 있는 기록입니다.",
     },
     {
       label: "사용 가능 링크",
@@ -112,12 +266,14 @@ export default async function RiskSharePackManagerHomePage() {
     redirect("/login?error=risk_share_pack_not_available");
   }
 
-  const [recordResult, linkResult] = await Promise.all([
+  const [fieldSummary, recordResult, linkResult] = await Promise.all([
+    fetchFieldParticipationSummary(company.code),
     fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
+      status: "failed" as const,
       records: [] as WorkerRepresentativeConfirmationRecord[],
     })),
     fetchWorkerRepresentativeConfirmationLinks(company.code).catch(() => ({
-      status: "error" as const,
+      status: "failed" as const,
       links: [] as WorkerRepresentativeConfirmationLink[],
     })),
   ]);
@@ -125,6 +281,7 @@ export default async function RiskSharePackManagerHomePage() {
   const representativeRecords = recordResult.records;
   const representativeLinks = linkResult.status === "ok" ? linkResult.links : [];
   const summaryCards = buildSummaryCards({
+    fieldSummary,
     representativeRecords,
     representativeLinks,
     linkLoadFailed: linkResult.status !== "ok",
@@ -172,7 +329,7 @@ export default async function RiskSharePackManagerHomePage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {summaryCards.map((card) => (
             <article
               key={card.label}
