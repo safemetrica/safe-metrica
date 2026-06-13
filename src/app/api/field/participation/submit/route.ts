@@ -357,8 +357,28 @@ export async function POST(req: NextRequest) {
   const type = toLegacyFieldVoiceType(submissionType);
   const reportedDate = getFormText(formData, "reportedDate") || getTodayDateValue();
   const location = getFormText(formData, "location");
-  const anonymous = getFormChecked(formData, "anonymous");
+  const requestedAnonymous = getFormChecked(formData, "anonymous");
   const submitterInput = getFormText(formData, "submitter");
+  const workerTeam = getFormText(formData, "workerTeam");
+  const workerPhoneLast4 = getFormText(formData, "workerPhoneLast4").replace(/\D/g, "").slice(0, 4);
+  const workerEmployeeNo = getFormText(formData, "workerEmployeeNo");
+  const rawIdentityMode = getFormText(formData, "identityMode");
+  const isShareConfirmationSubmission = submissionType === "공유확인";
+  const shareConfirmationIdentityReady =
+    !isShareConfirmationSubmission ||
+    (
+      submitterInput.length > 0 &&
+      workerTeam.length > 0 &&
+      (workerPhoneLast4.length === 4 || workerEmployeeNo.length > 0)
+    );
+  const anonymous = isShareConfirmationSubmission ? false : requestedAnonymous;
+  const identityMode = isShareConfirmationSubmission
+    ? "identified"
+    : anonymous
+      ? "anonymous"
+      : rawIdentityMode === "contact_allowed"
+        ? "contact_allowed"
+        : "identified";
   const submitter = anonymous ? "익명" : submitterInput || "미입력";
   const content = getFormText(formData, "content");
 
@@ -406,7 +426,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (!title || !content) {
+  if (!title || !content || !shareConfirmationIdentityReady) {
     return redirectTo(req, "/field/participation/submitted", {
       status: "missing_required",
       company: company.code,
@@ -433,7 +453,21 @@ export async function POST(req: NextRequest) {
     safetyMeasureCheck,
   });
 
-  const inlineMetaLines: string[] = [];
+  const inlineMetaLines: string[] = [
+    `식별 모드: ${identityMode}`,
+  ];
+
+  if (!anonymous && workerTeam) {
+    inlineMetaLines.push(`소속/작업조: ${workerTeam}`);
+  }
+
+  if (!anonymous && workerPhoneLast4) {
+    inlineMetaLines.push(`휴대폰 뒷4자리: ${workerPhoneLast4}`);
+  }
+
+  if (!anonymous && workerEmployeeNo) {
+    inlineMetaLines.push(`사번/식별번호: ${workerEmployeeNo}`);
+  }
 
   if (!hasNotionProperty(propertyNames, "제출자")) {
     inlineMetaLines.push(`제출자: ${submitter}`);
@@ -629,6 +663,11 @@ export async function POST(req: NextRequest) {
         file_urls: uploadedFiles.map((file) => file.url),
         raw_payload: {
           clientSubmissionId,
+          identityMode,
+          workerName: anonymous ? "" : submitterInput,
+          workerTeam: anonymous ? "" : workerTeam,
+          workerPhoneLast4: anonymous ? "" : workerPhoneLast4,
+          workerEmployeeNo: anonymous ? "" : workerEmployeeNo,
           contractorName,
           sharedRiskSummary,
           riskCheck,
