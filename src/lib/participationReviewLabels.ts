@@ -4,7 +4,10 @@ export type ParticipationReviewLabel =
   | "신규 제보"
   | "제보 의도"
   | "사진 있음"
+  | "확인정보 있음"
   | "익명"
+  | "기존기록/확인정보 미입력"
+  | "기존기록/제출자 표시 있음"
   | "월간보고서 후보";
 
 type ParticipationReviewRecord = {
@@ -46,6 +49,60 @@ function getText(...values: unknown[]) {
 
 function compact(value: string) {
   return value.replace(/[\s_-]+/g, "").toLowerCase();
+}
+
+function getBoolean(...values: unknown[]) {
+  const value = values.find(
+    (candidate) =>
+      typeof candidate === "boolean" ||
+      (typeof candidate === "string" && candidate.trim().length > 0),
+  );
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = compact(value);
+    return normalized === "true" || normalized === "yes" || normalized === "on" || normalized === "예";
+  }
+
+  return false;
+}
+
+function getIdentityReviewLabel(
+  record: ParticipationReviewRecord,
+  rawPayload: Record<string, unknown>,
+): ParticipationReviewLabel {
+  const identityMode = getText(rawPayload.identityMode, rawPayload.identity_mode);
+
+  if (identityMode === "identified") {
+    return "확인정보 있음";
+  }
+
+  if (identityMode === "anonymous") {
+    return "익명";
+  }
+
+  if (identityMode === "legacy_unidentified") {
+    return "기존기록/확인정보 미입력";
+  }
+
+  if (identityMode === "legacy_identified") {
+    return "기존기록/제출자 표시 있음";
+  }
+
+  if (getBoolean(record.anonymous) || getText(record.submitter) === "익명") {
+    return "익명";
+  }
+
+  const submitter = getText(record.submitter, rawPayload.workerName, rawPayload.worker_name);
+
+  if (!submitter || submitter === "미입력" || submitter === "익명" || submitter === "제출자 미입력") {
+    return "기존기록/확인정보 미입력";
+  }
+
+  return "기존기록/제출자 표시 있음";
 }
 
 function hasFiles(record: ParticipationReviewRecord) {
@@ -130,9 +187,7 @@ export function buildParticipationReviewLabels(
     labels.push("사진 있음");
   }
 
-  if (record.anonymous === true || getText(record.submitter) === "익명") {
-    labels.push("익명");
-  }
+  labels.push(getIdentityReviewLabel(record, rawPayload));
 
   if (
     isMonthlyReportCandidate({

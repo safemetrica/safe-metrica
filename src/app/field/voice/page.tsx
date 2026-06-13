@@ -368,7 +368,10 @@ const PARTICIPATION_REVIEW_LABEL_CLASS_NAMES: Record<ParticipationReviewLabel, s
   "신규 제보": "border-red-200 bg-red-50 text-red-800",
   "제보 의도": "border-orange-200 bg-orange-50 text-orange-800",
   "사진 있음": "border-purple-200 bg-purple-50 text-purple-800",
+  "확인정보 있음": "border-emerald-200 bg-emerald-50 text-emerald-800",
   "익명": "border-slate-300 bg-slate-100 text-slate-700",
+  "기존기록/확인정보 미입력": "border-amber-200 bg-amber-50 text-amber-900",
+  "기존기록/제출자 표시 있음": "border-sky-200 bg-sky-50 text-sky-800",
   "월간보고서 후보": "border-blue-200 bg-blue-50 text-blue-800",
 };
 
