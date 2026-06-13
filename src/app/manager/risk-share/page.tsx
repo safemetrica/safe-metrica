@@ -5,6 +5,7 @@ import { getCompanyConfig } from "@/lib/company";
 import RiskSharePackExportPanel from "./RiskSharePackExportPanel";
 import RiskSharePackMonthlySummary from "./RiskSharePackMonthlySummary";
 import RiskSharePackLinkPanel from "./RiskSharePackLinkPanel";
+import RiskSharePackCustomerLinksPanel from "./RiskSharePackCustomerLinksPanel";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationLinks,
@@ -431,6 +432,12 @@ export default async function RiskSharePackManagerHomePage() {
         </section>
 
 
+
+
+        <RiskSharePackCustomerLinksPanel
+          companyName={companyName}
+          companyCode={company.code}
+        />
 
         <RiskSharePackLinkPanel
           companyName={companyName}
