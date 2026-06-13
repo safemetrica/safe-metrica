@@ -8,6 +8,10 @@ import {
   fetchContractorSubmissionRecords,
   getContractorSubmissionRecordSummary,
 } from "@/lib/contractorSubmissionRecords";
+import {
+  fetchWorkerRepresentativeConfirmationRecords,
+  type WorkerRepresentativeConfirmationRecord,
+} from "@/lib/workerRepresentativeConfirmationRecords";
 
 export const dynamic = "force-dynamic";
 
@@ -146,6 +150,47 @@ function isValidPtwRow(row: NotionPage): boolean {
 function inMonth(dateValue: string, monthKey: string): boolean {
   if (!dateValue || !monthKey) return false;
   return dateValue.startsWith(monthKey);
+}
+
+function getCompanyCodeForOperationalLedger(company: {
+  code?: string;
+  companyCode?: string;
+  tenantCode?: string;
+}) {
+  return String(company.companyCode || company.code || company.tenantCode || "").trim();
+}
+
+function getWorkerRepresentativeRecordDate(
+  record: WorkerRepresentativeConfirmationRecord,
+) {
+  return record.confirmedAt || record.submittedAt || "";
+}
+
+function isWorkerRepresentativeFollowUp(
+  record: WorkerRepresentativeConfirmationRecord,
+) {
+  return (
+    record.hasObjection ||
+    ["미확인", "검토 필요", "이견 검토 중", "보완 요청"].includes(
+      record.reviewStatus,
+    )
+  );
+}
+
+function getWorkerRepresentativeStatusTone(status: string, hasObjection: boolean) {
+  if (hasObjection || status === "이견 검토 중" || status === "보완 요청") {
+    return "border-amber-500/40 bg-amber-950/40 text-amber-100 print:border-amber-300 print:bg-amber-50 print:text-amber-900";
+  }
+
+  if (status === "확인" || status === "검토 완료") {
+    return "border-emerald-500/40 bg-emerald-950/40 text-emerald-100 print:border-emerald-300 print:bg-emerald-50 print:text-emerald-900";
+  }
+
+  if (status === "반려") {
+    return "border-rose-500/40 bg-rose-950/40 text-rose-100 print:border-rose-300 print:bg-rose-50 print:text-rose-900";
+  }
+
+  return "border-slate-700 bg-slate-900 text-slate-200 print:border-slate-300 print:bg-white print:text-slate-700";
 }
 
 async function queryNotionDatabase(
@@ -575,13 +620,32 @@ export default async function MonthlySafetyReportPage({
     throw error;
   }
   const headers = { Authorization: `Bearer ${company.notionApiKey}` };
+  const companyCode = getCompanyCodeForOperationalLedger(
+    company as { code?: string; companyCode?: string; tenantCode?: string },
+  );
 
-  const [tbmRowsRaw, ebRowsRaw, ptwRowsRaw, fieldVoiceRowsRaw, risk] = await Promise.all([
+  const [
+    tbmRowsRaw,
+    ebRowsRaw,
+    ptwRowsRaw,
+    fieldVoiceRowsRaw,
+    risk,
+    workerRepresentativeConfirmationStore,
+  ] = await Promise.all([
     queryNotionDatabase(company.tbmDbId, company.notionApiKey),
     queryNotionDatabase(company.ebmDbId, company.notionApiKey),
     queryNotionDatabase(company.ptwDbId, company.notionApiKey),
     queryNotionDatabase(company.fieldVoiceDbId, company.notionApiKey),
     getRiskIntelligenceData(company.riskAssessmentDbId, company.notionApiKey).catch(() => null),
+    companyCode
+      ? fetchWorkerRepresentativeConfirmationRecords(companyCode).catch(() => ({
+          status: "failed" as const,
+          records: [],
+        }))
+      : Promise.resolve({
+          status: "not_configured" as const,
+          records: [],
+        }),
   ]);
 
   // 원청·협력사 제출자료 월간 섹션은 향후 건설/건물관리/용역대행 등
@@ -620,6 +684,22 @@ export default async function MonthlySafetyReportPage({
     .replace("{reportCount}", String(fieldVoiceReviewRows.length))
     .replace("{doneCount}", String(fieldVoiceDoneRows.length))
     .replace("{pendingCount}", String(fieldVoiceFollowUpRows.length));
+
+  const workerRepresentativeRecords = workerRepresentativeConfirmationStore.records.filter((record) => {
+    const date = getWorkerRepresentativeRecordDate(record);
+    return date ? inMonth(date, monthKey) : true;
+  });
+  const workerRepresentativeObjectionRows = workerRepresentativeRecords.filter(
+    (record) => record.hasObjection || Boolean(record.objectionDetail),
+  );
+  const workerRepresentativeFollowUpRows = workerRepresentativeRecords.filter(
+    isWorkerRepresentativeFollowUp,
+  );
+  const workerRepresentativeConfirmedRows = workerRepresentativeRecords.filter(
+    (record) =>
+      !record.hasObjection &&
+      (record.reviewStatus === "확인" || record.reviewStatus === "검토 완료"),
+  );
 
   const validPtwRows = ptwRows.filter(isValidPtwRow);
 
@@ -712,6 +792,11 @@ export default async function MonthlySafetyReportPage({
       label: "현장참여 확인",
       count: fieldVoiceFollowUpRows.length,
       note: "접수·검토중·조치필요 현장참여",
+    },
+    {
+      label: "근로자대표 확인",
+      count: workerRepresentativeFollowUpRows.length,
+      note: "이견·보완 의견 또는 검토 필요 확인",
     },
     {
       label: "위험성평가 개선대책",
@@ -1164,6 +1249,103 @@ export default async function MonthlySafetyReportPage({
           {fieldVoiceMemoCount > 0 ? (
             <div className="mt-4 rounded-2xl border border-blue-900/70 bg-blue-950/20 p-4 text-sm leading-6 text-blue-100 print:border-blue-200 print:bg-blue-50 print:text-blue-900">
               이번 달 현장참여 기록 중 관리자 조치 메모가 입력된 항목은 {fieldVoiceMemoCount}건입니다.
+            </div>
+          ) : null}
+        </Section>
+
+        <Section
+          title="근로자대표 참여확인"
+          desc="위험성평가 공유·참여 과정에서 근로자대표 확인, 보완 의견, 관리자 검토 상태를 월간 운영기록으로 정리합니다."
+          defaultOpen={isDetailView || workerRepresentativeFollowUpRows.length > 0}
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="총 제출"
+              value={`${workerRepresentativeRecords.length}건`}
+              hint="월간 근로자대표 참여확인 기록"
+              tone="border-cyan-800"
+            />
+            <StatCard
+              label="확인 기록"
+              value={`${workerRepresentativeConfirmedRows.length}건`}
+              hint="확인 또는 검토 완료 상태"
+              tone="border-emerald-800"
+            />
+            <StatCard
+              label="보완 의견"
+              value={`${workerRepresentativeObjectionRows.length}건`}
+              hint="이견 또는 보완 의견 포함"
+              tone="border-amber-800"
+            />
+            <StatCard
+              label="관리자 검토"
+              value={`${workerRepresentativeFollowUpRows.length}건`}
+              hint="미확인·검토 필요·보완 요청"
+              tone="border-blue-800"
+            />
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+            <h3 className="text-base font-black text-white print:text-slate-950">월간 근로자대표 참여확인</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300 print:text-slate-700">
+              이번 달 근로자대표 참여확인 {workerRepresentativeRecords.length}건 중 보완 의견 또는 이견이 포함된 기록은 {workerRepresentativeObjectionRows.length}건이며, 관리자 추가 검토가 필요한 기록은 {workerRepresentativeFollowUpRows.length}건입니다.
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500 print:text-slate-600">
+              근로자대표 참여확인은 위험성평가 공유·의견 확인 과정의 운영기록입니다. 평가 결과, 현장 조치 상태 또는 법적 판단을 확정하는 의미가 아닙니다.
+            </p>
+          </div>
+
+          {workerRepresentativeConfirmationStore.status !== "ok" ? (
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm leading-6 text-slate-400 print:border-slate-300 print:bg-white print:text-slate-600">
+              근로자대표 참여확인 원장 연결 상태를 확인할 수 없습니다. Supabase 설정 또는 원장 상태를 Owner 기준으로 확인해 주세요.
+            </div>
+          ) : null}
+
+          {workerRepresentativeRecords.length > 0 ? (
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 print:border-slate-300 print:bg-white">
+              <h3 className="text-sm font-black text-white print:text-slate-950">최근 근로자대표 참여확인 기록</h3>
+              <div className="mt-3 space-y-2">
+                {workerRepresentativeRecords.slice(0, 5).map((record) => (
+                  <div
+                    key={record.confirmationId}
+                    className="rounded-xl border border-slate-800 bg-slate-950 p-3 print:border-slate-300 print:bg-white"
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-white print:text-slate-950">
+                          {record.siteName || "현장명 미입력"} · {record.confirmationScope || "확인 범위 미입력"}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-slate-400 print:text-slate-600">
+                          {record.confirmedAt.slice(0, 10)} · {record.representativeRole} · {record.representativeDepartment || "소속 미입력"}
+                        </p>
+                        {record.opinion || record.objectionDetail ? (
+                          <p className="mt-2 text-xs leading-5 text-blue-200 print:text-blue-800">
+                            의견: {record.objectionDetail || record.opinion}
+                          </p>
+                        ) : null}
+                      </div>
+                      <span className={`w-fit rounded-full border px-2 py-1 text-xs font-black ${getWorkerRepresentativeStatusTone(record.reviewStatus, record.hasObjection)}`}>
+                        {record.hasObjection ? "보완 의견 있음" : record.reviewStatus}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400 print:border-slate-300 print:bg-white print:text-slate-600">
+              이번 달 근로자대표 참여확인 기록이 없습니다.
+            </div>
+          )}
+
+          {workerRepresentativeFollowUpRows.length > 0 ? (
+            <div className="mt-4 rounded-2xl border border-amber-900/70 bg-amber-950/20 p-4 print:border-amber-200 print:bg-amber-50">
+              <h3 className="text-base font-black text-amber-200 print:text-amber-900">다음 달 확인 필요</h3>
+              <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-300 print:text-slate-700">
+                <li>• 이견·보완 의견 또는 미확인 상태의 근로자대표 참여확인 {workerRepresentativeFollowUpRows.length}건은 관리자 검토가 필요합니다.</li>
+                <li>• 보완 의견은 위험요인 후보, 현장참여 기록, 다음 정기 위험성평가 재검토 후보와 함께 확인합니다.</li>
+                <li>• 근로자대표 확인을 평가 결과 확정이나 사업주 책임 이전으로 표시하지 않습니다.</li>
+              </ul>
             </div>
           ) : null}
         </Section>
