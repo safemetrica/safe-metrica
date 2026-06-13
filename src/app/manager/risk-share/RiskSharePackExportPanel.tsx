@@ -53,7 +53,7 @@ function getErrorMessage(status: number) {
   }
 
   if (status === 403) {
-    return "CSV 다운로드 권한이 필요합니다. 내부 운영자 권한으로 다시 확인해 주세요.";
+    return "내부 운영자 다운로드 권한이 필요합니다. Owner 권한으로 다시 확인해 주세요.";
   }
 
   if (status === 502) {
@@ -150,13 +150,13 @@ export default function RiskSharePackExportPanel({
     <section className="rounded-3xl border border-cyan-500/25 bg-slate-900/85 p-5 shadow-xl shadow-slate-950/30">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-bold text-cyan-300">고객 전달용 Export</p>
+          <p className="text-sm font-bold text-cyan-300">내부 운영자 Export</p>
           <h2 className="mt-1 text-xl font-black text-white">
-            Risk Share Pack CSV 다운로드
+            Risk Share Pack 고객 전달자료 준비
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
             선택한 기간의 공유확인, 위험제보·개선의견, 근로자대표 참여확인 기록을
-            고객 전달용 CSV로 정리합니다.
+            내부 운영자가 확인한 뒤 고객 전달용 CSV로 정리합니다.
           </p>
         </div>
 
@@ -213,14 +213,14 @@ export default function RiskSharePackExportPanel({
               disabled={downloadingDataset !== null}
               className="mt-4 rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
             >
-              {downloadingDataset === dataset.value ? "다운로드 중..." : "CSV 다운로드"}
+              {downloadingDataset === dataset.value ? "다운로드 중..." : "내부 운영자 CSV 다운로드"}
             </button>
           </article>
         ))}
       </div>
 
       <p className="mt-4 text-xs leading-5 text-slate-500">
-        Export는 입력된 운영기록을 정리하는 기능입니다. 법적 판단이나 조치완료 확정을 대신하지 않습니다.
+        Export는 내부 운영자가 입력된 운영기록을 확인해 고객 전달자료로 정리하는 기능입니다. 법적 판단이나 조치완료 확정을 대신하지 않습니다.
       </p>
     </section>
   );
