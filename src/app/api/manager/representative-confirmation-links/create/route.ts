@@ -27,6 +27,37 @@ function readRequiredText(
   return normalized;
 }
 
+
+function readOptionalExpiresAt(payload: Record<string, unknown>) {
+  const value = payload.expiresAt;
+
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const dateOnlyMatch = trimmed.match(/^\d{4}-\d{2}-\d{2}$/);
+  const candidate = dateOnlyMatch
+    ? `${trimmed}T14:59:59.999Z`
+    : trimmed;
+  const parsed = new Date(candidate);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return parsed.toISOString();
+}
+
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
 
@@ -65,6 +96,21 @@ export async function POST(request: Request) {
     );
   }
 
+  const expiresAt = readOptionalExpiresAt(payload as Record<string, unknown>);
+
+  if (expiresAt === undefined) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: {
+          code: "invalid_representative_confirmation_link_expiry",
+          message: "링크 만료일 형식을 확인해주세요.",
+        },
+      },
+      { status: 400 },
+    );
+  }
+
   const company = await getCompanyConfig().catch(() => null);
 
   if (!company) {
@@ -84,6 +130,7 @@ export async function POST(request: Request) {
     companyCode: company.code,
     siteName,
     confirmationScope,
+    expiresAt,
   }).catch(() => ({ status: "failed" as const }));
 
   if (result.status === "not_configured") {

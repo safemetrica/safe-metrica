@@ -32,6 +32,7 @@ export default function RepresentativeConfirmationLinkBuilder({
   const [confirmationScope, setConfirmationScope] = useState(
     defaultConfirmationScope,
   );
+  const [expiresAt, setExpiresAt] = useState("");
   const [generatedLink, setGeneratedLink] = useState("");
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const [createStatus, setCreateStatus] = useState<CreateStatus>({
@@ -52,6 +53,7 @@ export default function RepresentativeConfirmationLinkBuilder({
           body: JSON.stringify({
             siteName: siteName.trim(),
             confirmationScope: confirmationScope.trim(),
+            expiresAt: expiresAt || null,
           }),
         },
       );
@@ -142,6 +144,25 @@ export default function RepresentativeConfirmationLinkBuilder({
             }}
             required
           />
+        </label>
+
+        <label className="block text-sm font-black text-slate-200">
+          링크 만료일
+          <input
+            className={inputClassName}
+            name="expiresAt"
+            type="date"
+            value={expiresAt}
+            onChange={(event) => {
+              setExpiresAt(event.target.value);
+              setGeneratedLink("");
+              setCopyStatus("idle");
+              setCreateStatus({ status: "idle" });
+            }}
+          />
+          <span className="mt-2 block text-xs leading-5 text-slate-400">
+            선택한 날짜의 한국시간 23:59까지 사용할 수 있습니다. 비워두면 별도 만료일 없이 생성됩니다.
+          </span>
         </label>
 
         <button
