@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCompanyConfig } from "@/lib/company";
+import RiskSharePackExportPanel from "./RiskSharePackExportPanel";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationLinks,
@@ -341,6 +342,8 @@ export default async function RiskSharePackManagerHomePage() {
             </article>
           ))}
         </section>
+
+        <RiskSharePackExportPanel companyCode={company.code} />
 
         <section className="grid gap-4 lg:grid-cols-3">
           {actionCards.map((card) => (
