@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
@@ -28,6 +29,7 @@ const inputClassName =
 export default function RepresentativeConfirmationLinkBuilder({
   defaultConfirmationScope,
 }: Props) {
+  const router = useRouter();
   const [siteName, setSiteName] = useState("");
   const [confirmationScope, setConfirmationScope] = useState(
     defaultConfirmationScope,
@@ -72,6 +74,7 @@ export default function RepresentativeConfirmationLinkBuilder({
 
       setGeneratedLink(new URL(result.link, window.location.origin).toString());
       setCreateStatus({ status: "idle" });
+      router.refresh();
     } catch {
       setGeneratedLink("");
       setCreateStatus({
