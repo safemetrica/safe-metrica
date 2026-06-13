@@ -118,7 +118,7 @@ export default function WorkerRepresentativeConfirmationForm({
     const confirmationScope = String(formData.get("confirmationScope") ?? "").trim();
     const opinionValue = opinion.trim();
 
-    if (!siteNameValue) {
+    if (!isLinkLocked && !siteNameValue) {
       setSubmission({ status: "error", message: "현장명을 확인해주세요." });
       const editor = document.getElementById("confirmationTargetEditor");
       if (editor instanceof HTMLDetailsElement) editor.open = true;
@@ -126,7 +126,7 @@ export default function WorkerRepresentativeConfirmationForm({
       return;
     }
 
-    if (!riskAssessmentId && !confirmationScope) {
+    if (!isLinkLocked && !riskAssessmentId && !confirmationScope) {
       setSubmission({
         status: "error",
         message: "오늘 확인할 내용을 입력해주세요.",
