@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCompanyConfig } from "@/lib/company";
 import RiskSharePackExportPanel from "./RiskSharePackExportPanel";
 import RiskSharePackMonthlySummary from "./RiskSharePackMonthlySummary";
+import RiskSharePackLinkPanel from "./RiskSharePackLinkPanel";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationLinks,
@@ -429,6 +430,12 @@ export default async function RiskSharePackManagerHomePage() {
           ))}
         </section>
 
+
+
+        <RiskSharePackLinkPanel
+          companyName={companyName}
+          companyCode={company.code}
+        />
 
         <RiskSharePackMonthlySummary
           periodLabel={`${currentPeriod.startDate} ~ ${currentPeriod.endDate}`}
