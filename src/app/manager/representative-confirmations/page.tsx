@@ -3,12 +3,17 @@ import Link from "next/link";
 import { SafeNav } from "@/components/SafeLayout";
 import { getCompanyConfig } from "@/lib/company";
 import {
+  fetchWorkerRepresentativeConfirmationLinks,
+  type WorkerRepresentativeConfirmationLink,
+} from "@/lib/workerRepresentativeConfirmationLinks";
+import {
   fetchWorkerRepresentativeConfirmationRecords,
   type WorkerRepresentativeConfirmationRecord,
   type WorkerRepresentativeReviewStatus,
 } from "@/lib/workerRepresentativeConfirmationRecords";
 
 import RepresentativeConfirmationLinkBuilder from "./RepresentativeConfirmationLinkBuilder";
+import RevokeRepresentativeConfirmationLinkButton from "./RevokeRepresentativeConfirmationLinkButton";
 
 export const dynamic = "force-dynamic";
 
@@ -170,6 +175,106 @@ function ConfirmationCard({
   );
 }
 
+function formatOptionalDateTime(value: string | null) {
+  if (!value) {
+    return "없음";
+  }
+
+  return formatSubmittedAt(value);
+}
+
+function getLinkStatus(link: WorkerRepresentativeConfirmationLink) {
+  if (link.status === "revoked") {
+    return "폐기됨";
+  }
+
+  const expiresAt = link.expiresAt ? Date.parse(link.expiresAt) : null;
+
+  if (
+    expiresAt !== null &&
+    (!Number.isFinite(expiresAt) || expiresAt <= Date.now())
+  ) {
+    return "만료됨";
+  }
+
+  return "사용 가능";
+}
+
+function getLinkStatusClass(status: string) {
+  if (status === "사용 가능") {
+    return "border-emerald-500/50 bg-emerald-500/10 text-emerald-200";
+  }
+
+  if (status === "만료됨") {
+    return "border-amber-500/50 bg-amber-500/10 text-amber-200";
+  }
+
+  return "border-rose-500/50 bg-rose-500/10 text-rose-200";
+}
+
+function LinkManagementCard({ link }: { link: WorkerRepresentativeConfirmationLink }) {
+  const status = getLinkStatus(link);
+
+  return (
+    <article className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full border px-3 py-1 text-xs font-black ${getLinkStatusClass(status)}`}
+            >
+              {status}
+            </span>
+            <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs font-black text-slate-300">
+              최근 접근: {formatOptionalDateTime(link.lastUsedAt)}
+            </span>
+          </div>
+          <h3 className="mt-3 break-words text-base font-black text-white">
+            {link.siteName}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-300">
+            {link.confirmationScope}
+          </p>
+        </div>
+        <RevokeRepresentativeConfirmationLinkButton
+          linkId={link.linkId}
+          disabled={link.status === "revoked"}
+        />
+      </div>
+
+      <dl className="mt-4 grid gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-3 text-xs sm:grid-cols-3">
+        <div>
+          <dt className="font-bold text-slate-500">생성</dt>
+          <dd className="mt-1 font-bold text-slate-200">
+            {formatOptionalDateTime(link.createdAt)}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-bold text-slate-500">만료</dt>
+          <dd className="mt-1 font-bold text-slate-200">
+            {formatOptionalDateTime(link.expiresAt)}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-bold text-slate-500">링크 관리 기준</dt>
+          <dd className="mt-1 font-bold text-slate-200">
+            폐기 또는 만료 시 제출 차단
+          </dd>
+        </div>
+      </dl>
+    </article>
+  );
+}
+
+function LinkStorageNotice({ message }: { message: string }) {
+  return (
+    <section className="mt-6 rounded-3xl border border-slate-700 bg-slate-900/70 p-5">
+      <h2 className="text-lg font-black text-white">근로자대표 확인 링크 관리</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{message}</p>
+    </section>
+  );
+}
+
 function SafeNotice({ message }: { message: string }) {
   return (
     <section className="rounded-3xl border border-slate-700 bg-slate-900/80 p-8 text-center">
@@ -203,9 +308,10 @@ export default async function RepresentativeConfirmationsPage() {
     );
   }
 
-  const result = await fetchWorkerRepresentativeConfirmationRecords(
-    company.code,
-  );
+  const [result, linkResult] = await Promise.all([
+    fetchWorkerRepresentativeConfirmationRecords(company.code),
+    fetchWorkerRepresentativeConfirmationLinks(company.code),
+  ]);
   const objectionCount = result.records.filter(
     (record) => record.hasObjection,
   ).length;
@@ -241,6 +347,41 @@ export default async function RepresentativeConfirmationsPage() {
         <RepresentativeConfirmationLinkBuilder
           defaultConfirmationScope={getDefaultConfirmationScope()}
         />
+
+        {linkResult.status === "ok" ? (
+          <section className="mt-6 rounded-3xl border border-slate-700 bg-slate-950/40 p-5 sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black tracking-wide text-cyan-300">
+                  링크 운영 통제
+                </p>
+                <h2 className="mt-1 text-xl font-black text-white">
+                  최근 발급 링크
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  폐기 또는 만료된 링크는 근로자대표 참여확인 제출에 사용할 수 없습니다. 최근 접근은 제출 완료가 아니라 링크 조회 시각입니다.
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 py-1 text-xs font-black text-cyan-200">
+                {linkResult.links.length}개
+              </span>
+            </div>
+
+            {linkResult.links.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                {linkResult.links.map((link) => (
+                  <LinkManagementCard key={link.linkId} link={link} />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-2xl border border-dashed border-slate-700 bg-slate-900/60 p-6 text-sm text-slate-400">
+                아직 발급된 근로자대표 참여확인 링크가 없습니다.
+              </div>
+            )}
+          </section>
+        ) : (
+          <LinkStorageNotice message="근로자대표 확인 링크 목록을 불러오지 못했습니다. 저장소 설정 또는 원장 상태를 확인해주세요." />
+        )}
 
         {result.status === "ok" ? (
           <>
