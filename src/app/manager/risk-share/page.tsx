@@ -166,9 +166,9 @@ export default async function RiskSharePackManagerHomePage() {
           </div>
 
           <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
-            이 화면은 운영기록 확인을 위한 관리자 화면입니다. 법적 판단, 조치완료 확정,
-            면책 또는 처벌 회피를 보장하는 화면이 아닙니다. 최종 검토와 조치 판단은
-            관리자와 사업주가 수행합니다.
+            이 화면은 운영기록 확인을 위한 관리자 화면입니다. 법적 판단이나 조치완료
+            확정을 대신하지 않습니다. 최종 검토와 조치 판단은 관리자와 사업주가
+            수행합니다.
           </div>
         </section>
 
