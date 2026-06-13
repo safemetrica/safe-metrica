@@ -1,29 +1,5 @@
 import Link from "next/link";
 
-const linkCards = [
-  {
-    title: "근로자 공유확인·현장 의견",
-    description:
-      "근로자가 위험성평가 공유확인, 의견 없음 제출, 위험제보, 아차사고, 개선제안을 입력하는 현장 진입 화면입니다.",
-    href: "/field/participation",
-    cta: "현장참여 화면 열기",
-  },
-  {
-    title: "근로자대표 참여확인",
-    description:
-      "근로자대표 확인 링크 생성, 제출 현황, 폐기·만료 상태를 관리하는 화면입니다.",
-    href: "/manager/representative-confirmations",
-    cta: "대표확인 링크 관리",
-  },
-  {
-    title: "공유팩 월간 운영요약",
-    description:
-      "공유확인, 현장 의견, 근로자대표 참여확인 중심의 공유팩 전용 월간요약입니다.",
-    href: "/monthly-report/risk-share",
-    cta: "월간요약 보기",
-  },
-];
-
 export default function RiskSharePackLinkPanel({
   companyName,
   companyCode,
@@ -31,6 +7,32 @@ export default function RiskSharePackLinkPanel({
   companyName: string;
   companyCode: string;
 }) {
+  const encodedCompanyCode = encodeURIComponent(companyCode);
+
+  const linkCards = [
+    {
+      title: "근로자 공유확인·현장 의견",
+      description:
+        "근로자가 위험성평가 공유확인, 의견 없음 제출, 위험제보, 아차사고, 개선제안을 입력하는 현장 진입 화면입니다.",
+      href: `/field/participation?company=${encodedCompanyCode}`,
+      cta: "현장참여 화면 열기",
+    },
+    {
+      title: "근로자대표 참여확인",
+      description:
+        "근로자대표 확인 링크 생성, 제출 현황, 폐기·만료 상태를 관리하는 화면입니다.",
+      href: "/manager/representative-confirmations",
+      cta: "대표확인 링크 관리",
+    },
+    {
+      title: "공유팩 월간 운영요약",
+      description:
+        "공유확인, 현장 의견, 근로자대표 참여확인 중심의 공유팩 전용 월간요약입니다.",
+      href: "/monthly-report/risk-share",
+      cta: "월간요약 보기",
+    },
+  ];
+
   return (
     <section className="rounded-3xl border border-sky-500/25 bg-slate-900/85 p-5 shadow-xl shadow-slate-950/30">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
