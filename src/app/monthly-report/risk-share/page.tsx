@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCompanyConfig } from "@/lib/company";
+import PrintButton from "./PrintButton";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationRecords,
@@ -329,13 +330,7 @@ export default async function RiskSharePackMonthlyReportPage({
               >
                 전체 월간보고서
               </Link>
-              <button
-                type="button"
-                onClick={() => globalThis.print()}
-                className="rounded-2xl bg-cyan-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-cyan-300"
-              >
-                인쇄 / PDF 저장
-              </button>
+              <PrintButton />
             </div>
           </div>
 
