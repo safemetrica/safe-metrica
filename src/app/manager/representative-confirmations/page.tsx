@@ -8,6 +8,8 @@ import {
   type WorkerRepresentativeReviewStatus,
 } from "@/lib/workerRepresentativeConfirmationRecords";
 
+import RepresentativeConfirmationLinkBuilder from "./RepresentativeConfirmationLinkBuilder";
+
 export const dynamic = "force-dynamic";
 
 const REVIEW_STATUS_CLASS: Record<WorkerRepresentativeReviewStatus, string> = {
@@ -58,6 +60,18 @@ function getConfirmationScope(record: WorkerRepresentativeConfirmationRecord) {
   }
 
   return "확인 내용이 기록되지 않았습니다.";
+}
+
+function getDefaultConfirmationScope() {
+  const parts = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "long",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+
+  return `${year ?? ""}년 ${month ?? ""} 정기 위험성평가 및 작업별 안전조치 공유확인`;
 }
 
 function ConfirmationCard({
@@ -223,6 +237,10 @@ export default async function RepresentativeConfirmationsPage() {
           이 화면은 운영기록 확인을 돕기 위한 화면이며, 최종 검토와 조치는
           관리자와 사업주가 결정합니다.
         </section>
+
+        <RepresentativeConfirmationLinkBuilder
+          defaultConfirmationScope={getDefaultConfirmationScope()}
+        />
 
         {result.status === "ok" ? (
           <>
