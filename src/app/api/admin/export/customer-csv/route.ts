@@ -438,6 +438,76 @@ function hasRepresentativeObjection(row: ExportRow) {
   );
 }
 
+function getRawPayload(row: ExportRow): ExportRow {
+  const value = row.raw_payload;
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as ExportRow;
+  }
+
+  return {};
+}
+
+function getPayloadString(row: ExportRow, keys: string[]) {
+  return getString(getRawPayload(row), keys);
+}
+
+function getIdentityMode(row: ExportRow) {
+  const mode =
+    getString(row, ["identity_mode", "identityMode"]) ||
+    getPayloadString(row, ["identityMode", "identity_mode"]);
+
+  if (mode) {
+    return mode;
+  }
+
+  return getBoolean(row, ["anonymous", "is_anonymous"]) ? "anonymous" : "identified";
+}
+
+function getExportWorkerName(row: ExportRow) {
+  if (getIdentityMode(row) === "anonymous") {
+    return "";
+  }
+
+  return (
+    getPayloadString(row, ["workerName", "worker_name"]) ||
+    getString(row, ["worker_name", "workerName", "submitter"])
+  );
+}
+
+function getExportWorkerTeam(row: ExportRow) {
+  if (getIdentityMode(row) === "anonymous") {
+    return "";
+  }
+
+  return (
+    getPayloadString(row, ["workerTeam", "worker_team"]) ||
+    getString(row, ["worker_team", "workerTeam"])
+  );
+}
+
+function getExportWorkerPhoneLast4(row: ExportRow) {
+  if (getIdentityMode(row) === "anonymous") {
+    return "";
+  }
+
+  return (
+    getPayloadString(row, ["workerPhoneLast4", "worker_phone_last4"]) ||
+    getString(row, ["worker_phone_last4", "workerPhoneLast4"])
+  );
+}
+
+function getExportWorkerEmployeeNo(row: ExportRow) {
+  if (getIdentityMode(row) === "anonymous") {
+    return "";
+  }
+
+  return (
+    getPayloadString(row, ["workerEmployeeNo", "worker_employee_no"]) ||
+    getString(row, ["worker_employee_no", "workerEmployeeNo"])
+  );
+}
+
 function buildWorkerRepresentativeConfirmationRows(rows: ExportRow[]) {
   const headers = [
     "제출일시",
@@ -493,6 +563,11 @@ function buildFieldParticipationRows(fieldRows: ExportRow[], dataset: Dataset) {
         "위치/구역",
         "내용 요약",
         "익명 여부",
+        "식별 모드",
+        "제출자 표시",
+        "소속/작업조",
+        "휴대폰 뒷4자리",
+        "사번/식별번호",
         "처리상태",
         "증빙 여부",
         "증빙 수",
@@ -507,6 +582,11 @@ function buildFieldParticipationRows(fieldRows: ExportRow[], dataset: Dataset) {
         "위치/구역",
         "내용 요약",
         "익명 여부",
+        "식별 모드",
+        "제출자 표시",
+        "소속/작업조",
+        "휴대폰 뒷4자리",
+        "사번/식별번호",
         "처리상태",
         "조치 메모",
         "증빙 여부",
@@ -530,6 +610,11 @@ function buildFieldParticipationRows(fieldRows: ExportRow[], dataset: Dataset) {
       summarize(getString(row, ["location", "area", "place"]), 120),
       summarize(getString(row, ["content", "body", "message", "description"]), 240),
       yesNo(getBoolean(row, ["anonymous", "is_anonymous"])),
+      getIdentityMode(row),
+      summarize(getExportWorkerName(row), 80),
+      summarize(getExportWorkerTeam(row), 120),
+      summarize(getExportWorkerPhoneLast4(row), 20),
+      summarize(getExportWorkerEmployeeNo(row), 80),
       getStatus(row),
     ];
 

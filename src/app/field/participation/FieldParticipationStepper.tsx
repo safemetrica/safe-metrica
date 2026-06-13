@@ -179,6 +179,9 @@ export default function FieldParticipationStepper({
   const [reportTitle, setReportTitle] = useState("");
   const [location, setLocation] = useState(siteValue);
   const [submitter, setSubmitter] = useState("");
+  const [workerTeam, setWorkerTeam] = useState("");
+  const [workerPhoneLast4, setWorkerPhoneLast4] = useState("");
+  const [workerEmployeeNo, setWorkerEmployeeNo] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [content, setContent] = useState("");
   const [hasEvidenceFiles, setHasEvidenceFiles] = useState(false);
@@ -204,6 +207,20 @@ export default function FieldParticipationStepper({
     reportTitle.trim().length > 0 ||
     content.trim().length > 0 ||
     hasEvidenceFiles;
+  const workerName = submitter.trim();
+  const normalizedWorkerTeam = workerTeam.trim();
+  const normalizedWorkerPhoneLast4 = workerPhoneLast4.trim();
+  const normalizedWorkerEmployeeNo = workerEmployeeNo.trim();
+  const shareConfirmationIdentityReady =
+    workerName.length > 0 &&
+    normalizedWorkerTeam.length > 0 &&
+    (normalizedWorkerPhoneLast4.length === 4 || normalizedWorkerEmployeeNo.length > 0);
+  const effectiveAnonymous = hasOpinion ? anonymous : false;
+  const identityMode = hasOpinion
+    ? effectiveAnonymous
+      ? "anonymous"
+      : "identified"
+    : "identified";
   const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : "공유확인";
   const finalContent = hasOpinion ? content.trim() || "상세 내용 미입력" : "오늘은 추가 의견 없음.";
   const finalTitle = hasOpinion
@@ -307,8 +324,12 @@ export default function FieldParticipationStepper({
         <input type="hidden" name="source_step" value={String(step)} />
         <input type="hidden" name="entry_intent" value={entryIntent} />
         <input type="hidden" name="location" value={location} />
-        <input type="hidden" name="submitter" value={submitter} />
-        {anonymous ? <input type="hidden" name="anonymous" value="on" /> : null}
+        <input type="hidden" name="submitter" value={workerName} />
+        <input type="hidden" name="workerTeam" value={normalizedWorkerTeam} />
+        <input type="hidden" name="workerPhoneLast4" value={normalizedWorkerPhoneLast4} />
+        <input type="hidden" name="workerEmployeeNo" value={normalizedWorkerEmployeeNo} />
+        <input type="hidden" name="identityMode" value={identityMode} />
+        {effectiveAnonymous ? <input type="hidden" name="anonymous" value="on" /> : null}
         {riskCheck ? <input type="hidden" name="riskCheck" value="on" /> : null}
         {riskAssessmentCheck ? <input type="hidden" name="riskAssessmentCheck" value="on" /> : null}
         {safetyMeasureCheck ? <input type="hidden" name="safetyMeasureCheck" value="on" /> : null}
@@ -529,25 +550,88 @@ export default function FieldParticipationStepper({
                   <p className="mt-1 text-right text-xs font-bold text-slate-500">{content.length}/500</p>
                 </div>
 
-                <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">작성자</label>
-                  <input
-                    value={submitter}
-                    onChange={(event) => setSubmitter(event.target.value)}
-                    placeholder="이름 또는 소속"
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <h3 className="text-sm font-black text-emerald-900">
+                    {hasOpinion ? "제보 제출자 정보" : "공유확인 최소 확인정보"}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-emerald-900">
+                    {hasOpinion
+                      ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
+                      : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
+                  </p>
+
+                  <div className="mt-4 grid gap-3">
+                    <div>
+                      <label className="text-sm font-bold text-slate-700">
+                        {hasOpinion ? "이름 또는 별칭" : "이름 또는 별칭 *"}
+                      </label>
+                      <input
+                        value={submitter}
+                        onChange={(event) => setSubmitter(event.target.value.slice(0, 80))}
+                        disabled={hasOpinion && anonymous}
+                        placeholder={hasOpinion && anonymous ? "익명 제출 시 입력하지 않습니다" : "예: 홍길동 / 작업자A"}
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-bold text-slate-700">
+                        {hasOpinion ? "소속 또는 작업조" : "소속 또는 작업조 *"}
+                      </label>
+                      <input
+                        value={workerTeam}
+                        onChange={(event) => setWorkerTeam(event.target.value.slice(0, 100))}
+                        disabled={hasOpinion && anonymous}
+                        placeholder={hasOpinion && anonymous ? "익명 제출 시 입력하지 않습니다" : "예: 생산1팀 / 주간조"}
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                      />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-sm font-bold text-slate-700">휴대폰 뒷4자리</label>
+                        <input
+                          value={workerPhoneLast4}
+                          onChange={(event) => setWorkerPhoneLast4(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                          disabled={hasOpinion && anonymous}
+                          inputMode="numeric"
+                          maxLength={4}
+                          placeholder="예: 1234"
+                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-bold text-slate-700">사번 또는 현장 식별번호</label>
+                        <input
+                          value={workerEmployeeNo}
+                          onChange={(event) => setWorkerEmployeeNo(event.target.value.slice(0, 60))}
+                          disabled={hasOpinion && anonymous}
+                          placeholder="예: A-102"
+                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                        />
+                      </div>
+                    </div>
+
+                    {!hasOpinion && !shareConfirmationIdentityReady ? (
+                      <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
+                        공유확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다.
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
 
-                <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={anonymous}
-                    onChange={(event) => setAnonymous(event.target.checked)}
-                    className="h-5 w-5 rounded border-slate-300"
-                  />
-                  익명으로 제출
-                </label>
+                {hasOpinion ? (
+                  <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={anonymous}
+                      onChange={(event) => setAnonymous(event.target.checked)}
+                      className="h-5 w-5 rounded border-slate-300"
+                    />
+                    익명으로 제출
+                  </label>
+                ) : null}
 
                 <div className="mt-4">
                   <FieldParticipationFileInput />
@@ -598,7 +682,7 @@ export default function FieldParticipationStepper({
             {step === 3 ? (
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (!hasOpinion && !shareConfirmationIdentityReady)}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-slate-100 disabled:opacity-80"
               >
                 {isSubmitting
