@@ -21,6 +21,7 @@ type CustomerCsvDataset =
   | "tbm_records"
   | "worker_share_confirmations"
   | "worker_reports"
+  | "worker_representative_confirmations"
   | "evidence_manifest";
 
 type CustomerCsvDatasetOption = {
@@ -46,6 +47,11 @@ const CUSTOMER_CSV_DATASETS: CustomerCsvDatasetOption[] = [
     value: "worker_reports",
     label: "위험제보·아차사고·개선제안 CSV",
     description: "근로자 제보, 아차사고, 개선제안, 조치 메모, 월간보고서 후보",
+  },
+  {
+    value: "worker_representative_confirmations",
+    label: "근로자대표 참여확인 CSV",
+    description: "근로자대표 확인, 보완 의견, 검토상태, 현장명, 확인범위",
   },
   {
     value: "evidence_manifest",

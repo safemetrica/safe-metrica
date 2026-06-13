@@ -11,6 +11,7 @@ type Dataset =
   | "tbm_records"
   | "worker_share_confirmations"
   | "worker_reports"
+  | "worker_representative_confirmations"
   | "evidence_manifest";
 
 type CsvRow = string[];
@@ -28,6 +29,7 @@ const DATASETS: Dataset[] = [
   "tbm_records",
   "worker_share_confirmations",
   "worker_reports",
+  "worker_representative_confirmations",
   "evidence_manifest",
 ];
 
@@ -69,6 +71,18 @@ function buildPeriodFilter(
   return `(${[
     `and(${createdAtColumn}.gte.${startDate}T00:00:00.000Z,${createdAtColumn}.lt.${dayAfterEnd}T00:00:00.000Z)`,
     `and(${eventDateColumn}.gte.${startDate},${eventDateColumn}.lte.${endDate})`,
+  ].join(",")})`;
+}
+
+function buildTimestampPeriodFilter(
+  createdAtColumn: string,
+  eventAtColumn: string,
+  startDate: string,
+  dayAfterEnd: string
+) {
+  return `(${[
+    `and(${createdAtColumn}.gte.${startDate}T00:00:00.000Z,${createdAtColumn}.lt.${dayAfterEnd}T00:00:00.000Z)`,
+    `and(${eventAtColumn}.gte.${startDate}T00:00:00.000Z,${eventAtColumn}.lt.${dayAfterEnd}T00:00:00.000Z)`,
   ].join(",")})`;
 }
 
@@ -411,6 +425,63 @@ function buildTbmRows(tbmRows: ExportRow[]) {
   return { headers, rows };
 }
 
+function hasRepresentativeOpinion(row: ExportRow) {
+  return Boolean(
+    getString(row, ["opinion", "objection_detail", "objectionDetail"])
+  );
+}
+
+function hasRepresentativeObjection(row: ExportRow) {
+  return (
+    getBoolean(row, ["has_objection", "hasObjection"]) ||
+    Boolean(getString(row, ["objection_detail", "objectionDetail"]))
+  );
+}
+
+function buildWorkerRepresentativeConfirmationRows(rows: ExportRow[]) {
+  const headers = [
+    "제출일시",
+    "확인일",
+    "회사코드",
+    "현장명",
+    "확인범위",
+    "근로자대표 성명",
+    "소속/작업조",
+    "역할",
+    "의견 여부",
+    "보완 의견 여부",
+    "의견 요약",
+    "검토상태",
+    "고객 전달 비고",
+  ];
+
+  const csvRows = rows.map((row) => {
+    const reviewStatus =
+      getString(row, ["review_status", "reviewStatus"]) || "미확인";
+
+    return [
+      formatKstDateTime(getString(row, ["submitted_at", "submittedAt"])),
+      formatKstDateTime(getString(row, ["confirmed_at", "confirmedAt"])),
+      getString(row, ["related_company_code", "company_code", "companyCode"]),
+      summarize(getString(row, ["related_site_name", "site_name", "siteName"]), 120),
+      summarize(getString(row, ["confirmation_scope", "confirmationScope"]), 180),
+      summarize(getString(row, ["representative_name", "representativeName"]), 80),
+      summarize(getString(row, ["representative_department", "representativeDepartment"]), 120),
+      summarize(getString(row, ["representative_role", "representativeRole"]), 80),
+      yesNo(hasRepresentativeOpinion(row)),
+      yesNo(hasRepresentativeObjection(row)),
+      summarize(
+        getString(row, ["objection_detail", "objectionDetail", "opinion"]),
+        240
+      ),
+      summarize(reviewStatus, 80),
+      "근로자대표 참여확인 운영기록입니다. 평가 결과, 현장 조치 상태 또는 법적 판단을 확정하는 자료가 아닙니다.",
+    ];
+  });
+
+  return { headers, rows: csvRows };
+}
+
 function buildFieldParticipationRows(fieldRows: ExportRow[], dataset: Dataset) {
   const isShareConfirmation = dataset === "worker_share_confirmations";
 
@@ -642,7 +713,7 @@ export async function GET(request: NextRequest) {
     return errorResponse(
       400,
       "invalid_dataset",
-      "dataset must be one of tbm_records, worker_share_confirmations, worker_reports, evidence_manifest."
+      "dataset must be one of tbm_records, worker_share_confirmations, worker_reports, worker_representative_confirmations, evidence_manifest."
     );
   }
 
@@ -663,6 +734,8 @@ export async function GET(request: NextRequest) {
     dataset === "worker_reports" ||
     dataset === "evidence_manifest";
   const needsTbmRows = dataset === "tbm_records" || dataset === "evidence_manifest";
+  const needsWorkerRepresentativeRows =
+    dataset === "worker_representative_confirmations";
 
   const fieldQuery = new URLSearchParams({
     select: "*",
@@ -676,14 +749,39 @@ export async function GET(request: NextRequest) {
     or: buildPeriodFilter("created_at", "date_value", startDate, endDate, dayAfterEnd),
     order: "created_at.asc",
   });
+  const workerRepresentativeQuery = new URLSearchParams({
+    select: [
+      "related_company_code",
+      "related_site_name",
+      "confirmation_scope",
+      "representative_name",
+      "representative_department",
+      "representative_role",
+      "confirmed_at",
+      "opinion",
+      "has_objection",
+      "objection_detail",
+      "review_status",
+      "submitted_at",
+    ].join(","),
+    related_company_code: `eq.${companyKey}`,
+    or: buildTimestampPeriodFilter("submitted_at", "confirmed_at", startDate, dayAfterEnd),
+    order: "submitted_at.asc",
+  });
 
   try {
-    const [fieldRows, tbmRows] = await Promise.all([
+    const [fieldRows, tbmRows, workerRepresentativeRows] = await Promise.all([
       needsFieldRows
         ? selectSupabaseExportRows<ExportRow>("field_participation_submissions", fieldQuery)
         : Promise.resolve([]),
       needsTbmRows
         ? selectSupabaseExportRows<ExportRow>("tbm_voice_submissions", tbmQuery)
+        : Promise.resolve([]),
+      needsWorkerRepresentativeRows
+        ? selectSupabaseExportRows<ExportRow>(
+            "worker_representative_confirmations",
+            workerRepresentativeQuery
+          )
         : Promise.resolve([]),
     ]);
 
@@ -692,7 +790,9 @@ export async function GET(request: NextRequest) {
         ? buildTbmRows(tbmRows)
         : dataset === "evidence_manifest"
           ? buildEvidenceManifestRows(fieldRows, tbmRows, startDate)
-          : buildFieldParticipationRows(fieldRows, dataset);
+          : dataset === "worker_representative_confirmations"
+            ? buildWorkerRepresentativeConfirmationRows(workerRepresentativeRows)
+            : buildFieldParticipationRows(fieldRows, dataset);
 
     return createCsvResponse(
       buildFilename(companyKey, dataset, startDate, endDate),

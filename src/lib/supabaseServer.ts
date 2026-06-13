@@ -108,7 +108,8 @@ export function isSupabaseFieldParticipationShadowWriteEnabled(companyCode: stri
 
 type SupabaseExportTable =
   | "field_participation_submissions"
-  | "tbm_voice_submissions";
+  | "tbm_voice_submissions"
+  | "worker_representative_confirmations";
 
 export class SupabaseReadError extends Error {
   status: number;
