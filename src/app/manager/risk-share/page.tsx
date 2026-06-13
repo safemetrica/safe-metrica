@@ -2,31 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCompanyConfig } from "@/lib/company";
+import {
+  fetchWorkerRepresentativeConfirmationLinks,
+  type WorkerRepresentativeConfirmationLink,
+} from "@/lib/workerRepresentativeConfirmationLinks";
+import {
+  fetchWorkerRepresentativeConfirmationRecords,
+  type WorkerRepresentativeConfirmationRecord,
+} from "@/lib/workerRepresentativeConfirmationRecords";
 
 export const dynamic = "force-dynamic";
-
-const summaryCards = [
-  {
-    label: "이번 달 공유·참여 제출",
-    value: "연동 준비",
-    description: "근로자 공유확인, 의견 없음 제출, 위험제보 흐름을 이 화면에서 요약할 예정입니다.",
-  },
-  {
-    label: "관리자 검토 필요",
-    value: "연동 준비",
-    description: "위험제보, 아차사고, 개선제안 중 검토가 필요한 항목을 분리해 표시할 예정입니다.",
-  },
-  {
-    label: "근로자대표 참여확인",
-    value: "연동 준비",
-    description: "근로자대표 참여확인 제출과 보완 의견을 확인할 예정입니다.",
-  },
-  {
-    label: "고객 전달 준비",
-    value: "연동 준비",
-    description: "월간 요약과 고객용 Export 준비 상태를 확인하는 영역입니다.",
-  },
-];
 
 const actionCards = [
   {
@@ -53,6 +38,69 @@ function getCompanyDisplayName(company: { name?: string; companyName?: string; c
   return company.name || company.companyName || company.code;
 }
 
+function getLinkStatus(link: WorkerRepresentativeConfirmationLink) {
+  if (link.status === "revoked") {
+    return "revoked";
+  }
+
+  const expiresAt = link.expiresAt ? Date.parse(link.expiresAt) : null;
+
+  if (
+    expiresAt !== null &&
+    (!Number.isFinite(expiresAt) || expiresAt <= Date.now())
+  ) {
+    return "expired";
+  }
+
+  return "active";
+}
+
+function isRepresentativeReviewNeeded(record: WorkerRepresentativeConfirmationRecord) {
+  return (
+    record.hasObjection ||
+    record.reviewStatus === "미확인" ||
+    record.reviewStatus === "검토 필요" ||
+    record.reviewStatus === "이견 검토 중" ||
+    record.reviewStatus === "보완 요청"
+  );
+}
+
+function buildSummaryCards(params: {
+  representativeRecords: WorkerRepresentativeConfirmationRecord[];
+  representativeLinks: WorkerRepresentativeConfirmationLink[];
+  linkLoadFailed: boolean;
+}) {
+  const { representativeRecords, representativeLinks, linkLoadFailed } = params;
+  const objectionCount = representativeRecords.filter((record) => record.hasObjection).length;
+  const reviewNeededCount = representativeRecords.filter(isRepresentativeReviewNeeded).length;
+  const activeLinkCount = representativeLinks.filter((link) => getLinkStatus(link) === "active").length;
+
+  return [
+    {
+      label: "근로자대표 참여확인",
+      value: `${representativeRecords.length}건`,
+      description: "현재 선택된 업체 기준 근로자대표 참여확인 제출 건수입니다.",
+    },
+    {
+      label: "보완 의견 있음",
+      value: `${objectionCount}건`,
+      description: "별도 의견 또는 보완 의견이 포함된 근로자대표 참여확인 기록입니다.",
+    },
+    {
+      label: "관리자 검토 필요",
+      value: `${reviewNeededCount}건`,
+      description: "미확인, 검토 필요, 보완 요청 또는 보완 의견이 있는 기록입니다.",
+    },
+    {
+      label: "사용 가능 링크",
+      value: linkLoadFailed ? "확인 필요" : `${activeLinkCount}개`,
+      description: linkLoadFailed
+        ? "근로자대표 확인 링크 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
+        : "폐기 또는 만료되지 않은 근로자대표 확인 링크 수입니다.",
+    },
+  ];
+}
+
 export default async function RiskSharePackManagerHomePage() {
   const company = await getCompanyConfig().catch(() => null);
 
@@ -63,6 +111,24 @@ export default async function RiskSharePackManagerHomePage() {
   if (company.code === "mons") {
     redirect("/login?error=risk_share_pack_not_available");
   }
+
+  const [recordResult, linkResult] = await Promise.all([
+    fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
+      records: [] as WorkerRepresentativeConfirmationRecord[],
+    })),
+    fetchWorkerRepresentativeConfirmationLinks(company.code).catch(() => ({
+      status: "error" as const,
+      links: [] as WorkerRepresentativeConfirmationLink[],
+    })),
+  ]);
+
+  const representativeRecords = recordResult.records;
+  const representativeLinks = linkResult.status === "ok" ? linkResult.links : [];
+  const summaryCards = buildSummaryCards({
+    representativeRecords,
+    representativeLinks,
+    linkLoadFailed: linkResult.status !== "ok",
+  });
 
   const companyName = getCompanyDisplayName(company);
 
