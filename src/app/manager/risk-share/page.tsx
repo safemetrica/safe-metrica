@@ -1,4 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getCompanyConfig } from "@/lib/company";
+
+export const dynamic = "force-dynamic";
 
 const summaryCards = [
   {
@@ -44,7 +49,23 @@ const actionCards = [
   },
 ];
 
-export default function RiskSharePackManagerHomePage() {
+function getCompanyDisplayName(company: { name?: string; companyName?: string; code: string }) {
+  return company.name || company.companyName || company.code;
+}
+
+export default async function RiskSharePackManagerHomePage() {
+  const company = await getCompanyConfig().catch(() => null);
+
+  if (!company) {
+    redirect("/login?error=tenant_required");
+  }
+
+  if (company.code === "mons") {
+    redirect("/login?error=risk_share_pack_not_available");
+  }
+
+  const companyName = getCompanyDisplayName(company);
+
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -67,6 +88,15 @@ export default function RiskSharePackManagerHomePage() {
             >
               전체 홈으로 이동
             </Link>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <span className="rounded-full border border-cyan-400/40 bg-cyan-400/10 px-4 py-2 text-sm font-bold text-cyan-100">
+              현재 업체: {companyName}
+            </span>
+            <span className="rounded-full border border-slate-700 bg-slate-950/70 px-4 py-2 text-sm font-bold text-slate-300">
+              업체 코드: {company.code}
+            </span>
           </div>
 
           <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
