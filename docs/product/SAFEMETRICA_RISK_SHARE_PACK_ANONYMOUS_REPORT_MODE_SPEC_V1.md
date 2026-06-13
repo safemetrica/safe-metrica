@@ -352,7 +352,30 @@ submission_type별 기본값:
 
 ---
 
-## 10. 구현 PR 후보
+## 10. Current Implementation Gap
+
+현재 `FieldParticipationStepper`는 공유확인과 위험제보를 같은 폼 흐름에서 처리한다.
+
+현재 구조:
+- 제목, 내용, 사진이 없으면 `공유확인`으로 저장된다.
+- 제목, 내용, 사진 중 하나라도 있으면 `위험제보 / 아차사고 / 개선제안`으로 저장된다.
+- `anonymous` 체크값은 제출 유형과 무관하게 같은 폼에서 전송될 수 있다.
+- API는 `anonymous=true`이면 제출자를 `익명`으로 저장한다.
+
+따라서 현 구조 그대로는 공유확인도 익명으로 저장될 수 있다.
+
+Risk Share Pack 운영 기준에서는 아래처럼 분리해야 한다.
+
+- 공유확인 / 의견 없음 제출: 최소 식별정보 필요
+- 위험제보 / 아차사고 / 개선제안: 익명 제출 선택 가능
+- 근로자대표 참여확인: 대표자 확인정보 필요
+
+후속 구현에서는 `submission_type`과 `identity_mode`를 함께 판단해야 하며,
+`submission_type=공유확인`일 때는 익명 제출을 기본 허용하지 않는다.
+
+---
+
+## 11. 구현 PR 후보
 
 1. field participation 제출 유형별 identity mode 분기
 2. 공유확인 흐름에 최소 확인정보 UI 추가
@@ -366,7 +389,7 @@ submission_type별 기본값:
 
 ---
 
-## 11. 운영 판단
+## 12. 운영 판단
 
 SafeMetrica Risk Share Pack은 공유확인 증빙력과 위험제보 활성화를 동시에 봐야 한다.
 
