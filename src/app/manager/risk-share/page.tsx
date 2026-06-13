@@ -111,9 +111,9 @@ const actionCards = [
   },
   {
     title: "월간보고서 확인",
-    description: "공유확인, 위험제보, 근로자대표 참여확인 기록을 월간 단위로 확인합니다.",
-    href: "/monthly-report",
-    cta: "월간보고서 보기",
+    description: "공유확인, 위험제보, 근로자대표 참여확인 기록만 월간 단위로 확인합니다.",
+    href: "/monthly-report/risk-share",
+    cta: "공유팩 월간요약 보기",
   },
   {
     title: "현장 의견 접수함",
