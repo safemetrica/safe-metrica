@@ -4,10 +4,12 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 type Props = {
+  linkId: string;
   initialCompanyCode: string;
   initialSiteName: string;
   initialConfirmationScope: string;
   initialRiskAssessmentId: string;
+  isLinkLocked: boolean;
 };
 
 type SubmissionState =
@@ -68,11 +70,16 @@ function getErrorMessage(response: SubmitResponse, status: number) {
     return "필수 항목과 입력 형식을 확인해주세요. 보완 의견이 있으면 내용도 입력해야 합니다.";
   }
 
+  if (code === "representative_confirmation_link_invalid") {
+    return "이 참여확인 링크는 현재 사용할 수 없습니다. 관리자에게 문의해주세요.";
+  }
+
   if (code === "representative_confirmation_tenant_invalid" || status === 403) {
     return "참여확인 대상 사업장을 확인할 수 없습니다. 공유받은 링크를 확인하거나 관리자에게 문의해주세요.";
   }
 
   if (
+    code === "representative_confirmation_link_storage_failed" ||
     code === "representative_confirmation_storage_failed" ||
     code === "representative_confirmation_storage_not_configured" ||
     code === "representative_confirmation_tenant_validation_failed" ||
@@ -85,10 +92,12 @@ function getErrorMessage(response: SubmitResponse, status: number) {
 }
 
 export default function WorkerRepresentativeConfirmationForm({
+  linkId,
   initialCompanyCode,
   initialSiteName,
   initialConfirmationScope,
   initialRiskAssessmentId,
+  isLinkLocked,
 }: Props) {
   const [siteName, setSiteName] = useState(initialSiteName);
   const [confirmationScope, setConfirmationScope] = useState(initialConfirmationScope || "오늘 공유받은 위험성평가와 안전조치");
@@ -151,10 +160,15 @@ export default function WorkerRepresentativeConfirmationForm({
     setSubmission({ status: "submitting" });
 
     const payload = {
-      companyCode: String(formData.get("companyCode") ?? "").trim(),
-      siteName: siteNameValue,
-      riskAssessmentId: riskAssessmentId || null,
-      confirmationScope: confirmationScope || null,
+      linkId: linkId || null,
+      ...(isLinkLocked
+        ? {}
+        : {
+            companyCode: String(formData.get("companyCode") ?? "").trim(),
+            siteName: siteNameValue,
+            riskAssessmentId: riskAssessmentId || null,
+            confirmationScope: confirmationScope || null,
+          }),
       representativeName: String(formData.get("representativeName") ?? "").trim(),
       representativeDepartment:
         String(formData.get("representativeDepartment") ?? "").trim() || null,
@@ -251,10 +265,14 @@ export default function WorkerRepresentativeConfirmationForm({
               </div>
             </div>
 
-            <input type="hidden" name="companyCode" value={initialCompanyCode} />
-            <input type="hidden" name="riskAssessmentId" value={initialRiskAssessmentId} />
-            <input type="hidden" name="siteName" value={siteName} />
-            <input type="hidden" name="confirmationScope" value={confirmationScope} />
+            {!isLinkLocked ? (
+              <>
+                <input type="hidden" name="companyCode" value={initialCompanyCode} />
+                <input type="hidden" name="riskAssessmentId" value={initialRiskAssessmentId} />
+                <input type="hidden" name="siteName" value={siteName} />
+                <input type="hidden" name="confirmationScope" value={confirmationScope} />
+              </>
+            ) : null}
 
             <dl className="mt-5 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/70">
               <div className="border-b border-blue-100 px-4 py-4 sm:px-5">
@@ -267,21 +285,27 @@ export default function WorkerRepresentativeConfirmationForm({
               </div>
             </dl>
 
-            <p className="mt-3 text-xs font-medium leading-5 text-slate-500">공유받은 내용이 다르면 수정하거나 관리자에게 문의해주세요.</p>
+            <p className="mt-3 text-xs font-medium leading-5 text-slate-500">
+              {isLinkLocked
+                ? "공유받은 내용이 다르면 제출 전에 관리자에게 문의해주세요."
+                : "공유받은 내용이 다르면 수정하거나 관리자에게 문의해주세요."}
+            </p>
 
-            <details id="confirmationTargetEditor" className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <summary className="cursor-pointer font-bold text-slate-700">내용이 다르면 수정하기</summary>
-              <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
-                <div>
-                  <label className={labelClassName} htmlFor="editSiteName">현장명 <span className="text-red-600">*</span></label>
-                  <input id="editSiteName" maxLength={200} value={siteName} onChange={(event) => setSiteName(event.target.value)} autoComplete="organization-title" placeholder="예: 물류센터 A동" className={inputClassName} />
+            {!isLinkLocked ? (
+              <details id="confirmationTargetEditor" className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <summary className="cursor-pointer font-bold text-slate-700">내용이 다르면 수정하기</summary>
+                <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
+                  <div>
+                    <label className={labelClassName} htmlFor="editSiteName">현장명 <span className="text-red-600">*</span></label>
+                    <input id="editSiteName" maxLength={200} value={siteName} onChange={(event) => setSiteName(event.target.value)} autoComplete="organization-title" placeholder="예: 물류센터 A동" className={inputClassName} />
+                  </div>
+                  <div>
+                    <label className={labelClassName} htmlFor="editConfirmationScope">오늘 확인할 내용 <span className="text-red-600">*</span></label>
+                    <textarea id="editConfirmationScope" maxLength={2000} rows={4} value={confirmationScope} onChange={(event) => setConfirmationScope(event.target.value)} placeholder="예: 상하차 작업 위험성평가 및 안전조치" className={`${inputClassName} resize-y leading-6`} />
+                  </div>
                 </div>
-                <div>
-                  <label className={labelClassName} htmlFor="editConfirmationScope">오늘 확인할 내용 <span className="text-red-600">*</span></label>
-                  <textarea id="editConfirmationScope" maxLength={2000} rows={4} value={confirmationScope} onChange={(event) => setConfirmationScope(event.target.value)} placeholder="예: 상하차 작업 위험성평가 및 안전조치" className={`${inputClassName} resize-y leading-6`} />
-                </div>
-              </div>
-            </details>
+              </details>
+            ) : null}
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">

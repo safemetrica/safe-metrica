@@ -5,6 +5,7 @@ import {
   createWorkerRepresentativeConfirmationAuditEventCandidate,
   validateWorkerRepresentativeConfirmation,
 } from "@/lib/workerRepresentativeConfirmation";
+import { fetchWorkerRepresentativeConfirmationLink } from "@/lib/workerRepresentativeConfirmationLinks";
 import { storeWorkerRepresentativeConfirmation } from "@/lib/workerRepresentativeConfirmationStorage";
 import { validateWorkerRepresentativeConfirmationTenant } from "@/lib/workerRepresentativeConfirmationTenant";
 
@@ -37,6 +38,22 @@ const STORAGE_NOT_CONFIGURED_RESPONSE = {
   error: {
     code: "representative_confirmation_storage_not_configured",
     message: "근로자대표 참여확인 저장소 설정이 필요합니다.",
+  },
+} as const;
+
+const LINK_INVALID_RESPONSE = {
+  ok: false,
+  error: {
+    code: "representative_confirmation_link_invalid",
+    message: "근로자대표 참여확인 링크를 사용할 수 없습니다.",
+  },
+} as const;
+
+const LINK_STORAGE_FAILED_RESPONSE = {
+  ok: false,
+  error: {
+    code: "representative_confirmation_link_storage_failed",
+    message: "근로자대표 참여확인 링크를 확인하지 못했습니다.",
   },
 } as const;
 
@@ -75,6 +92,7 @@ async function readPayload(request: Request): Promise<unknown> {
     const formData = await request.formData();
     return {
       companyCode: formData.get("companyCode"),
+      linkId: formData.get("linkId"),
       siteName: formData.get("siteName"),
       riskAssessmentId: formData.get("riskAssessmentId"),
       confirmationScope: formData.get("confirmationScope"),
@@ -102,7 +120,44 @@ export async function POST(request: Request) {
     return NextResponse.json(INVALID_RESPONSE, { status: 400 });
   }
 
-  const validation = validateWorkerRepresentativeConfirmation(payload);
+  let authoritativePayload = payload;
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    const rawLinkId = (payload as Record<string, unknown>).linkId;
+    const linkId = typeof rawLinkId === "string" ? rawLinkId.trim() : "";
+
+    if (linkId) {
+      const linkResult =
+        await fetchWorkerRepresentativeConfirmationLink(linkId).catch(
+          () => ({ status: "failed" as const }),
+        );
+
+      if (
+        linkResult.status === "not_found" ||
+        linkResult.status === "inactive"
+      ) {
+        return NextResponse.json(LINK_INVALID_RESPONSE, { status: 403 });
+      }
+
+      if (
+        linkResult.status === "not_configured" ||
+        linkResult.status === "failed"
+      ) {
+        return NextResponse.json(LINK_STORAGE_FAILED_RESPONSE, { status: 503 });
+      }
+
+      authoritativePayload = {
+        ...(payload as Record<string, unknown>),
+        companyCode: linkResult.link.companyCode,
+        siteName: linkResult.link.siteName,
+        confirmationScope: linkResult.link.confirmationScope,
+        riskAssessmentId: linkResult.link.riskAssessmentId,
+      };
+    }
+  }
+
+  const validation =
+    validateWorkerRepresentativeConfirmation(authoritativePayload);
 
   if (!validation.ok) {
     return NextResponse.json(INVALID_RESPONSE, { status: 400 });
