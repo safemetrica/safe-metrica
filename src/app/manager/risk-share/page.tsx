@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getCompanyConfig } from "@/lib/company";
 import RiskSharePackExportPanel from "./RiskSharePackExportPanel";
+import RiskSharePackMonthlySummary from "./RiskSharePackMonthlySummary";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationLinks,
@@ -33,6 +34,73 @@ type FieldParticipationSummary = {
   workerReportCount: number;
   fieldReviewNeededCount: number;
 };
+
+type SummaryPeriod = {
+  startDate: string;
+  endDate: string;
+  dayAfterEnd: string;
+};
+
+function getKstDateString(date: Date) {
+  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kstDate.toISOString().slice(0, 10);
+}
+
+function getDayAfter(dateValue: string) {
+  const date = new Date(`${dateValue}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function getCurrentKstMonthPeriod(): SummaryPeriod {
+  const today = getKstDateString(new Date());
+
+  return {
+    startDate: `${today.slice(0, 8)}01`,
+    endDate: today,
+    dayAfterEnd: getDayAfter(today),
+  };
+}
+
+function buildPeriodFilter(
+  createdAtColumn: string,
+  eventDateColumn: string,
+  period: SummaryPeriod,
+) {
+  return `(${[
+    `and(${createdAtColumn}.gte.${period.startDate}T00:00:00.000Z,${createdAtColumn}.lt.${period.dayAfterEnd}T00:00:00.000Z)`,
+    `and(${eventDateColumn}.gte.${period.startDate},${eventDateColumn}.lte.${period.endDate})`,
+  ].join(",")})`;
+}
+
+function isDateValueInPeriod(value: string | null, period: SummaryPeriod) {
+  if (!value) {
+    return false;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value >= period.startDate && value <= period.endDate;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const kstDate = getKstDateString(date);
+  return kstDate >= period.startDate && kstDate <= period.endDate;
+}
+
+function isRepresentativeRecordInPeriod(
+  record: WorkerRepresentativeConfirmationRecord,
+  period: SummaryPeriod,
+) {
+  return (
+    isDateValueInPeriod(record.submittedAt, period) ||
+    isDateValueInPeriod(record.confirmedAt, period)
+  );
+}
 
 const actionCards = [
   {
@@ -131,10 +199,12 @@ function isFieldReviewNeeded(row: FieldParticipationSummaryRow) {
 
 async function fetchFieldParticipationSummary(
   companyCode: string,
+  period: SummaryPeriod,
 ): Promise<FieldParticipationSummary> {
   const query = new URLSearchParams({
     select: "tenant_code,submission_type,legacy_type,title,status,reported_date,created_at",
     tenant_code: `eq.${companyCode}`,
+    or: buildPeriodFilter("created_at", "reported_date", period),
     order: "reported_date.desc",
     limit: String(FIELD_PARTICIPATION_SUMMARY_LIMIT),
   });
@@ -267,8 +337,10 @@ export default async function RiskSharePackManagerHomePage() {
     redirect("/login?error=risk_share_pack_not_available");
   }
 
+  const currentPeriod = getCurrentKstMonthPeriod();
+
   const [fieldSummary, recordResult, linkResult] = await Promise.all([
-    fetchFieldParticipationSummary(company.code),
+    fetchFieldParticipationSummary(company.code, currentPeriod),
     fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
       status: "failed" as const,
       records: [] as WorkerRepresentativeConfirmationRecord[],
@@ -279,7 +351,9 @@ export default async function RiskSharePackManagerHomePage() {
     })),
   ]);
 
-  const representativeRecords = recordResult.records;
+  const representativeRecords = recordResult.records.filter((record) =>
+    isRepresentativeRecordInPeriod(record, currentPeriod),
+  );
   const representativeLinks = linkResult.status === "ok" ? linkResult.links : [];
   const summaryCards = buildSummaryCards({
     fieldSummary,
@@ -287,6 +361,18 @@ export default async function RiskSharePackManagerHomePage() {
     representativeLinks,
     linkLoadFailed: linkResult.status !== "ok",
   });
+
+
+  const fieldLoadFailed = fieldSummary.status !== "ok";
+  const representativeReviewNeededCount = representativeRecords.filter(
+    isRepresentativeReviewNeeded,
+  ).length;
+  const objectionCount = representativeRecords.filter(
+    (record) => record.hasObjection,
+  ).length;
+  const totalReviewNeededCount =
+    fieldSummary.fieldReviewNeededCount + representativeReviewNeededCount;
+  const hasMonthlySummaryWarning = fieldLoadFailed || linkResult.status !== "ok";
 
   const companyName = getCompanyDisplayName(company);
 
@@ -342,6 +428,18 @@ export default async function RiskSharePackManagerHomePage() {
             </article>
           ))}
         </section>
+
+
+        <RiskSharePackMonthlySummary
+          periodLabel={`${currentPeriod.startDate} ~ ${currentPeriod.endDate}`}
+          shareConfirmationCount={fieldSummary.shareConfirmationCount}
+          workerReportCount={fieldSummary.workerReportCount}
+          reviewNeededCount={fieldLoadFailed ? 0 : totalReviewNeededCount}
+          representativeConfirmationCount={representativeRecords.length}
+          objectionCount={objectionCount}
+          exportReadyStatus={hasMonthlySummaryWarning ? "확인 필요" : "준비 가능"}
+          hasLoadWarning={hasMonthlySummaryWarning}
+        />
 
         <RiskSharePackExportPanel companyCode={company.code} />
 
