@@ -182,6 +182,12 @@ export default async function RiskShareActivationPage({ searchParams }: PageProp
               활성화 상태 미리보기
             </button>
             <Link
+              href="/owner/risk-share-activation/source-intake"
+              className="rounded-xl border border-blue-400/40 px-5 py-3 text-sm font-black text-blue-100 hover:bg-blue-500/10"
+            >
+              Source File Intake
+            </Link>
+            <Link
               href={`/owner/risk-share-activation/share-items?companyCode=${encodeURIComponent(companyCode)}&companyName=${encodeURIComponent(companyName)}`}
               className="rounded-xl border border-emerald-400/40 px-5 py-3 text-sm font-black text-emerald-100 hover:bg-emerald-500/10"
             >
