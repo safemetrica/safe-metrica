@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -252,13 +252,24 @@ export async function POST(req: NextRequest) {
       message: insertResult.message,
     });
 
+    let rollbackOk = false;
+
+    try {
+      await del(blob.url);
+      rollbackOk = true;
+    } catch (error) {
+      console.error("[risk-share-source-intake] blob rollback failed", error);
+    }
+
     return NextResponse.json(
       {
         ok: false,
         error: "source_metadata_insert_failed",
-        message:
-          "파일은 업로드됐지만 source 메타데이터 저장에 실패했습니다. Supabase risk_share_sources 테이블 적용 여부를 확인하세요.",
-        fileUrl: blob.url,
+        message: rollbackOk
+          ? "source 메타데이터 저장에 실패해 업로드 파일을 자동 삭제했습니다. Supabase risk_share_sources 테이블 적용 여부를 확인하세요."
+          : "파일은 업로드됐지만 source 메타데이터 저장에 실패했고, 업로드 파일 자동 삭제도 실패했습니다. Vercel Blob에서 수동 삭제가 필요합니다.",
+        rollbackOk,
+        fileUrl: rollbackOk ? undefined : blob.url,
       },
       { status: 500 }
     );
