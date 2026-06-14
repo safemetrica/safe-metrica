@@ -711,80 +711,195 @@ function getYearMonth(value: string, fallbackDate: string) {
   return DATE_PATTERN.test(date) ? date.slice(0, 7).replace("-", "") : fallbackDate.slice(0, 7).replace("-", "");
 }
 
+
+function getEvidenceSourceLabel(value: string) {
+  const text = cleanText(value);
+
+  if (text === "field_participation") return "현장참여";
+  if (text === "tbm_voice") return "TBM";
+  if (text === "contractor_submission") return "협력사 제출";
+  if (text === "action") return "조치 증빙";
+  if (text === "risk_assessment") return "위험성평가";
+  if (text === "manual") return "수기 등록";
+
+  return text || "확인 필요";
+}
+
+function getEvidenceTypeLabel(value: string) {
+  const text = cleanText(value);
+
+  if (text === "photo") return "사진";
+  if (text === "checklist") return "체크리스트";
+  if (text === "edu") return "교육자료";
+  if (text === "sign") return "서명";
+  if (text === "report") return "보고서";
+
+  return text || "확인 필요";
+}
+
+function getEvidenceRoleLabel(value: string) {
+  const text = cleanText(value);
+
+  if (text === "share_confirmation_attachment") return "공유확인 첨부";
+  if (text === "worker_report_attachment") return "위험제보 첨부";
+  if (text === "near_miss_attachment") return "아차사고 첨부";
+  if (text === "improvement_suggestion_attachment") return "개선제안 첨부";
+  if (text === "field_participation_attachment") return "현장참여 첨부";
+  if (text === "tbm_attendance_attachment") return "TBM 참석/서명";
+  if (text === "tbm_pre_work_attachment") return "TBM 작업 전";
+  if (text === "tbm_work_target_attachment") return "TBM 작업 대상";
+  if (text === "tbm_action_attachment") return "TBM 조치";
+  if (text === "contractor_attachment") return "협력사 제출 첨부";
+
+  return text || "확인 필요";
+}
+
 function buildEvidenceManifestRows(
+  evidenceRows: ExportRow[],
   fieldRows: ExportRow[],
   tbmRows: ExportRow[],
   startDate: string
 ) {
   const headers = [
     "증빙번호",
-    "날짜",
+    "제출일시",
+    "회사명",
     "관련 기록 유형",
-    "관련 제목",
+    "제출구분",
     "증빙유형",
+    "증빙역할",
     "파일명",
-    "ZIP 내 경로",
-    "ZIP 포함 여부",
-    "비고",
+    "파일URL",
+    "제출자 표시",
+    "익명 여부",
+    "고객 전달 비고",
   ];
 
   const rows: CsvRow[] = [];
+  const exportedFileUrls = new Set<string>();
   let sequence = 1;
 
-  function pushEvidenceRow(
-    eventDate: string,
-    sourceType: string,
-    sourceTitle: string,
-    evidenceType: string,
-    fileName: string
-  ) {
+  function pushEvidenceRow({
+    eventDate,
+    companyName,
+    sourceType,
+    submissionType,
+    evidenceType,
+    evidenceRole,
+    fileName,
+    fileUrl,
+    submittedByLabel,
+    anonymous,
+    note,
+  }: {
+    eventDate: string;
+    companyName: string;
+    sourceType: string;
+    submissionType: string;
+    evidenceType: string;
+    evidenceRole: string;
+    fileName: string;
+    fileUrl: string;
+    submittedByLabel: string;
+    anonymous: boolean;
+    note: string;
+  }) {
+    const cleanFileUrl = cleanText(fileUrl);
+
+    if (!cleanFileUrl || exportedFileUrls.has(cleanFileUrl)) {
+      return;
+    }
+
+    exportedFileUrls.add(cleanFileUrl);
+
     const yearMonth = getYearMonth(eventDate, startDate);
     const evidenceNumber = `EV-${yearMonth}-${String(sequence).padStart(4, "0")}`;
-    const safeFileName = sanitizeFilename(fileName);
-    const zipPath = `evidence/${yearMonth}/${sourceType}/${evidenceNumber}_${safeFileName}`;
+    const safeFileName = sanitizeFilename(fileName || getFilenameFromUrl(cleanFileUrl));
 
     rows.push([
       evidenceNumber,
-      formatKstDate(eventDate),
+      formatKstDateTime(eventDate),
+      summarize(companyName, 120),
       sourceType,
-      summarize(sourceTitle, 120),
+      submissionType,
       evidenceType,
+      evidenceRole,
       safeFileName,
-      zipPath,
-      "예",
-      "",
+      cleanFileUrl,
+      summarize(submittedByLabel, 80),
+      yesNo(anonymous),
+      note,
     ]);
 
     sequence += 1;
   }
 
+  for (const row of evidenceRows) {
+    const fileUrl = getString(row, ["file_url", "fileUrl"]);
+
+    pushEvidenceRow({
+      eventDate: getString(row, ["submitted_at", "created_at"]),
+      companyName: getString(row, ["company_name", "companyName"]),
+      sourceType: getEvidenceSourceLabel(getString(row, ["source_type", "sourceType"])),
+      submissionType: getSubmissionType(row),
+      evidenceType: getEvidenceTypeLabel(getString(row, ["evidence_type_code", "evidenceTypeCode"])),
+      evidenceRole: getEvidenceRoleLabel(getString(row, ["evidence_role", "evidenceRole"])),
+      fileName: getString(row, ["file_name", "fileName"]) || getFilenameFromUrl(fileUrl),
+      fileUrl,
+      submittedByLabel: getString(row, ["submitted_by_label", "submittedByLabel"]),
+      anonymous: getBoolean(row, ["anonymous"]),
+      note: "evidence_items 원장 기준 증빙입니다.",
+    });
+  }
+
   for (const row of fieldRows) {
     const eventDate = getString(row, ["reported_date", "submitted_at", "created_at"]);
-    const title = getString(row, ["title", "report_title", "content"]) || "현장참여 기록";
+    const submissionType = getSubmissionType(row);
 
     for (const fileUrl of getFileUrls(row)) {
-      pushEvidenceRow(
+      pushEvidenceRow({
         eventDate,
-        "현장참여",
-        title,
-        "기타",
-        getFilenameFromUrl(fileUrl)
-      );
+        companyName: getString(row, ["company_name", "companyName"]),
+        sourceType: "현장참여",
+        submissionType,
+        evidenceType: "사진",
+        evidenceRole: getEvidenceRoleLabel(
+          submissionType === "공유확인"
+            ? "share_confirmation_attachment"
+            : submissionType === "위험제보"
+              ? "worker_report_attachment"
+              : submissionType === "아차사고"
+                ? "near_miss_attachment"
+                : submissionType === "개선제안"
+                  ? "improvement_suggestion_attachment"
+                  : "field_participation_attachment"
+        ),
+        fileName: getFilenameFromUrl(fileUrl),
+        fileUrl,
+        submittedByLabel: getExportWorkerName(row) || getString(row, ["submitter"]),
+        anonymous: getBoolean(row, ["anonymous", "is_anonymous"]),
+        note: "기존 현장참여 file_urls 기준 보완 항목입니다.",
+      });
     }
   }
 
   for (const row of tbmRows) {
     const eventDate = getString(row, ["date_value", "work_date", "created_at"]);
-    const title = getString(row, ["work_name", "title"]) || "TBM 기록";
 
     for (const file of getUploadedFiles(row)) {
-      pushEvidenceRow(
+      pushEvidenceRow({
         eventDate,
-        "TBM",
-        title,
-        getEvidenceTypeFromGroupKey(file.groupKey),
-        file.name ?? getFilenameFromUrl(file.url)
-      );
+        companyName: getString(row, ["company_name", "companyName"]),
+        sourceType: "TBM",
+        submissionType: "TBM",
+        evidenceType: getEvidenceTypeFromGroupKey(file.groupKey),
+        evidenceRole: getEvidenceRoleLabel(`tbm_${file.groupKey}_attachment`),
+        fileName: file.name ?? getFilenameFromUrl(file.url),
+        fileUrl: file.url,
+        submittedByLabel: getString(row, ["submitter", "created_by", "manager_name"]),
+        anonymous: false,
+        note: "기존 TBM uploaded_files 기준 보완 항목입니다.",
+      });
     }
   }
 
@@ -841,6 +956,7 @@ export async function GET(request: NextRequest) {
   }
 
   const dayAfterEnd = getDayAfter(parsedEndDate);
+  const needsEvidenceRows = dataset === "evidence_manifest";
   const needsFieldRows =
     dataset === "worker_share_confirmations" ||
     dataset === "worker_reports" ||
@@ -880,9 +996,27 @@ export async function GET(request: NextRequest) {
     or: buildTimestampPeriodFilter("submitted_at", "confirmed_at", startDate, dayAfterEnd),
     order: "submitted_at.asc",
   });
+  const evidenceQuery = new URLSearchParams({
+    select: [
+      "company_name",
+      "source_type",
+      "submission_type",
+      "file_url",
+      "file_name",
+      "evidence_type_code",
+      "evidence_role",
+      "submitted_at",
+      "submitted_by_label",
+      "anonymous",
+      "created_at",
+    ].join(","),
+    company_code: `eq.${companyKey}`,
+    or: buildTimestampPeriodFilter("created_at", "submitted_at", startDate, dayAfterEnd),
+    order: "created_at.asc",
+  });
 
   try {
-    const [fieldRows, tbmRows, workerRepresentativeRows] = await Promise.all([
+    const [fieldRows, tbmRows, workerRepresentativeRows, evidenceRows] = await Promise.all([
       needsFieldRows
         ? selectSupabaseExportRows<ExportRow>("field_participation_submissions", fieldQuery)
         : Promise.resolve([]),
@@ -895,13 +1029,16 @@ export async function GET(request: NextRequest) {
             workerRepresentativeQuery
           )
         : Promise.resolve([]),
+      needsEvidenceRows
+        ? selectSupabaseExportRows<ExportRow>("evidence_items", evidenceQuery)
+        : Promise.resolve([]),
     ]);
 
     const csvData =
       dataset === "tbm_records"
         ? buildTbmRows(tbmRows)
         : dataset === "evidence_manifest"
-          ? buildEvidenceManifestRows(fieldRows, tbmRows, startDate)
+          ? buildEvidenceManifestRows(evidenceRows, fieldRows, tbmRows, startDate)
           : dataset === "worker_representative_confirmations"
             ? buildWorkerRepresentativeConfirmationRows(workerRepresentativeRows)
             : buildFieldParticipationRows(fieldRows, dataset);
