@@ -124,6 +124,24 @@ function buildWorkerRiskSummaryHref(companyCode: string) {
     : "/field/participation/risk-summary";
 }
 
+function buildVersionLockHref(companyCode: string, companyName: string, sourceTitle: string, readyForVersionLock: boolean) {
+  const query = new URLSearchParams();
+
+  if (companyCode) query.set("companyCode", companyCode);
+  if (companyName) query.set("companyName", companyName);
+  if (sourceTitle) query.set("sourceTitle", sourceTitle);
+
+  query.set("sourceReceived", "on");
+  query.set("shareItemsReady", "on");
+  query.set("workerVisibleChecked", "on");
+
+  if (readyForVersionLock) {
+    query.set("customerConfirmed", "on");
+  }
+
+  return `/owner/risk-share-activation/version-lock?${query.toString()}`;
+}
+
 export default async function RiskShareShareItemBuilderPage({ searchParams }: PageProps) {
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
@@ -307,10 +325,13 @@ export default async function RiskShareShareItemBuilderPage({ searchParams }: Pa
 
             <div className="mt-5 flex flex-wrap gap-3">
               <a href={buildWorkerRiskSummaryHref(companyCode)} className="rounded-xl border border-blue-500/40 px-4 py-3 text-sm font-black text-blue-100 hover:bg-blue-500/10">
-                근로자 공유요약 후보 열기
+                기존 근로자 공유요약 화면 확인
               </a>
               <a href={buildActivationHref(companyCode, companyName)} className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-400">
                 활성화 화면으로 반영
+              </a>
+              <a href={buildVersionLockHref(companyCode, companyName, sourceTitle, readyForVersionLock)} className="rounded-xl border border-amber-400/40 px-4 py-3 text-sm font-black text-amber-100 hover:bg-amber-500/10">
+                Version Lock 체크
               </a>
             </div>
           </article>
