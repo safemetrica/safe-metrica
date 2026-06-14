@@ -5,6 +5,7 @@ type SupabaseInsertResult = {
   status: number;
   statusText: string;
   message?: string;
+  data?: unknown;
 };
 
 type UploadedTbmShadowFile = {
@@ -264,16 +265,19 @@ export async function insertFieldParticipationSubmissionShadowRecord(
       apikey: supabaseServiceRoleKey,
       Authorization: `Bearer ${supabaseServiceRoleKey}`,
       "Content-Type": "application/json",
-      Prefer: "return=minimal",
+      Prefer: "return=representation",
     },
     body: JSON.stringify(record),
   });
 
   if (res.ok) {
+    const data = await res.json().catch(() => undefined);
+
     return {
       ok: true,
       status: res.status,
       statusText: res.statusText,
+      data,
     };
   }
 
