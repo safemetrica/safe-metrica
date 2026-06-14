@@ -95,6 +95,18 @@ function sanitizeFileName(fileName: string) {
 }
 
 
+function getSupabaseInsertedRecordId(data: unknown) {
+  const record = Array.isArray(data) ? data[0] : data;
+
+  if (!record || typeof record !== "object") {
+    return null;
+  }
+
+  const id = (record as { id?: unknown }).id;
+
+  return typeof id === "string" && id.length > 0 ? id : null;
+}
+
 function getFieldParticipationEvidenceRole(submissionType: string) {
   if (submissionType === "공유확인") return "share_confirmation_attachment";
   if (submissionType === "위험제보") return "worker_report_attachment";
@@ -701,6 +713,11 @@ export async function POST(req: NextRequest) {
       });
 
       if (supabaseResult.ok && uploadedFiles.length > 0) {
+        const fieldParticipationSourceRecordId =
+          getSupabaseInsertedRecordId(supabaseResult.data) ??
+          notionPageId ??
+          (clientSubmissionId || null);
+
         const evidenceResult = await insertEvidenceItemMetadataRecords(
           uploadedFiles.map((file) => ({
             company_code: company.code,
@@ -709,7 +726,7 @@ export async function POST(req: NextRequest) {
             site_name: location || null,
             source_type: "field_participation",
             source_record_table: "field_participation_submissions",
-            source_record_id: notionPageId ?? (clientSubmissionId || null),
+            source_record_id: fieldParticipationSourceRecordId,
             submission_type: submissionType,
             file_url: file.url,
             file_name: file.name,
