@@ -709,7 +709,7 @@ export async function POST(req: NextRequest) {
             site_name: location || null,
             source_type: "field_participation",
             source_record_table: "field_participation_submissions",
-            source_record_id: notionPageId ?? clientSubmissionId || null,
+            source_record_id: notionPageId ?? (clientSubmissionId || null),
             submission_type: submissionType,
             file_url: file.url,
             file_name: file.name,
