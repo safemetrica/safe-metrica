@@ -62,6 +62,28 @@ export type FieldParticipationSubmissionShadowRecord = {
   raw_payload: Record<string, unknown>;
 };
 
+
+export type EvidenceItemMetadataRecord = {
+  company_code: string;
+  company_name: string | null;
+  site_id: string | null;
+  site_name: string | null;
+  source_type: string;
+  source_record_table: string | null;
+  source_record_id: string | null;
+  submission_type: string | null;
+  file_url: string;
+  file_name: string | null;
+  file_mime_type: string | null;
+  file_size: number | null;
+  evidence_role: string | null;
+  storage_provider: string;
+  submitted_at: string | null;
+  submitted_by_label: string | null;
+  anonymous: boolean;
+  raw_payload: Record<string, unknown>;
+};
+
 function getSupabaseUrl() {
   return process.env.SUPABASE_URL?.replace(/\/+$/, "");
 }
@@ -109,7 +131,8 @@ export function isSupabaseFieldParticipationShadowWriteEnabled(companyCode: stri
 type SupabaseExportTable =
   | "field_participation_submissions"
   | "tbm_voice_submissions"
-  | "worker_representative_confirmations";
+  | "worker_representative_confirmations"
+  | "evidence_items";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -262,3 +285,56 @@ export async function insertFieldParticipationSubmissionShadowRecord(
   };
 }
 
+
+export async function insertEvidenceItemMetadataRecords(
+  records: EvidenceItemMetadataRecord[]
+): Promise<SupabaseInsertResult> {
+  if (records.length === 0) {
+    return {
+      ok: true,
+      status: 204,
+      statusText: "no_evidence_items",
+    };
+  }
+
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/evidence_items`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(records),
+  });
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+    };
+  }
+
+  const data = await res.json().catch(() => undefined);
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+  };
+}
