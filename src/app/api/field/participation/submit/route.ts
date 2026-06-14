@@ -9,6 +9,7 @@ import {
 } from "@/lib/company";
 
 import {
+  insertEvidenceItemMetadataRecords,
   insertFieldParticipationSubmissionShadowRecord,
   isSupabaseFieldParticipationShadowWriteEnabled,
 } from "@/lib/supabaseServer";
@@ -91,6 +92,16 @@ function isFile(value: FormDataEntryValue): value is File {
 function sanitizeFileName(fileName: string) {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
   return safeName || "field-voice-file";
+}
+
+
+function getFieldParticipationEvidenceRole(submissionType: string) {
+  if (submissionType === "공유확인") return "share_confirmation_attachment";
+  if (submissionType === "위험제보") return "worker_report_attachment";
+  if (submissionType === "아차사고") return "near_miss_attachment";
+  if (submissionType === "개선제안") return "improvement_suggestion_attachment";
+
+  return "field_participation_attachment";
 }
 
 async function uploadEvidenceFiles(files: File[], companyCode: string, reportedDate: string) {
@@ -688,6 +699,54 @@ export async function POST(req: NextRequest) {
           notionProperties: Object.keys(properties),
         },
       });
+
+      if (supabaseResult.ok && uploadedFiles.length > 0) {
+        const evidenceResult = await insertEvidenceItemMetadataRecords(
+          uploadedFiles.map((file) => ({
+            company_code: company.code,
+            company_name: company.name,
+            site_id: null,
+            site_name: location || null,
+            source_type: "field_participation",
+            source_record_table: "field_participation_submissions",
+            source_record_id: notionPageId ?? clientSubmissionId || null,
+            submission_type: submissionType,
+            file_url: file.url,
+            file_name: file.name,
+            file_mime_type: file.type || null,
+            file_size: file.size,
+            evidence_role: getFieldParticipationEvidenceRole(submissionType),
+            storage_provider: "vercel_blob",
+            submitted_at: new Date().toISOString(),
+            submitted_by_label: submitter,
+            anonymous,
+            raw_payload: {
+              clientSubmissionId,
+              notionPageId,
+              notionUrl,
+              reportedDate,
+              sourceStep,
+              entryIntent,
+              confirmationType,
+              confirmationStatus,
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+            },
+          }))
+        );
+
+        if (!evidenceResult.ok) {
+          console.warn("[field-participation-submit] evidence_items metadata insert failed", {
+            companyCode: company.code,
+            submissionType,
+            uploadedFileCount: uploadedFiles.length,
+            status: evidenceResult.status,
+            statusText: evidenceResult.statusText,
+            message: evidenceResult.message,
+          });
+        }
+      }
 
       if (supabaseResult.ok) {
         console.log("[field-participation-submit] supabase shadow-write success", {
