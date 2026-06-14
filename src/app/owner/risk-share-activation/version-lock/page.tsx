@@ -1,0 +1,349 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type PageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+type LockCheck = {
+  key: string;
+  title: string;
+  description: string;
+  required: boolean;
+};
+
+const LOCK_CHECKS: LockCheck[] = [
+  {
+    key: "sourceReceived",
+    title: "위험성평가 source 접수",
+    description: "고객이 기존 위험성평가표 또는 평가결과지를 제공했는지 확인합니다.",
+    required: true,
+  },
+  {
+    key: "shareItemsReady",
+    title: "공유항목 Builder 정리",
+    description: "근로자에게 공유할 작업명, 위험요인, 사고유형, 안전조치가 정리됐는지 확인합니다.",
+    required: true,
+  },
+  {
+    key: "customerConfirmed",
+    title: "고객 공유범위 확인",
+    description: "고객 담당자가 근로자에게 공유될 항목과 표현 범위를 확인했는지 확인합니다.",
+    required: true,
+  },
+  {
+    key: "workerVisibleChecked",
+    title: "근로자 표시 항목 확인",
+    description: "근로자 QR 화면에 표시할 항목만 선택됐는지 확인합니다.",
+    required: true,
+  },
+  {
+    key: "representativeFlowChecked",
+    title: "근로자대표 확인 흐름 확인",
+    description: "근로자대표 참여확인 링크 생성·폐기·확인 관리 흐름을 사용할지 확인합니다.",
+    required: false,
+  },
+  {
+    key: "companiesDbRegistered",
+    title: "Companies DB 등록 / active 확인",
+    description: "신규 고객 코드가 Companies DB에 등록되고 active 상태인지 확인합니다.",
+    required: true,
+  },
+  {
+    key: "qrPosterReady",
+    title: "QR 포스터 준비",
+    description: "현장 게시용 QR 포스터와 근로자 안내문이 준비됐는지 확인합니다.",
+    required: false,
+  },
+  {
+    key: "exportChecked",
+    title: "월간요약 / Export 경로 확인",
+    description: "공유팩 월간보고서와 고객용 Export 경로를 확인합니다.",
+    required: true,
+  },
+];
+
+function isOwnerTokenValid(ownerToken?: string) {
+  const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
+  return Boolean(expectedToken && ownerToken === expectedToken);
+}
+
+function readParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
+function cleanText(value: string, max = 120) {
+  return value.trim().slice(0, max);
+}
+
+function normalizeCompanyCode(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 50);
+}
+
+function isChecked(value: string) {
+  return value === "on" || value === "true" || value === "1";
+}
+
+function buildOwnerSelectHref(companyCode: string, nextPath: string) {
+  return `/api/owner/select?code=${encodeURIComponent(companyCode)}&next=${encodeURIComponent(nextPath)}`;
+}
+
+function buildWorkerQrHref(companyCode: string) {
+  return `/field/participation?company=${encodeURIComponent(companyCode)}`;
+}
+
+function buildRiskSummaryHref(companyCode: string) {
+  return `/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`;
+}
+
+function getCheckStatus(params: Record<string, string | string[] | undefined>, key: string) {
+  return isChecked(readParam(params, key));
+}
+
+function CheckBadge({ done, required }: { done: boolean; required: boolean }) {
+  if (done) {
+    return (
+      <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200">
+        완료
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={
+        required
+          ? "rounded-full border border-red-400/40 bg-red-400/10 px-3 py-1 text-xs font-black text-red-200"
+          : "rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-black text-amber-200"
+      }
+    >
+      {required ? "필수 대기" : "선택 대기"}
+    </span>
+  );
+}
+
+export default async function RiskShareVersionLockPage({ searchParams }: PageProps) {
+  const c = await cookies();
+  const ownerToken = c.get("sm_owner_token")?.value;
+
+  if (!isOwnerTokenValid(ownerToken)) {
+    redirect("/login?error=owner_required");
+  }
+
+  const params = (await searchParams) ?? {};
+  const companyCode = normalizeCompanyCode(readParam(params, "companyCode"));
+  const companyName = cleanText(readParam(params, "companyName"), 80);
+  const versionLabel = cleanText(readParam(params, "versionLabel") || "RSP-v1", 80);
+  const sourceTitle = cleanText(readParam(params, "sourceTitle") || "고객 제공 위험성평가표", 120);
+
+  const requiredChecks = LOCK_CHECKS.filter((item) => item.required);
+  const completedRequiredCount = requiredChecks.filter((item) => getCheckStatus(params, item.key)).length;
+  const completedAllCount = LOCK_CHECKS.filter((item) => getCheckStatus(params, item.key)).length;
+  const requiredReady = completedRequiredCount === requiredChecks.length;
+  const hasCompanyCode = Boolean(companyCode);
+  const goLiveReady = requiredReady && hasCompanyCode;
+
+  const statusLabel = goLiveReady ? "Go-Live 가능" : requiredReady ? "코드 확인 필요" : "Version Lock 대기";
+
+  return (
+    <main className="min-h-screen bg-slate-950 px-5 py-6 text-white">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-5 flex flex-wrap gap-3">
+          <Link href="/owner/risk-share-activation/share-items" className="text-sm font-bold text-cyan-300 hover:text-cyan-200">
+            ← 공유항목 Builder
+          </Link>
+          <Link href="/owner/risk-share-activation" className="text-sm font-bold text-slate-400 hover:text-slate-200">
+            신규 고객 공유팩 활성화
+          </Link>
+          <Link href="/owner" className="text-sm font-bold text-slate-400 hover:text-slate-200">
+            Owner Console
+          </Link>
+        </div>
+
+        <section className="rounded-3xl border border-cyan-500/30 bg-slate-900 p-6 shadow-2xl">
+          <p className="text-sm font-bold text-cyan-300">Risk Share Pack</p>
+          <h1 className="mt-2 text-3xl font-black">Version Lock / Go-Live Checklist v1</h1>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-300">
+            공유항목을 고객 확인 후 고정하고, QR 배포 전 필수 확인 상태를 점검합니다.
+            이 화면은 운영 잠금 후보 상태를 확인하는 Owner 전용 체크리스트이며, 법적 적합성 또는 조치완료를 확정하지 않습니다.
+          </p>
+        </section>
+
+        <form className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <label className="block">
+              <span className="text-sm font-black text-slate-300">고객 코드 후보</span>
+              <input
+                name="companyCode"
+                defaultValue={companyCode}
+                placeholder="예: woogwang"
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-black text-slate-300">고객명</span>
+              <input
+                name="companyName"
+                defaultValue={companyName}
+                placeholder="예: ㈜우광개발"
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-black text-slate-300">공유 버전명</span>
+              <input
+                name="versionLabel"
+                defaultValue={versionLabel}
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-black text-slate-300">Source 문서명</span>
+              <input
+                name="sourceTitle"
+                defaultValue={sourceTitle}
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+              />
+            </label>
+          </div>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
+            {LOCK_CHECKS.map((item) => (
+              <label key={item.key} className="flex items-start gap-3 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-sm font-bold text-slate-200">
+                <input
+                  type="checkbox"
+                  name={item.key}
+                  defaultChecked={getCheckStatus(params, item.key)}
+                  className="mt-1 h-4 w-4"
+                />
+                <span>
+                  <span className="block text-white">{item.title}</span>
+                  <span className="mt-1 block text-xs leading-5 text-slate-400">{item.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <button
+            type="submit"
+            className="mt-5 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
+          >
+            Version Lock 상태 미리보기
+          </button>
+        </form>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+          <article className="rounded-3xl border border-slate-700 bg-slate-900 p-6">
+            <p className="text-sm font-bold text-slate-400">Version Lock Status</p>
+            <h2 className="mt-2 text-3xl font-black text-white">{statusLabel}</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              필수 {completedRequiredCount}/{requiredChecks.length}개 완료 · 전체 {completedAllCount}/{LOCK_CHECKS.length}개 완료
+            </p>
+          </article>
+
+          <article className="rounded-3xl border border-slate-700 bg-slate-900 p-6 lg:col-span-2">
+            <p className="text-sm font-bold text-emerald-300">Locked Share Version Candidate</p>
+            <h2 className="mt-2 text-2xl font-black text-white">{versionLabel}</h2>
+            <dl className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+                <dt className="text-xs font-black text-slate-400">고객</dt>
+                <dd className="mt-1 text-sm font-black text-white">{companyName || "고객명 입력 필요"}</dd>
+              </div>
+              <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+                <dt className="text-xs font-black text-slate-400">고객 코드</dt>
+                <dd className="mt-1 text-sm font-black text-white">{companyCode || "코드 입력 필요"}</dd>
+              </div>
+              <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 md:col-span-2">
+                <dt className="text-xs font-black text-slate-400">Source</dt>
+                <dd className="mt-1 text-sm font-black text-white">{sourceTitle}</dd>
+              </div>
+            </dl>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <a
+                href={companyCode ? buildWorkerQrHref(companyCode) : "#"}
+                className={
+                  companyCode
+                    ? "rounded-xl border border-blue-500/40 px-4 py-3 text-center text-sm font-black text-blue-100 hover:bg-blue-500/10"
+                    : "pointer-events-none rounded-xl border border-slate-700 px-4 py-3 text-center text-sm font-black text-slate-600"
+                }
+              >
+                근로자 QR 화면
+              </a>
+              <a
+                href={companyCode ? buildRiskSummaryHref(companyCode) : "#"}
+                className={
+                  companyCode
+                    ? "rounded-xl border border-blue-500/40 px-4 py-3 text-center text-sm font-black text-blue-100 hover:bg-blue-500/10"
+                    : "pointer-events-none rounded-xl border border-slate-700 px-4 py-3 text-center text-sm font-black text-slate-600"
+                }
+              >
+                위험성평가 공유요약
+              </a>
+              <a
+                href={companyCode && goLiveReady ? buildOwnerSelectHref(companyCode, "/manager/risk-share") : "#"}
+                className={
+                  companyCode && goLiveReady
+                    ? "rounded-xl border border-cyan-500/40 px-4 py-3 text-center text-sm font-black text-cyan-100 hover:bg-cyan-500/10"
+                    : "pointer-events-none rounded-xl border border-slate-700 px-4 py-3 text-center text-sm font-black text-slate-600"
+                }
+              >
+                관리자 공유팩 홈
+              </a>
+              <a
+                href={companyCode && goLiveReady ? buildOwnerSelectHref(companyCode, "/monthly-report/risk-share") : "#"}
+                className={
+                  companyCode && goLiveReady
+                    ? "rounded-xl border border-cyan-500/40 px-4 py-3 text-center text-sm font-black text-cyan-100 hover:bg-cyan-500/10"
+                    : "pointer-events-none rounded-xl border border-slate-700 px-4 py-3 text-center text-sm font-black text-slate-600"
+                }
+              >
+                공유팩 월간보고서
+              </a>
+            </div>
+          </article>
+        </section>
+
+        <section className="mt-6 grid gap-4 md:grid-cols-2">
+          {LOCK_CHECKS.map((item) => (
+            <article key={`status-${item.key}`} className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-black text-white">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.description}</p>
+                </div>
+                <CheckBadge done={getCheckStatus(params, item.key)} required={item.required} />
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-amber-500/30 bg-amber-950/20 p-5">
+          <h2 className="text-lg font-black text-amber-100">운영 주의</h2>
+          <p className="mt-3 text-sm leading-6 text-amber-50">
+            Version Lock은 고객 확인이 끝난 공유항목을 운영상 고정하는 절차입니다.
+            이 절차는 위험성평가 작성 대행, 법적 의무 완료, 사고 예방 보장을 의미하지 않습니다.
+            실제 운영 전 Companies DB 등록, active 상태, QR 포스터, Export 경로를 다시 확인합니다.
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
