@@ -81,6 +81,9 @@ export type EvidenceItemMetadataRecord = {
   submitted_at: string | null;
   submitted_by_label: string | null;
   anonymous: boolean;
+  action_id?: string | null;
+  evidence_type_code?: string;
+  verified?: boolean;
   raw_payload: Record<string, unknown>;
 };
 
@@ -309,6 +312,18 @@ export async function insertEvidenceItemMetadataRecords(
     };
   }
 
+  const normalizedRecords = records.map((record) => ({
+    ...record,
+    action_id: record.action_id ?? null,
+    evidence_type_code:
+      record.evidence_type_code ??
+      record.evidence_role ??
+      (record.source_type === "field_participation"
+        ? "field_participation_attachment"
+        : "file_evidence"),
+    verified: record.verified ?? false,
+  }));
+
   const res = await fetch(`${supabaseUrl}/rest/v1/evidence_items`, {
     method: "POST",
     headers: {
@@ -317,7 +332,7 @@ export async function insertEvidenceItemMetadataRecords(
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
-    body: JSON.stringify(records),
+    body: JSON.stringify(normalizedRecords),
   });
 
   if (res.ok) {
