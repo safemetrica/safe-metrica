@@ -355,6 +355,23 @@ export default async function OwnerConsolePage({
           </section>
         ) : null}
 
+        <section className="mt-6 rounded-3xl border border-emerald-500/30 bg-slate-900 p-6 shadow-2xl">
+          <p className="text-sm font-bold text-emerald-300">Risk Share Pack Activation</p>
+          <h2 className="mt-2 text-2xl font-black text-white">신규 고객 공유팩 활성화</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+            신규 고객 코드 후보, 위험성평가 source 접수, 공유항목 정리, 고객 확인, 버전 잠금, QR 활성화 상태를 확인합니다.
+            실제 운영 전 Companies DB 등록과 active 상태 확인이 필요합니다.
+          </p>
+          <div className="mt-5">
+            <a
+              href="/owner/risk-share-activation"
+              className="inline-flex rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-400"
+            >
+              신규 공유팩 활성화 화면 열기
+            </a>
+          </div>
+        </section>
+
         <OwnerExportPanel />
 
         <section className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5">
