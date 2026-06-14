@@ -40,6 +40,178 @@ const tenants = [
   },
 ];
 
+const riskShareTenants = tenants.filter((tenant) => tenant.code !== "demo");
+
+function buildOwnerSelectHref(companyCode: string, nextPath: string) {
+  return `/api/owner/select?code=${encodeURIComponent(companyCode)}&next=${encodeURIComponent(nextPath)}`;
+}
+
+function buildWorkerParticipationHref(companyCode: string) {
+  return `/field/participation?company=${encodeURIComponent(companyCode)}`;
+}
+
+function getTenantIndustry(tenant: (typeof tenants)[number]) {
+  return tenant.industry ?? tenant.category ?? "업종 확인";
+}
+
+function getTenantDescription(tenant: (typeof tenants)[number]) {
+  return tenant.desc ?? tenant.description ?? "운영 범위 확인";
+}
+
+function isRecommendedCaptureTenant(companyCode: string) {
+  return companyCode === "hankookgreen";
+}
+
+function isLiveWorkerTenant(companyCode: string) {
+  return companyCode === "bubblemon";
+}
+
+function isRiskShareReadyTenant(companyCode: string) {
+  return companyCode === "daedo" || companyCode === "dongwoo" || companyCode === "hankookgreen" || companyCode === "bubblemon";
+}
+
+function isRiskShareDisabledTenant(companyCode: string) {
+  return companyCode === "mons";
+}
+
+function getRiskShareTenantNote(companyCode: string) {
+  if (isRecommendedCaptureTenant(companyCode)) {
+    return "캡처 권장";
+  }
+
+  if (isLiveWorkerTenant(companyCode)) {
+    return "실제 직원 참여 중";
+  }
+
+  if (isRiskShareDisabledTenant(companyCode)) {
+    return "공유팩 제외";
+  }
+
+  return "운영 가능";
+}
+
+function getRiskShareTenantTone(companyCode: string) {
+  if (isRecommendedCaptureTenant(companyCode)) {
+    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-200";
+  }
+
+  if (isLiveWorkerTenant(companyCode)) {
+    return "border-amber-500/40 bg-amber-500/10 text-amber-200";
+  }
+
+  return "border-slate-700 bg-slate-950/60 text-slate-300";
+}
+
+function isRiskShareQuickLinkEnabled(companyCode: string) {
+  return isRiskShareReadyTenant(companyCode);
+}
+
+function getRiskShareButtonClass(companyCode: string) {
+  return isRiskShareQuickLinkEnabled(companyCode)
+    ? "rounded-xl border border-cyan-500/40 px-3 py-2 text-center text-xs font-black text-cyan-100 hover:bg-cyan-500/10"
+    : "pointer-events-none rounded-xl border border-slate-700 px-3 py-2 text-center text-xs font-black text-slate-600";
+}
+
+function isWorkerQrLinkEnabled(companyCode: string) {
+  return isRiskShareReadyTenant(companyCode);
+}
+
+function getWorkerQrButtonClass(companyCode: string) {
+  return isWorkerQrLinkEnabled(companyCode)
+    ? "rounded-xl border border-blue-500/40 px-3 py-2 text-center text-xs font-black text-blue-100 hover:bg-blue-500/10"
+    : "pointer-events-none rounded-xl border border-slate-700 px-3 py-2 text-center text-xs font-black text-slate-600";
+}
+
+function isCaptureWarningVisible(companyCode: string) {
+  return isLiveWorkerTenant(companyCode);
+}
+
+function getRiskShareQuickLinkAriaLabel(tenantName: string, label: string) {
+  return `${tenantName} ${label}`;
+}
+
+function getRiskShareManagerHref(companyCode: string) {
+  return buildOwnerSelectHref(companyCode, "/manager/risk-share");
+}
+
+function getRiskShareMonthlyHref(companyCode: string) {
+  return buildOwnerSelectHref(companyCode, "/monthly-report/risk-share");
+}
+
+function getRiskShareRepresentativeHref(companyCode: string) {
+  return buildOwnerSelectHref(companyCode, "/manager/representative-confirmations");
+}
+
+function getRiskShareWorkerHref(companyCode: string) {
+  return buildWorkerParticipationHref(companyCode);
+}
+
+function isRiskShareCaptionVisible(companyCode: string) {
+  return isRecommendedCaptureTenant(companyCode) || isLiveWorkerTenant(companyCode);
+}
+
+function getRiskShareCaption(companyCode: string) {
+  if (isRecommendedCaptureTenant(companyCode)) {
+    return "제안서 실제 화면 캡처는 이 고객사 기준을 우선 사용합니다.";
+  }
+
+  if (isLiveWorkerTenant(companyCode)) {
+    return "실제 직원 참여 데이터가 있으므로 제안서 캡처용 테스트 입력은 피합니다.";
+  }
+
+  return "";
+}
+
+function isRiskShareQuickSectionVisible() {
+  return riskShareTenants.length > 0;
+}
+
+function isRiskShareLinkDisabled(companyCode: string) {
+  return !isRiskShareQuickLinkEnabled(companyCode);
+}
+
+function getRiskShareLinkHref(companyCode: string, nextPath: string) {
+  return isRiskShareLinkDisabled(companyCode) ? "#" : buildOwnerSelectHref(companyCode, nextPath);
+}
+
+function getRiskShareWorkerLinkHref(companyCode: string) {
+  return isWorkerQrLinkEnabled(companyCode) ? buildWorkerParticipationHref(companyCode) : "#";
+}
+
+function getRiskShareWorkerLinkTitle(companyCode: string) {
+  return isLiveWorkerTenant(companyCode)
+    ? "실제 직원 참여 중이므로 제출 테스트는 피하세요."
+    : "회사코드 포함 근로자 QR 화면";
+}
+
+function isRiskShareQuickTenantDimmed(companyCode: string) {
+  return !isRiskShareQuickLinkEnabled(companyCode);
+}
+
+function getRiskShareQuickTenantClass(companyCode: string) {
+  return isRiskShareQuickTenantDimmed(companyCode)
+    ? "rounded-2xl border border-slate-800 bg-slate-900/60 p-4 opacity-60"
+    : "rounded-2xl border border-slate-700 bg-slate-900 p-4";
+}
+
+function isRiskShareHankookgreen(companyCode: string) {
+  return companyCode === "hankookgreen";
+}
+
+function getRiskSharePrimaryButtonClass(companyCode: string) {
+  return isRiskShareHankookgreen(companyCode)
+    ? "rounded-xl bg-emerald-500 px-3 py-2 text-center text-xs font-black text-slate-950 hover:bg-emerald-400"
+    : getRiskShareButtonClass(companyCode);
+}
+
+function getRiskSharePrimaryHref(companyCode: string) {
+  return getRiskShareManagerHref(companyCode);
+}
+
+function getRiskSharePrimaryLabel(companyCode: string) {
+  return isRiskShareHankookgreen(companyCode) ? "공유팩 홈 캡처" : "공유팩 홈";
+}
+
 function isOwnerTokenValid(ownerToken?: string) {
   const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
   return Boolean(expectedToken && ownerToken === expectedToken);
@@ -80,7 +252,7 @@ export default async function OwnerConsolePage({
             <article key={tenant.code} className="rounded-2xl border border-slate-700 bg-slate-900 p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold text-slate-400">{tenant.industry}</p>
+                  <p className="text-xs font-bold text-slate-400">{getTenantIndustry(tenant)}</p>
                   <h2 className="mt-1 text-xl font-black">{tenant.name}</h2>
                 </div>
                 <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
@@ -88,7 +260,7 @@ export default async function OwnerConsolePage({
                 </span>
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-slate-300">{tenant.desc}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{getTenantDescription(tenant)}</p>
 
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 <a
@@ -107,6 +279,82 @@ export default async function OwnerConsolePage({
             </article>
           ))}
         </section>
+
+        {isRiskShareQuickSectionVisible() ? (
+          <section className="mt-6 rounded-3xl border border-cyan-500/30 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-sm font-bold text-cyan-300">Risk Share Pack</p>
+                <h2 className="mt-2 text-2xl font-black text-white">공유팩 실제 화면 빠른 실행</h2>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+                  Owner 권한으로 고객사를 선택한 뒤 공유팩 관리자 홈, 월간보고서, 근로자대표 확인 관리로 바로 이동합니다.
+                  근로자 QR 화면은 회사코드가 포함된 실제 현장참여 링크로 엽니다.
+                </p>
+              </div>
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200">
+                hankookgreen 캡처 권장
+              </span>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {riskShareTenants.map((tenant) => (
+                <article key={`risk-share-${tenant.code}`} className={getRiskShareQuickTenantClass(tenant.code)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-slate-400">{getTenantIndustry(tenant)}</p>
+                      <h3 className="mt-1 text-lg font-black text-white">{tenant.name}</h3>
+                    </div>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-black ${getRiskShareTenantTone(tenant.code)}`}>
+                      {getRiskShareTenantNote(tenant.code)}
+                    </span>
+                  </div>
+
+                  {isRiskShareCaptionVisible(tenant.code) ? (
+                    <p className="mt-3 rounded-xl border border-slate-700 bg-slate-950/60 p-3 text-xs leading-5 text-slate-300">
+                      {getRiskShareCaption(tenant.code)}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <a
+                      aria-label={getRiskShareQuickLinkAriaLabel(tenant.name, getRiskSharePrimaryLabel(tenant.code))}
+                      href={getRiskSharePrimaryHref(tenant.code)}
+                      className={getRiskSharePrimaryButtonClass(tenant.code)}
+                    >
+                      {getRiskSharePrimaryLabel(tenant.code)}
+                    </a>
+                    <a
+                      aria-label={getRiskShareQuickLinkAriaLabel(tenant.name, "월간보고서")}
+                      href={getRiskShareLinkHref(tenant.code, "/monthly-report/risk-share")}
+                      className={getRiskShareButtonClass(tenant.code)}
+                    >
+                      월간보고서
+                    </a>
+                    <a
+                      aria-label={getRiskShareQuickLinkAriaLabel(tenant.name, "대표확인 관리")}
+                      href={getRiskShareLinkHref(tenant.code, "/manager/representative-confirmations")}
+                      className={getRiskShareButtonClass(tenant.code)}
+                    >
+                      대표확인 관리
+                    </a>
+                    <a
+                      aria-label={getRiskShareQuickLinkAriaLabel(tenant.name, "근로자 QR 화면")}
+                      href={getRiskShareWorkerLinkHref(tenant.code)}
+                      title={getRiskShareWorkerLinkTitle(tenant.code)}
+                      className={getWorkerQrButtonClass(tenant.code)}
+                    >
+                      근로자 QR 화면
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <p className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-xs leading-5 text-amber-100">
+              Owner Token, 고객 민감정보, 실제 제보 원문은 제안서 캡처에 포함하지 않습니다. 버블몬은 실제 직원 참여 중이므로 테스트 입력 없이 조회만 합니다.
+            </p>
+          </section>
+        ) : null}
 
         <OwnerExportPanel />
 
