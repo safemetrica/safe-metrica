@@ -174,12 +174,20 @@ export default async function RiskShareActivationPage({ searchParams }: PageProp
             ))}
           </div>
 
-          <button
-            type="submit"
-            className="mt-5 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
-          >
-            활성화 상태 미리보기
-          </button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
+            >
+              활성화 상태 미리보기
+            </button>
+            <Link
+              href={`/owner/risk-share-activation/share-items?companyCode=${encodeURIComponent(companyCode)}&companyName=${encodeURIComponent(companyName)}`}
+              className="rounded-xl border border-emerald-400/40 px-5 py-3 text-sm font-black text-emerald-100 hover:bg-emerald-500/10"
+            >
+              공유항목 Builder 열기
+            </Link>
+          </div>
         </form>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-3">
