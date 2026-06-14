@@ -315,12 +315,7 @@ export async function insertEvidenceItemMetadataRecords(
   const normalizedRecords = records.map((record) => ({
     ...record,
     action_id: record.action_id ?? null,
-    evidence_type_code:
-      record.evidence_type_code ??
-      record.evidence_role ??
-      (record.source_type === "field_participation"
-        ? "field_participation_attachment"
-        : "file_evidence"),
+    evidence_type_code: record.evidence_type_code ?? "photo",
     verified: record.verified ?? false,
   }));
 
