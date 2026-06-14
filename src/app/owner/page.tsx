@@ -76,11 +76,11 @@ function isRiskShareDisabledTenant(companyCode: string) {
 
 function getRiskShareTenantNote(companyCode: string) {
   if (isRecommendedCaptureTenant(companyCode)) {
-    return "캡처 권장";
+    return "운영 가능";
   }
 
   if (isLiveWorkerTenant(companyCode)) {
-    return "실제 직원 참여 중";
+    return "운영 가능";
   }
 
   if (isRiskShareDisabledTenant(companyCode)) {
@@ -152,11 +152,11 @@ function isRiskShareCaptionVisible(companyCode: string) {
 
 function getRiskShareCaption(companyCode: string) {
   if (isRecommendedCaptureTenant(companyCode)) {
-    return "제안서 실제 화면 캡처는 이 고객사 기준을 우선 사용합니다.";
+    return "이미 등록된 고객사의 공유팩 운영화면을 확인합니다.";
   }
 
   if (isLiveWorkerTenant(companyCode)) {
-    return "실제 직원 참여 데이터가 있으므로 제안서 캡처용 테스트 입력은 피합니다.";
+    return "이미 등록된 고객사의 공유팩 운영화면을 확인합니다.";
   }
 
   return "";
@@ -180,7 +180,7 @@ function getRiskShareWorkerLinkHref(companyCode: string) {
 
 function getRiskShareWorkerLinkTitle(companyCode: string) {
   return isLiveWorkerTenant(companyCode)
-    ? "실제 직원 참여 중이므로 제출 테스트는 피하세요."
+    ? "운영 가능이므로 제출 테스트는 피하세요."
     : "회사코드 포함 근로자 QR 화면";
 }
 
@@ -209,7 +209,7 @@ function getRiskSharePrimaryHref(companyCode: string) {
 }
 
 function getRiskSharePrimaryLabel(companyCode: string) {
-  return isRiskShareHankookgreen(companyCode) ? "공유팩 홈 캡처" : "공유팩 홈";
+  return isRiskShareHankookgreen(companyCode) ? "공유팩 홈" : "공유팩 홈";
 }
 
 function isOwnerTokenValid(ownerToken?: string) {
@@ -285,14 +285,13 @@ export default async function OwnerConsolePage({
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-sm font-bold text-cyan-300">Risk Share Pack</p>
-                <h2 className="mt-2 text-2xl font-black text-white">공유팩 실제 화면 빠른 실행</h2>
+                <h2 className="mt-2 text-2xl font-black text-white">기존 고객 공유팩 운영화면</h2>
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-                  Owner 권한으로 고객사를 선택한 뒤 공유팩 관리자 홈, 월간보고서, 근로자대표 확인 관리로 바로 이동합니다.
-                  근로자 QR 화면은 회사코드가 포함된 실제 현장참여 링크로 엽니다.
+                  Owner 권한으로 이미 등록된 고객사를 선택한 뒤 공유팩 관리자 홈, 월간보고서, 근로자대표 확인 관리로 이동합니다. 신규 고객 공유팩 활성화는 Source Intake / Activation 단계에서 별도로 진행합니다.
                 </p>
               </div>
               <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200">
-                hankookgreen 캡처 권장
+                기존 고객 전용
               </span>
             </div>
 
@@ -351,7 +350,7 @@ export default async function OwnerConsolePage({
             </div>
 
             <p className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-xs leading-5 text-amber-100">
-              Owner Token, 고객 민감정보, 실제 제보 원문은 제안서 캡처에 포함하지 않습니다. 버블몬은 실제 직원 참여 중이므로 테스트 입력 없이 조회만 합니다.
+              Owner Token, 고객 민감정보, 실제 제보 원문은 외부 자료에 포함하지 않습니다. 신규 고객 공유팩은 고객사 코드 생성, 위험성평가 source 접수, 공유항목 정리, QR 활성화 단계를 별도로 거칩니다.
             </p>
           </section>
         ) : null}
