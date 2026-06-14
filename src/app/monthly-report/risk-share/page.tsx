@@ -12,6 +12,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const FIELD_PARTICIPATION_LIMIT = 500;
+const EVIDENCE_ITEM_LIMIT = 1000;
 
 type SearchParams = {
   month?: string | string[];
@@ -39,6 +40,27 @@ type FieldParticipationSummary = {
   shareConfirmationCount: number;
   workerReportCount: number;
   reviewNeededCount: number;
+};
+
+type EvidenceItemRow = {
+  company_code?: unknown;
+  source_type?: unknown;
+  submission_type?: unknown;
+  evidence_type_code?: unknown;
+  evidence_role?: unknown;
+  submitted_at?: unknown;
+  created_at?: unknown;
+};
+
+type EvidenceSummary = {
+  status: "ok" | "not_configured" | "failed";
+  totalCount: number;
+  shareConfirmationAttachmentCount: number;
+  workerReportAttachmentCount: number;
+  nearMissAttachmentCount: number;
+  improvementSuggestionAttachmentCount: number;
+  fieldParticipationAttachmentCount: number;
+  tbmAttachmentCount: number;
 };
 
 function getKstDateString(date: Date) {
@@ -145,6 +167,25 @@ function normalizeStatus(value: unknown) {
   return "확인 필요";
 }
 
+function buildTimestampPeriodFilter(
+  createdAtColumn: string,
+  eventAtColumn: string,
+  period: MonthPeriod,
+) {
+  return `(${[
+    `and(${createdAtColumn}.gte.${period.startDate}T00:00:00.000Z,${createdAtColumn}.lt.${period.dayAfterEnd}T00:00:00.000Z)`,
+    `and(${eventAtColumn}.gte.${period.startDate}T00:00:00.000Z,${eventAtColumn}.lt.${period.dayAfterEnd}T00:00:00.000Z)`,
+  ].join(",")})`;
+}
+
+function getEvidenceRole(row: EvidenceItemRow) {
+  return readText(row.evidence_role);
+}
+
+function isTbmEvidence(row: EvidenceItemRow) {
+  return readText(row.source_type) === "tbm_voice" || getEvidenceRole(row).startsWith("tbm_");
+}
+
 function getSubmissionType(row: FieldParticipationRow) {
   return normalizeSubmissionType(row.submission_type || row.legacy_type);
 }
@@ -199,6 +240,60 @@ function isRepresentativeReviewNeeded(record: WorkerRepresentativeConfirmationRe
     record.reviewStatus === "이견 검토 중" ||
     record.reviewStatus === "보완 요청"
   );
+}
+
+async function fetchEvidenceSummary(
+  companyCode: string,
+  period: MonthPeriod,
+): Promise<EvidenceSummary> {
+  const query = new URLSearchParams({
+    select: "company_code,source_type,submission_type,evidence_type_code,evidence_role,submitted_at,created_at",
+    company_code: `eq.${companyCode}`,
+    or: buildTimestampPeriodFilter("created_at", "submitted_at", period),
+    order: "created_at.desc",
+    limit: String(EVIDENCE_ITEM_LIMIT),
+  });
+
+  try {
+    const rows = await selectSupabaseExportRows<EvidenceItemRow>(
+      "evidence_items",
+      query,
+    );
+
+    return {
+      status: "ok",
+      totalCount: rows.length,
+      shareConfirmationAttachmentCount: rows.filter(
+        (row) => getEvidenceRole(row) === "share_confirmation_attachment",
+      ).length,
+      workerReportAttachmentCount: rows.filter(
+        (row) => getEvidenceRole(row) === "worker_report_attachment",
+      ).length,
+      nearMissAttachmentCount: rows.filter(
+        (row) => getEvidenceRole(row) === "near_miss_attachment",
+      ).length,
+      improvementSuggestionAttachmentCount: rows.filter(
+        (row) => getEvidenceRole(row) === "improvement_suggestion_attachment",
+      ).length,
+      fieldParticipationAttachmentCount: rows.filter(
+        (row) => readText(row.source_type) === "field_participation",
+      ).length,
+      tbmAttachmentCount: rows.filter(isTbmEvidence).length,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      totalCount: 0,
+      shareConfirmationAttachmentCount: 0,
+      workerReportAttachmentCount: 0,
+      nearMissAttachmentCount: 0,
+      improvementSuggestionAttachmentCount: 0,
+      fieldParticipationAttachmentCount: 0,
+      tbmAttachmentCount: 0,
+    };
+  }
 }
 
 async function fetchFieldParticipationSummary(
@@ -278,8 +373,9 @@ export default async function RiskSharePackMonthlyReportPage({
     redirect("/login?error=risk_share_pack_not_available");
   }
 
-  const [fieldSummary, representativeStore] = await Promise.all([
+  const [fieldSummary, evidenceSummary, representativeStore] = await Promise.all([
     fetchFieldParticipationSummary(company.code, period),
+    fetchEvidenceSummary(company.code, period),
     fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
       status: "failed" as const,
       records: [] as WorkerRepresentativeConfirmationRecord[],
@@ -297,7 +393,10 @@ export default async function RiskSharePackMonthlyReportPage({
   ).length;
   const totalReviewNeeded =
     fieldSummary.reviewNeededCount + representativeReviewNeededCount;
-  const hasLoadWarning = fieldSummary.status !== "ok" || representativeStore.status !== "ok";
+  const hasLoadWarning =
+    fieldSummary.status !== "ok" ||
+    evidenceSummary.status !== "ok" ||
+    representativeStore.status !== "ok";
   const reportReadyStatus = hasLoadWarning ? "확인 필요" : "준비 가능";
 
   return (
@@ -373,10 +472,74 @@ export default async function RiskSharePackMonthlyReportPage({
             hint="근로자대표 참여확인 중 별도 의견 또는 보완 의견이 포함된 기록입니다."
           />
           <StatCard
+            label="증빙 파일"
+            value={evidenceSummary.status === "ok" ? `${evidenceSummary.totalCount}건` : "확인 필요"}
+            hint="evidence_items 원장 기준 사진·파일 증빙 수입니다. 조치완료를 자동 확정하지 않습니다."
+          />
+          <StatCard
             label="고객 전달자료"
             value={reportReadyStatus}
             hint="내부 운영자가 확인 후 월간 요약 또는 CSV 전달자료로 정리합니다."
           />
+        </section>
+
+        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="text-xl font-black text-white print:text-slate-950">
+                증빙 요약
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-400 print:text-slate-700">
+                evidence_items 원장 기준의 월간 사진·파일 증빙 집계입니다.
+              </p>
+            </div>
+            <p className="text-sm font-bold text-cyan-200 print:text-cyan-800">
+              총 {evidenceSummary.status === "ok" ? `${evidenceSummary.totalCount}건` : "확인 필요"}
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
+              <p className="text-sm font-bold text-slate-400 print:text-slate-700">공유확인 첨부</p>
+              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
+                {evidenceSummary.status === "ok" ? `${evidenceSummary.shareConfirmationAttachmentCount}건` : "확인 필요"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
+              <p className="text-sm font-bold text-slate-400 print:text-slate-700">위험제보 첨부</p>
+              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
+                {evidenceSummary.status === "ok" ? `${evidenceSummary.workerReportAttachmentCount}건` : "확인 필요"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
+              <p className="text-sm font-bold text-slate-400 print:text-slate-700">아차사고 첨부</p>
+              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
+                {evidenceSummary.status === "ok" ? `${evidenceSummary.nearMissAttachmentCount}건` : "확인 필요"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
+              <p className="text-sm font-bold text-slate-400 print:text-slate-700">개선제안 첨부</p>
+              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
+                {evidenceSummary.status === "ok" ? `${evidenceSummary.improvementSuggestionAttachmentCount}건` : "확인 필요"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
+              <p className="text-sm font-bold text-slate-400 print:text-slate-700">현장참여 첨부 전체</p>
+              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
+                {evidenceSummary.status === "ok" ? `${evidenceSummary.fieldParticipationAttachmentCount}건` : "확인 필요"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
+              <p className="text-sm font-bold text-slate-400 print:text-slate-700">TBM 보완 증빙</p>
+              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
+                {evidenceSummary.status === "ok" ? `${evidenceSummary.tbmAttachmentCount}건` : "확인 필요"}
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-xs leading-5 text-slate-400 print:border-slate-300 print:bg-slate-50 print:text-slate-700">
+            사진·파일 증빙은 운영 확인을 위한 참고자료이며, 조치완료 또는 법적 적합성을 자동 확정하지 않습니다.
+          </p>
         </section>
 
         <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white">
