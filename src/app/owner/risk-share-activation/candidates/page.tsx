@@ -220,6 +220,12 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
               >
                 후보 조회
               </button>
+              <Link
+                href={`/owner/risk-share-activation/candidates/new?companyCode=${encodeURIComponent(companyCode)}`}
+                className="w-full rounded-xl border border-cyan-400/40 px-5 py-3 text-center text-sm font-black text-cyan-100 hover:bg-cyan-500/10 md:w-auto"
+              >
+                수동 후보 추가
+              </Link>
             </div>
           </form>
         </section>
