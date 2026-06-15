@@ -137,6 +137,7 @@ type SupabaseExportTable =
   | "tbm_voice_submissions"
   | "worker_representative_confirmations"
   | "evidence_items"
+  | "risk_share_sources"
   | "risk_share_item_candidates";
 
 export class SupabaseReadError extends Error {
