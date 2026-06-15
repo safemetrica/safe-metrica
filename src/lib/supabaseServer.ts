@@ -354,3 +354,76 @@ export async function insertEvidenceItemMetadataRecords(
     message,
   };
 }
+
+export type RiskShareItemCandidateInsertRecord = {
+  source_id: string;
+  company_code: string;
+  company_name: string | null;
+  site_name: string | null;
+  task_name: string;
+  hazard: string;
+  accident_type: string | null;
+  risk_level: string | null;
+  current_controls: string | null;
+  improvement_plan: string | null;
+  worker_share_summary: string | null;
+  category: "common" | "non_common" | "site_specific" | "worker_signal" | "other";
+  source_page: number | null;
+  source_row: string | null;
+  confidence: number | null;
+  ai_generated: boolean;
+  reviewer_status: "pending" | "accepted" | "edited" | "excluded" | "needs_customer_check";
+  reviewer_note: string | null;
+  worker_visible: boolean;
+  customer_confirmed: boolean;
+  raw_payload: Record<string, unknown>;
+};
+
+export async function insertRiskShareItemCandidateRecord(
+  record: RiskShareItemCandidateInsertRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_item_candidates`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+
+  const data = await res.json().catch(() => undefined);
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      data,
+    };
+  }
+
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+    data,
+  };
+}
+
