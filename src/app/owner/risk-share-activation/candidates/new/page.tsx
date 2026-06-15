@@ -1,12 +1,24 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+type RiskShareSourceRow = {
+  id?: string;
+  created_at?: string;
+  company_code?: string;
+  company_name?: string;
+  source_title?: string;
+  original_filename?: string;
+  review_status?: string;
+  extraction_status?: string;
 };
 
 function isOwnerTokenValid(ownerToken?: string) {
@@ -36,6 +48,29 @@ function cleanText(value: string, max = 160) {
   return value.trim().slice(0, max);
 }
 
+function formatDate(value?: string) {
+  if (!value) return "일시 확인 필요";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 16).replace("T", " ");
+}
+
+async function fetchRecentSources(companyCode: string) {
+  if (!companyCode) return [];
+
+  const query = new URLSearchParams({
+    select: "id,created_at,company_code,company_name,source_title,original_filename,review_status,extraction_status",
+    company_code: `eq.${companyCode}`,
+    order: "created_at.desc",
+    limit: "6",
+  });
+
+  return selectSupabaseExportRows<RiskShareSourceRow>("risk_share_sources", query);
+}
+
 export default async function ManualRiskShareCandidateCreatePage({ searchParams }: PageProps) {
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
@@ -48,6 +83,16 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
   const companyCode = normalizeCompanyCode(readParam(params, "companyCode"));
   const companyName = cleanText(readParam(params, "companyName"), 120);
   const sourceId = cleanText(readParam(params, "sourceId"), 80);
+
+  let recentSources: RiskShareSourceRow[] = [];
+  let sourceLookupFailed = false;
+
+  try {
+    recentSources = await fetchRecentSources(companyCode);
+  } catch {
+    sourceLookupFailed = true;
+  }
+
   const error = readParam(params, "error");
   const errorMessage =
     error === "required_fields"
@@ -92,6 +137,71 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
             reviewer_status=pending, customer_confirmed=false로 기록하며, 고객 확인과 Version Lock 전에는
             근로자 공유 확정값으로 사용하지 않습니다.
           </p>
+        </section>
+
+        <section className="mt-5 rounded-3xl border border-cyan-500/25 bg-slate-900 p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-cyan-300">최근 접수 source 선택</p>
+              <h2 className="mt-1 text-xl font-black text-white">원본 파일에서 후보 만들기</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                UUID를 직접 입력하기보다, 최근 접수된 source를 선택해 후보를 만드는 흐름을 권장합니다.
+              </p>
+            </div>
+            <Link
+              href="/owner/risk-share-activation/source-intake"
+              className="w-fit rounded-xl border border-cyan-400/40 px-4 py-2 text-sm font-black text-cyan-100 hover:bg-cyan-500/10"
+            >
+              Source Intake
+            </Link>
+          </div>
+
+          {!companyCode ? (
+            <p className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-300">
+              고객사 코드를 입력하면 최근 source 목록을 확인할 수 있습니다.
+            </p>
+          ) : sourceLookupFailed ? (
+            <p className="mt-4 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm font-bold text-rose-100">
+              source 목록 조회에 실패했습니다. Supabase 설정과 risk_share_sources 원장을 확인하세요.
+            </p>
+          ) : recentSources.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm font-bold text-amber-100">
+              최근 접수된 source가 없습니다. 먼저 Source Intake에서 고객 원본 파일을 접수하세요.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {recentSources.map((source) => (
+                <Link
+                  key={source.id}
+                  href={`/owner/risk-share-activation/candidates/new?companyCode=${encodeURIComponent(companyCode)}&companyName=${encodeURIComponent(companyName || source.company_name || "")}&sourceId=${encodeURIComponent(source.id ?? "")}`}
+                  className={`rounded-2xl border p-4 hover:border-cyan-400/60 ${
+                    sourceId && source.id === sourceId
+                      ? "border-cyan-400 bg-cyan-400/10"
+                      : "border-slate-700 bg-slate-950/70"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-white">
+                        {source.source_title || source.original_filename || "제목 없는 source"}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-400">
+                        {source.original_filename || "파일명 미표시"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-black text-cyan-100">
+                      선택
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-slate-400">
+                    <span>접수 {formatDate(source.created_at)}</span>
+                    <span>검토 {source.review_status || "상태 없음"}</span>
+                    <span>추출 {source.extraction_status || "상태 없음"}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         {errorMessage ? (
@@ -141,7 +251,7 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
               />
               <span className="mt-2 block text-xs leading-5 text-slate-500">
-                고객 source 파일과 연결되는 UUID입니다. source 연결 없이 후보를 만들지 않습니다.
+                위 최근 source 선택을 권장합니다. 필요한 경우에만 UUID를 직접 확인해 입력하세요.
               </span>
             </label>
           </div>
