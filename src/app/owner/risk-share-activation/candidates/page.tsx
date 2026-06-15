@@ -230,6 +230,18 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
           </form>
         </section>
 
+        {readParam(params, "updated") === "1" ? (
+          <section className="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-sm font-bold text-emerald-100">
+            후보 상태가 업데이트되었습니다.
+          </section>
+        ) : null}
+
+        {readParam(params, "error") ? (
+          <section className="mt-6 rounded-3xl border border-rose-400/30 bg-rose-400/10 p-5 text-sm font-bold text-rose-100">
+            후보 상태 업데이트 중 오류가 발생했습니다. 후보 ID, 고객사 코드, Owner 권한, Supabase 상태를 확인하세요.
+          </section>
+        ) : null}
+
         <section className="mt-6 rounded-3xl border border-amber-400/30 bg-amber-400/10 p-5">
           <p className="text-sm font-black text-amber-100">검토 원칙</p>
           <p className="mt-2 text-sm leading-6 text-amber-50">
@@ -344,39 +356,66 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
                     </p>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      승인 예정
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl border border-blue-400/40 px-4 py-3 text-sm font-black text-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      수정 후 승인 예정
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl border border-amber-400/40 px-4 py-3 text-sm font-black text-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      고객 확인 필요 예정
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl border border-slate-500/40 px-4 py-3 text-sm font-black text-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      제외 예정
-                    </button>
-                  </div>
+                  <form
+                    action="/api/owner/risk-share-candidates/status"
+                    method="post"
+                    className="mt-4 grid gap-3 rounded-2xl border border-slate-700 bg-slate-950/50 p-4"
+                  >
+                    <input type="hidden" name="candidateId" value={candidate.id ?? ""} />
+                    <input type="hidden" name="companyCode" value={companyCode} />
+
+                    <label className="block">
+                      <span className="text-xs font-black text-slate-400">Owner 검토 메모</span>
+                      <input
+                        name="reviewerNote"
+                        defaultValue={candidate.reviewer_note ?? ""}
+                        placeholder="검토 메모를 남기세요"
+                        className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+                      />
+                    </label>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="submit"
+                        name="reviewerStatus"
+                        value="accepted"
+                        className="rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
+                      >
+                        Owner 승인
+                      </button>
+                      <button
+                        type="submit"
+                        name="reviewerStatus"
+                        value="edited"
+                        className="rounded-xl border border-blue-400/40 px-4 py-3 text-sm font-black text-blue-100 hover:bg-blue-500/10"
+                      >
+                        수정 후 승인
+                      </button>
+                      <button
+                        type="submit"
+                        name="reviewerStatus"
+                        value="needs_customer_check"
+                        className="rounded-xl border border-amber-400/40 px-4 py-3 text-sm font-black text-amber-100 hover:bg-amber-500/10"
+                      >
+                        고객 확인 필요
+                      </button>
+                      <button
+                        type="submit"
+                        name="reviewerStatus"
+                        value="excluded"
+                        className="rounded-xl border border-slate-500/40 px-4 py-3 text-sm font-black text-slate-300 hover:bg-slate-700/30"
+                      >
+                        제외
+                      </button>
+                    </div>
+
+                    <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
+                      Owner 승인 상태로 바뀌어도 고객 확인과 Version Lock 전에는 근로자 공유 확정값으로 사용하지 않습니다.
+                    </div>
+                  </form>
 
                   <p className="mt-4 text-xs leading-5 text-slate-500">
-                    v1에서는 검토 UI만 제공합니다. 실제 상태 변경은 별도 status update API와 audit log 연결 후 활성화합니다.
+                    상태 변경은 Owner 전용 API로 처리합니다. 별도 audit log와 Version Lock 연결은 후속 PR에서 추가합니다.
                   </p>
                 </article>
               );
