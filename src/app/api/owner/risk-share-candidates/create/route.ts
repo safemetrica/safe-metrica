@@ -17,7 +17,14 @@ type RiskShareSourceRow = {
   extraction_status?: string;
 };
 
-const CATEGORIES = new Set([
+type RiskShareCandidateCategory =
+  | "common"
+  | "non_common"
+  | "site_specific"
+  | "worker_signal"
+  | "other";
+
+const CATEGORIES = new Set<RiskShareCandidateCategory>([
   "common",
   "non_common",
   "site_specific",
@@ -98,7 +105,9 @@ export async function POST(request: NextRequest) {
   const taskName = readText(formData, "taskName", 200);
   const hazard = readText(formData, "hazard", 500);
   const categoryInput = readText(formData, "category", 40);
-  const category = CATEGORIES.has(categoryInput) ? categoryInput : "other";
+  const category = CATEGORIES.has(categoryInput as RiskShareCandidateCategory)
+    ? (categoryInput as RiskShareCandidateCategory)
+    : "other";
 
   const baseRedirectParams = {
     companyCode,
