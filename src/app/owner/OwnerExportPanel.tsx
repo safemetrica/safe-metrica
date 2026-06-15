@@ -189,7 +189,7 @@ export default function OwnerExportPanel() {
       );
 
       setCompanyKey(normalizedCompanyKey);
-      setNotice({ tone: "success", message: "JSON Export 다운로드가 완료되었습니다." });
+      setNotice({ tone: "success", message: "내부 JSON 백업 다운로드가 완료되었습니다." });
     } catch {
       setNotice({
         tone: "error",
@@ -257,16 +257,24 @@ export default function OwnerExportPanel() {
     <section className="mt-6 rounded-2xl border border-cyan-500/30 bg-slate-900 p-5 shadow-xl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-bold text-cyan-300">Supabase Export / 업체 백업</p>
-          <h2 className="mt-2 text-2xl font-black text-white">Owner 내부 Export</h2>
+          <p className="text-sm font-bold text-cyan-300">Owner Export Center</p>
+          <h2 className="mt-2 text-2xl font-black text-white">내부 백업 / 고객 전달용 보관파일</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-            내부 운영자가 업체별 기간 데이터를 백업하고, 고객 전달용 CSV를 생성하는 전용 도구입니다.
-            고객용 화면에는 노출되지 않습니다.
+            내부 운영자가 업체별 기간 데이터를 백업하고, 고객 전달용 CSV 보관파일을 생성하는 전용 도구입니다.
+            이 화면과 API 링크는 고객에게 직접 공유하지 않습니다.
           </p>
         </div>
         <span className="w-fit rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-black text-cyan-200">
           INTERNAL ONLY
         </span>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-xs leading-5 text-emerald-100">
+        <p className="font-black text-emerald-50">월별 보관 파일 기준</p>
+        <p className="mt-1">
+          AI와 원장은 뒤에서 정리하고, 내부 운영자가 확인한 뒤 고객에게는 PDF·Excel·CSV·증빙 ZIP처럼
+          보관 가능한 파일로 전달하는 흐름을 기준으로 합니다.
+        </p>
       </div>
 
       <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
@@ -338,9 +346,9 @@ export default function OwnerExportPanel() {
         <div className="rounded-2xl border border-slate-700 bg-slate-950/70 p-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black text-white">Owner 내부 JSON Export</p>
+              <p className="text-sm font-black text-white">내부 백업용 JSON Export</p>
               <p className="mt-1 text-xs leading-5 text-slate-400">
-                내부 백업·복구·원장 검증용입니다. 고객에게 직접 전달하지 않습니다.
+                Supabase 원장 검증, 복구, 내부 점검용입니다. 고객 전달자료에는 포함하지 않습니다.
               </p>
             </div>
             <span className="w-fit rounded-full border border-slate-600 px-2.5 py-1 text-[11px] font-black text-slate-300">
@@ -380,7 +388,7 @@ export default function OwnerExportPanel() {
             disabled={isDownloading || csvDownloadingDataset !== null}
             className="mt-4 w-full rounded-xl bg-cyan-500 px-4 py-3.5 text-sm font-black text-slate-950 transition hover:bg-cyan-400 disabled:cursor-wait disabled:bg-slate-600 disabled:text-slate-300 sm:w-auto sm:min-w-56"
           >
-            {isDownloading ? "Export 생성 중..." : "JSON Export 다운로드"}
+            {isDownloading ? "백업 생성 중..." : "내부 JSON 백업 다운로드"}
           </button>
         </div>
       </form>
@@ -388,10 +396,10 @@ export default function OwnerExportPanel() {
       <section className="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-950/10 p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-black text-emerald-200">고객 전달용 CSV Export</p>
+            <p className="text-sm font-black text-emerald-200">고객 전달용 CSV 보관파일</p>
             <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-300">
-              고객에게 전달 가능한 컬럼으로 정제한 CSV입니다. 내부 JSON, raw payload, Notion URL,
-              Supabase UUID, Owner 링크는 포함하지 않습니다.
+              월별 보관함과 보고자료 패키지에 넣기 전, 고객에게 전달 가능한 컬럼만 정제한 CSV 보관파일입니다.
+              내부 JSON, raw payload, Notion URL, Supabase UUID, Owner 링크는 포함하지 않습니다.
             </p>
           </div>
           <span className="w-fit rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-200">
@@ -409,7 +417,7 @@ export default function OwnerExportPanel() {
               className="rounded-xl border border-slate-700 bg-slate-950/80 p-4 text-left transition hover:border-emerald-400 hover:bg-emerald-950/20 disabled:cursor-wait disabled:border-slate-700 disabled:bg-slate-900/70"
             >
               <span className="block text-sm font-black text-white">
-                {csvDownloadingDataset === dataset.value ? "CSV 생성 중..." : dataset.label}
+                {csvDownloadingDataset === dataset.value ? "보관파일 생성 중..." : dataset.label}
               </span>
               <span className="mt-1 block text-xs leading-5 text-slate-400">{dataset.description}</span>
             </button>
@@ -417,9 +425,10 @@ export default function OwnerExportPanel() {
         </div>
 
         <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-950/20 p-3 text-xs leading-5 text-amber-100">
-          고객에게는 이 Owner 화면이나 API 링크를 공유하지 않습니다. 내려받은 CSV, 향후 Excel, PDF,
-          증빙 ZIP만 별도 정제 후 전달합니다. 해당 기간에 데이터가 없으면 헤더만 있는 CSV가 내려받아질 수
-          있습니다.
+          고객에게는 이 Owner 화면이나 API 링크를 공유하지 않습니다. 내려받은 CSV만 내부 검토 후
+          PDF, Excel, 증빙 ZIP 패키지에 포함해 전달합니다. 내부 JSON, raw payload, Supabase UUID,
+          Owner 링크, 토큰 유사 문자열은 고객 전달자료에 포함하지 않습니다. 해당 기간에 데이터가 없으면
+          헤더만 있는 CSV가 내려받아질 수 있습니다.
         </div>
       </section>
 
@@ -438,7 +447,7 @@ export default function OwnerExportPanel() {
 
       {summary ? (
         <div className="mt-5">
-          <p className="text-sm font-black text-white">최근 JSON 다운로드 요약</p>
+          <p className="text-sm font-black text-white">최근 내부 JSON 백업 요약</p>
           <dl className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-4">
               <dt className="text-xs font-bold text-slate-400">현장참여</dt>
