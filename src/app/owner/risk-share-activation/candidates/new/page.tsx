@@ -48,6 +48,18 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
   const companyCode = normalizeCompanyCode(readParam(params, "companyCode"));
   const companyName = cleanText(readParam(params, "companyName"), 120);
   const sourceId = cleanText(readParam(params, "sourceId"), 80);
+  const error = readParam(params, "error");
+  const errorMessage =
+    error === "required_fields"
+      ? "고객사 코드, sourceId, 작업명, 위험요인은 필수입니다. sourceId는 UUID 형식이어야 합니다."
+      : error === "source_lookup_failed"
+        ? "sourceId 확인 중 오류가 발생했습니다. Supabase 설정과 source 원장을 확인하세요."
+        : error === "source_not_found"
+          ? "해당 고객사 코드와 sourceId가 연결된 원본 source를 찾지 못했습니다."
+          : error === "insert_failed"
+            ? "후보 저장에 실패했습니다. 후보 원장 상태와 필수값을 확인하세요."
+            : "";
+  const created = readParam(params, "created") === "1";
 
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-6 text-white">
@@ -76,12 +88,29 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
         <section className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-50">
           <p className="font-black text-amber-100">무결성 기준</p>
           <p className="mt-1">
-            sourceId가 없는 후보는 저장하지 않습니다. 저장 API 연결 전까지는 이 화면에서 DB 변경이 발생하지 않습니다.
-            실제 저장 시 ai_generated=false, reviewer_status=pending, customer_confirmed=false로 기록해야 합니다.
+            sourceId가 없는 후보는 저장하지 않습니다. 저장 시 ai_generated=false,
+            reviewer_status=pending, customer_confirmed=false로 기록하며, 고객 확인과 Version Lock 전에는
+            근로자 공유 확정값으로 사용하지 않습니다.
           </p>
         </section>
 
-        <form className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-6">
+        {errorMessage ? (
+          <section className="mt-5 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm font-bold text-rose-100">
+            {errorMessage}
+          </section>
+        ) : null}
+
+        {created ? (
+          <section className="mt-5 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm font-bold text-emerald-100">
+            pending 후보로 저장되었습니다. 후보 검토함에서 Owner 검토를 이어가세요.
+          </section>
+        ) : null}
+
+        <form
+          action="/api/owner/risk-share-candidates/create"
+          method="post"
+          className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-6"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="text-sm font-black text-slate-300">고객사 코드 *</span>
@@ -187,11 +216,10 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button
-              type="button"
-              disabled
-              className="rounded-xl bg-slate-700 px-5 py-3 text-sm font-black text-slate-300 opacity-70"
+              type="submit"
+              className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
             >
-              저장 API 연결 후 활성화
+              pending 후보 저장
             </button>
             <Link
               href={`/owner/risk-share-activation/candidates?companyCode=${encodeURIComponent(companyCode)}&status=pending`}
