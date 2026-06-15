@@ -136,7 +136,8 @@ type SupabaseExportTable =
   | "field_participation_submissions"
   | "tbm_voice_submissions"
   | "worker_representative_confirmations"
-  | "evidence_items";
+  | "evidence_items"
+  | "risk_share_item_candidates";
 
 export class SupabaseReadError extends Error {
   status: number;
