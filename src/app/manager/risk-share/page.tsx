@@ -434,6 +434,74 @@ export default async function RiskSharePackManagerHomePage() {
 
 
 
+        <section className="rounded-3xl border border-emerald-400/25 bg-emerald-400/10 p-5 shadow-xl shadow-slate-950/30">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm font-bold text-emerald-300">월별 보관함</p>
+              <h2 className="mt-1 text-xl font-black text-white">
+                이번 달 운영기록 파일 준비
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                공유확인, 위험제보, 근로자대표 참여확인, 증빙목록을 월별 파일로 정리해
+                감독관, 구청, 발주처, 대표 보고 시 확인자료로 활용할 수 있게 준비합니다.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+              <Link
+                href="/monthly-report/risk-share"
+                className="inline-flex items-center justify-center rounded-2xl bg-emerald-300 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-200"
+              >
+                월간보고서 보기
+              </Link>
+              <Link
+                href="#risk-share-export-panel"
+                className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/50 px-4 py-3 text-sm font-black text-emerald-100 hover:border-emerald-200 hover:text-emerald-50"
+              >
+                고객 전달용 CSV 준비
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {[
+              {
+                label: "월간 운영보고서 PDF",
+                status: "연결됨",
+                description: "공유팩 월간요약 화면에서 인쇄 또는 PDF 저장 흐름으로 확인합니다.",
+              },
+              {
+                label: "공유확인·위험제보 Excel",
+                status: "CSV 제공 중",
+                description: "내부 운영자가 고객 전달 가능한 컬럼만 정리해 다운로드합니다.",
+              },
+              {
+                label: "증빙목록·사진 ZIP",
+                status: "준비 중",
+                description: "첨부사진과 증빙목록은 Manifest와 ZIP 패키지 기준을 분리해 후속 설계합니다.",
+              },
+            ].map((item) => (
+              <article
+                key={item.label}
+                className="rounded-2xl border border-emerald-300/20 bg-slate-950/50 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base font-black text-white">{item.label}</h3>
+                  <span className="shrink-0 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-100">
+                    {item.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+              </article>
+            ))}
+          </div>
+
+          <p className="mt-4 text-xs leading-5 text-slate-500">
+            월별 보관함은 운영기록을 고객이 확인 가능한 파일 단위로 정리하는 UX입니다.
+            법적 판단, 면책, 조치완료 확정을 대신하지 않습니다.
+          </p>
+        </section>
+
         <RiskSharePackCustomerLinksPanel
           companyName={companyName}
           companyCode={company.code}
