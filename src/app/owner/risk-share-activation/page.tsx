@@ -194,6 +194,12 @@ export default async function RiskShareActivationPage({ searchParams }: PageProp
               공유항목 Builder 열기
             </Link>
             <Link
+              href={`/owner/risk-share-activation/candidates?companyCode=${encodeURIComponent(companyCode)}&status=pending`}
+              className="rounded-xl border border-cyan-400/40 px-5 py-3 text-sm font-black text-cyan-100 hover:bg-cyan-500/10"
+            >
+              추출 후보 검토함
+            </Link>
+            <Link
               href={`/owner/risk-share-activation/version-lock?companyCode=${encodeURIComponent(companyCode)}&companyName=${encodeURIComponent(companyName)}`}
               className="rounded-xl border border-amber-400/40 px-5 py-3 text-sm font-black text-amber-100 hover:bg-amber-500/10"
             >
