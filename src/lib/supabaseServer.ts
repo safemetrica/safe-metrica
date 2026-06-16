@@ -649,3 +649,63 @@ export async function insertRiskShareItemRecord(
   };
 }
 
+export type RiskShareItemCustomerCheckStatusUpdateRecord = {
+  customer_check_status: RiskShareItemCustomerCheckStatus;
+  customer_note: string | null;
+  updated_at: string;
+};
+
+export async function updateRiskShareItemCustomerCheckStatus(
+  itemId: string,
+  companyCode: string,
+  record: RiskShareItemCustomerCheckStatusUpdateRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const query = new URLSearchParams({
+    id: `eq.${itemId}`,
+    company_code: `eq.${companyCode}`,
+  });
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_items?${query.toString()}`, {
+    method: "PATCH",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+
+  const data = await res.json().catch(() => undefined);
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      data,
+    };
+  }
+
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+    data,
+  };
+}
