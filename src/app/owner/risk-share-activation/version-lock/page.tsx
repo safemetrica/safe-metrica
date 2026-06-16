@@ -110,6 +110,11 @@ function buildRiskSummaryHref(companyCode: string) {
   return `/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`;
 }
 
+function getCurrentKstMonth() {
+  const kstDate = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return kstDate.toISOString().slice(0, 7);
+}
+
 function getCheckStatus(params: Record<string, string | string[] | undefined>, key: string) {
   return isChecked(readParam(params, key));
 }
@@ -149,6 +154,10 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
   const companyName = cleanText(readParam(params, "companyName"), 80);
   const versionLabel = cleanText(readParam(params, "versionLabel") || "RSP-v1", 80);
   const sourceTitle = cleanText(readParam(params, "sourceTitle") || "고객 제공 위험성평가표", 120);
+  const lockMonth = cleanText(readParam(params, "lockMonth") || getCurrentKstMonth(), 20);
+  const versionLocked = readParam(params, "versionLocked") === "1";
+  const versionLockId = cleanText(readParam(params, "versionLockId"), 80);
+  const errorCode = cleanText(readParam(params, "error"), 80);
 
   const requiredChecks = LOCK_CHECKS.filter((item) => item.required);
   const completedRequiredCount = requiredChecks.filter((item) => getCheckStatus(params, item.key)).length;
@@ -182,6 +191,27 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
             이 화면은 운영 잠금 후보 상태를 확인하는 Owner 전용 체크리스트이며, 법적 적합성 또는 조치완료를 확정하지 않습니다.
           </p>
         </section>
+
+        {versionLocked ? (
+          <section className="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5">
+            <h2 className="text-lg font-black text-emerald-100">Version Lock 생성 완료</h2>
+            <p className="mt-2 text-sm leading-6 text-emerald-50">
+              고객 확인 완료 항목이 Version Lock으로 고정되었습니다. 이제 근로자 QR 공유요약은 locked 조건을 만족하는 항목만 노출합니다.
+            </p>
+            {versionLockId ? (
+              <p className="mt-2 text-xs font-bold text-emerald-200">Lock ID: {versionLockId}</p>
+            ) : null}
+          </section>
+        ) : null}
+
+        {errorCode ? (
+          <section className="mt-6 rounded-3xl border border-rose-400/30 bg-rose-400/10 p-5">
+            <h2 className="text-lg font-black text-rose-100">Version Lock 처리 확인 필요</h2>
+            <p className="mt-2 text-sm leading-6 text-rose-50">
+              오류 코드: {errorCode}. customer_confirmed 항목, Supabase migration 적용, 이미 locked 상태인지 확인하세요.
+            </p>
+          </section>
+        ) : null}
 
         <form className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-6">
           <div className="grid gap-4 md:grid-cols-4">
@@ -219,6 +249,16 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
               <input
                 name="sourceTitle"
                 defaultValue={sourceTitle}
+                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-black text-slate-300">Lock 대상월</span>
+              <input
+                name="lockMonth"
+                defaultValue={lockMonth}
+                placeholder="YYYY-MM"
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
               />
             </label>
@@ -321,6 +361,85 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
           </article>
         </section>
 
+        {goLiveReady ? (
+          <section className="mt-6 rounded-3xl border border-emerald-400/30 bg-slate-900 p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-sm font-bold text-emerald-300">Create Version Lock</p>
+                <h2 className="mt-1 text-2xl font-black text-white">고객 확인 항목을 Version Lock으로 고정</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                  이 버튼은 customer_check_status=confirmed, customer_confirmed=true, share_status=customer_confirmed,
+                  version_lock_id가 없는 항목만 대상으로 Version Lock을 생성합니다. 생성 후 대상 항목은 locked 상태가 됩니다.
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-100">
+                Owner only
+              </span>
+            </div>
+
+            <form action="/api/owner/risk-share-version-locks/create" method="post" className="mt-5 grid gap-4 md:grid-cols-2">
+              <input type="hidden" name="companyCode" value={companyCode} />
+              <input type="hidden" name="companyName" value={companyName} />
+              <input type="hidden" name="sourceTitle" value={sourceTitle} />
+              <input type="hidden" name="lockTitle" value={versionLabel} />
+              <input type="hidden" name="lockMonth" value={lockMonth} />
+
+              <label className="block">
+                <span className="text-sm font-black text-slate-300">Lock 제목</span>
+                <input
+                  name="lockTitle"
+                  defaultValue={versionLabel}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-black text-slate-300">Lock 대상월</span>
+                <input
+                  name="lockMonth"
+                  defaultValue={lockMonth}
+                  placeholder="YYYY-MM"
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                />
+              </label>
+
+              <label className="flex items-start gap-3 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-sm font-bold text-slate-200 md:col-span-2">
+                <input type="checkbox" name="workerVisible" defaultChecked className="mt-1 h-4 w-4" />
+                <span>
+                  <span className="block text-white">Version Lock 항목을 근로자 QR 공유요약에 표시</span>
+                  <span className="mt-1 block text-xs leading-5 text-slate-400">
+                    체크 시 locked 항목의 worker_visible이 true로 저장됩니다. 근로자 화면은 locked + customer_confirmed + worker_visible + version_lock_id 조건만 노출합니다.
+                  </span>
+                </span>
+              </label>
+
+              <label className="block md:col-span-2">
+                <span className="text-sm font-black text-slate-300">Owner 메모</span>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  placeholder="예: 고객 확인 완료 후 2026년 6월 공유 기준으로 잠금"
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="rounded-xl bg-emerald-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300 md:col-span-2"
+              >
+                Version Lock 생성
+              </button>
+            </form>
+          </section>
+        ) : (
+          <section className="mt-6 rounded-3xl border border-amber-400/30 bg-amber-400/10 p-5">
+            <h2 className="text-lg font-black text-amber-100">Version Lock 생성 전 확인 필요</h2>
+            <p className="mt-2 text-sm leading-6 text-amber-50">
+              필수 체크와 companyCode가 완료되어야 생성 API 버튼을 표시합니다. 고객 확인 전 항목이나 draft 항목은 Lock 대상이 아닙니다.
+            </p>
+          </section>
+        )}
+
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           {LOCK_CHECKS.map((item) => (
             <article key={`status-${item.key}`} className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
@@ -339,6 +458,7 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
           <h2 className="text-lg font-black text-amber-100">운영 주의</h2>
           <p className="mt-3 text-sm leading-6 text-amber-50">
             Version Lock은 고객 확인이 끝난 공유항목을 운영상 고정하는 절차입니다.
+            생성 API는 confirmed/customer_confirmed/share_status 조건을 만족하는 항목만 잠급니다.
             이 절차는 위험성평가 작성 대행, 법적 의무 완료, 사고 예방 보장을 의미하지 않습니다.
             실제 운영 전 Companies DB 등록, active 상태, QR 포스터, Export 경로를 다시 확인합니다.
           </p>
