@@ -74,6 +74,17 @@ async function findCandidate(candidateId: string, companyCode: string) {
   return rows[0] ?? null;
 }
 
+async function preflightCandidateReviewEventsTable(candidateId: string, companyCode: string) {
+  const query = new URLSearchParams({
+    select: "id",
+    candidate_id: `eq.${candidateId}`,
+    company_code: `eq.${companyCode}`,
+    limit: "1",
+  });
+
+  await selectSupabaseExportRows("risk_share_candidate_review_events", query);
+}
+
 export async function POST(request: NextRequest) {
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
@@ -118,6 +129,15 @@ export async function POST(request: NextRequest) {
     return buildRedirect(request, "/owner/risk-share-activation/candidates", {
       ...redirectParams,
       error: "candidate_not_found",
+    });
+  }
+
+  try {
+    await preflightCandidateReviewEventsTable(candidateId, companyCode);
+  } catch {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "review_event_table_unavailable",
     });
   }
 
