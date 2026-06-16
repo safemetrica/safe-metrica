@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +15,28 @@ type LockCheck = {
   title: string;
   description: string;
   required: boolean;
+};
+
+type VersionLockRow = {
+  id?: string;
+  created_at?: string;
+  company_code?: string;
+  company_name?: string | null;
+  site_name?: string | null;
+  source_title?: string | null;
+  lock_title?: string | null;
+  lock_month?: string | null;
+  item_count?: number | string | null;
+  customer_confirmed_count?: number | string | null;
+  worker_visible_count?: number | string | null;
+  lock_status?: string | null;
+  locked_by?: string | null;
+  notes?: string | null;
+};
+
+type VersionLockResult = {
+  status: "idle" | "ok" | "not_found" | "failed";
+  lock: VersionLockRow | null;
 };
 
 const LOCK_CHECKS: LockCheck[] = [
@@ -86,6 +109,38 @@ function cleanText(value: string, max = 120) {
   return value.trim().slice(0, max);
 }
 
+function readNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(value);
+}
+
+function formatKstDateTime(value?: string | null) {
+  if (!value) {
+    return "확인 필요";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 16).replace("T", " ");
+}
+
 function normalizeCompanyCode(value: string) {
   return value
     .trim()
@@ -117,6 +172,37 @@ function getCurrentKstMonth() {
 
 function getCheckStatus(params: Record<string, string | string[] | undefined>, key: string) {
   return isChecked(readParam(params, key));
+}
+
+async function fetchVersionLockResult(versionLockId: string, companyCode: string): Promise<VersionLockResult> {
+  if (!versionLockId || !companyCode || !isUuid(versionLockId)) {
+    return {
+      status: "idle",
+      lock: null,
+    };
+  }
+
+  const query = new URLSearchParams({
+    select:
+      "id,created_at,company_code,company_name,site_name,source_title,lock_title,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status,locked_by,notes",
+    id: `eq.${versionLockId}`,
+    company_code: `eq.${companyCode}`,
+    limit: "1",
+  });
+
+  try {
+    const rows = await selectSupabaseExportRows<VersionLockRow>("risk_share_version_locks", query);
+
+    return {
+      status: rows[0] ? "ok" : "not_found",
+      lock: rows[0] ?? null,
+    };
+  } catch {
+    return {
+      status: "failed",
+      lock: null,
+    };
+  }
 }
 
 function CheckBadge({ done, required }: { done: boolean; required: boolean }) {
@@ -158,6 +244,7 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
   const versionLocked = readParam(params, "versionLocked") === "1";
   const versionLockId = cleanText(readParam(params, "versionLockId"), 80);
   const errorCode = cleanText(readParam(params, "error"), 80);
+  const versionLockResult = await fetchVersionLockResult(versionLockId, companyCode);
 
   const requiredChecks = LOCK_CHECKS.filter((item) => item.required);
   const completedRequiredCount = requiredChecks.filter((item) => getCheckStatus(params, item.key)).length;
@@ -194,13 +281,86 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
 
         {versionLocked ? (
           <section className="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5">
-            <h2 className="text-lg font-black text-emerald-100">Version Lock 생성 완료</h2>
-            <p className="mt-2 text-sm leading-6 text-emerald-50">
-              고객 확인 완료 항목이 Version Lock으로 고정되었습니다. 이제 근로자 QR 공유요약은 locked 조건을 만족하는 항목만 노출합니다.
-            </p>
-            {versionLockId ? (
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 className="text-lg font-black text-emerald-100">Version Lock 생성 완료</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-50">
+                  고객 확인 완료 항목이 Version Lock으로 고정되었습니다. 이제 근로자 QR 공유요약은 locked 조건을 만족하는 항목만 노출합니다.
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-100">
+                locked
+              </span>
+            </div>
+
+            {versionLockResult.status === "ok" && versionLockResult.lock ? (
+              <div className="mt-5 grid gap-3 md:grid-cols-4">
+                {[
+                  {
+                    label: "Lock 제목",
+                    value: versionLockResult.lock.lock_title || "제목 확인 필요",
+                  },
+                  {
+                    label: "대상월",
+                    value: versionLockResult.lock.lock_month || "월 확인 필요",
+                  },
+                  {
+                    label: "Lock 항목",
+                    value: `${readNumber(versionLockResult.lock.item_count)}건`,
+                  },
+                  {
+                    label: "근로자 QR 노출",
+                    value: `${readNumber(versionLockResult.lock.worker_visible_count)}건`,
+                  },
+                  {
+                    label: "고객 확인",
+                    value: `${readNumber(versionLockResult.lock.customer_confirmed_count)}건`,
+                  },
+                  {
+                    label: "상태",
+                    value: versionLockResult.lock.lock_status || "상태 확인 필요",
+                  },
+                  {
+                    label: "생성시각",
+                    value: formatKstDateTime(versionLockResult.lock.created_at),
+                  },
+                  {
+                    label: "담당",
+                    value: versionLockResult.lock.locked_by || "Owner",
+                  },
+                ].map((item) => (
+                  <article key={item.label} className="rounded-2xl border border-emerald-300/20 bg-slate-950/40 p-4">
+                    <p className="text-xs font-black text-emerald-200/80">{item.label}</p>
+                    <p className="mt-2 text-sm font-black text-white">{item.value}</p>
+                  </article>
+                ))}
+              </div>
+            ) : versionLockResult.status === "not_found" ? (
+              <p className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm font-bold text-amber-100">
+                Lock ID는 전달됐지만 원장에서 조회되지 않았습니다. Supabase migration과 companyCode를 확인하세요.
+              </p>
+            ) : versionLockResult.status === "failed" ? (
+              <p className="mt-4 rounded-2xl border border-rose-300/30 bg-rose-300/10 p-4 text-sm font-bold text-rose-100">
+                Version Lock 결과 원장 조회가 실패했습니다. 생성 결과가 고객·근로자 화면에 확정 표시되기 전 Supabase 상태를 확인하세요.
+              </p>
+            ) : versionLockId ? (
               <p className="mt-2 text-xs font-bold text-emerald-200">Lock ID: {versionLockId}</p>
             ) : null}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href={companyCode ? buildRiskSummaryHref(companyCode) : "#"}
+                className="rounded-xl border border-emerald-300/40 px-4 py-3 text-sm font-black text-emerald-100 hover:bg-emerald-400/10"
+              >
+                근로자 공유요약 확인
+              </Link>
+              <Link
+                href={companyCode ? buildOwnerSelectHref(companyCode, "/manager/risk-share") : "#"}
+                className="rounded-xl border border-cyan-400/40 px-4 py-3 text-sm font-black text-cyan-100 hover:bg-cyan-400/10"
+              >
+                관리자 월별 보관함 확인
+              </Link>
+            </div>
           </section>
         ) : null}
 
