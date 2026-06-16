@@ -140,7 +140,8 @@ type SupabaseExportTable =
   | "risk_share_sources"
   | "risk_share_item_candidates"
   | "risk_share_candidate_review_events"
-  | "risk_share_items";
+  | "risk_share_items"
+  | "risk_share_version_locks";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -677,6 +678,148 @@ export async function updateRiskShareItemCustomerCheckStatus(
   const query = new URLSearchParams({
     id: `eq.${itemId}`,
     company_code: `eq.${companyCode}`,
+  });
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_items?${query.toString()}`, {
+    method: "PATCH",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+
+  const data = await res.json().catch(() => undefined);
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      data,
+    };
+  }
+
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+    data,
+  };
+}
+
+export type RiskShareVersionLockStatus = "active" | "superseded" | "revoked";
+
+export type RiskShareVersionLockInsertRecord = {
+  company_code: string;
+  company_name: string | null;
+  site_name: string | null;
+  source_title: string | null;
+  lock_title: string;
+  lock_month: string;
+  item_count: number;
+  customer_confirmed_count: number;
+  worker_visible_count: number;
+  lock_status: RiskShareVersionLockStatus;
+  locked_by: string | null;
+  notes: string | null;
+  raw_payload: Record<string, unknown>;
+};
+
+export async function insertRiskShareVersionLockRecord(
+  record: RiskShareVersionLockInsertRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_version_locks`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+
+  const data = await res.json().catch(() => undefined);
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      data,
+    };
+  }
+
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+    data,
+  };
+}
+
+export type RiskShareItemsVersionLockUpdateRecord = {
+  share_status: "locked";
+  version_lock_id: string;
+  worker_visible: boolean;
+  version_locked_at: string;
+  updated_at: string;
+};
+
+export async function updateRiskShareItemsForVersionLock(
+  itemIds: string[],
+  companyCode: string,
+  record: RiskShareItemsVersionLockUpdateRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  if (itemIds.length === 0) {
+    return {
+      ok: false,
+      status: 400,
+      statusText: "no_items",
+      message: "No share items were selected.",
+    };
+  }
+
+  const query = new URLSearchParams({
+    id: `in.(${itemIds.join(",")})`,
+    company_code: `eq.${companyCode}`,
+    share_status: "eq.customer_confirmed",
+    customer_check_status: "eq.confirmed",
+    customer_confirmed: "eq.true",
+    version_lock_id: "is.null",
   });
 
   const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_items?${query.toString()}`, {
