@@ -4,6 +4,7 @@ import {
   selectSupabaseExportRows,
   updateRiskShareItemCustomerCheckStatus,
   type RiskShareItemCustomerCheckStatus,
+  type RiskShareItemShareStatus,
 } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
@@ -124,9 +125,25 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  if (item.share_status === "excluded") {
+    return buildRedirect(request, {
+      ...redirectParams,
+      error: "share_item_excluded",
+    });
+  }
+
+  const customerConfirmed = customerCheckStatus === "confirmed";
+  const nextShareStatus: RiskShareItemShareStatus = customerConfirmed
+    ? "customer_confirmed"
+    : customerCheckStatus === "requested" || customerCheckStatus === "returned"
+      ? "needs_customer_check"
+      : "draft";
+
   const result = await updateRiskShareItemCustomerCheckStatus(itemId, companyCode, {
     customer_check_status: customerCheckStatus,
     customer_note: customerNote,
+    customer_confirmed: customerConfirmed,
+    share_status: nextShareStatus,
     updated_at: new Date().toISOString(),
   });
 
@@ -140,5 +157,6 @@ export async function POST(request: NextRequest) {
   return buildRedirect(request, {
     ...redirectParams,
     customerCheckUpdated: "1",
+    customerConfirmed: customerConfirmed ? "1" : "0",
   });
 }
