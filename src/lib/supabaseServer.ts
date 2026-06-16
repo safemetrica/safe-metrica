@@ -139,7 +139,8 @@ type SupabaseExportTable =
   | "evidence_items"
   | "risk_share_sources"
   | "risk_share_item_candidates"
-  | "risk_share_candidate_review_events";
+  | "risk_share_candidate_review_events"
+  | "risk_share_items";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -530,6 +531,92 @@ export async function insertRiskShareCandidateReviewEventRecord(
   }
 
   const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_candidate_review_events`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+
+  const data = await res.json().catch(() => undefined);
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      data,
+    };
+  }
+
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+    data,
+  };
+}
+export type RiskShareItemShareStatus =
+  | "draft"
+  | "needs_customer_check"
+  | "customer_confirmed"
+  | "locked"
+  | "excluded";
+
+export type RiskShareItemCustomerCheckStatus =
+  | "not_requested"
+  | "requested"
+  | "confirmed"
+  | "returned";
+
+export type RiskShareItemInsertRecord = {
+  source_id: string;
+  candidate_id: string;
+  company_code: string;
+  company_name: string | null;
+  site_name: string | null;
+  task_name: string;
+  hazard: string;
+  accident_type: string | null;
+  risk_level: string | null;
+  current_controls: string | null;
+  improvement_plan: string | null;
+  worker_share_summary: string | null;
+  category: "common" | "non_common" | "site_specific" | "worker_signal" | "other";
+  share_status: RiskShareItemShareStatus;
+  customer_check_status: RiskShareItemCustomerCheckStatus;
+  customer_confirmed: boolean;
+  worker_visible: boolean;
+  version_lock_id: string | null;
+  source_page: number | null;
+  source_row: string | null;
+  owner_note: string | null;
+  customer_note: string | null;
+  raw_payload: Record<string, unknown>;
+};
+
+export async function insertRiskShareItemRecord(
+  record: RiskShareItemInsertRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_items`, {
     method: "POST",
     headers: {
       apikey: supabaseServiceRoleKey,
