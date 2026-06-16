@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  insertRiskShareCandidateReviewEventRecord,
   selectSupabaseExportRows,
   updateRiskShareItemCandidateReviewStatus,
   type RiskShareItemCandidateReviewerStatus,
@@ -11,8 +12,10 @@ export const revalidate = 0;
 
 type CandidateRow = {
   id?: string;
+  source_id?: string;
   company_code?: string;
-  reviewer_status?: string;
+  company_name?: string;
+  reviewer_status?: RiskShareItemCandidateReviewerStatus;
   worker_visible?: boolean;
   customer_confirmed?: boolean;
 };
@@ -61,7 +64,7 @@ function buildRedirect(request: NextRequest, path: string, params: Record<string
 
 async function findCandidate(candidateId: string, companyCode: string) {
   const query = new URLSearchParams({
-    select: "id,company_code,reviewer_status,worker_visible,customer_confirmed",
+    select: "id,source_id,company_code,company_name,reviewer_status,worker_visible,customer_confirmed",
     id: `eq.${candidateId}`,
     company_code: `eq.${companyCode}`,
     limit: "1",
@@ -118,17 +121,51 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const reviewerNote = readText(formData, "reviewerNote", 500) || null;
+  const workerVisible = formData.get("workerVisible") === "on";
+  const customerConfirmed = formData.get("customerConfirmed") === "on";
+  const previousStatus = candidate.reviewer_status ?? "pending";
+
   const result = await updateRiskShareItemCandidateReviewStatus(candidateId, companyCode, {
     reviewer_status: reviewerStatus,
-    reviewer_note: readText(formData, "reviewerNote", 500) || null,
-    worker_visible: formData.get("workerVisible") === "on",
-    customer_confirmed: formData.get("customerConfirmed") === "on",
+    reviewer_note: reviewerNote,
+    worker_visible: workerVisible,
+    customer_confirmed: customerConfirmed,
   });
 
   if (!result.ok) {
     return buildRedirect(request, "/owner/risk-share-activation/candidates", {
       ...redirectParams,
       error: "status_update_failed",
+    });
+  }
+
+  const eventResult = await insertRiskShareCandidateReviewEventRecord({
+    candidate_id: candidateId,
+    source_id: candidate.source_id ?? null,
+    company_code: companyCode,
+    company_name: candidate.company_name ?? null,
+    previous_status: previousStatus,
+    next_status: reviewerStatus,
+    reviewer_note: reviewerNote,
+    actor_type: "owner",
+    actor_label: "Owner",
+    worker_visible: workerVisible,
+    customer_confirmed: customerConfirmed,
+    event_type: "status_change",
+    raw_payload: {
+      source: "owner_candidate_status_update_v1",
+      changedBy: "owner",
+      previousStatus,
+      nextStatus: reviewerStatus,
+      changedAt: new Date().toISOString(),
+    },
+  });
+
+  if (!eventResult.ok) {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "review_event_insert_failed",
     });
   }
 
