@@ -2,6 +2,12 @@ import Link from "next/link";
 
 const FILE_CABINET_ITEMS = [
   {
+    label: "Version Lock 공유항목 CSV",
+    status: "Owner 준비",
+    description:
+      "locked_share_items 기준으로 근로자 QR에 실제 노출 가능한 공유항목만 고객 전달용으로 정리합니다.",
+  },
+  {
     label: "근로자 공유확인 CSV",
     status: "Owner 준비",
     description: "공유확인 제출 기록을 고객 전달 가능한 컬럼으로 정리하는 보관파일 후보입니다.",
@@ -76,12 +82,13 @@ export default function RiskSharePackExportPanel({
         </Link>
         <div className="rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-xs leading-5 text-amber-100">
           실제 CSV 다운로드는 Owner Export Center에서 내부 운영자가 수행합니다. 고객에게는
-          이 관리자 화면이나 내부 API 링크를 공유하지 않습니다.
+          이 관리자 화면이나 내부 API 링크를 공유하지 않습니다. locked_share_items CSV도 Owner가 검토 후 전달합니다.
         </div>
       </div>
 
       <p className="mt-4 text-xs leading-5 text-slate-500">
         월별 보관파일은 운영기록을 정리해 확인자료로 활용하기 위한 보조 흐름입니다.
+        Version Lock 전 draft, 고객 확인 전 항목, raw_payload, Owner 링크, API 링크, 토큰·환경변수 유사 문자열은 고객 전달자료에 포함하지 않습니다.
         법적 판단, 면책, 조치완료 확정을 대신하지 않습니다.
       </p>
     </section>
