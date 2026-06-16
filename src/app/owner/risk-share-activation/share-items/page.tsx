@@ -588,7 +588,7 @@ export default async function RiskShareShareItemBuilderPage({ searchParams }: Pa
             <p className="text-sm font-bold text-emerald-300">Worker-facing Preview</p>
             <h2 className="mt-2 text-2xl font-black text-white">근로자 공유 화면 표시 후보</h2>
             <p className="mt-2 text-xs leading-5 text-slate-500">
-              이 미리보기는 Owner 내부 확인용입니다. Worker QR 최종 노출은 customer_confirmed, worker_visible, version_lock_id, share_status=locked 조건을 후속 PR에서 분리 확인해야 합니다.
+              이 미리보기는 Owner 내부 확인용입니다. Worker QR 최종 노출은 share_status=locked, customer_confirmed=true, worker_visible=true, version_lock_id 존재 조건을 통과한 항목만 대상으로 합니다. 고객 공유 전 Version Lock 상태를 확인하세요.
             </p>
 
             <div className="mt-5 space-y-3">
