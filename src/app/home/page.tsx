@@ -10,7 +10,7 @@ import { getTbmFormUrl } from "@/lib/tenantLinks";
 const menus = [
   { href: "/tbm", icon: "📋", label: "TBM 현황", sub: "툴박스미팅 실시간", color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600", border: "border-blue-500" },
   { href: "/field/voice", icon: "🗣️", label: "현장참여 접수함", sub: "공유확인·제보 분리 검토", color: "from-lime-600 to-emerald-700 hover:from-lime-500 hover:to-emerald-600", border: "border-lime-500" },
-  { href: "/manager/risk-share", icon: "🗂️", label: "Risk Share Pack", sub: "월별 보관함·공유팩 관리", color: "from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600", border: "border-emerald-500" },
+  { href: "/manager/risk-share", icon: "🗂️", label: "위험성평가 공유팩", sub: "월별 보관함·공유팩 관리", color: "from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600", border: "border-emerald-500" },
   { href: "/ebm", icon: "📚", label: "Evidence Book", sub: "증빙 현황 조회", color: "from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600", border: "border-emerald-500" },
   { href: "/field", icon: "👷", label: "현장 비서", sub: "관리감독자 전용", color: "from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600", border: "border-teal-500" },
   { href: "/monthly-report", icon: "📑", label: "월간보고서", sub: "월별 안전운영 요약", color: "from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600", border: "border-sky-500" },
@@ -85,7 +85,7 @@ const roleContent: Record<HomeRole, {
     tasks: [
       { href: "/tbm", icon: "📋", title: "오늘 TBM 작성", description: "오늘 작업 전 TBM을 작성하거나 확인합니다.", status: "확인 필요", accent: "border-blue-500/50 bg-blue-950/40", iconBg: "bg-blue-500/15" },
       { href: "/field/voice", icon: "🗣️", title: "현장참여 접수함", description: "공유확인과 위험제보·아차사고·개선제안을 구분해 확인합니다.", status: "분리 확인", accent: "border-emerald-500/40 bg-emerald-950/30", iconBg: "bg-emerald-500/15" },
-      { href: "/manager/risk-share", icon: "🗂️", title: "Risk Share Pack 관리", description: "위험성평가 공유확인, 근로자대표 확인, 월별 보관함을 확인합니다.", status: "월별 보관", accent: "border-teal-500/40 bg-teal-950/30", iconBg: "bg-teal-500/15" },
+      { href: "/manager/risk-share", icon: "🗂️", title: "위험성평가 공유팩", description: "위험성평가 공유확인, 근로자대표 확인, 월별 보관함을 확인합니다.", status: "월별 보관", accent: "border-teal-500/40 bg-teal-950/30", iconBg: "bg-teal-500/15" },
       { href: "/field/voice", icon: "🔎", title: "조치 필요 항목", description: "위험제보·아차사고·개선제안 중 조치필요·검토중 항목을 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
       { href: "/field", icon: "👷", title: "현장비서", description: "누락 가능성과 운영 신호를 참고하고 직접 검토합니다.", status: "관리자 검토 필요", badge: "베타", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
     ],
