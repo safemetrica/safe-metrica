@@ -48,6 +48,7 @@ type HomeRoleShellProps = {
   menuStatus: Record<string, string>;
   today: string;
   managerAction: ReactNode;
+  roleExtras?: Partial<Record<HomeRole, ReactNode>>;
   children: ReactNode;
 };
 
@@ -72,6 +73,7 @@ export default function HomeRoleShell({
   menuStatus,
   today,
   managerAction,
+  roleExtras,
   children,
 }: HomeRoleShellProps) {
   const [activeRole, setActiveRole] = useState<HomeRole>(initialRole);
@@ -256,6 +258,7 @@ export default function HomeRoleShell({
             </p>
           </div>
 
+          {roleExtras?.[activeRole] ?? null}
           {children}
         </div>
       </div>

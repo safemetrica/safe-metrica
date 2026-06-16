@@ -519,6 +519,62 @@ export default async function Home({
   const weatherActionPlan = getWeatherActionPlan(weather);
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
 
+  const ceoOperatingBriefing = (
+    <section className="mt-6 rounded-3xl border border-slate-700/70 bg-slate-900/85 p-4 shadow-xl shadow-black/20 sm:p-5" aria-label="대표 운영 브리핑 요약">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">CEO Operating Briefing</p>
+                  <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">운영기록이 남고 있는지 먼저 확인합니다</h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                    위험성평가 이후 공유·확인·제보·조치·보고 흐름이 끊기지 않았는지 확인하는 대표용 요약 화면입니다.
+                  </p>
+                </div>
+                <a
+                  href="/dashboard"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-sm font-black text-amber-100 hover:bg-amber-500/20"
+                >
+                  대표 Risk 상세 보기
+                </a>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {ceoBriefingMetrics.map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:bg-white/5 ${item.className}`}
+                  >
+                    <p className="text-xs font-bold text-slate-300">{item.label}</p>
+                    <p className="mt-2 text-2xl font-black">{item.value}</p>
+                    <p className="mt-2 text-xs leading-5 text-slate-400">{item.description}</p>
+                  </a>
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-slate-700/70 bg-slate-950/60 p-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black text-white">이번 달 받을 자료</p>
+                    <p className="mt-1 text-xs text-slate-400">상세 데이터는 각 메뉴에서 확인하고, 월간보고서와 보관함으로 정리합니다.</p>
+                  </div>
+                  <span className="text-xs font-bold text-slate-500">상세 집계는 각 메뉴에서 확인</span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {ceoBriefingMaterials.map((item) => (
+                    <a
+                      key={item.title}
+                      href={item.href}
+                      className="rounded-xl border border-slate-700/70 bg-slate-900/80 p-3 hover:border-blue-400/50 hover:bg-slate-800"
+                    >
+                      <p className="text-sm font-black text-blue-100">{item.title}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-400">{item.description}</p>
+                    </a>
+                  ))}
+                </div>
+              </div>
+    </section>
+  );
+
   const decisionConfig = {
     STOP: {
       bg: "bg-red-950 border-red-700",
@@ -575,63 +631,10 @@ export default async function Home({
             compact
           />
         }
+        roleExtras={{
+          ceo: ceoOperatingBriefing,
+        }}
       >
-
-          {activeRole === "ceo" ? (
-            <section className="mt-6 rounded-3xl border border-slate-700/70 bg-slate-900/85 p-4 shadow-xl shadow-black/20 sm:p-5" aria-label="대표 운영 브리핑 요약">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">CEO Operating Briefing</p>
-                  <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">운영기록이 남고 있는지 먼저 확인합니다</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                    위험성평가 이후 공유·확인·제보·조치·보고 흐름이 끊기지 않았는지 확인하는 대표용 요약 화면입니다.
-                  </p>
-                </div>
-                <a
-                  href="/dashboard"
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-sm font-black text-amber-100 hover:bg-amber-500/20"
-                >
-                  대표 Risk 상세 보기
-                </a>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {ceoBriefingMetrics.map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:bg-white/5 ${item.className}`}
-                  >
-                    <p className="text-xs font-bold text-slate-300">{item.label}</p>
-                    <p className="mt-2 text-2xl font-black">{item.value}</p>
-                    <p className="mt-2 text-xs leading-5 text-slate-400">{item.description}</p>
-                  </a>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-slate-700/70 bg-slate-950/60 p-4">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black text-white">이번 달 받을 자료</p>
-                    <p className="mt-1 text-xs text-slate-400">상세 데이터는 각 메뉴에서 확인하고, 월간보고서와 보관함으로 정리합니다.</p>
-                  </div>
-                  <span className="text-xs font-bold text-slate-500">실제 집계 연동 전 요약 UI</span>
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                  {ceoBriefingMaterials.map((item) => (
-                    <a
-                      key={item.title}
-                      href={item.href}
-                      className="rounded-xl border border-slate-700/70 bg-slate-900/80 p-3 hover:border-blue-400/50 hover:bg-slate-800"
-                    >
-                      <p className="text-sm font-black text-blue-100">{item.title}</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-400">{item.description}</p>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </section>
-          ) : null}
 
           {weather.tmp !== null && weather.decision && (() => {
             const cfg = decisionConfig[weather.decision as keyof typeof decisionConfig];
