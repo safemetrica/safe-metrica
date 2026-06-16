@@ -236,6 +236,12 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
           </section>
         ) : null}
 
+        {readParam(params, "created") === "already_exists" ? (
+          <section className="mt-6 rounded-3xl border border-amber-400/30 bg-amber-400/10 p-5 text-sm font-bold text-amber-100">
+            이미 공유 준비 항목으로 전환된 후보입니다.
+          </section>
+        ) : null}
+
         {readParam(params, "error") ? (
           <section className="mt-6 rounded-3xl border border-rose-400/30 bg-rose-400/10 p-5 text-sm font-bold text-rose-100">
             후보 상태 업데이트 중 오류가 발생했습니다. 후보 ID, 고객사 코드, Owner 권한, Supabase 상태를 확인하세요.
@@ -415,8 +421,34 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
                   </form>
 
                   <p className="mt-4 text-xs leading-5 text-slate-500">
-                    상태 변경은 Owner 전용 API로 처리합니다. 별도 audit log와 Version Lock 연결은 후속 PR에서 추가합니다.
+                    상태 변경은 Owner 전용 API로 처리합니다. accepted/edited 후보만 공유 준비 항목으로 전환할 수 있습니다.
                   </p>
+
+                  {candidate.reviewer_status === "accepted" || candidate.reviewer_status === "edited" ? (
+                    <form
+                      action="/api/owner/risk-share-items/create-from-candidate"
+                      method="post"
+                      className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-4"
+                    >
+                      <input type="hidden" name="candidateId" value={candidate.id ?? ""} />
+                      <input type="hidden" name="companyCode" value={companyCode} />
+                      <input type="hidden" name="status" value={status} />
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-black text-emerald-100">공유 준비 항목 전환</p>
+                          <p className="mt-1 text-xs leading-5 text-emerald-50/80">
+                            이 후보를 risk_share_items draft로 만듭니다. 고객 확인과 Version Lock 전에는 근로자 QR에 노출하지 않습니다.
+                          </p>
+                        </div>
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
+                        >
+                          공유 준비 항목 만들기
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
                 </article>
               );
             })}
