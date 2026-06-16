@@ -652,6 +652,8 @@ export async function insertRiskShareItemRecord(
 export type RiskShareItemCustomerCheckStatusUpdateRecord = {
   customer_check_status: RiskShareItemCustomerCheckStatus;
   customer_note: string | null;
+  customer_confirmed: boolean;
+  share_status: RiskShareItemShareStatus;
   updated_at: string;
 };
 
