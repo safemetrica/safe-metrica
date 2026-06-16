@@ -422,7 +422,7 @@ export default async function Home({
   const requestedRole = resolvedSearchParams.role;
   const activeRole: HomeRole = requestedRole === "worker" || requestedRole === "ceo" || requestedRole === "manager"
     ? requestedRole
-    : "manager";
+    : "ceo";
   const weatherTest = resolvedSearchParams.weatherTest;
 
   const company = await getCompanyConfig().catch(() => null);
