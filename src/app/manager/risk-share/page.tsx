@@ -408,15 +408,15 @@ function buildSummaryCards(params: {
         : "폐기 또는 만료되지 않은 근로자대표 확인 링크 수입니다.",
     },
     {
-      label: "Version Lock",
+      label: "최종 공유본 확정",
       value:
         versionLockSummary.status !== "ok"
           ? "확인 필요"
           : `${versionLockSummary.lockCount}회 / ${versionLockSummary.lockedItemCount}건`,
       description:
         versionLockSummary.status !== "ok"
-          ? "Version Lock 원장 조회가 실패했습니다. Supabase migration 적용 상태를 확인하세요."
-          : "이번 달 월별 보관함에 반영할 locked 공유항목 기준입니다.",
+          ? "최종 공유본 원장 조회가 실패했습니다. Supabase migration 적용 상태를 확인하세요."
+          : "이번 달 월별 보관함에 반영할 확정 공유 항목 기준입니다.",
     },
   ];
 }
@@ -486,7 +486,8 @@ export default async function RiskSharePackManagerHomePage() {
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
                 위험성평가 공유 이후의 확인, 의견 제출, 근로자대표 참여확인,
-                관리자 검토, 월간 요약, 고객 전달용 Export 흐름을 확인하는 전용 홈입니다.
+                관리자 검토, 월간 요약, 고객 전달 자료 흐름을 확인하는 전용 홈입니다.
+                TBM은 현장관리자의 기본 운영 기능이며, 이 화면에서는 위험성평가 공유 이후의 확인·의견·제보·관리자 검토 흐름을 중심으로 표시합니다.
               </p>
             </div>
 
@@ -562,15 +563,15 @@ export default async function RiskSharePackManagerHomePage() {
           <div className="mt-5 grid gap-3 lg:grid-cols-3">
             {[
               {
-                label: "Version Lock 공유항목",
+                label: "확정 공유 항목",
                 status:
                   versionLockSummary.status !== "ok"
                     ? "확인 필요"
                     : `${versionLockSummary.lockedItemCount}건`,
                 description:
                   versionLockSummary.status !== "ok"
-                    ? "Version Lock 원장 조회 실패 상태입니다. Supabase migration 적용 여부를 확인하세요."
-                    : `이번 달 active Version Lock ${versionLockSummary.lockCount}회, 근로자 QR 노출 항목 ${versionLockSummary.workerVisibleCount}건입니다.`,
+                    ? "최종 공유본 원장 조회 실패 상태입니다. Supabase migration 적용 여부를 확인하세요."
+                    : `이번 달 확정 공유본 ${versionLockSummary.lockCount}회, 근로자 QR 노출 항목 ${versionLockSummary.workerVisibleCount}건입니다.`,
               },
               {
                 label: "월간 운영보고서 PDF",
@@ -605,7 +606,7 @@ export default async function RiskSharePackManagerHomePage() {
 
           <p className="mt-4 text-xs leading-5 text-slate-500">
             월별 보관함은 운영기록을 고객이 확인 가능한 파일 단위로 정리하는 UX입니다.
-            Version Lock 전 draft, 고객 확인 전 항목, Owner 내부 메모, raw_payload, 토큰·환경변수 유사 문자열은 고객 전달자료에 포함하지 않습니다.
+            최종 공유본 확정 전 초안, 고객 확인 전 항목, Owner 내부 메모, raw_payload, 토큰·환경변수 유사 문자열은 고객 전달 자료에 포함하지 않습니다.
             법적 판단, 면책, 조치완료 확정을 대신하지 않습니다.
           </p>
         </section>
