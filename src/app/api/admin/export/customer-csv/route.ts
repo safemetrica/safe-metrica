@@ -12,6 +12,7 @@ type Dataset =
   | "worker_share_confirmations"
   | "worker_reports"
   | "worker_representative_confirmations"
+  | "locked_share_items"
   | "evidence_manifest";
 
 type CsvRow = string[];
@@ -30,6 +31,7 @@ const DATASETS: Dataset[] = [
   "worker_share_confirmations",
   "worker_reports",
   "worker_representative_confirmations",
+  "locked_share_items",
   "evidence_manifest",
 ];
 
@@ -579,6 +581,53 @@ function buildWorkerRepresentativeConfirmationRows(rows: ExportRow[]) {
   return { headers, rows: csvRows };
 }
 
+function buildLockedShareItemRows(lockedRows: ExportRow[]) {
+  const headers = [
+    "Version Lock 일시",
+    "Lock ID",
+    "회사코드",
+    "회사명",
+    "현장명",
+    "대상월",
+    "작업명",
+    "위험요인",
+    "사고유형",
+    "위험등급",
+    "현재 관리대책",
+    "근로자 확인 안전조치",
+    "고객 확인 상태",
+    "근로자 QR 노출",
+    "고객 전달 비고",
+  ];
+
+  const rows = lockedRows.map((row) => [
+    formatKstDateTime(getString(row, ["version_locked_at", "updated_at", "created_at"])),
+    summarize(getString(row, ["version_lock_id"]), 80),
+    getString(row, ["company_code"]),
+    summarize(getString(row, ["company_name"]), 120),
+    summarize(getString(row, ["site_name"]), 120),
+    summarize(getString(row, ["lock_month"]), 20),
+    summarize(getString(row, ["task_name"]), 160),
+    summarize(getString(row, ["hazard"]), 240),
+    summarize(getString(row, ["accident_type"]), 120),
+    summarize(getString(row, ["risk_level"]), 40),
+    summarize(getString(row, ["current_controls"]), 240),
+    summarize(
+      getString(row, ["worker_share_summary"]) ||
+        getString(row, ["improvement_plan"]) ||
+        getString(row, ["current_controls"]),
+      300
+    ),
+    getString(row, ["customer_check_status"]) === "confirmed" && getBoolean(row, ["customer_confirmed"])
+      ? "고객 확인 완료"
+      : "확인 필요",
+    yesNo(getBoolean(row, ["worker_visible"])),
+    "Version Lock 기준 고객 전달용 공유항목입니다. 법적 판단, 면책, 조치완료 또는 AI 확정 판단을 의미하지 않습니다.",
+  ]);
+
+  return { headers, rows };
+}
+
 function buildFieldParticipationRows(fieldRows: ExportRow[], dataset: Dataset) {
   const isShareConfirmation = dataset === "worker_share_confirmations";
 
@@ -940,7 +989,7 @@ export async function GET(request: NextRequest) {
     return errorResponse(
       400,
       "invalid_dataset",
-      "dataset must be one of tbm_records, worker_share_confirmations, worker_reports, worker_representative_confirmations, evidence_manifest."
+      "dataset must be one of tbm_records, worker_share_confirmations, worker_reports, worker_representative_confirmations, locked_share_items, evidence_manifest."
     );
   }
 
@@ -964,6 +1013,7 @@ export async function GET(request: NextRequest) {
   const needsTbmRows = dataset === "tbm_records" || dataset === "evidence_manifest";
   const needsWorkerRepresentativeRows =
     dataset === "worker_representative_confirmations";
+  const needsLockedShareItems = dataset === "locked_share_items";
 
   const fieldQuery = new URLSearchParams({
     select: "*",
@@ -1014,9 +1064,39 @@ export async function GET(request: NextRequest) {
     or: buildTimestampPeriodFilter("created_at", "submitted_at", startDate, dayAfterEnd),
     order: "created_at.asc",
   });
+  const lockedShareItemsQuery = new URLSearchParams({
+    select: [
+      "version_locked_at",
+      "updated_at",
+      "created_at",
+      "version_lock_id",
+      "company_code",
+      "company_name",
+      "site_name",
+      "lock_month",
+      "task_name",
+      "hazard",
+      "accident_type",
+      "risk_level",
+      "current_controls",
+      "improvement_plan",
+      "worker_share_summary",
+      "customer_check_status",
+      "customer_confirmed",
+      "worker_visible",
+      "share_status",
+    ].join(","),
+    company_code: `eq.${companyKey}`,
+    share_status: "eq.locked",
+    customer_confirmed: "eq.true",
+    worker_visible: "eq.true",
+    version_lock_id: "not.is.null",
+    or: buildTimestampPeriodFilter("created_at", "version_locked_at", startDate, dayAfterEnd),
+    order: "version_locked_at.asc.nullslast,created_at.asc",
+  });
 
   try {
-    const [fieldRows, tbmRows, workerRepresentativeRows, evidenceRows] = await Promise.all([
+    const [fieldRows, tbmRows, workerRepresentativeRows, evidenceRows, lockedShareItemRows] = await Promise.all([
       needsFieldRows
         ? selectSupabaseExportRows<ExportRow>("field_participation_submissions", fieldQuery)
         : Promise.resolve([]),
@@ -1032,6 +1112,9 @@ export async function GET(request: NextRequest) {
       needsEvidenceRows
         ? selectSupabaseExportRows<ExportRow>("evidence_items", evidenceQuery)
         : Promise.resolve([]),
+      needsLockedShareItems
+        ? selectSupabaseExportRows<ExportRow>("risk_share_items", lockedShareItemsQuery)
+        : Promise.resolve([]),
     ]);
 
     const csvData =
@@ -1041,7 +1124,9 @@ export async function GET(request: NextRequest) {
           ? buildEvidenceManifestRows(evidenceRows, fieldRows, tbmRows, startDate)
           : dataset === "worker_representative_confirmations"
             ? buildWorkerRepresentativeConfirmationRows(workerRepresentativeRows)
-            : buildFieldParticipationRows(fieldRows, dataset);
+            : dataset === "locked_share_items"
+              ? buildLockedShareItemRows(lockedShareItemRows)
+              : buildFieldParticipationRows(fieldRows, dataset);
 
     return createCsvResponse(
       buildFilename(companyKey, dataset, startDate, endDate),
