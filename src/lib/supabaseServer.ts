@@ -138,7 +138,8 @@ type SupabaseExportTable =
   | "worker_representative_confirmations"
   | "evidence_items"
   | "risk_share_sources"
-  | "risk_share_item_candidates";
+  | "risk_share_item_candidates"
+  | "risk_share_candidate_review_events";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -466,6 +467,70 @@ export async function updateRiskShareItemCandidateReviewStatus(
 
   const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_item_candidates?${query.toString()}`, {
     method: "PATCH",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+
+  const data = await res.json().catch(() => undefined);
+
+  if (res.ok) {
+    return {
+      ok: true,
+      status: res.status,
+      statusText: res.statusText,
+      data,
+    };
+  }
+
+  const message = typeof data?.message === "string" ? data.message : undefined;
+
+  return {
+    ok: false,
+    status: res.status,
+    statusText: res.statusText,
+    message,
+    data,
+  };
+}
+
+export type RiskShareCandidateReviewEventInsertRecord = {
+  candidate_id: string;
+  source_id: string | null;
+  company_code: string;
+  company_name: string | null;
+  previous_status: RiskShareItemCandidateReviewerStatus | null;
+  next_status: RiskShareItemCandidateReviewerStatus;
+  reviewer_note: string | null;
+  actor_type: "owner" | "system";
+  actor_label: string | null;
+  worker_visible: boolean;
+  customer_confirmed: boolean;
+  event_type: "status_change";
+  raw_payload: Record<string, unknown>;
+};
+
+export async function insertRiskShareCandidateReviewEventRecord(
+  record: RiskShareCandidateReviewEventInsertRecord
+): Promise<SupabaseInsertResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: "missing_supabase_server_config",
+      message: "Supabase server configuration is missing.",
+    };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_candidate_review_events`, {
+    method: "POST",
     headers: {
       apikey: supabaseServiceRoleKey,
       Authorization: `Bearer ${supabaseServiceRoleKey}`,
