@@ -210,6 +210,24 @@ async function fetchRiskShareItems(companyCode: string) {
   return rows.map((row, index) => mapRiskShareItemRow(row, index + 1));
 }
 
+function buildCandidateReviewHref(companyCode: string) {
+  const query = new URLSearchParams();
+
+  if (companyCode) query.set("companyCode", companyCode);
+  query.set("status", "accepted");
+
+  return `/owner/risk-share-activation/candidates?${query.toString()}`;
+}
+
+function buildSourceIntakeHref(companyCode: string, companyName: string) {
+  const query = new URLSearchParams();
+
+  if (companyCode) query.set("companyCode", companyCode);
+  if (companyName) query.set("companyName", companyName);
+
+  return `/owner/risk-share-activation/source-intake?${query.toString()}`;
+}
+
 function buildActivationHref(companyCode: string, companyName: string) {
   const query = new URLSearchParams();
 
@@ -301,6 +319,26 @@ export default async function RiskShareShareItemBuilderPage({ searchParams }: Pa
           </p>
         </section>
 
+        {!companyCode ? (
+          <section className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 className="text-lg font-black text-white">고객사 코드를 입력하세요</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                  companyCode가 있어야 risk_share_items 원장을 조회합니다. 코드가 없을 때는 샘플 Builder만 표시되므로,
+                  실제 공유 준비 항목 확인 전에는 고객 확인이나 Version Lock으로 진행하지 않습니다.
+                </p>
+              </div>
+              <Link
+                href="/owner/risk-share-activation"
+                className="w-fit rounded-xl border border-cyan-400/40 px-4 py-3 text-sm font-black text-cyan-100 hover:bg-cyan-500/10"
+              >
+                활성화 화면에서 고객 선택
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
         {readParam(params, "created") === "1" ? (
           <section className="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-sm font-bold text-emerald-100">
             후보가 공유 준비 항목으로 전환되었습니다. 아직 고객 확인과 Version Lock 전이므로 근로자 QR 확정 노출값은 아닙니다.
@@ -315,20 +353,58 @@ export default async function RiskShareShareItemBuilderPage({ searchParams }: Pa
 
         {loadFailed ? (
           <section className="mt-6 rounded-3xl border border-rose-400/30 bg-rose-400/10 p-5">
-            <h2 className="text-lg font-black text-rose-100">risk_share_items 원장 조회 실패</h2>
-            <p className="mt-2 text-sm leading-6 text-rose-50">
-              Supabase 설정, Owner 권한, risk_share_items migration 적용 여부를 확인하세요. 조회 실패 시 고객·근로자 화면에 확정값으로 노출하지 않습니다.
-            </p>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 className="text-lg font-black text-rose-100">risk_share_items 원장 조회 실패</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-rose-50">
+                  Supabase 설정, Owner 권한, risk_share_items migration 적용 여부를 확인하세요.
+                  조회 실패 상태에서는 샘플이나 기존 화면값을 고객·근로자 확정값으로 사용하지 않습니다.
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-rose-300/40 bg-rose-300/10 px-3 py-1 text-xs font-black text-rose-100">
+                원장 확인 필요
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                "Supabase service role 서버 설정 확인",
+                "risk_share_items migration 적용 확인",
+                "companyCode와 Owner 로그인 쿠키 확인",
+              ].map((item) => (
+                <div key={item} className="rounded-2xl border border-rose-300/20 bg-slate-950/40 p-4 text-xs font-bold leading-5 text-rose-50">
+                  {item}
+                </div>
+              ))}
+            </div>
           </section>
         ) : null}
 
         {companyCode && usingSampleFallback && !loadFailed ? (
           <section className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-5">
-            <h2 className="text-lg font-black text-white">저장된 공유 준비 항목 없음</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              현재 companyCode 기준 risk_share_items 원장 항목이 없습니다. 아래는 기존 SAMPLE_ITEMS 기반 미리보기입니다.
-              accepted 또는 edited 후보를 먼저 공유 준비 항목으로 전환하세요.
-            </p>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 className="text-lg font-black text-white">저장된 공유 준비 항목 없음</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                  현재 companyCode 기준 risk_share_items 원장 항목이 없습니다. 아래 화면은 SAMPLE_ITEMS 기반 미리보기입니다.
+                  실제 운영에서는 accepted 또는 edited 후보를 공유 준비 항목으로 전환한 뒤 고객 확인과 Version Lock으로 넘어갑니다.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={buildCandidateReviewHref(companyCode)}
+                  className="rounded-xl bg-cyan-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
+                >
+                  후보 검토함 열기
+                </Link>
+                <Link
+                  href={buildSourceIntakeHref(companyCode, companyName)}
+                  className="rounded-xl border border-slate-600 px-4 py-3 text-sm font-black text-slate-200 hover:border-cyan-400 hover:text-cyan-100"
+                >
+                  Source 접수 확인
+                </Link>
+              </div>
+            </div>
           </section>
         ) : null}
 
@@ -348,6 +424,37 @@ export default async function RiskShareShareItemBuilderPage({ searchParams }: Pa
             </div>
           </section>
         ) : null}
+
+        <section className="mt-6 grid gap-3 md:grid-cols-4">
+          {[
+            {
+              label: "조회 기준",
+              value: companyCode || "미입력",
+              description: companyCode ? "companyCode 기준 원장 조회" : "고객사 코드 필요",
+            },
+            {
+              label: "표시 데이터",
+              value: usingStoredItems ? "Supabase 원장" : loadFailed ? "조회 실패" : "Sample fallback",
+              description: usingStoredItems ? "저장된 공유 준비 항목" : "확정 운영자료 아님",
+            },
+            {
+              label: "고객 확인",
+              value: `${confirmedItems.length}/${items.length}`,
+              description: "customer_confirmed는 Version Lock과 다름",
+            },
+            {
+              label: "Version Lock",
+              value: `${lockedItems.length}/${items.length}`,
+              description: "worker QR 확정 노출 전 최종 경계",
+            },
+          ].map((card) => (
+            <article key={card.label} className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-xs font-black text-slate-500">{card.label}</p>
+              <p className="mt-2 text-lg font-black text-white">{card.value}</p>
+              <p className="mt-2 text-xs leading-5 text-slate-400">{card.description}</p>
+            </article>
+          ))}
+        </section>
 
         <form className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-6">
           <div className="grid gap-4 md:grid-cols-3">
