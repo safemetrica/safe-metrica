@@ -76,6 +76,7 @@ export default function HomeRoleShell({
 }: HomeRoleShellProps) {
   const [activeRole, setActiveRole] = useState<HomeRole>(initialRole);
   const activeRoleContent = roleContents[activeRole];
+  const showSecondaryMenu = activeRole === "manager";
 
   function handleRoleChange(nextRole: HomeRole) {
     setActiveRole(nextRole);
@@ -116,8 +117,8 @@ export default function HomeRoleShell({
         </div>
       </nav>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-5 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6 lg:py-7">
-        <aside className="hidden lg:block" aria-label="전체 기능 보조 내비게이션">
+      <div className={`mx-auto grid max-w-7xl gap-6 px-4 py-5 lg:px-6 lg:py-7 ${showSecondaryMenu ? "lg:grid-cols-[280px_minmax(0,1fr)]" : "lg:grid-cols-1"}`}>
+        <aside className={showSecondaryMenu ? "hidden lg:block" : "hidden"} aria-label="전체 기능 보조 내비게이션">
           <div className="sticky top-5 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-black/10">
             <p className="text-xs font-black text-blue-300">2차 메뉴</p>
             <h2 className="mt-1 text-lg font-black">전체 기능</h2>
@@ -225,7 +226,7 @@ export default function HomeRoleShell({
             {activeRole === "manager" ? <div className="mt-3">{managerAction}</div> : null}
           </section>
 
-          <details className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 lg:hidden">
+          <details className={showSecondaryMenu ? "mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 lg:hidden" : "hidden"}>
             <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
               <span>
                 <span className="block text-xs font-black text-blue-300">2차 메뉴</span>
