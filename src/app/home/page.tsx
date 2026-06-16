@@ -67,7 +67,7 @@ const roleContent: Record<HomeRole, {
     badge: "확인 기록 중심",
     accent: "from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/30",
     tasks: [
-      { requiresCompanyCode: true, participationIntent: "risk", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+      { requiresCompanyCode: true, participationIntent: "risk", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "오늘 확인", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
       { requiresCompanyCode: true, participationIntent: "share", icon: "✅", title: "위험성평가 공유확인", description: riskShareLinkCopy.submissionTypes.shareConfirmation.description, status: "KPI 제외 기록", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
       { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
       { requiresCompanyCode: true, participationIntent: "report", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 위험요인, 아차사고, 개선 의견을 관리자 검토대상으로 접수합니다.", status: "관리자 검토대상", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
@@ -76,7 +76,7 @@ const roleContent: Record<HomeRole, {
   manager: {
     eyebrow: "현장관리자 1차 확인",
     title: "오늘 안전운영",
-    description: "작업 전 확인부터 접수 검토와 후속 조치까지 순서대로 살펴보세요.",
+    description: "오늘 먼저 볼 신호와 처리 순서를 확인하세요.",
     badge: "운영기록 확인 필요",
     accent: "from-blue-950/90 via-slate-900 to-slate-950 border-blue-500/30",
     tasks: [
