@@ -37,6 +37,25 @@ type FieldParticipationSummary = {
   fieldReviewNeededCount: number;
 };
 
+type RiskShareVersionLockSummaryRow = {
+  id?: unknown;
+  created_at?: unknown;
+  lock_month?: unknown;
+  item_count?: unknown;
+  customer_confirmed_count?: unknown;
+  worker_visible_count?: unknown;
+  lock_status?: unknown;
+};
+
+type VersionLockMonthlySummary = {
+  status: "ok" | "not_configured" | "failed";
+  lockCount: number;
+  lockedItemCount: number;
+  customerConfirmedCount: number;
+  workerVisibleCount: number;
+  latestLockDate: string;
+};
+
 type SummaryPeriod = {
   startDate: string;
   endDate: string;
@@ -133,6 +152,19 @@ function readText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function readNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
 function normalizeSubmissionType(value: unknown) {
   const text = readText(value).toLowerCase();
 
@@ -197,6 +229,54 @@ function isFieldReviewNeeded(row: FieldParticipationSummaryRow) {
   const status = normalizeFieldStatus(row.status);
 
   return status !== "조치완료" && status !== "반려";
+}
+
+async function fetchVersionLockMonthlySummary(
+  companyCode: string,
+  period: SummaryPeriod,
+): Promise<VersionLockMonthlySummary> {
+  const lockMonth = period.startDate.slice(0, 7);
+  const query = new URLSearchParams({
+    select: "id,created_at,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status",
+    company_code: `eq.${companyCode}`,
+    lock_month: `eq.${lockMonth}`,
+    lock_status: "eq.active",
+    order: "created_at.desc",
+    limit: "100",
+  });
+
+  try {
+    const rows = await selectSupabaseExportRows<RiskShareVersionLockSummaryRow>(
+      "risk_share_version_locks",
+      query,
+    );
+
+    return {
+      status: "ok",
+      lockCount: rows.length,
+      lockedItemCount: rows.reduce((sum, row) => sum + readNumber(row.item_count), 0),
+      customerConfirmedCount: rows.reduce(
+        (sum, row) => sum + readNumber(row.customer_confirmed_count),
+        0,
+      ),
+      workerVisibleCount: rows.reduce(
+        (sum, row) => sum + readNumber(row.worker_visible_count),
+        0,
+      ),
+      latestLockDate: readText(rows[0]?.created_at),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      lockCount: 0,
+      lockedItemCount: 0,
+      customerConfirmedCount: 0,
+      workerVisibleCount: 0,
+      latestLockDate: "",
+    };
+  }
 }
 
 async function fetchFieldParticipationSummary(
@@ -271,12 +351,14 @@ function buildSummaryCards(params: {
   representativeRecords: WorkerRepresentativeConfirmationRecord[];
   representativeLinks: WorkerRepresentativeConfirmationLink[];
   linkLoadFailed: boolean;
+  versionLockSummary: VersionLockMonthlySummary;
 }) {
   const {
     fieldSummary,
     representativeRecords,
     representativeLinks,
     linkLoadFailed,
+    versionLockSummary,
   } = params;
 
   const objectionCount = representativeRecords.filter((record) => record.hasObjection).length;
@@ -325,6 +407,17 @@ function buildSummaryCards(params: {
         ? "근로자대표 확인 링크 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
         : "폐기 또는 만료되지 않은 근로자대표 확인 링크 수입니다.",
     },
+    {
+      label: "Version Lock",
+      value:
+        versionLockSummary.status !== "ok"
+          ? "확인 필요"
+          : `${versionLockSummary.lockCount}회 / ${versionLockSummary.lockedItemCount}건`,
+      description:
+        versionLockSummary.status !== "ok"
+          ? "Version Lock 원장 조회가 실패했습니다. Supabase migration 적용 상태를 확인하세요."
+          : "이번 달 월별 보관함에 반영할 locked 공유항목 기준입니다.",
+    },
   ];
 }
 
@@ -341,8 +434,9 @@ export default async function RiskSharePackManagerHomePage() {
 
   const currentPeriod = getCurrentKstMonthPeriod();
 
-  const [fieldSummary, recordResult, linkResult] = await Promise.all([
+  const [fieldSummary, versionLockSummary, recordResult, linkResult] = await Promise.all([
     fetchFieldParticipationSummary(company.code, currentPeriod),
+    fetchVersionLockMonthlySummary(company.code, currentPeriod),
     fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
       status: "failed" as const,
       records: [] as WorkerRepresentativeConfirmationRecord[],
@@ -362,6 +456,7 @@ export default async function RiskSharePackManagerHomePage() {
     representativeRecords,
     representativeLinks,
     linkLoadFailed: linkResult.status !== "ok",
+    versionLockSummary,
   });
 
 
@@ -374,7 +469,8 @@ export default async function RiskSharePackManagerHomePage() {
   ).length;
   const totalReviewNeededCount =
     fieldSummary.fieldReviewNeededCount + representativeReviewNeededCount;
-  const hasMonthlySummaryWarning = fieldLoadFailed || linkResult.status !== "ok";
+  const versionLockLoadFailed = versionLockSummary.status !== "ok";
+  const hasMonthlySummaryWarning = fieldLoadFailed || linkResult.status !== "ok" || versionLockLoadFailed;
 
   const companyName = getCompanyDisplayName(company);
 
@@ -466,12 +562,23 @@ export default async function RiskSharePackManagerHomePage() {
           <div className="mt-5 grid gap-3 lg:grid-cols-3">
             {[
               {
+                label: "Version Lock 공유항목",
+                status:
+                  versionLockSummary.status !== "ok"
+                    ? "확인 필요"
+                    : `${versionLockSummary.lockedItemCount}건`,
+                description:
+                  versionLockSummary.status !== "ok"
+                    ? "Version Lock 원장 조회 실패 상태입니다. Supabase migration 적용 여부를 확인하세요."
+                    : `이번 달 active Version Lock ${versionLockSummary.lockCount}회, 근로자 QR 노출 항목 ${versionLockSummary.workerVisibleCount}건입니다.`,
+              },
+              {
                 label: "월간 운영보고서 PDF",
                 status: "연결됨",
                 description: "공유팩 월간요약 화면에서 인쇄 또는 PDF 저장 흐름으로 확인합니다.",
               },
               {
-                label: "공유확인·위험제보 Excel",
+                label: "공유확인·위험제보 CSV",
                 status: "CSV 제공 중",
                 description: "내부 운영자가 고객 전달 가능한 컬럼만 정리해 다운로드합니다.",
               },
@@ -498,6 +605,7 @@ export default async function RiskSharePackManagerHomePage() {
 
           <p className="mt-4 text-xs leading-5 text-slate-500">
             월별 보관함은 운영기록을 고객이 확인 가능한 파일 단위로 정리하는 UX입니다.
+            Version Lock 전 draft, 고객 확인 전 항목, Owner 내부 메모, raw_payload, 토큰·환경변수 유사 문자열은 고객 전달자료에 포함하지 않습니다.
             법적 판단, 면책, 조치완료 확정을 대신하지 않습니다.
           </p>
         </section>
