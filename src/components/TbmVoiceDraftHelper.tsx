@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
 
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
@@ -160,6 +160,7 @@ export default function TbmVoiceDraftHelper({
   const [hasEditedDraftText, setHasEditedDraftText] = useState(false);
   const [copied, setCopied] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
+  const [voiceQualityMessage, setVoiceQualityMessage] = useState("");
   const [signatureFiles, setSignatureFiles] = useState<File[]>([]);
   const [siteFiles, setSiteFiles] = useState<File[]>([]);
   const [workFiles, setWorkFiles] = useState<File[]>([]);
@@ -185,11 +186,7 @@ export default function TbmVoiceDraftHelper({
     [companyName, combinedTranscript]
   );
 
-  useEffect(() => {
-    if (!hasEditedDraftText) {
-      setEditedDraftText(draftText);
-    }
-  }, [draftText, hasEditedDraftText]);
+  const draftEditorValue = hasEditedDraftText ? editedDraftText : draftText;
 
   function stopRecording() {
     recognitionRef.current?.stop();
@@ -198,7 +195,33 @@ export default function TbmVoiceDraftHelper({
     setInterimText("");
   }
 
-  function startRecording() {
+  async function requestMicrophonePreflight() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setVoiceQualityMessage("브라우저 마이크 품질 설정을 확인할 수 없어 기본 음성인식으로 진행합니다.");
+      return true;
+    }
+
+    try {
+      setVoiceQualityMessage("마이크 권한과 소음 억제 설정을 확인하는 중입니다.");
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      stream.getTracks().forEach((track) => track.stop());
+      setVoiceQualityMessage("마이크 권한을 확인했고, 지원되는 브라우저에는 소음 억제 설정을 요청했습니다.");
+      return true;
+    } catch {
+      setVoiceQualityMessage("마이크 권한을 확인하지 못했습니다. 브라우저 권한을 허용하거나 직접 입력으로 진행하세요.");
+      return false;
+    }
+  }
+
+  async function startRecording() {
     const Recognition = getSpeechRecognitionConstructor();
 
     if (!Recognition) {
@@ -206,7 +229,14 @@ export default function TbmVoiceDraftHelper({
       return;
     }
 
+    const canUseMicrophone = await requestMicrophonePreflight();
+
+    if (!canUseMicrophone) {
+      return;
+    }
+
     setSupportMessage("");
+    setVoiceQualityMessage("");
     setSubmitMessage("");
     setHasSubmitted(false);
     setEditedDraftText("");
@@ -255,7 +285,14 @@ export default function TbmVoiceDraftHelper({
 
     recognitionRef.current = recognition;
     setIsRecording(true);
-    recognition.start();
+
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setIsRecording(false);
+      setSupportMessage("음성입력을 시작하지 못했습니다. 잠시 후 다시 시도하거나 직접 입력해 주세요.");
+    }
   }
 
   function getSelectedFiles(input: HTMLInputElement) {
@@ -421,7 +458,6 @@ export default function TbmVoiceDraftHelper({
   }
 
   const hasGeneratedVoiceContent = Boolean(combinedTranscript || draftText);
-  const finalDraftText = editedDraftText.trim() || draftText || combinedTranscript;
   const hasVoiceContent = hasGeneratedVoiceContent;
   const canSubmit = hasGeneratedVoiceContent && !isRecording;
   const saveButtonLabel = isSubmitting ? "저장 중..." : hasSubmitted ? "TBM 저장 완료" : "TBM 저장하기";
@@ -450,6 +486,13 @@ export default function TbmVoiceDraftHelper({
 
       <div className="mt-4 rounded-xl border border-cyan-700/50 bg-slate-950/50 p-3">
         <p className="text-xs font-black text-cyan-200">1단계 · 녹음 시작 / 완료</p>
+        <div className="mt-3 rounded-xl border border-cyan-700/40 bg-cyan-950/30 p-3 text-xs leading-5 text-cyan-50/90">
+          <p className="font-black text-cyan-100">현장 소음 안내</p>
+          <p className="mt-1">
+            녹음 시작 시 마이크 권한과 소음 억제 설정을 요청합니다. 지원 여부는 기기·브라우저마다 다르므로,
+            소음이 큰 현장에서는 휴대폰을 가까이 두고 10초 단위로 짧게 말한 뒤 저장 전 내용을 수정하세요.
+          </p>
+        </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
@@ -468,6 +511,11 @@ export default function TbmVoiceDraftHelper({
             녹음 완료
           </button>
         </div>
+        {voiceQualityMessage ? (
+          <p className="mt-3 rounded-xl border border-slate-700 bg-slate-950/70 p-3 text-xs font-bold leading-5 text-slate-200">
+            {voiceQualityMessage}
+          </p>
+        ) : null}
       </div>
 
       {supportMessage ? (
@@ -504,7 +552,7 @@ export default function TbmVoiceDraftHelper({
                 : "녹음 완료 후 수정할 수 있습니다."}
             </p>
             <textarea
-              value={editedDraftText}
+              value={draftEditorValue}
               onChange={handleEditedDraftTextChange}
               disabled={!hasGeneratedVoiceContent}
               placeholder="녹음 후 생성된 TBM 내용이 여기에 표시됩니다. 오인식된 부분은 저장 전에 수정해 주세요."
@@ -519,7 +567,7 @@ export default function TbmVoiceDraftHelper({
             <button
               type="button"
               onClick={copyDraft}
-              disabled={!hasGeneratedVoiceContent || !(editedDraftText.trim() || draftText)}
+              disabled={!hasGeneratedVoiceContent || !draftEditorValue.trim()}
               className="rounded-xl border border-blue-500 bg-blue-950/50 px-4 py-3 text-sm font-black text-blue-100 disabled:border-slate-700 disabled:text-slate-600"
             >
               {copied ? "복사 완료" : "내용 복사"}
