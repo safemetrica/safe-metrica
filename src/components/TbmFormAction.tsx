@@ -19,7 +19,7 @@ export default function TbmFormAction({
         <div className="min-w-0">
           <div className="flex flex-col gap-0.5 md:flex-row md:items-center md:gap-3">
             <p className="whitespace-nowrap text-sm font-black text-white sm:text-base">
-              오늘 TBM 작성
+              TBM
             </p>
             {!compact && (
               <p className="truncate text-xs font-medium text-blue-100 sm:text-sm">
