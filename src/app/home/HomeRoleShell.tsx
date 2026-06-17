@@ -78,7 +78,25 @@ export default function HomeRoleShell({
 }: HomeRoleShellProps) {
   const [activeRole, setActiveRole] = useState<HomeRole>(initialRole);
   const activeRoleContent = roleContents[activeRole];
-  const showSecondaryMenu = activeRole === "manager";
+  const showSecondaryMenu = false;
+  const primarySectionCopy: Record<HomeRole, { eyebrow: string; title: string; helper: string }> = {
+    worker: {
+      eyebrow: "작업 전 확인",
+      title: "오늘 확인할 내용",
+      helper: "작업 전 확인하고, 의견이 있으면 남겨 주세요.",
+    },
+    manager: {
+      eyebrow: "현장 운영",
+      title: "오늘 운영 확인",
+      helper: "작성·접수·조치가 필요한 흐름을 먼저 확인합니다.",
+    },
+    ceo: {
+      eyebrow: "운영 기록",
+      title: "대표 운영 확인",
+      helper: "미조치 신호, 제보·조치 흐름, 월별 자료를 먼저 확인합니다.",
+    },
+  };
+  const primaryCopy = primarySectionCopy[activeRole];
 
   function handleRoleChange(nextRole: HomeRole) {
     setActiveRole(nextRole);
@@ -178,10 +196,10 @@ export default function HomeRoleShell({
           <section className="mt-6" aria-labelledby="today-tasks-title">
             <div className="flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-black text-blue-300">1차 내비게이션</p>
-                <h2 id="today-tasks-title" className="mt-1 text-xl font-black sm:text-2xl">오늘 할 일</h2>
+                <p className="text-xs font-black text-blue-300">{primaryCopy.eyebrow}</p>
+                <h2 id="today-tasks-title" className="mt-1 text-xl font-black sm:text-2xl">{primaryCopy.title}</h2>
               </div>
-              <p className="text-right text-xs leading-5 text-slate-500">실제 현황은 각 메뉴에서 확인</p>
+              <p className="text-right text-xs leading-5 text-slate-500">{primaryCopy.helper}</p>
             </div>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
