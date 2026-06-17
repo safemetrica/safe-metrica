@@ -2,10 +2,10 @@ import Link from "next/link";
 
 const FILE_CABINET_ITEMS = [
   {
-    label: "Version Lock 공유항목 CSV",
+    label: "최종 공유본 CSV",
     status: "Owner 준비",
     description:
-      "locked_share_items 기준으로 근로자 QR에 실제 노출 가능한 공유항목만 고객 전달용으로 정리합니다.",
+      "최종 공유본 기준으로 근로자 QR에 실제 노출 가능한 공유항목만 고객 전달용으로 정리합니다.",
   },
   {
     label: "근로자 공유확인 CSV",
@@ -88,7 +88,7 @@ export default function RiskSharePackExportPanel({
 
       <p className="mt-4 text-xs leading-5 text-slate-500">
         월별 보관파일은 운영기록을 정리해 확인자료로 활용하기 위한 보조 흐름입니다.
-        Version Lock 전 draft, 고객 확인 전 항목, raw_payload, Owner 링크, API 링크, 토큰·환경변수 유사 문자열은 고객 전달자료에 포함하지 않습니다.
+        최종 공유본 확정 전 항목, 고객 확인 전 항목, raw_payload, Owner 링크, API 링크, 토큰·환경변수 유사 문자열은 고객 전달자료에 포함하지 않습니다.
         법적 판단, 면책, 조치완료 확정을 대신하지 않습니다.
       </p>
     </section>
