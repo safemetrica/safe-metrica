@@ -421,7 +421,7 @@ export default function FieldParticipationStepper({
 
                 {canOpenRiskSummary ? (
                   <a
-                    href={`/${encodeURIComponent(companyCode)}/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
+                    href={`/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
                     className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"
                   >
                     공유 위험요인 보기
