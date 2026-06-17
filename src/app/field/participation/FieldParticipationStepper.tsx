@@ -98,7 +98,7 @@ function buildFieldParticipationTtsText(params: {
       );
     });
   } else if (params.canOpenRiskSummary) {
-    lines.push("위험성평가 공유요약은 아래 버튼에서 별도로 확인할 수 있습니다.");
+    lines.push("공유할 위험요인은 아래 버튼에서 확인할 수 있습니다.");
   } else {
     lines.push("오늘 작업 전 티비엠 공유 내용과 현장 주의사항을 확인해 주세요.");
   }
@@ -414,7 +414,7 @@ export default function FieldParticipationStepper({
                 ) : (
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">
                     {canOpenRiskSummary
-                      ? "위험성평가 공유요약은 아래 버튼에서 별도로 확인할 수 있습니다."
+                      ? "공유할 위험요인은 아래 버튼에서 확인할 수 있습니다."
                       : "오늘 작업 전 TBM 공유 내용과 현장 주의사항을 확인해 주세요."}
                   </div>
                 )}
@@ -424,7 +424,7 @@ export default function FieldParticipationStepper({
                     href={`/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
                     className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"
                   >
-                    근로자용 위험성평가 요약 보기
+                    공유 위험요인 보기
                   </a>
                 ) : null}
               </div>

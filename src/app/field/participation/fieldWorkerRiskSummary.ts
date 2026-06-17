@@ -86,7 +86,7 @@ function buildSharedRiskMemo(items: FieldWorkerRiskSummaryItem[]) {
     return "";
   }
 
-  const lines = ["[Version Lock 근로자 공유 위험요인]"];
+  const lines = ["[근로자 공유 위험요인]"];
 
   items.forEach((item, index) => {
     lines.push(

@@ -4,7 +4,6 @@ import { getCompanyConfig } from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
 import HomeSafetyNewsSection, { HomeSafetyNewsFallback } from "./HomeSafetyNewsSection";
 import HomeRoleShell from "./HomeRoleShell";
-import { riskShareLinkCopy } from "@/lib/risk-share-link/copy";
 
 import { getTbmFormUrl } from "@/lib/tenantLinks";
 const menus = [
@@ -67,8 +66,7 @@ const roleContent: Record<HomeRole, {
     badge: "확인 기록 중심",
     accent: "from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/30",
     tasks: [
-      { requiresCompanyCode: true, participationIntent: "risk", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "오늘 확인", accent: "border-amber-400/60 bg-gradient-to-br from-amber-600/25 to-slate-950/70", iconBg: "bg-amber-500/15" },
-      { requiresCompanyCode: true, participationIntent: "share", icon: "✅", title: "위험성평가 공유확인", description: riskShareLinkCopy.submissionTypes.shareConfirmation.description, status: "확인 기록", accent: "border-emerald-400/60 bg-gradient-to-br from-emerald-600/25 to-slate-950/70", iconBg: "bg-emerald-500/15" },
+      { requiresCompanyCode: true, participationIntent: "share", icon: "⚠️", title: "오늘 위험요인 확인", description: "위험성평가와 안전조치 내용을 확인하고, 의견이 있으면 함께 제출합니다.", status: "공유확인 기록", accent: "border-amber-400/60 bg-gradient-to-br from-amber-600/25 to-slate-950/70", iconBg: "bg-amber-500/15" },
       { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-400/60 bg-gradient-to-br from-blue-600/30 to-slate-950/70", iconBg: "bg-blue-500/15" },
       { requiresCompanyCode: true, participationIntent: "report", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 위험요인, 아차사고, 개선 의견을 관리자 검토대상으로 접수합니다.", status: "관리자 검토대상", accent: "border-cyan-400/60 bg-gradient-to-br from-cyan-600/25 to-slate-950/70", iconBg: "bg-cyan-500/15" },
     ],

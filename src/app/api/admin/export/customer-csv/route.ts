@@ -583,7 +583,7 @@ function buildWorkerRepresentativeConfirmationRows(rows: ExportRow[]) {
 
 function buildLockedShareItemRows(lockedRows: ExportRow[]) {
   const headers = [
-    "Version Lock 일시",
+    "최종 공유본 확정일시",
     "Lock ID",
     "회사코드",
     "회사명",
@@ -622,7 +622,7 @@ function buildLockedShareItemRows(lockedRows: ExportRow[]) {
       ? "고객 확인 완료"
       : "확인 필요",
     yesNo(getBoolean(row, ["worker_visible"])),
-    "Version Lock 기준 고객 전달용 공유항목입니다. 법적 판단, 면책, 조치완료 또는 AI 확정 판단을 의미하지 않습니다.",
+    "최종 공유본 기준 고객 전달용 공유항목입니다. 법적 판단, 면책, 조치완료 또는 AI 확정 판단을 의미하지 않습니다.",
   ]);
 
   return { headers, rows };

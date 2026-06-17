@@ -59,7 +59,7 @@ export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageP
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">
         <section className="mx-auto max-w-2xl rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-          <p className="text-xs font-black text-amber-700">SafeMetrica 위험성평가 공유요약</p>
+          <p className="text-xs font-black text-amber-700">SafeMetrica 공유 위험요인 요약</p>
           <h1 className="mt-2 text-2xl font-black text-amber-950">회사코드가 필요합니다.</h1>
           <p className="mt-3 text-sm font-bold leading-6 text-amber-900">
             현장참여 QR 또는 회사코드가 포함된 링크로 다시 접속해 주세요.
@@ -79,17 +79,17 @@ export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageP
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">
         <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-black text-blue-700">SafeMetrica 위험성평가 공유요약</p>
+          <p className="text-xs font-black text-blue-700">SafeMetrica 공유 위험요인 요약</p>
           <h1 className="mt-2 text-2xl font-black text-slate-950">{companyName} 공유요약</h1>
           <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">
-            현재 근로자에게 공유할 Version Lock 위험요약 항목이 없습니다.
+            현재 근로자에게 보여줄 최종 공유본 위험요인이 없습니다.
             {companyCode === "mons"
               ? " 현재 이 사업장은 현장참여와 TBM 중심으로 운영합니다."
-              : " 현장관리자에게 고객 확인과 Version Lock 상태를 확인해 주세요."}
+              : " 현장관리자에게 최종 공유본 확정 상태를 확인해 주세요."}
           </div>
 
           <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-            이 화면은 근로자 공유용 요약 화면입니다. Version Lock 전 항목, draft, 고객 확인 전 항목, 관리자 메모, 내부 조치상태, 예산, Notion 원본 링크, 대표 확인 정보는 표시하지 않습니다.
+            이 화면은 근로자에게 공유하기로 확정된 위험요인만 보여주는 화면입니다. 내부 검토 메모, 예산, 원본 링크, 대표 확인 정보는 표시하지 않습니다.
           </div>
 
           <Link
@@ -106,14 +106,14 @@ export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageP
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">
       <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-xs font-black text-blue-700">SafeMetrica 위험성평가 공유요약</p>
+        <p className="text-xs font-black text-blue-700">SafeMetrica 공유 위험요인 요약</p>
         <h1 className="mt-2 text-2xl font-black text-slate-950">{companyName} 핵심 위험요인</h1>
         <p className="mt-3 text-sm font-bold leading-6 text-slate-600">
-          고객 확인과 Version Lock이 완료된 주요 위험요인과 안전조치만 요약했습니다.
+          최종 공유본으로 확정된 주요 위험요인과 안전조치만 요약했습니다.
         </p>
 
         <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-          이 화면은 근로자 공유용 요약 화면입니다. Version Lock 전 항목, draft, 고객 확인 전 항목, 관리자 메모, 예산, 내부 조치상태, 대표 확인 정보는 표시하지 않습니다.
+          이 화면은 근로자에게 공유하기로 확정된 위험요인만 보여주는 화면입니다. 내부 검토 메모, 예산, 대표 확인 정보는 표시하지 않습니다.
         </div>
 
         <div className="mt-5 space-y-4">
