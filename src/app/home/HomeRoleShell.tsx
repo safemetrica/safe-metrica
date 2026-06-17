@@ -207,12 +207,12 @@ export default function HomeRoleShell({
                 const cardContent = (
                   <>
                     <div className="flex items-start gap-3">
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl ${task.iconBg}`} aria-hidden="true">
+                      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${task.iconBg}`} aria-hidden="true">
                         {task.icon}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-black text-white">{task.title}</span>
+                          <span className="text-base font-black text-white sm:text-lg">{task.title}</span>
                           {task.badge ? (
                             <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-black text-slate-300">
                               {task.badge}
@@ -232,11 +232,11 @@ export default function HomeRoleShell({
                 );
 
                 return task.href && !task.disabled ? (
-                  <Link key={task.title} href={task.href} className={`group rounded-2xl border border-l-4 p-4 transition hover:-translate-y-0.5 hover:border-white/30 ${task.accent}`}>
+                  <Link key={task.title} href={task.href} className={`group rounded-2xl border border-l-4 p-5 shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:border-white/30 ${task.accent}`}>
                     {cardContent}
                   </Link>
                 ) : (
-                  <div key={task.title} aria-disabled="true" className={`cursor-not-allowed rounded-2xl border border-l-4 p-4 opacity-70 ${task.accent}`}>
+                  <div key={task.title} aria-disabled="true" className={`cursor-not-allowed rounded-2xl border border-l-4 p-5 opacity-70 shadow-lg shadow-black/10 ${task.accent}`}>
                     {cardContent}
                   </div>
                 );

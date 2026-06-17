@@ -67,10 +67,10 @@ const roleContent: Record<HomeRole, {
     badge: "확인 기록 중심",
     accent: "from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/30",
     tasks: [
-      { requiresCompanyCode: true, participationIntent: "risk", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "오늘 확인", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-      { requiresCompanyCode: true, participationIntent: "share", icon: "✅", title: "위험성평가 공유확인", description: riskShareLinkCopy.submissionTypes.shareConfirmation.description, status: "확인 기록", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
-      { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
-      { requiresCompanyCode: true, participationIntent: "report", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 위험요인, 아차사고, 개선 의견을 관리자 검토대상으로 접수합니다.", status: "관리자 검토대상", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+      { requiresCompanyCode: true, participationIntent: "risk", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "오늘 확인", accent: "border-amber-400/60 bg-gradient-to-br from-amber-600/25 to-slate-950/70", iconBg: "bg-amber-500/15" },
+      { requiresCompanyCode: true, participationIntent: "share", icon: "✅", title: "위험성평가 공유확인", description: riskShareLinkCopy.submissionTypes.shareConfirmation.description, status: "확인 기록", accent: "border-emerald-400/60 bg-gradient-to-br from-emerald-600/25 to-slate-950/70", iconBg: "bg-emerald-500/15" },
+      { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-400/60 bg-gradient-to-br from-blue-600/30 to-slate-950/70", iconBg: "bg-blue-500/15" },
+      { requiresCompanyCode: true, participationIntent: "report", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 위험요인, 아차사고, 개선 의견을 관리자 검토대상으로 접수합니다.", status: "관리자 검토대상", accent: "border-cyan-400/60 bg-gradient-to-br from-cyan-600/25 to-slate-950/70", iconBg: "bg-cyan-500/15" },
     ],
   },
   manager: {
@@ -80,11 +80,11 @@ const roleContent: Record<HomeRole, {
     badge: "운영기록 확인 필요",
     accent: "from-blue-950/90 via-slate-900 to-slate-950 border-blue-500/30",
     tasks: [
-      { href: "/tbm", icon: "📋", title: "오늘 TBM 작성", description: "오늘 작업 전 TBM을 작성하거나 확인합니다.", status: "확인 필요", accent: "border-blue-500/50 bg-blue-950/40", iconBg: "bg-blue-500/15" },
-      { href: "/field/voice", icon: "🗣️", title: "현장참여 접수함", description: "공유확인과 위험제보·아차사고·개선제안을 구분해 확인합니다.", status: "분리 확인", accent: "border-emerald-500/40 bg-emerald-950/30", iconBg: "bg-emerald-500/15" },
-      { href: "/manager/risk-share", icon: "🗂️", title: "위험성평가 공유팩", description: "위험성평가 공유확인, 근로자대표 확인, 월별 보관함을 확인합니다.", status: "월별 보관", accent: "border-teal-500/40 bg-teal-950/30", iconBg: "bg-teal-500/15" },
-      { href: "/field/voice", icon: "🔎", title: "조치 필요 항목", description: "위험제보·아차사고·개선제안 중 조치필요·검토중 항목을 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-      { href: "/field", icon: "👷", title: "현장비서", description: "누락 가능성과 운영 신호를 참고하고 직접 검토합니다.", status: "관리자 검토 필요", badge: "베타", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
+      { href: "/tbm", icon: "📋", title: "오늘 TBM 작성", description: "오늘 작업 전 TBM을 작성하거나 확인합니다.", status: "확인 필요", accent: "border-blue-400/70 bg-gradient-to-br from-blue-600/35 to-slate-950/70", iconBg: "bg-blue-500/15" },
+      { href: "/field/voice", icon: "🗣️", title: "현장참여 접수함", description: "공유확인과 위험제보·아차사고·개선제안을 구분해 확인합니다.", status: "분리 확인", accent: "border-emerald-400/65 bg-gradient-to-br from-emerald-600/30 to-slate-950/70", iconBg: "bg-emerald-500/15" },
+      { href: "/manager/risk-share", icon: "🗂️", title: "위험성평가 공유팩", description: "위험성평가 공유확인, 근로자대표 확인, 월별 보관함을 확인합니다.", status: "월별 보관", accent: "border-teal-400/65 bg-gradient-to-br from-teal-600/30 to-slate-950/70", iconBg: "bg-teal-500/15" },
+      { href: "/field/voice", icon: "🔎", title: "조치 필요 항목", description: "위험제보·아차사고·개선제안 중 조치필요·검토중 항목을 확인합니다.", status: "확인 필요", accent: "border-amber-400/60 bg-gradient-to-br from-amber-600/25 to-slate-950/70", iconBg: "bg-amber-500/15" },
+      { href: "/field", icon: "👷", title: "현장비서", description: "누락 가능성과 운영 신호를 참고하고 직접 검토합니다.", status: "관리자 검토 필요", badge: "베타", accent: "border-cyan-400/60 bg-gradient-to-br from-cyan-600/25 to-slate-950/70", iconBg: "bg-cyan-500/15" },
     ],
   },
   ceo: {
@@ -92,13 +92,13 @@ const roleContent: Record<HomeRole, {
     title: "대표 운영 확인",
     description: "우리 회사 안전운영 기록과 월별 자료 준비 상태를 확인하세요.",
     badge: "입력된 운영기록 기준",
-    accent: "from-violet-950/90 via-slate-900 to-slate-950 border-violet-500/30",
+    accent: "from-slate-900 via-slate-900 to-indigo-950/45 border-indigo-500/20",
     tasks: [
-      { href: "/dashboard", icon: "🔎", title: "미조치 신호 보기", description: "미조치·검토 지연·고위험 신호를 상세 화면에서 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-      { href: "/field/voice", icon: "🗣️", title: "제보·조치 현황 보기", description: "위험제보·아차사고·개선제안의 접수와 조치 흐름을 확인합니다.", status: "제보·조치 구분", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
-      { href: "/monthly-report", icon: "📑", title: "월간보고서", description: "공유확인과 관리자 조치 결과를 분리해 월별 요약으로 확인합니다.", status: "월별 요약", badge: "베타", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
-      { href: "/manager/risk-share", icon: "🗂️", title: "월별 보관함 보기", description: "근로자 확인, 위험제보, 근로자대표 확인 기록을 월별 보관 흐름으로 확인합니다.", status: "운영기록 보관", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
-      { href: "/risk/report", icon: "🖨️", title: "출력자료 확인", description: "위험요인과 개선대책 출력자료를 확인합니다.", status: "메뉴에서 확인", badge: "제한 운영", accent: "border-violet-500/40 bg-violet-950/25", iconBg: "bg-violet-500/15" },
+      { href: "/dashboard", icon: "🔎", title: "미조치 신호 보기", description: "미조치·검토 지연·고위험 신호를 상세 화면에서 확인합니다.", status: "확인 필요", accent: "border-amber-400/60 bg-gradient-to-br from-amber-600/25 to-slate-950/70", iconBg: "bg-amber-500/15" },
+      { href: "/field/voice", icon: "🗣️", title: "제보·조치 현황 보기", description: "위험제보·아차사고·개선제안의 접수와 조치 흐름을 확인합니다.", status: "제보·조치 구분", accent: "border-emerald-400/60 bg-gradient-to-br from-emerald-600/25 to-slate-950/70", iconBg: "bg-emerald-500/15" },
+      { href: "/monthly-report", icon: "📑", title: "월간보고서", description: "공유확인과 관리자 조치 결과를 분리해 월별 요약으로 확인합니다.", status: "월별 요약", badge: "베타", accent: "border-blue-400/60 bg-gradient-to-br from-blue-600/30 to-slate-950/70", iconBg: "bg-blue-500/15" },
+      { href: "/manager/risk-share", icon: "🗂️", title: "월별 보관함 보기", description: "근로자 확인, 위험제보, 근로자대표 확인 기록을 월별 보관 흐름으로 확인합니다.", status: "운영기록 보관", accent: "border-emerald-400/60 bg-gradient-to-br from-emerald-600/25 to-slate-950/70", iconBg: "bg-emerald-500/15" },
+      { href: "/risk/report", icon: "🖨️", title: "출력자료 확인", description: "위험요인과 개선대책 출력자료를 확인합니다.", status: "메뉴에서 확인", badge: "제한 운영", accent: "border-indigo-400/45 bg-gradient-to-br from-indigo-600/18 to-slate-950/75", iconBg: "bg-violet-500/15" },
     ],
   },
 };
@@ -109,28 +109,28 @@ const ceoBriefingMetrics = [
     value: "Risk 보기",
     href: "/dashboard",
     description: "미조치·고위험 신호를 확인합니다.",
-    className: "border-amber-500/30 bg-amber-950/20 text-amber-100",
+    className: "border-amber-400/45 bg-slate-900/80 text-slate-100",
   },
   {
     label: "미조치·검토 지연",
     value: "조치 흐름 보기",
     href: "/dashboard",
     description: "검토 지연이나 조치 필요 항목을 확인합니다.",
-    className: "border-red-500/25 bg-red-950/15 text-red-100",
+    className: "border-rose-400/40 bg-slate-900/80 text-slate-100",
   },
   {
     label: "증빙 누락",
     value: "보관함 보기",
     href: "/manager/risk-share",
     description: "공유확인·제보·대표확인 기록의 보관 흐름을 확인합니다.",
-    className: "border-sky-500/25 bg-sky-950/20 text-sky-100",
+    className: "border-sky-400/40 bg-slate-900/80 text-slate-100",
   },
   {
     label: "PTW 승인 대기",
     value: "허가 현황 보기",
     href: "/ptw",
     description: "고위험작업허가 현황을 확인합니다.",
-    className: "border-violet-500/25 bg-violet-950/20 text-violet-100",
+    className: "border-indigo-400/35 bg-slate-900/80 text-slate-100",
   },
 ];
 
@@ -520,7 +520,7 @@ export default async function Home({
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
 
   const ceoOperatingBriefing = (
-    <section className="mt-6 rounded-3xl border border-slate-700/70 bg-slate-900/85 p-4 shadow-xl shadow-black/20 sm:p-5" aria-label="대표 운영 확인 요약">
+    <section className="mt-6 rounded-3xl border border-slate-700/80 bg-slate-900/75 p-4 shadow-xl shadow-black/10 sm:p-5" aria-label="대표 운영 확인 요약">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">대표가 먼저 볼 내용</p>
