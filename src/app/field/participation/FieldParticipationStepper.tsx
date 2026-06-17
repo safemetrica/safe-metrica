@@ -550,6 +550,18 @@ export default function FieldParticipationStepper({
                   <p className="mt-1 text-right text-xs font-bold text-slate-500">{content.length}/500</p>
                 </div>
 
+                  <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                    <h3 className="text-sm font-black text-blue-900">제출 방식</h3>
+                    <p className="mt-2 text-sm leading-6 text-blue-900">
+                      {hasOpinion
+                        ? "위험제보·아차사고·개선제안은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
+                        : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
+                    </p>
+                    <p className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-blue-800">
+                      익명 제출 안내: 익명 제출 시 회사에는 제보 내용 중심으로 전달됩니다. 연락처를 남기지 않으면 후속 확인이 어려울 수 있습니다.
+                    </p>
+                  </div>
+
                 <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                   <h3 className="text-sm font-black text-emerald-900">
                     {hasOpinion ? "제보 제출자 정보" : "공유확인 최소 확인정보"}
