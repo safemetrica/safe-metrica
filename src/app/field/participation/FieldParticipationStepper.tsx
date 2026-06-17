@@ -557,6 +557,20 @@ export default function FieldParticipationStepper({
                         ? "위험제보·아차사고·개선제안은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
                         : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
                     </p>
+                    <label className={[
+                      "mt-3 flex items-center gap-3 rounded-2xl border p-4 text-sm font-bold",
+                      hasOpinion ? "border-blue-300 bg-white text-slate-800" : "border-slate-200 bg-slate-100 text-slate-500",
+                    ].join(" ")}>
+                      <input
+                        type="checkbox"
+                        checked={hasOpinion && anonymous}
+                        disabled={!hasOpinion}
+                        onChange={(event) => setAnonymous(event.target.checked)}
+                        className="h-5 w-5 rounded border-slate-300 disabled:opacity-50"
+                      />
+                      <span>익명으로 제보 제출</span>
+                    </label>
+
                     <p className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-blue-800">
                       익명 제출 안내: 익명 제출 시 회사에는 제보 내용 중심으로 전달됩니다. 연락처를 남기지 않으면 후속 확인이 어려울 수 있습니다.
                     </p>
