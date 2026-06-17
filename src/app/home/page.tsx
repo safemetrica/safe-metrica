@@ -491,7 +491,7 @@ export default async function Home({
   const getWorkerParticipationHref = (intent?: WorkerParticipationIntent) => {
     if (!company.code || !intent) return null;
 
-    return `/field/participation?company=${encodeURIComponent(company.code)}&intent=${intent}`;
+    return `/${encodeURIComponent(company.code)}/field/participation?company=${encodeURIComponent(company.code)}&intent=${intent}`;
   };
   const workerRoleContent = {
     ...roleContent.worker,

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getCompanyConfig } from "@/lib/company";
+import { getRiskIntelligenceData, isRiskItemOpen } from "@/lib/risk";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 export type FieldWorkerRiskSummaryItem = {
@@ -113,33 +115,128 @@ async function fetchLockedRiskShareItems(companyCode: string) {
   return selectSupabaseExportRows<LockedRiskShareItemRow>("risk_share_items", query);
 }
 
-export async function getFieldWorkerRiskSummary(
-  rawCompanyCode?: string | null
-): Promise<FieldWorkerRiskSummary | null> {
-  const companyCode = normalizeCompanyCode(rawCompanyCode);
 
-  if (!isOperatingRiskSummaryTarget(companyCode)) {
-    return null;
+
+function buildSummaryText(
+  items: Array<{
+    title?: string;
+    hazard?: string;
+    accidentType?: string;
+    riskLevel?: string;
+    summary?: string;
+    controls?: string;
+  }>
+) {
+  const lines = ["[근로자 공유 위험요인]"];
+
+  items.forEach((item, index) => {
+    lines.push(
+      `${index + 1}. ${item.title || "작업명 확인 필요"}`,
+      `- 위험요인: ${item.hazard || "위험요인 확인 필요"}`,
+      item.accidentType ? `- 사고유형: ${item.accidentType}` : "",
+      `- 위험등급: ${item.riskLevel || "확인 필요"}`,
+      `- 확인할 안전조치: ${item.summary || item.controls || "작업 전 안전조치를 확인하세요."}`
+    );
+  });
+
+  return lines.filter(Boolean).join("\\n");
+}
+
+async function fetchRiskAssessmentFallbackRows(companyCode: string): Promise<LockedRiskShareItemRow[]> {
+  const notionApiKey = process.env.NOTION_API_KEY;
+
+  if (!notionApiKey) {
+    return [];
+  }
+
+  const company = await getCompanyConfig().catch(() => null);
+
+  if (!company || company.code !== companyCode || !company.riskAssessmentDbId) {
+    return [];
+  }
+
+  const riskData = await getRiskIntelligenceData(company.riskAssessmentDbId, notionApiKey);
+
+  if (!riskData.hasDb || riskData.items.length === 0) {
+    return [];
+  }
+
+  return riskData.items
+    .filter((item) => isRiskItemOpen(item))
+    .slice(0, 5)
+    .map((item, index) => {
+      const safetyMeasure =
+        item.currentControls ||
+        item.improvementPlan ||
+        "작업 전 현장관리자의 안전조치를 확인하세요.";
+
+      return {
+        id: `risk-db-${item.id || index}`,
+        task_name: item.taskName || item.processName || item.title || "작업명 확인 필요",
+        hazard: item.hazard || item.title || "위험요인 확인 필요",
+        accident_type: item.accidentType || null,
+        risk_level: item.riskLevel || null,
+        current_controls: item.currentControls || null,
+        improvement_plan: item.improvementPlan || null,
+        worker_share_summary: safetyMeasure,
+        share_status: "locked",
+        customer_confirmed: true,
+        worker_visible: true,
+        version_lock_id: "risk-assessment-fallback",
+      };
+    });
+}
+
+export async function getFieldWorkerRiskSummary(
+  companyCode?: string | null
+) {
+  const cleanCompanyCode = normalizeCompanyCode(companyCode);
+
+  if (!cleanCompanyCode) {
+    return {
+      hasDb: false,
+      total: 0,
+      items: [],
+      memo: "",
+      text: "",
+    };
   }
 
   try {
-    const lockedItems = await fetchLockedRiskShareItems(companyCode);
-    const items = lockedItems.slice(0, 3).map(toSummaryItem);
+    const lockedItems = await fetchLockedRiskShareItems(cleanCompanyCode);
+    const lockedSummaryItems = lockedItems.slice(0, 3).map(toSummaryItem);
+
+    if (lockedSummaryItems.length > 0) {
+      return {
+        hasDb: true,
+        total: lockedItems.length,
+        items: lockedSummaryItems,
+        memo: "",
+        text: buildSummaryText(lockedSummaryItems),
+      };
+    }
+
+    const fallbackRows = await fetchRiskAssessmentFallbackRows(cleanCompanyCode);
+    const fallbackSummaryItems = fallbackRows.slice(0, 3).map(toSummaryItem);
 
     return {
       hasDb: true,
-      total: lockedItems.length,
-      items,
-      memo: buildSharedRiskMemo(items),
+      total: fallbackRows.length,
+      items: fallbackSummaryItems,
+      memo: fallbackSummaryItems.length > 0
+        ? "기존 위험성평가표에서 근로자에게 공유 가능한 항목만 요약했습니다. 내부 메모, 예산, 담당자, 원본 링크는 표시하지 않습니다."
+        : "",
+      text: buildSummaryText(fallbackSummaryItems),
     };
   } catch (error) {
-    console.error("[field-worker-risk-summary-locked-items]", error);
+    console.error("[field-worker-risk-summary]", error);
 
     return {
       hasDb: false,
       total: 0,
       items: [],
       memo: "",
+      text: "",
     };
   }
 }
