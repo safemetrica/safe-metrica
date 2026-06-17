@@ -177,20 +177,30 @@ export async function getFieldWorkerRiskSummary(
     };
   }
 
+  let lockedItems: LockedRiskShareItemRow[] = [];
+
   try {
-    const lockedItems = await fetchLockedRiskShareItems(cleanCompanyCode);
-    const lockedSummaryItems = lockedItems.slice(0, 3).map(toSummaryItem);
+    lockedItems = await fetchLockedRiskShareItems(cleanCompanyCode);
+  } catch (error) {
+    console.warn(
+      "[field-worker-risk-summary] locked share items lookup failed; trying risk db fallback",
+      error
+    );
+  }
 
-    if (lockedSummaryItems.length > 0) {
-      return {
-        hasDb: true,
-        total: lockedItems.length,
-        items: lockedSummaryItems,
-        memo: "",
-        text: buildSharedRiskMemo(lockedSummaryItems),
-      };
-    }
+  const lockedSummaryItems = lockedItems.slice(0, 3).map(toSummaryItem);
 
+  if (lockedSummaryItems.length > 0) {
+    return {
+      hasDb: true,
+      total: lockedItems.length,
+      items: lockedSummaryItems,
+      memo: "",
+      text: buildSharedRiskMemo(lockedSummaryItems),
+    };
+  }
+
+  try {
     const fallbackRows = await fetchRiskAssessmentFallbackRows(cleanCompanyCode);
     const fallbackSummaryItems = fallbackRows.slice(0, 3).map(toSummaryItem);
 
@@ -204,7 +214,7 @@ export async function getFieldWorkerRiskSummary(
       text: buildSharedRiskMemo(fallbackSummaryItems),
     };
   } catch (error) {
-    console.error("[field-worker-risk-summary]", error);
+    console.error("[field-worker-risk-summary] risk db fallback failed", error);
 
     return {
       hasDb: false,
@@ -215,3 +225,4 @@ export async function getFieldWorkerRiskSummary(
     };
   }
 }
+
