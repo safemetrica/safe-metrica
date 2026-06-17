@@ -68,7 +68,7 @@ const roleContent: Record<HomeRole, {
     accent: "from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/30",
     tasks: [
       { requiresCompanyCode: true, participationIntent: "risk", icon: "⚠️", title: "오늘 위험요인 확인", description: "작업 전 현장의 위험요인과 안전조치를 확인합니다.", status: "오늘 확인", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-      { requiresCompanyCode: true, participationIntent: "share", icon: "✅", title: "위험성평가 공유확인", description: riskShareLinkCopy.submissionTypes.shareConfirmation.description, status: "KPI 제외 기록", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
+      { requiresCompanyCode: true, participationIntent: "share", icon: "✅", title: "위험성평가 공유확인", description: riskShareLinkCopy.submissionTypes.shareConfirmation.description, status: "확인 기록", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
       { href: "/tbm", icon: "📋", title: "TBM 확인", description: "오늘 작업 전 전달된 TBM 내용을 확인합니다.", status: "확인 필요", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
       { requiresCompanyCode: true, participationIntent: "report", icon: "🗣️", title: "위험제보 · 아차사고 · 개선제안", description: "현장에서 발견한 위험요인, 아차사고, 개선 의견을 관리자 검토대상으로 접수합니다.", status: "관리자 검토대상", accent: "border-cyan-500/40 bg-cyan-950/25", iconBg: "bg-cyan-500/15" },
     ],
@@ -88,15 +88,15 @@ const roleContent: Record<HomeRole, {
     ],
   },
   ceo: {
-    eyebrow: "대표 운영 브리핑",
-    title: "대표 운영 브리핑",
-    description: "운영 상태, 미조치 신호, 제보 현황, 월별 보관 자료를 한눈에 확인하세요.",
+    eyebrow: "대표 운영 확인",
+    title: "대표 운영 확인",
+    description: "우리 회사 안전운영 기록과 월별 자료 준비 상태를 확인하세요.",
     badge: "입력된 운영기록 기준",
     accent: "from-violet-950/90 via-slate-900 to-slate-950 border-violet-500/30",
     tasks: [
-      { href: "/dashboard", icon: "🔎", title: "대표 Risk 상세 보기", description: "미조치·검토 지연·고위험 신호를 상세 화면에서 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
-      { href: "/field/voice", icon: "🗣️", title: "제보·조치 현황 보기", description: "위험제보·아차사고·개선제안의 접수와 조치 흐름을 확인합니다.", status: "KPI 분리 확인", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
-      { href: "/monthly-report", icon: "📑", title: "월간보고서", description: "공유확인과 관리자 조치 결과를 분리해 월별 요약으로 확인합니다.", status: "KPI 분리 반영", badge: "베타", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
+      { href: "/dashboard", icon: "🔎", title: "미조치 신호 보기", description: "미조치·검토 지연·고위험 신호를 상세 화면에서 확인합니다.", status: "확인 필요", accent: "border-amber-500/40 bg-amber-950/25", iconBg: "bg-amber-500/15" },
+      { href: "/field/voice", icon: "🗣️", title: "제보·조치 현황 보기", description: "위험제보·아차사고·개선제안의 접수와 조치 흐름을 확인합니다.", status: "제보·조치 구분", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
+      { href: "/monthly-report", icon: "📑", title: "월간보고서", description: "공유확인과 관리자 조치 결과를 분리해 월별 요약으로 확인합니다.", status: "월별 요약", badge: "베타", accent: "border-blue-500/40 bg-blue-950/35", iconBg: "bg-blue-500/15" },
       { href: "/manager/risk-share", icon: "🗂️", title: "월별 보관함 보기", description: "근로자 확인, 위험제보, 근로자대표 확인 기록을 월별 보관 흐름으로 확인합니다.", status: "운영기록 보관", accent: "border-emerald-500/40 bg-emerald-950/25", iconBg: "bg-emerald-500/15" },
       { href: "/risk/report", icon: "🖨️", title: "출력자료 확인", description: "위험요인과 개선대책 출력자료를 확인합니다.", status: "메뉴에서 확인", badge: "제한 운영", accent: "border-violet-500/40 bg-violet-950/25", iconBg: "bg-violet-500/15" },
     ],
@@ -106,30 +106,30 @@ const roleContent: Record<HomeRole, {
 const ceoBriefingMetrics = [
   {
     label: "확인 필요",
-    value: "상세 확인",
+    value: "Risk 보기",
     href: "/dashboard",
-    description: "대표 Risk 상세 화면에서 미조치·고위험 신호를 확인합니다.",
+    description: "미조치·고위험 신호를 확인합니다.",
     className: "border-amber-500/30 bg-amber-950/20 text-amber-100",
   },
   {
     label: "미조치·검토 지연",
-    value: "상세 확인",
+    value: "조치 흐름 보기",
     href: "/dashboard",
-    description: "검토 지연이나 조치 필요 항목을 상세 화면에서 확인합니다.",
+    description: "검토 지연이나 조치 필요 항목을 확인합니다.",
     className: "border-red-500/25 bg-red-950/15 text-red-100",
   },
   {
     label: "증빙 누락",
-    value: "상세 확인",
+    value: "보관함 보기",
     href: "/manager/risk-share",
     description: "공유확인·제보·대표확인 기록의 보관 흐름을 확인합니다.",
     className: "border-sky-500/25 bg-sky-950/20 text-sky-100",
   },
   {
     label: "PTW 승인 대기",
-    value: "상세 확인",
+    value: "허가 현황 보기",
     href: "/ptw",
-    description: "고위험작업허가 현황은 PTW 화면에서 확인합니다.",
+    description: "고위험작업허가 현황을 확인합니다.",
     className: "border-violet-500/25 bg-violet-950/20 text-violet-100",
   },
 ];
@@ -520,20 +520,20 @@ export default async function Home({
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
 
   const ceoOperatingBriefing = (
-    <section className="mt-6 rounded-3xl border border-slate-700/70 bg-slate-900/85 p-4 shadow-xl shadow-black/20 sm:p-5" aria-label="대표 운영 브리핑 요약">
+    <section className="mt-6 rounded-3xl border border-slate-700/70 bg-slate-900/85 p-4 shadow-xl shadow-black/20 sm:p-5" aria-label="대표 운영 확인 요약">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">CEO Operating Briefing</p>
-                  <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">운영기록이 남고 있는지 먼저 확인합니다</h2>
+                  <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">대표가 먼저 볼 내용</p>
+                  <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">이번 달 보여줄 자료가 준비되고 있는지 확인하세요</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                    위험성평가 이후 공유·확인·제보·조치·보고 흐름이 끊기지 않았는지 확인하는 대표용 요약 화면입니다.
+                    공유·확인·제보·조치·보고 흐름이 월별 자료로 정리되고 있는지 확인합니다.
                   </p>
                 </div>
                 <a
                   href="/dashboard"
                   className="inline-flex shrink-0 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-sm font-black text-amber-100 hover:bg-amber-500/20"
                 >
-                  대표 Risk 상세 보기
+                  미조치 신호 보기
                 </a>
               </div>
 
@@ -554,10 +554,10 @@ export default async function Home({
               <div className="mt-5 rounded-2xl border border-slate-700/70 bg-slate-950/60 p-4">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-sm font-black text-white">이번 달 받을 자료</p>
-                    <p className="mt-1 text-xs text-slate-400">상세 데이터는 각 메뉴에서 확인하고, 월간보고서와 보관함으로 정리합니다.</p>
+                    <p className="text-sm font-black text-white">이번 달 보여줄 자료</p>
+                    <p className="mt-1 text-xs text-slate-400">월간보고서와 보관함에 남길 자료를 확인합니다.</p>
                   </div>
-                  <span className="text-xs font-bold text-slate-500">상세 집계는 각 메뉴에서 확인</span>
+                  <span className="text-xs font-bold text-slate-500">자료별로 확인</span>
                 </div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                   {ceoBriefingMaterials.map((item) => (
