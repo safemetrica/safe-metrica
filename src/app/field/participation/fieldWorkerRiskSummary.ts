@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getCompanyConfig } from "@/lib/company";
+import { getCompanyConfigByCode } from "@/lib/company";
 import { getRiskIntelligenceData, isRiskItemOpen } from "@/lib/risk";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
@@ -117,31 +117,6 @@ async function fetchLockedRiskShareItems(companyCode: string) {
 
 
 
-function buildSummaryText(
-  items: Array<{
-    title?: string;
-    hazard?: string;
-    accidentType?: string;
-    riskLevel?: string;
-    summary?: string;
-    controls?: string;
-  }>
-) {
-  const lines = ["[근로자 공유 위험요인]"];
-
-  items.forEach((item, index) => {
-    lines.push(
-      `${index + 1}. ${item.title || "작업명 확인 필요"}`,
-      `- 위험요인: ${item.hazard || "위험요인 확인 필요"}`,
-      item.accidentType ? `- 사고유형: ${item.accidentType}` : "",
-      `- 위험등급: ${item.riskLevel || "확인 필요"}`,
-      `- 확인할 안전조치: ${item.summary || item.controls || "작업 전 안전조치를 확인하세요."}`
-    );
-  });
-
-  return lines.filter(Boolean).join("\\n");
-}
-
 async function fetchRiskAssessmentFallbackRows(companyCode: string): Promise<LockedRiskShareItemRow[]> {
   const notionApiKey = process.env.NOTION_API_KEY;
 
@@ -149,9 +124,9 @@ async function fetchRiskAssessmentFallbackRows(companyCode: string): Promise<Loc
     return [];
   }
 
-  const company = await getCompanyConfig().catch(() => null);
+  const company = await getCompanyConfigByCode(companyCode).catch(() => null);
 
-  if (!company || company.code !== companyCode || !company.riskAssessmentDbId) {
+  if (!company?.riskAssessmentDbId) {
     return [];
   }
 
@@ -212,7 +187,7 @@ export async function getFieldWorkerRiskSummary(
         total: lockedItems.length,
         items: lockedSummaryItems,
         memo: "",
-        text: buildSummaryText(lockedSummaryItems),
+        text: buildSharedRiskMemo(lockedSummaryItems),
       };
     }
 
@@ -226,7 +201,7 @@ export async function getFieldWorkerRiskSummary(
       memo: fallbackSummaryItems.length > 0
         ? "기존 위험성평가표에서 근로자에게 공유 가능한 항목만 요약했습니다. 내부 메모, 예산, 담당자, 원본 링크는 표시하지 않습니다."
         : "",
-      text: buildSummaryText(fallbackSummaryItems),
+      text: buildSharedRiskMemo(fallbackSummaryItems),
     };
   } catch (error) {
     console.error("[field-worker-risk-summary]", error);
