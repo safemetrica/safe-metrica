@@ -6,6 +6,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 
 type WorkerCopy = {
+  code?: string;
   badge: string;
   title: string;
   description: string;
@@ -162,7 +163,7 @@ export default function FieldParticipationStepper({
   const [riskCheck, setRiskCheck] = useState(false);
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
-  const isFoodFactoryTrial = workerCopy?.companyName === "리치코리아";
+  const isFoodFactoryTrial = workerCopy?.code === "richi";
   const feedbackTypeOptions = useMemo(() => {
     const source =
     feedbackTypes.length > 0
