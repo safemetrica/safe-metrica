@@ -567,8 +567,8 @@ export default function FieldParticipationStepper({
                     <p className="mt-2 text-sm leading-6 text-blue-900">
                         {isFoodFactoryTrial
                           ? hasOpinion
-                            ? "불편사항·개선의견은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
-                            : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 확인만 하는 경우에는 최소 확인정보가 필요합니다."
+                            ? "불편사항·개선의견은 익명으로 제출할 수 있습니다. 익명 제출을 선택하면 이름·소속·연락처 입력 없이 내용 중심으로 접수됩니다."
+                            : "불편사항이나 개선의견을 남길 때는 익명 제출을 선택할 수 있습니다. 확인만 제출하는 경우에는 기록 구분을 위해 최소 확인정보가 필요합니다."
                           : hasOpinion
                             ? "위험제보·아차사고·개선제안은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
                             : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
@@ -588,7 +588,7 @@ export default function FieldParticipationStepper({
                     </label>
 
                     <p className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-blue-800">
-                      익명 제출 안내: 익명 제출 시 회사에는 제보 내용 중심으로 전달됩니다. 연락처를 남기지 않으면 후속 확인이 어려울 수 있습니다.
+                      익명 제출 안내: 익명 제출 시 회사에는 내용 중심으로 전달됩니다. 이름·소속·연락처는 함께 저장하지 않으며, 연락처가 없으면 후속 확인은 어려울 수 있습니다.
                     </p>
                   </div>
 
@@ -601,11 +601,11 @@ export default function FieldParticipationStepper({
                   <p className="mt-2 text-sm leading-6 text-emerald-900">
                       {isFoodFactoryTrial
                         ? hasOpinion
-                          ? "불편사항·개선의견은 익명 제출을 선택할 수 있습니다."
+                          ? "불편사항·개선의견은 익명 제출을 선택할 수 있습니다. 익명 제출 중에는 개인정보 입력란이 비활성화됩니다."
                           : "확인만 제출하는 경우에는 기록 구분을 위해 최소 확인정보가 필요합니다."
                         : hasOpinion
                           ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
-                          : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
+                          : "전자확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
                   </p>
 
                   <div className="mt-4 grid gap-3">
@@ -663,7 +663,7 @@ export default function FieldParticipationStepper({
 
                     {!hasOpinion && !shareConfirmationIdentityReady ? (
                       <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                        공유확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다.
+                        전자확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다.
                       </p>
                     ) : null}
                   </div>
