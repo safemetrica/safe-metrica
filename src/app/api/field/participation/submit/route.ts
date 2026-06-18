@@ -14,7 +14,15 @@ import {
   isSupabaseFieldParticipationShadowWriteEnabled,
 } from "@/lib/supabaseServer";
 
-const STANDARD_FIELD_VOICE_TYPES = new Set(["공유확인", "위험제보", "아차사고", "개선제안", "기타"]);
+const STANDARD_FIELD_VOICE_TYPES = new Set([
+  "공유확인",
+  "위험제보",
+  "아차사고",
+  "개선제안",
+  "불편사항",
+  "위생·안전 확인",
+  "기타",
+]);
 
 function normalizeFieldVoiceSubmissionType(rawType: string) {
   const compact = rawType.replace(/\s+/g, "").trim();
@@ -33,6 +41,19 @@ function normalizeFieldVoiceSubmissionType(rawType: string) {
 
   if (compact.includes("개선제안") || compact.includes("개선의견")) {
     return "개선제안";
+  }
+
+  if (compact.includes("불편사항") || compact.includes("불편")) {
+    return "불편사항";
+  }
+
+  if (
+    compact.includes("위생안전확인") ||
+    compact.includes("위생·안전확인") ||
+    compact.includes("위생안전") ||
+    compact.includes("위생확인")
+  ) {
+    return "위생·안전 확인";
   }
 
   return STANDARD_FIELD_VOICE_TYPES.has(rawType) ? rawType : "기타";
@@ -112,6 +133,8 @@ function getFieldParticipationEvidenceRole(submissionType: string) {
   if (submissionType === "위험제보") return "worker_report_attachment";
   if (submissionType === "아차사고") return "near_miss_attachment";
   if (submissionType === "개선제안") return "improvement_suggestion_attachment";
+  if (submissionType === "불편사항") return "worker_discomfort_attachment";
+  if (submissionType === "위생·안전 확인") return "food_safety_confirmation_attachment";
 
   return "field_participation_attachment";
 }
