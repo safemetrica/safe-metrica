@@ -141,7 +141,8 @@ type SupabaseExportTable =
   | "risk_share_item_candidates"
   | "risk_share_candidate_review_events"
   | "risk_share_items"
-  | "risk_share_version_locks";
+  | "risk_share_version_locks"
+  | "tenant_registry";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -853,4 +854,124 @@ export async function updateRiskShareItemsForVersionLock(
     message,
     data,
   };
+}
+
+
+export type TenantRegistryRow = {
+  id?: string;
+  company_code?: string | null;
+  company_name?: string | null;
+  status?: string | null;
+  service_mode?: string | null;
+  enabled_modules?: unknown;
+  plan_type?: string | null;
+  trial_start_date?: string | null;
+  trial_end_date?: string | null;
+  default_site_id?: string | null;
+  default_site_name?: string | null;
+  owner_notes?: string | null;
+  source_channel?: string | null;
+  contact_label?: string | null;
+  raw_payload?: Record<string, unknown> | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type TenantRegistryConfig = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  serviceMode: string;
+  enabledModules: string[];
+  planType: string | null;
+  trialStartDate: string | null;
+  trialEndDate: string | null;
+  defaultSiteId: string | null;
+  defaultSiteName: string | null;
+  ownerNotes: string | null;
+  sourceChannel: string | null;
+  contactLabel: string | null;
+  rawPayload: Record<string, unknown>;
+};
+
+function readTenantRegistryString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeTenantRegistryModules(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((item) => readTenantRegistryString(item)).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return normalizeTenantRegistryModules(parsed);
+    } catch {
+      return value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+}
+
+function normalizeTenantRegistryRawPayload(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+export async function getTenantRegistryConfigByCode(rawCompanyCode: string) {
+  const companyCode = rawCompanyCode.trim().toLowerCase();
+
+  if (!companyCode) {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    select:
+      "id,company_code,company_name,status,service_mode,enabled_modules,plan_type,trial_start_date,trial_end_date,default_site_id,default_site_name,owner_notes,source_channel,contact_label,raw_payload,created_at,updated_at",
+    company_code: `eq.${companyCode}`,
+    limit: "1",
+  });
+
+  const rows = await selectSupabaseExportRows<TenantRegistryRow>("tenant_registry", query);
+  const row = rows[0] ?? null;
+
+  if (!row) {
+    return null;
+  }
+
+  const code = readTenantRegistryString(row.company_code);
+  const name = readTenantRegistryString(row.company_name) || code;
+  const status = readTenantRegistryString(row.status) || "onboarding";
+  const serviceMode = readTenantRegistryString(row.service_mode);
+
+  if (!code || !serviceMode) {
+    return null;
+  }
+
+  return {
+    id: readTenantRegistryString(row.id),
+    code,
+    name,
+    status,
+    serviceMode,
+    enabledModules: normalizeTenantRegistryModules(row.enabled_modules),
+    planType: readTenantRegistryString(row.plan_type) || null,
+    trialStartDate: readTenantRegistryString(row.trial_start_date) || null,
+    trialEndDate: readTenantRegistryString(row.trial_end_date) || null,
+    defaultSiteId: readTenantRegistryString(row.default_site_id) || null,
+    defaultSiteName: readTenantRegistryString(row.default_site_name) || null,
+    ownerNotes: readTenantRegistryString(row.owner_notes) || null,
+    sourceChannel: readTenantRegistryString(row.source_channel) || null,
+    contactLabel: readTenantRegistryString(row.contact_label) || null,
+    rawPayload: normalizeTenantRegistryRawPayload(row.raw_payload),
+  } satisfies TenantRegistryConfig;
 }
