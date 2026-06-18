@@ -162,6 +162,7 @@ export default function FieldParticipationStepper({
   const [riskCheck, setRiskCheck] = useState(false);
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
+  const isFoodFactoryTrial = workerCopy?.companyName === "리치코리아";
   const feedbackTypeOptions = useMemo(() => {
     const source =
     feedbackTypes.length > 0
@@ -481,9 +482,13 @@ export default function FieldParticipationStepper({
             {step === 3 ? (
               <div>
                 <p className="text-sm font-black text-slate-500">Step 3/4</p>
-                <h2 className="mt-1 text-xl font-black text-slate-950">의견 / 아차사고 제출</h2>
+                  <h2 className="mt-1 text-xl font-black text-slate-950">
+                    {isFoodFactoryTrial ? "불편사항·개선의견 제출" : "의견 / 아차사고 제출"}
+                  </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {riskShareLinkCopy.worker.intro}
+                    {isFoodFactoryTrial
+                      ? "작업 전 확인 후 불편사항이나 개선의견이 있으면 짧게 남겨 주세요."
+                      : riskShareLinkCopy.worker.intro}
                 </p>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -494,7 +499,9 @@ export default function FieldParticipationStepper({
                     </p>
                   </div>
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-sm font-black text-amber-800">위험·아차사고·개선의견 있음</p>
+                      <p className="text-sm font-black text-amber-800">
+                        {isFoodFactoryTrial ? "불편사항·개선의견 있음" : "위험·아차사고·개선의견 있음"}
+                      </p>
                     <p className="mt-2 text-sm font-bold leading-6 text-amber-900">
                       제목, 내용 또는 사진을 입력하면 관리자 검토대상으로 저장됩니다.
                     </p>
@@ -502,18 +509,22 @@ export default function FieldParticipationStepper({
                 </div>
 
                 <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">제보 제목</label>
+                    <label className="text-sm font-bold text-slate-700">
+                      {isFoodFactoryTrial ? "의견 제목" : "제보 제목"}
+                    </label>
                   <input
                     value={reportTitle}
                     onChange={(event) => setReportTitle(event.target.value.slice(0, 80))}
-                    placeholder="예: 재활용장 바닥 깨진 병 조각 발견"
+                      placeholder={isFoodFactoryTrial ? "예: 포장실 동선이 불편합니다" : "예: 재활용장 바닥 깨진 병 조각 발견"}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-1 text-right text-xs font-bold text-slate-500">{reportTitle.length}/80</p>
                 </div>
 
                 <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">제보 유형</label>
+                    <label className="text-sm font-bold text-slate-700">
+                      {isFoodFactoryTrial ? "의견 유형" : "제보 유형"}
+                    </label>
                   <select
                     value={feedbackType}
                     onChange={(event) => setFeedbackType(normalizeParticipationType(event.target.value))}
@@ -544,7 +555,7 @@ export default function FieldParticipationStepper({
                     value={content}
                     onChange={(event) => setContent(event.target.value.slice(0, 500))}
                     rows={4}
-                    placeholder="예: 통로 바닥이 미끄럽습니다 / 적치 위치 조정이 필요합니다"
+                      placeholder={isFoodFactoryTrial ? "예: 손 세척 동선이 불편합니다 / 작업대 위치 조정이 필요합니다" : "예: 통로 바닥이 미끄럽습니다 / 적치 위치 조정이 필요합니다"}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base leading-6 text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-1 text-right text-xs font-bold text-slate-500">{content.length}/500</p>
@@ -553,9 +564,13 @@ export default function FieldParticipationStepper({
                   <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
                     <h3 className="text-sm font-black text-blue-900">제출 방식</h3>
                     <p className="mt-2 text-sm leading-6 text-blue-900">
-                      {hasOpinion
-                        ? "위험제보·아차사고·개선제안은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
-                        : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
+                        {isFoodFactoryTrial
+                          ? hasOpinion
+                            ? "불편사항·개선의견은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
+                            : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 확인만 하는 경우에는 최소 확인정보가 필요합니다."
+                          : hasOpinion
+                            ? "위험제보·아차사고·개선제안은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
+                            : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
                     </p>
                     <label className={[
                       "mt-3 flex items-center gap-3 rounded-2xl border p-4 text-sm font-bold",
@@ -568,7 +583,7 @@ export default function FieldParticipationStepper({
                         onChange={(event) => setAnonymous(event.target.checked)}
                         className="h-5 w-5 rounded border-slate-300 disabled:opacity-50"
                       />
-                      <span>익명으로 제보 제출</span>
+                        <span>{isFoodFactoryTrial ? "익명으로 의견 제출" : "익명으로 제보 제출"}</span>
                     </label>
 
                     <p className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-blue-800">
@@ -578,12 +593,18 @@ export default function FieldParticipationStepper({
 
                 <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                   <h3 className="text-sm font-black text-emerald-900">
-                    {hasOpinion ? "제보 제출자 정보" : "공유확인 최소 확인정보"}
+                      {hasOpinion
+                        ? isFoodFactoryTrial ? "의견 제출자 정보" : "제보 제출자 정보"
+                        : "공유확인 최소 확인정보"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-emerald-900">
-                    {hasOpinion
-                      ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
-                      : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
+                      {isFoodFactoryTrial
+                        ? hasOpinion
+                          ? "불편사항·개선의견은 익명 제출을 선택할 수 있습니다."
+                          : "확인만 제출하는 경우에는 기록 구분을 위해 최소 확인정보가 필요합니다."
+                        : hasOpinion
+                          ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
+                          : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
                   </p>
 
                   <div className="mt-4 grid gap-3">
@@ -714,7 +735,7 @@ export default function FieldParticipationStepper({
                 {isSubmitting
                   ? riskShareLinkCopy.worker.buttons.submitting
                   : hasOpinion
-                    ? "위험 또는 개선의견 제출 →"
+                      ? isFoodFactoryTrial ? "전자확인·의견 제출 →" : "위험 또는 개선의견 제출 →"
                     : riskShareLinkCopy.worker.buttons.confirmOnly}
               </button>
             ) : null}
