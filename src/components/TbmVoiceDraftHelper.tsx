@@ -536,30 +536,30 @@ export default function TbmVoiceDraftHelper({
           </button>
         </div>
 
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
-            <p className="text-xs font-black text-slate-400">원본 음성 인식 내용</p>
-            <p className="mt-2 min-h-24 whitespace-pre-wrap text-sm leading-6 text-slate-200">
-              {combinedTranscript || "녹음 시작 후 현장 작업 내용을 말해 주세요."}
-            </p>
-          </div>
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+              <p className="text-xs font-black text-slate-400">녹음 내용 확인 및 수정</p>
+              <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                {hasGeneratedVoiceContent
+                  ? "저장 전 핵심 내용을 먼저 확인해 주세요. 수정한 내용 기준으로 TBM이 저장됩니다."
+                  : "녹음 완료 후 수정할 수 있습니다."}
+              </p>
+              <textarea
+                value={draftEditorValue}
+                onChange={handleEditedDraftTextChange}
+                disabled={hasGeneratedVoiceContent ? false : true}
+                placeholder="녹음 후 생성된 TBM 내용이 여기에 표시됩니다. 오인식된 부분은 저장 전에 수정해 주세요."
+                className="mt-2 min-h-40 max-h-72 w-full resize-y overflow-y-auto rounded-lg border border-slate-700 bg-slate-950/70 p-3 text-sm leading-6 text-slate-200 outline-none [word-break:keep-all] placeholder:text-slate-600 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:bg-slate-950/40 disabled:text-slate-600 sm:min-h-48"
+              />
+            </div>
 
-          <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
-            <p className="text-xs font-black text-slate-400">녹음 내용 확인 및 수정</p>
-            <p className="mt-1 text-[11px] leading-5 text-slate-500">
-              {hasGeneratedVoiceContent
-                ? "저장 전 내용을 확인해 주세요. 수정한 내용 기준으로 TBM이 저장됩니다."
-                : "녹음 완료 후 수정할 수 있습니다."}
-            </p>
-            <textarea
-              value={draftEditorValue}
-              onChange={handleEditedDraftTextChange}
-              disabled={!hasGeneratedVoiceContent}
-              placeholder="녹음 후 생성된 TBM 내용이 여기에 표시됩니다. 오인식된 부분은 저장 전에 수정해 주세요."
-              className="mt-2 min-h-48 max-h-80 w-full resize-y overflow-y-auto rounded-lg border border-slate-700 bg-slate-950/70 p-3 text-sm leading-6 text-slate-200 outline-none [word-break:keep-all] placeholder:text-slate-600 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:bg-slate-950/40 disabled:text-slate-600"
-            />
+            <details className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
+              <summary className="cursor-pointer text-xs font-black text-slate-400">원본 음성 인식 내용 보기</summary>
+              <p className="mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-800 bg-slate-950/70 p-3 text-sm leading-6 text-slate-300">
+                {combinedTranscript || "녹음 시작 후 현장 작업 내용을 말해 주세요."}
+              </p>
+            </details>
           </div>
-        </div>
 
         <details className="mt-3 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
           <summary className="cursor-pointer text-xs font-black text-slate-400">관리자/보조 기능</summary>
