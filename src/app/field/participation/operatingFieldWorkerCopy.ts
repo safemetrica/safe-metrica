@@ -8,6 +8,7 @@ export type OperatingFieldWorkerCopy = {
   noticeBody: string;
   submitButtonLabel: string;
   submittedMessage: string;
+  feedbackTypes?: string[];
 };
 
 function normalizeCompanyCode(value?: string | null) {
@@ -91,6 +92,21 @@ const OPERATING_FIELD_WORKER_COPY: Record<string, OperatingFieldWorkerCopy> = {
     submittedMessage:
       "㈜버블몬코리아 안전관리자가 확인하고 필요한 조치 또는 위험성평가 반영 후보로 검토합니다.",
   },
+    richi: {
+      code: "richi",
+      companyName: "리치코리아",
+      badge: "리치코리아 현장 전자확인",
+      title: "리치코리아 현장 전자확인·피드백",
+      description:
+        "작업 전 위생·안전 확인 내용을 확인하고, 불편사항이나 개선의견이 있으면 짧게 남겨 주세요.",
+      noticeTitle: "QR 기반 전자확인 안내",
+      noticeBody:
+        "제출 내용은 현장 확인, 관리자 피드백, 주간 요약용 운영기록으로 활용됩니다. 법적 효력 보장이나 종이서명 완전 대체를 의미하지 않습니다.",
+      submitButtonLabel: "전자확인·의견 제출하기",
+      submittedMessage:
+        "리치코리아 관리자가 제출 내용을 확인하고 필요한 피드백 또는 개선 검토 자료로 활용합니다.",
+      feedbackTypes: ["불편사항", "개선의견", "위생·안전 확인", "기타"],
+    },
   mons: {
     code: "mons",
     companyName: "㈜몬스",
