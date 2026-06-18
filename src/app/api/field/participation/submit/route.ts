@@ -9,6 +9,7 @@ import {
 } from "@/lib/company";
 
 import {
+  getTenantRegistryConfigByCode,
   insertEvidenceItemMetadataRecords,
   insertFieldParticipationSubmissionShadowRecord,
   isSupabaseFieldParticipationShadowWriteEnabled,
@@ -335,14 +336,68 @@ function redirectTo(req: NextRequest, pathname: string, params: Record<string, s
   return NextResponse.redirect(url, { status: 303 });
 }
 
-async function resolveCompanyConfig(formData: FormData) {
+type LegacyFieldParticipationCompanyContext = Awaited<ReturnType<typeof getCompanyConfigByCode>> & {
+  source: "legacy";
+};
+
+type TenantRegistryFieldParticipationCompanyContext = {
+  source: "tenant_registry";
+  code: string;
+  name: string;
+  status: string;
+  serviceMode: string;
+  enabledModules: string[];
+};
+
+type FieldParticipationCompanyContext =
+  | LegacyFieldParticipationCompanyContext
+  | TenantRegistryFieldParticipationCompanyContext;
+
+const TENANT_REGISTRY_FIELD_PARTICIPATION_STATUSES = new Set(["onboarding", "active", "internal_test"]);
+
+function isTenantRegistryFieldParticipationEnabled(
+  tenant: Awaited<ReturnType<typeof getTenantRegistryConfigByCode>>
+) {
+  if (!tenant) return false;
+  if (!TENANT_REGISTRY_FIELD_PARTICIPATION_STATUSES.has(tenant.status)) return false;
+
+  return (
+    tenant.enabledModules.includes("worker_qr_e_confirmation") ||
+    tenant.enabledModules.includes("quick_feedback") ||
+    tenant.serviceMode === "food_factory_e_confirmation_trial"
+  );
+}
+
+async function resolveCompanyConfig(formData: FormData): Promise<FieldParticipationCompanyContext> {
   const companyCode = getFormText(formData, "companyCode");
 
   if (companyCode) {
-    return getCompanyConfigByCode(companyCode);
+    try {
+      const tenantRegistryConfig = await getTenantRegistryConfigByCode(companyCode);
+
+      if (tenantRegistryConfig && isTenantRegistryFieldParticipationEnabled(tenantRegistryConfig)) {
+        return {
+          source: "tenant_registry",
+          code: tenantRegistryConfig.code,
+          name: tenantRegistryConfig.name,
+          status: tenantRegistryConfig.status,
+          serviceMode: tenantRegistryConfig.serviceMode,
+          enabledModules: tenantRegistryConfig.enabledModules,
+        };
+      }
+    } catch (error) {
+      console.warn("[field-participation-submit] tenant_registry lookup failed, falling back to legacy loader", {
+        companyCode,
+        errorName: error instanceof Error ? error.name : "unknown",
+      });
+    }
+
+    const legacyCompany = await getCompanyConfigByCode(companyCode);
+    return { ...legacyCompany, source: "legacy" };
   }
 
-  return getCompanyConfig();
+  const legacyCompany = await getCompanyConfig();
+  return { ...legacyCompany, source: "legacy" };
 }
 
 function buildContentWithConfirmation(params: {
@@ -368,6 +423,81 @@ function buildContentWithConfirmation(params: {
   lines.push(`- 필요한 안전조치와 주의사항 확인: ${params.safetyMeasureCheck ? "확인" : "미확인"}`);
 
   return lines.join("\n").slice(0, 1900);
+}
+
+function buildSupabaseFirstFieldParticipationContent(params: {
+  content: string;
+  sharedRiskSummary: string;
+  riskCheck: boolean;
+  riskAssessmentCheck: boolean;
+  safetyMeasureCheck: boolean;
+  identityMode: string;
+  anonymous: boolean;
+  workerTeam: string;
+  workerPhoneLast4: string;
+  workerEmployeeNo: string;
+  submitter: string;
+  evidenceFiles: File[];
+  uploadedFiles: UploadedFieldVoiceFile[];
+  confirmationType: string;
+  confirmationStatus: string;
+  sourceStep: string;
+  entryIntent: string;
+  submissionType: string;
+  processingStatus: string;
+}) {
+  let finalContent = buildContentWithConfirmation({
+    content: params.content,
+    sharedRiskSummary: params.sharedRiskSummary,
+    riskCheck: params.riskCheck,
+    riskAssessmentCheck: params.riskAssessmentCheck,
+    safetyMeasureCheck: params.safetyMeasureCheck,
+  });
+
+  const inlineMetaLines: string[] = [
+    `식별 모드: ${params.identityMode}`,
+    `제출자: ${params.submitter}`,
+    `익명 제출: ${params.anonymous ? "예" : "아니오"}`,
+  ];
+
+  if (!params.anonymous && params.workerTeam) {
+    inlineMetaLines.push(`소속/작업조: ${params.workerTeam}`);
+  }
+
+  if (!params.anonymous && params.workerPhoneLast4) {
+    inlineMetaLines.push(`휴대폰 뒷4자리: ${params.workerPhoneLast4}`);
+  }
+
+  if (!params.anonymous && params.workerEmployeeNo) {
+    inlineMetaLines.push(`사번/식별번호: ${params.workerEmployeeNo}`);
+  }
+
+  finalContent = `${finalContent}\n\n[제출 정보]\n${inlineMetaLines.join("\n")}`.slice(0, 1900);
+
+  const fileMemoLines = buildFileMemoLines({
+    files: params.evidenceFiles,
+    uploadedFiles: params.uploadedFiles,
+  });
+
+  if (fileMemoLines.length > 0) {
+    finalContent = `${finalContent}\n\n${fileMemoLines.join("\n")}`.slice(0, 1900);
+  }
+
+  const operationalMetadata = [
+    "[공유확인 메타]",
+    `- 확인 유형: ${params.confirmationType}`,
+    `- 확인 상태: ${params.confirmationStatus}`,
+    `- 제출 출처: ${params.sourceStep}`,
+    `- 진입 의도: ${params.entryIntent}`,
+    "",
+    "[처리 기준]",
+    `- 제출구분: ${params.submissionType}`,
+    `- 처리상태: ${params.processingStatus}`,
+    "- 공유확인은 조치완료 KPI에 포함하지 않습니다.",
+    "- 확인 상태는 운영기록 분류용이며 관리자 확인과 사업주 최종 판단을 대신하지 않습니다.",
+  ].join("\n");
+
+  return `${finalContent.slice(0, Math.max(0, 1898 - operationalMetadata.length))}\n\n${operationalMetadata}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -478,6 +608,142 @@ export async function POST(req: NextRequest) {
       company: company.code,
     });
   }
+
+    if (company.source === "tenant_registry") {
+      const finalContent = buildSupabaseFirstFieldParticipationContent({
+        content,
+        sharedRiskSummary,
+        riskCheck,
+        riskAssessmentCheck,
+        safetyMeasureCheck,
+        identityMode,
+        anonymous,
+        workerTeam,
+        workerPhoneLast4,
+        workerEmployeeNo,
+        submitter,
+        evidenceFiles,
+        uploadedFiles,
+        confirmationType,
+        confirmationStatus,
+        sourceStep,
+        entryIntent,
+        submissionType,
+        processingStatus,
+      });
+
+      const supabaseResult = await insertFieldParticipationSubmissionShadowRecord({
+        tenant_code: company.code,
+        company_name: company.name,
+        submission_type: submissionType,
+        legacy_type: type,
+        title,
+        content: finalContent,
+        location,
+        submitter,
+        anonymous,
+        reported_date: reportedDate,
+        status: processingStatus,
+        notion_page_id: null,
+        notion_url: null,
+        file_urls: uploadedFiles.map((file) => file.url),
+        raw_payload: {
+          source: "supabase_first_field_participation_submit_v1",
+          clientSubmissionId,
+          identityMode,
+          workerName: anonymous ? "" : submitterInput,
+          workerTeam: anonymous ? "" : workerTeam,
+          workerPhoneLast4: anonymous ? "" : workerPhoneLast4,
+          workerEmployeeNo: anonymous ? "" : workerEmployeeNo,
+          contractorName,
+          sharedRiskSummary,
+          riskCheck,
+          riskAssessmentCheck,
+          safetyMeasureCheck,
+          confirmationType,
+          confirmationStatus,
+          sourceStep,
+          entryIntent,
+          isAcknowledgementOnly,
+          selectedFileCount: evidenceFiles.length,
+          uploadedFileCount: uploadedFiles.length,
+          tenantRegistry: {
+            status: company.status,
+            serviceMode: company.serviceMode,
+            enabledModules: company.enabledModules,
+          },
+          uploadedFiles: uploadedFiles.map((file) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          })),
+        },
+      });
+
+      if (!supabaseResult.ok) {
+        return redirectTo(req, "/field/participation/submitted", {
+          status: "supabase_error",
+          company: company.code,
+          message: String(supabaseResult.status || "insert_failed"),
+          detail: supabaseResult.message?.slice(0, 120) ?? "",
+        });
+      }
+
+      if (uploadedFiles.length > 0) {
+        const fieldParticipationSourceRecordId =
+          getSupabaseInsertedRecordId(supabaseResult.data) ?? (clientSubmissionId || null);
+
+        const evidenceResult = await insertEvidenceItemMetadataRecords(
+          uploadedFiles.map((file) => ({
+            company_code: company.code,
+            company_name: company.name,
+            site_id: null,
+            site_name: location || null,
+            source_type: "field_participation",
+            source_record_table: "field_participation_submissions",
+            source_record_id: fieldParticipationSourceRecordId,
+            submission_type: submissionType,
+            file_url: file.url,
+            file_name: file.name,
+            file_mime_type: file.type || null,
+            file_size: file.size,
+            evidence_role: getFieldParticipationEvidenceRole(submissionType),
+            storage_provider: "vercel_blob",
+            submitted_at: new Date().toISOString(),
+            submitted_by_label: submitter,
+            anonymous,
+            raw_payload: {
+              source: "supabase_first_field_participation_submit_v1",
+              clientSubmissionId,
+              reportedDate,
+              sourceStep,
+              entryIntent,
+              confirmationType,
+              confirmationStatus,
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+            },
+          }))
+        );
+
+        if (!evidenceResult.ok) {
+          console.warn("[field-participation-submit] supabase-first evidence_items metadata insert failed", {
+            companyCode: company.code,
+            submissionType,
+            uploadedFileCount: uploadedFiles.length,
+            status: evidenceResult.status,
+            statusText: evidenceResult.statusText,
+            message: evidenceResult.message,
+          });
+        }
+      }
+
+      return redirectTo(req, "/field/participation/submitted", {
+        status: "saved",
+        company: company.code,
+      });
+    }
 
   if (!company.fieldVoiceDbId) {
     return redirectTo(req, "/field/participation/submitted", {

@@ -24,6 +24,14 @@ function getStatusCopy(status?: string) {
     };
   }
 
+  if (status === "supabase_error") {
+    return {
+      title: "저장 확인 필요",
+      message: "PostgreSQL 원장 저장 중 오류가 발생했습니다. 관리자 확인이 필요합니다.",
+      tone: "red",
+    };
+  }
+
   if (status === "notion_error") {
     return {
       title: "저장 확인 필요",
