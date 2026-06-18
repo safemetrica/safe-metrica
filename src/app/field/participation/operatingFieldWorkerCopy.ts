@@ -22,6 +22,15 @@ function normalizeCompanyCode(value?: string | null) {
     return "hankookgreen";
   }
 
+  if (
+    code === "richi-korea" ||
+    code === "richi_korea" ||
+    code === "richikorea" ||
+    code === "rich"
+  ) {
+    return "richi";
+  }
+
   return code;
 }
 
