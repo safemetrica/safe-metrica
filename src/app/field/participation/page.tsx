@@ -244,7 +244,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
         todayDateValue={todayDateValue}
         workerCopy={workerCopy}
         riskSummary={riskSummary}
-        feedbackTypes={feedbackTypes}
+        feedbackTypes={workerCopy?.feedbackTypes ?? feedbackTypes}
         weatherNotice={weatherNotice}
       />
     );
