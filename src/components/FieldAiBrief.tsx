@@ -167,24 +167,24 @@ export default function FieldAiBrief() {
 
   return (
     <section className="mb-4 rounded-2xl border border-slate-700 bg-slate-900 p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex w-full min-w-0 items-start gap-2 sm:w-auto">
           <span className="text-lg">🤖</span>
           <div className="min-w-0">
-            <div className="text-sm font-bold text-white">AI 현장 비서 브리핑</div>
+            <div className="text-base font-bold leading-tight text-white [word-break:keep-all] sm:text-sm">AI 현장 비서 브리핑</div>
             <div className="mt-0.5 text-xs text-slate-400 [word-break:keep-all]">
               TBM · 조치 · 증빙 · PTW 현장 요약
             </div>
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
           {!loading ? (
             <>
               <button
                 type="button"
                 onClick={handlePlayTts}
-                className="rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-[11px] font-black text-blue-100 hover:bg-blue-500/20"
+                className="whitespace-nowrap rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-[11px] font-black text-blue-100 hover:bg-blue-500/20"
               >
                 🔊 브리핑 듣기
               </button>
@@ -192,13 +192,13 @@ export default function FieldAiBrief() {
                 type="button"
                 onClick={handleStopTts}
                 disabled={!isSpeaking}
-                className="rounded-full border border-slate-600 bg-slate-950 px-3 py-1 text-[11px] font-black text-slate-300 disabled:text-slate-600"
+                className="whitespace-nowrap rounded-full border border-slate-600 bg-slate-950 px-3 py-1 text-[11px] font-black text-slate-300 disabled:text-slate-600"
               >
                 정지
               </button>
             </>
           ) : null}
-          <span className="rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-300">
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-300">
             GPT-4o-mini
           </span>
           {updatedAt && (
