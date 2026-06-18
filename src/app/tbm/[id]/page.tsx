@@ -256,8 +256,8 @@ export default async function TbmDetailPage({
           </Link>
         </div>
 
-        <h1 className="mb-2 text-3xl font-black leading-tight text-white sm:text-4xl [word-break:keep-all]">{tbm.작업명}</h1>
-        <p className="mb-5 text-base font-medium text-gray-400">{tbm.날짜}</p>
+        <h1 className="mb-1 text-2xl font-black leading-tight text-white sm:text-4xl [word-break:keep-all]">{tbm.작업명}</h1>
+        <p className="mb-4 text-sm font-medium text-gray-400 sm:text-base">{tbm.날짜}</p>
 
         <div className="mb-5 flex flex-wrap gap-2">
           {tbm.특이사항 ? (
@@ -283,7 +283,7 @@ export default async function TbmDetailPage({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold text-sky-200">오늘 먼저 확인</p>
-              <p className="mt-2 text-xl font-black leading-relaxed text-white [word-break:keep-all]">
+              <p className="mt-2 text-lg font-black leading-7 text-white [word-break:keep-all] sm:text-xl sm:leading-relaxed">
                 {needsEB
                   ? "조치 필요 항목의 EB 연결을 먼저 확인하세요."
                   : tbmEvidenceSufficiency.status === "needs_supplement"
@@ -323,7 +323,7 @@ export default async function TbmDetailPage({
           </div>
         )}
 
-        <div className="mb-6 space-y-4 rounded-2xl border border-slate-700 bg-slate-900 p-4 sm:p-6">
+        <div className="mb-5 space-y-3 rounded-2xl border border-slate-700 bg-slate-900 p-3 sm:p-6">
           {tbm.작업유형 && (
             <div>
               <p className="text-xs text-gray-500 mb-1">작업 유형</p>
@@ -345,14 +345,14 @@ export default async function TbmDetailPage({
           {tbm.오늘주의사항 && (
             <div>
               <p className="text-xs text-gray-500 mb-1">오늘의 주의사항</p>
-              <p className="text-base leading-relaxed text-gray-200 [word-break:keep-all]">{tbm.오늘주의사항}</p>
+              <p className="text-sm font-semibold leading-6 text-gray-200 [word-break:keep-all] sm:text-base sm:leading-relaxed">{tbm.오늘주의사항}</p>
             </div>
           )}
           {tbm.특이사항내용 && (
-            <div>
-              <p className="text-xs text-gray-500 mb-1">특이사항 내용</p>
-              <p className="text-base leading-relaxed text-gray-200 [word-break:keep-all]">{tbm.특이사항내용}</p>
-            </div>
+            <details className="rounded-xl border border-amber-700/40 bg-amber-950/20 p-3">
+              <summary className="cursor-pointer text-xs font-black text-amber-200">특이사항 내용 보기</summary>
+              <p className="mt-3 text-sm leading-6 text-gray-200 [word-break:keep-all] sm:text-base sm:leading-relaxed">{tbm.특이사항내용}</p>
+            </details>
           )}
         </div>
 
