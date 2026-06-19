@@ -55,7 +55,8 @@ type Props = {
   weatherNotice?: WeatherNotice;
 };
 
-const stepLabels = ["위험 확인", "주지 확인", "의견 제출", "완료"];
+const defaultStepLabels = ["위험 확인", "주지 확인", "의견 제출", "완료"];
+const richiStepLabels = ["안내 확인", "확인 기록", "의견 제출", "완료"];
 
 function createClientSubmissionId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -109,11 +110,11 @@ function buildFieldParticipationTtsText(params: {
   return lines.join(" ");
 }
 
-function StepHeader({ step, completedSteps }: { step: number; completedSteps: Set<number> }) {
+function StepHeader({ step, completedSteps, labels }: { step: number; completedSteps: Set<number>; labels: string[] }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        {stepLabels.map((label, index) => {
+        {labels.map((label, index) => {
           const stepNo = index + 1;
           const active = stepNo === step;
           const done = completedSteps.has(stepNo) && !active;
@@ -135,7 +136,7 @@ function StepHeader({ step, completedSteps }: { step: number; completedSteps: Se
                   {label}
                 </p>
               </div>
-              {index < stepLabels.length - 1 ? (
+              {index < labels.length - 1 ? (
                 <div className={done ? "h-0.5 flex-1 bg-emerald-500" : "h-0.5 flex-1 bg-slate-200"} />
               ) : null}
             </div>
@@ -164,6 +165,7 @@ export default function FieldParticipationStepper({
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
   const isFoodFactoryTrial = workerCopy?.code === "richi";
+  const stepLabels = isFoodFactoryTrial ? richiStepLabels : defaultStepLabels;
   const feedbackTypeOptions = useMemo(() => {
     const source =
     feedbackTypes.length > 0
@@ -345,12 +347,14 @@ export default function FieldParticipationStepper({
               {workerCopy?.title ?? "현장근로자 안전참여"}
             </h1>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              현장 작업 전 핵심 위험을 확인하고, 필요한 의견을 남겨 주세요.
+              {isFoodFactoryTrial
+                  ? "작업 전 위생·안전 확인 내용을 확인하고, 필요한 의견을 남겨 주세요."
+                  : "현장 작업 전 핵심 위험을 확인하고, 필요한 의견을 남겨 주세요."}
             </p>
           </section>
 
           <div className="mt-4">
-            <StepHeader step={step} completedSteps={completedSteps} />
+            <StepHeader step={step} completedSteps={completedSteps} labels={stepLabels} />
           </div>
 
           <section className="mt-4 flex-1 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -443,18 +447,25 @@ export default function FieldParticipationStepper({
             {step === 2 ? (
               <div>
                 <p className="text-sm font-black text-slate-500">Step 2/4</p>
-                <h2 className="mt-1 text-xl font-black text-slate-950">{riskShareLinkCopy.worker.title}</h2>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                    {isFoodFactoryTrial ? "위생·안전 확인 / 의견제출" : riskShareLinkCopy.worker.title}
+                  </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  위험요인 확인 후 공유·주지 확인을 남겨주세요.
-                  아래 항목을 직접 확인해야 기록됩니다.
-                </p>
+                    {isFoodFactoryTrial
+                      ? "작업 전 위생·안전 안내 내용을 확인하고, 필요한 의견을 남겨 주세요. 아래 항목을 직접 확인해야 기록됩니다."
+                      : "위험요인 확인 후 공유·주지 확인을 남겨주세요. 아래 항목을 직접 확인해야 기록됩니다."}
+                  </p>
 
                 <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                  <h3 className="text-base font-black text-slate-950">산업안전보건법 제36조</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    사업주는 위험성평가 결과와 조치사항을 해당 작업에 종사하는 근로자에게 알려야 합니다.
-                  </p>
-                </div>
+                    <h3 className="text-base font-black text-slate-950">
+                      {isFoodFactoryTrial ? "작업 전 위생·안전 안내" : "산업안전보건법 제36조"}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                      {isFoodFactoryTrial
+                        ? "작업 전 안내받은 위생·안전 확인 내용을 확인하고, 불편사항이나 개선의견이 있으면 의견으로 남겨 주세요."
+                        : "사업주는 위험성평가 결과와 조치사항을 해당 작업에 종사하는 근로자에게 알려야 합니다."}
+                    </p>
+                  </div>
 
                 <div className="mt-4 space-y-3">
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
@@ -464,7 +475,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setRiskCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>오늘 작업의 주요 위험요인을 확인했습니다.</span>
+                    <span>{isFoodFactoryTrial ? "작업 전 위생·안전 안내를 확인했습니다." : "오늘 작업의 주요 위험요인을 확인했습니다."}</span>
                   </label>
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
                     <input
@@ -473,7 +484,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setRiskAssessmentCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{riskShareLinkCopy.worker.checks.riskAssessment}</span>
+                    <span>{isFoodFactoryTrial ? "오늘 안내받은 확인사항을 확인했습니다." : riskShareLinkCopy.worker.checks.riskAssessment}</span>
                   </label>
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
                     <input
@@ -482,7 +493,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setSafetyMeasureCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{riskShareLinkCopy.worker.checks.safetyMeasure}</span>
+                    <span>{isFoodFactoryTrial ? "오늘 현장 주의사항을 확인했습니다." : riskShareLinkCopy.worker.checks.safetyMeasure}</span>
                   </label>
                 </div>
               </div>
@@ -504,7 +515,7 @@ export default function FieldParticipationStepper({
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <p className="text-sm font-black text-emerald-800">의견 없음</p>
                     <p className="mt-2 text-sm font-bold leading-6 text-emerald-900">
-                      제목, 내용, 사진을 입력하지 않고 제출하면 공유확인 기록으로 저장됩니다.
+                      {isFoodFactoryTrial ? "제목, 내용, 사진을 입력하지 않고 제출하면 전자확인 기록으로 저장됩니다." : "제목, 내용, 사진을 입력하지 않고 제출하면 공유확인 기록으로 저장됩니다."}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -604,16 +615,16 @@ export default function FieldParticipationStepper({
                   <h3 className="text-sm font-black text-emerald-900">
                       {hasOpinion
                         ? isFoodFactoryTrial ? "의견 제출자 정보" : "제보 제출자 정보"
-                        : "공유확인 최소 확인정보"}
+                        : isFoodFactoryTrial ? "전자확인 최소 확인정보" : "공유확인 최소 확인정보"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-emerald-900">
                       {isFoodFactoryTrial
                         ? hasOpinion
                           ? "불편사항·개선의견은 익명 제출을 선택할 수 있습니다. 익명 제출 중에는 개인정보 입력란이 비활성화됩니다."
-                          : "확인만 제출하는 경우에는 기록 구분을 위해 최소 확인정보가 필요합니다."
+                          : "전자확인만 제출하는 경우에는 기록 구분을 위해 최소 확인정보가 필요합니다."
                         : hasOpinion
                           ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
-                          : "전자확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
+                          : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
                   </p>
 
                   <div className="mt-4 grid gap-3">
@@ -671,13 +682,13 @@ export default function FieldParticipationStepper({
 
                     {!hasOpinion && !shareConfirmationIdentityReady ? (
                       <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                        전자확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다.
+                        {isFoodFactoryTrial ? "전자확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다." : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다."}
                       </p>
                     ) : null}
                   </div>
                 </div>
 
-                {hasOpinion ? (
+                {hasOpinion && !isFoodFactoryTrial ? (
                   <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
                     <input
                       type="checkbox"
@@ -717,7 +728,7 @@ export default function FieldParticipationStepper({
                 }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white"
               >
-                핵심 위험 확인 완료 →
+                {isFoodFactoryTrial ? "위생·안전 확인 완료 →" : "핵심 위험 확인 완료 →"}
               </button>
             ) : null}
 
@@ -731,7 +742,7 @@ export default function FieldParticipationStepper({
                 }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300"
               >
-                공유 내용 확인 →
+                {isFoodFactoryTrial ? "확인 기록 남기기 →" : "공유 내용 확인 →"}
               </button>
             ) : null}
 
@@ -745,7 +756,7 @@ export default function FieldParticipationStepper({
                   ? riskShareLinkCopy.worker.buttons.submitting
                   : hasOpinion
                       ? isFoodFactoryTrial ? "전자확인·의견 제출 →" : "위험 또는 개선의견 제출 →"
-                    : riskShareLinkCopy.worker.buttons.confirmOnly}
+                    : isFoodFactoryTrial ? "의견 없음, 전자확인 제출 →" : riskShareLinkCopy.worker.buttons.confirmOnly}
               </button>
             ) : null}
 
