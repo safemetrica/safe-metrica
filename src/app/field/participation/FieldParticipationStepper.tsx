@@ -208,7 +208,7 @@ export default function FieldParticipationStepper({
     "greenkorea",
     "bubblemon",
   ].includes(normalizedCompanyCode);
-  const canGoNextFromStep2 = isFoodFactoryTrial || (riskCheck && riskAssessmentCheck && safetyMeasureCheck);
+  const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
   const hasOpinion =
     reportTitle.trim().length > 0 ||
     content.trim().length > 0 ||
@@ -350,9 +350,9 @@ export default function FieldParticipationStepper({
         <input type="hidden" name="workerEmployeeNo" value={normalizedWorkerEmployeeNo} />
         <input type="hidden" name="identityMode" value={identityMode} />
         {effectiveAnonymous ? <input type="hidden" name="anonymous" value="on" /> : null}
-        {(riskCheck || isFoodFactoryTrial) ? <input type="hidden" name="riskCheck" value="on" /> : null}
-        {(riskAssessmentCheck || isFoodFactoryTrial) ? <input type="hidden" name="riskAssessmentCheck" value="on" /> : null}
-        {(safetyMeasureCheck || isFoodFactoryTrial) ? <input type="hidden" name="safetyMeasureCheck" value="on" /> : null}
+        {riskCheck ? <input type="hidden" name="riskCheck" value="on" /> : null}
+        {riskAssessmentCheck ? <input type="hidden" name="riskAssessmentCheck" value="on" /> : null}
+        {safetyMeasureCheck ? <input type="hidden" name="safetyMeasureCheck" value="on" /> : null}
 
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-4">
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -391,6 +391,51 @@ export default function FieldParticipationStepper({
                       ? "작업 전 위생·안전 내용을 확인하세요."
                       : "오늘 작업 전 아래 핵심 위험요인을 반드시 확인하세요."}
                 </div>
+
+                  {isFoodFactoryTrial ? (
+                    <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+                      <h3 className="text-sm font-black text-emerald-900">리치 확인 체크</h3>
+                      <p className="mt-1 text-xs font-bold leading-5 text-emerald-800">
+                        아래 항목을 직접 체크해야 전자확인 기록으로 남습니다.
+                      </p>
+
+                      <div className="mt-3 space-y-2">
+                        <label className="flex gap-3 rounded-xl border border-emerald-100 bg-white p-3 text-sm font-bold text-slate-800">
+                          <input
+                            type="checkbox"
+                            checked={riskCheck}
+                            onChange={(event) => setRiskCheck(event.target.checked)}
+                            className="mt-0.5 h-5 w-5 rounded border-slate-300"
+                          />
+                          <span>작업 전 위생·안전 안내를 확인했습니다.</span>
+                        </label>
+
+                        <label className="flex gap-3 rounded-xl border border-emerald-100 bg-white p-3 text-sm font-bold text-slate-800">
+                          <input
+                            type="checkbox"
+                            checked={riskAssessmentCheck}
+                            onChange={(event) => setRiskAssessmentCheck(event.target.checked)}
+                            className="mt-0.5 h-5 w-5 rounded border-slate-300"
+                          />
+                          <span>오늘 안내받은 확인사항을 확인했습니다.</span>
+                        </label>
+
+                        <label className="flex gap-3 rounded-xl border border-emerald-100 bg-white p-3 text-sm font-bold text-slate-800">
+                          <input
+                            type="checkbox"
+                            checked={safetyMeasureCheck}
+                            onChange={(event) => setSafetyMeasureCheck(event.target.checked)}
+                            className="mt-0.5 h-5 w-5 rounded border-slate-300"
+                          />
+                          <span>오늘 현장 주의사항을 확인했습니다.</span>
+                        </label>
+                      </div>
+
+                      <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-emerald-800">
+                        추후 위험성평가 공유내용도 이 확인 영역에 연결합니다.
+                      </p>
+                    </div>
+                  ) : null}
 
                 {weatherNotice ? (
                   <div className={`mt-4 rounded-2xl border p-4 text-sm font-bold leading-6 ${weatherNoticeClassName}`}>
@@ -759,19 +804,14 @@ export default function FieldParticipationStepper({
             {step === 1 ? (
               <button
                 type="button"
+                disabled={isFoodFactoryTrial && !canGoNextFromStep2}
                 onClick={() => {
                   setCompletedSteps((current) => new Set(current).add(1));
-                  if (isFoodFactoryTrial) {
-                    setRiskCheck(true);
-                    setRiskAssessmentCheck(true);
-                    setSafetyMeasureCheck(true);
-                  }
-
                   setStep(isFoodFactoryTrial ? formStep : 2);
                 }}
-                className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white"
+                className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300 disabled:text-slate-100"
               >
-                {isFoodFactoryTrial ? "안내·확인 완료 →" : "핵심 위험 확인 완료 →"}
+                {isFoodFactoryTrial ? "체크 후 의견·서명으로 →" : "핵심 위험 확인 완료 →"}
               </button>
             ) : null}
 
