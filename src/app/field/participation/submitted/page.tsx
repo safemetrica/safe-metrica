@@ -15,11 +15,15 @@ type PageProps = {
   }>;
 };
 
-function getStatusCopy(status?: string) {
+function getStatusCopy(status?: string, workerCopyCode?: string) {
+  const isFoodFactoryTrial = workerCopyCode === "richi";
+
   if (status === "saved") {
     return {
-      title: "현장참여 저장 완료",
-      message: "입력한 내용이 현장 의견 DB에 저장되었습니다.",
+      title: isFoodFactoryTrial ? "전자확인 저장 완료" : "현장참여 저장 완료",
+      message: isFoodFactoryTrial
+        ? "입력한 내용이 전자확인 기록으로 저장되었습니다."
+        : "입력한 내용이 현장 의견 DB에 저장되었습니다.",
       tone: "emerald",
     };
   }
@@ -73,8 +77,8 @@ function getStatusCopy(status?: string) {
 
 export default async function FieldParticipationSubmittedPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
-  const copy = getStatusCopy(params.status);
   const workerCopy = getOperatingFieldWorkerCopy(params.company);
+  const copy = getStatusCopy(params.status, workerCopy?.code);
   const participationHref = params.company
     ? `/field/participation?company=${encodeURIComponent(params.company)}`
     : "/field/participation";
