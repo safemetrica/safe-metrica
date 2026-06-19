@@ -57,7 +57,7 @@ type Props = {
 };
 
 const defaultStepLabels = ["위험 확인", "주지 확인", "의견 제출", "완료"];
-const richiStepLabels = ["안내 확인", "확인 기록", "의견 제출", "완료"];
+const richiStepLabels = ["안내·확인", "의견·서명", "완료"];
 
 function createClientSubmissionId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -166,6 +166,7 @@ export default function FieldParticipationStepper({
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
   const isFoodFactoryTrial = workerCopy?.code === "richi";
+  const formStep = isFoodFactoryTrial ? 2 : 3;
   const stepLabels = isFoodFactoryTrial ? richiStepLabels : defaultStepLabels;
   const feedbackTypeOptions = useMemo(() => {
     const source =
@@ -207,7 +208,7 @@ export default function FieldParticipationStepper({
     "greenkorea",
     "bubblemon",
   ].includes(normalizedCompanyCode);
-  const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
+  const canGoNextFromStep2 = isFoodFactoryTrial || (riskCheck && riskAssessmentCheck && safetyMeasureCheck);
   const hasOpinion =
     reportTitle.trim().length > 0 ||
     content.trim().length > 0 ||
@@ -216,6 +217,20 @@ export default function FieldParticipationStepper({
   const normalizedWorkerTeam = workerTeam.trim();
   const normalizedWorkerPhoneLast4 = workerPhoneLast4.trim();
   const normalizedWorkerEmployeeNo = workerEmployeeNo.trim();
+  const richiConfirmationCodeValue = workerEmployeeNo || workerPhoneLast4;
+
+  function handleRichiConfirmationCodeChange(value: string) {
+    const nextValue = value.trim().slice(0, 60);
+
+    if (/^\d{0,4}$/.test(nextValue)) {
+      setWorkerPhoneLast4(nextValue);
+      setWorkerEmployeeNo("");
+      return;
+    }
+
+    setWorkerPhoneLast4("");
+    setWorkerEmployeeNo(nextValue);
+  }
   const shareConfirmationIdentityReady =
     workerName.length > 0 &&
     normalizedWorkerTeam.length > 0 &&
@@ -226,11 +241,11 @@ export default function FieldParticipationStepper({
       ? "anonymous"
       : "identified"
     : "identified";
-  const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : "공유확인";
+  const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : isFoodFactoryTrial ? "위생·안전 확인" : "공유확인";
   const finalContent = hasOpinion ? content.trim() || "상세 내용 미입력" : "오늘은 추가 의견 없음.";
   const finalTitle = hasOpinion
     ? reportTitle.trim() || `${finalFeedbackType} - 현장근로자 참여`
-    : "위험성평가 공유확인 완료";
+    : isFoodFactoryTrial ? "작업 전 위생·안전 전자확인 완료" : "위험성평가 공유확인 완료";
   const confirmationType = hasOpinion ? "worker_report" : "risk_share_confirm";
   const confirmationStatus = canGoNextFromStep2 ? "confirmed" : "pending";
 
@@ -335,9 +350,9 @@ export default function FieldParticipationStepper({
         <input type="hidden" name="workerEmployeeNo" value={normalizedWorkerEmployeeNo} />
         <input type="hidden" name="identityMode" value={identityMode} />
         {effectiveAnonymous ? <input type="hidden" name="anonymous" value="on" /> : null}
-        {riskCheck ? <input type="hidden" name="riskCheck" value="on" /> : null}
-        {riskAssessmentCheck ? <input type="hidden" name="riskAssessmentCheck" value="on" /> : null}
-        {safetyMeasureCheck ? <input type="hidden" name="safetyMeasureCheck" value="on" /> : null}
+        {(riskCheck || isFoodFactoryTrial) ? <input type="hidden" name="riskCheck" value="on" /> : null}
+        {(riskAssessmentCheck || isFoodFactoryTrial) ? <input type="hidden" name="riskAssessmentCheck" value="on" /> : null}
+        {(safetyMeasureCheck || isFoodFactoryTrial) ? <input type="hidden" name="safetyMeasureCheck" value="on" /> : null}
 
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-4">
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -345,11 +360,11 @@ export default function FieldParticipationStepper({
               {workerCopy?.badge ?? "SafeMetrica 현장근로자 참여"}
             </p>
             <h1 className="mt-2 text-2xl font-black text-slate-950">
-              {workerCopy?.title ?? "현장근로자 안전참여"}
+              {isFoodFactoryTrial ? "㈜리치코리아 전자확인" : (workerCopy?.title ?? "현장근로자 안전참여")}
             </h1>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               {isFoodFactoryTrial
-                  ? "작업 전 위생·안전 확인 내용을 확인하고, 필요한 의견을 남겨 주세요."
+                  ? "작업 전 위생·안전 확인 후 필요한 의견만 남겨 주세요."
                   : "현장 작업 전 핵심 위험을 확인하고, 필요한 의견을 남겨 주세요."}
             </p>
           </section>
@@ -361,7 +376,7 @@ export default function FieldParticipationStepper({
           <section className="mt-4 flex-1 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             {step === 1 ? (
               <div>
-                <p className="text-sm font-black text-slate-500">Step 1/4</p>
+                <p className="text-sm font-black text-slate-500">{isFoodFactoryTrial ? "Step 1/3" : "Step 1/4"}</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">
                     {isFoodFactoryTrial ? "작업 전 위생·안전 확인" : "오늘 작업 전 핵심 위험 확인"}
                   </h2>
@@ -373,7 +388,7 @@ export default function FieldParticipationStepper({
 
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900">
                   {isFoodFactoryTrial
-                      ? "작업 전 위생·안전 확인 내용을 반드시 확인하세요."
+                      ? "작업 전 위생·안전 내용을 확인하세요."
                       : "오늘 작업 전 아래 핵심 위험요인을 반드시 확인하세요."}
                 </div>
 
@@ -445,7 +460,7 @@ export default function FieldParticipationStepper({
               </div>
             ) : null}
 
-            {step === 2 ? (
+            {!isFoodFactoryTrial && step === 2 ? (
               <div>
                 <p className="text-sm font-black text-slate-500">Step 2/4</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">
@@ -453,7 +468,7 @@ export default function FieldParticipationStepper({
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                     {isFoodFactoryTrial
-                      ? "작업 전 위생·안전 안내 내용을 확인하고, 필요한 의견을 남겨 주세요. 아래 항목을 직접 확인해야 기록됩니다."
+                      ? "필요한 의견만 짧게 남겨 주세요."
                       : "위험요인 확인 후 공유·주지 확인을 남겨주세요. 아래 항목을 직접 확인해야 기록됩니다."}
                   </p>
 
@@ -463,7 +478,7 @@ export default function FieldParticipationStepper({
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-slate-700">
                       {isFoodFactoryTrial
-                        ? "작업 전 안내받은 위생·안전 확인 내용을 확인하고, 불편사항이나 개선의견이 있으면 의견으로 남겨 주세요."
+                        ? "불편사항이나 개선의견이 있으면 아래에 남겨 주세요."
                         : "사업주는 위험성평가 결과와 조치사항을 해당 작업에 종사하는 근로자에게 알려야 합니다."}
                     </p>
                   </div>
@@ -500,9 +515,9 @@ export default function FieldParticipationStepper({
               </div>
             ) : null}
 
-            {step === 3 ? (
+            {step === formStep ? (
               <div>
-                <p className="text-sm font-black text-slate-500">Step 3/4</p>
+                <p className="text-sm font-black text-slate-500">{isFoodFactoryTrial ? "Step 2/3" : "Step 3/4"}</p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">
                     {isFoodFactoryTrial ? "의견 제출" : "의견 / 아차사고 제출"}
                   </h2>
@@ -516,7 +531,7 @@ export default function FieldParticipationStepper({
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <p className="text-sm font-black text-emerald-800">의견 없음</p>
                     <p className="mt-2 text-sm font-bold leading-6 text-emerald-900">
-                      {isFoodFactoryTrial ? "제목, 내용, 사진을 입력하지 않고 제출하면 전자확인 기록으로 저장됩니다." : "제목, 내용, 사진을 입력하지 않고 제출하면 공유확인 기록으로 저장됩니다."}
+                      {isFoodFactoryTrial ? "의견이 없으면 전자확인 기록으로 저장됩니다." : "제목, 내용, 사진을 입력하지 않고 제출하면 공유확인 기록으로 저장됩니다."}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -575,7 +590,7 @@ export default function FieldParticipationStepper({
                   <textarea
                     value={content}
                     onChange={(event) => setContent(event.target.value.slice(0, 500))}
-                    rows={4}
+                    rows={isFoodFactoryTrial ? 3 : 4}
                       placeholder={isFoodFactoryTrial ? "예: 손 세척 동선이 불편합니다 / 작업대 위치 조정이 필요합니다" : "예: 통로 바닥이 미끄럽습니다 / 적치 위치 조정이 필요합니다"}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base leading-6 text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
@@ -587,8 +602,8 @@ export default function FieldParticipationStepper({
                     <p className="mt-2 text-sm leading-6 text-blue-900">
                         {isFoodFactoryTrial
                           ? hasOpinion
-                            ? "불편사항·개선의견은 익명으로 제출할 수 있습니다. 익명 제출을 선택하면 이름·소속·연락처 입력 없이 내용 중심으로 접수됩니다."
-                            : "불편사항이나 개선의견을 남길 때는 익명 제출을 선택할 수 있습니다. 확인만 제출하는 경우에는 기록 구분을 위해 최소 확인정보가 필요합니다."
+                            ? "의견은 익명 제출할 수 있습니다. 익명 선택 시 내용 중심으로 접수됩니다."
+                            : "의견이 없으면 확인자 정보와 자필서명으로 저장합니다."
                           : hasOpinion
                             ? "위험제보·아차사고·개선제안은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
                             : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
@@ -608,7 +623,7 @@ export default function FieldParticipationStepper({
                     </label>
 
                     <p className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-blue-800">
-                      익명 제출 안내: 익명 제출 시 회사에는 내용 중심으로 전달됩니다. 이름·소속·연락처는 함께 저장하지 않으며, 연락처가 없으면 후속 확인은 어려울 수 있습니다.
+                      익명 제출 시 이름·소속·확인번호는 저장하지 않습니다. 후속 확인은 어려울 수 있습니다.
                     </p>
                   </div>
 
@@ -621,8 +636,8 @@ export default function FieldParticipationStepper({
                   <p className="mt-2 text-sm leading-6 text-emerald-900">
                       {isFoodFactoryTrial
                         ? hasOpinion
-                          ? "불편사항·개선의견은 익명 제출을 선택할 수 있습니다. 익명 제출 중에는 개인정보 입력란이 비활성화됩니다."
-                          : "전자확인만 제출하는 경우에는 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."
+                          ? "익명 제출을 선택하면 이름·소속·확인번호 입력란은 사용하지 않습니다."
+                          : "전자확인만 제출할 때는 이름, 소속, 확인번호가 필요합니다."
                         : hasOpinion
                           ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
                           : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
@@ -655,35 +670,50 @@ export default function FieldParticipationStepper({
                       />
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-sm font-bold text-slate-700">휴대폰 뒷4자리</label>
-                        <input
-                          value={workerPhoneLast4}
-                          onChange={(event) => setWorkerPhoneLast4(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                          disabled={hasOpinion && anonymous}
-                          inputMode="numeric"
-                          maxLength={4}
-                          placeholder="예: 1234"
-                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
-                        />
-                      </div>
+                      {isFoodFactoryTrial ? (
+                        <div>
+                          <label className="text-sm font-bold text-slate-700">확인번호 *</label>
+                          <input
+                            value={richiConfirmationCodeValue}
+                            onChange={(event) => handleRichiConfirmationCodeChange(event.target.value)}
+                            disabled={hasOpinion && anonymous}
+                            placeholder={hasOpinion && anonymous ? "익명 제출 시 입력하지 않습니다" : "예: 1234 / A-102"}
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                          />
+                          <p className="mt-1 text-xs font-bold text-slate-500">
+                            휴대폰 뒷4자리 또는 사번 중 하나를 입력하세요.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="text-sm font-bold text-slate-700">휴대폰 뒷4자리</label>
+                            <input
+                              value={workerPhoneLast4}
+                              onChange={(event) => setWorkerPhoneLast4(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                              disabled={hasOpinion && anonymous}
+                              inputMode="numeric"
+                              maxLength={4}
+                              placeholder="예: 1234"
+                              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                            />
+                          </div>
 
-                      <div>
-                        <label className="text-sm font-bold text-slate-700">사번 또는 현장 식별번호</label>
-                        <input
-                          value={workerEmployeeNo}
-                          onChange={(event) => setWorkerEmployeeNo(event.target.value.slice(0, 60))}
-                          disabled={hasOpinion && anonymous}
-                          placeholder="예: A-102"
-                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
-                        />
-                      </div>
-                    </div>
-
+                          <div>
+                            <label className="text-sm font-bold text-slate-700">사번 또는 현장 식별번호</label>
+                            <input
+                              value={workerEmployeeNo}
+                              onChange={(event) => setWorkerEmployeeNo(event.target.value.slice(0, 60))}
+                              disabled={hasOpinion && anonymous}
+                              placeholder="예: A-102"
+                              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                            />
+                          </div>
+                        </div>
+                      )}
                     {!hasOpinion && !shareConfirmationIdentityReady ? (
                       <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                        {isFoodFactoryTrial ? "전자확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다." : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
+                        {isFoodFactoryTrial ? "전자확인은 이름, 소속, 확인번호가 필요합니다." : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
                       </p>
                     ) : null}
                   </div>
@@ -701,6 +731,12 @@ export default function FieldParticipationStepper({
                   </label>
                 ) : null}
 
+                  {isFoodFactoryTrial ? (
+                    <div className="mt-4">
+                      <HandwrittenSignaturePad enabled={isFoodFactoryTrial} />
+                    </div>
+                  ) : null}
+
                 <div className="mt-4">
                   <FieldParticipationFileInput />
                 </div>
@@ -712,7 +748,7 @@ export default function FieldParticipationStepper({
                   <p className="mt-2 text-sm leading-6 text-amber-900">
                     {workerCopy?.noticeBody ??
                       "제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다."}
-                    {isFoodFactoryTrial ? "필요한 경우 사진을 첨부할 수 있습니다. 첨부 사진은 세메앱이 용량을 줄여 저장합니다." : "첨부 사진은 세메앱이 용량을 줄여 저장합니다."}
+                    {isFoodFactoryTrial ? "사진은 필요한 경우에만 첨부하세요." : "첨부 사진은 세메앱이 용량을 줄여 저장합니다."}
                   </p>
                 </div>
               </div>
@@ -725,15 +761,21 @@ export default function FieldParticipationStepper({
                 type="button"
                 onClick={() => {
                   setCompletedSteps((current) => new Set(current).add(1));
-                  setStep(2);
+                  if (isFoodFactoryTrial) {
+                    setRiskCheck(true);
+                    setRiskAssessmentCheck(true);
+                    setSafetyMeasureCheck(true);
+                  }
+
+                  setStep(isFoodFactoryTrial ? formStep : 2);
                 }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white"
               >
-                {isFoodFactoryTrial ? "위생·안전 확인 완료 →" : "핵심 위험 확인 완료 →"}
+                {isFoodFactoryTrial ? "안내·확인 완료 →" : "핵심 위험 확인 완료 →"}
               </button>
             ) : null}
 
-            {step === 2 ? (
+            {!isFoodFactoryTrial && step === 2 ? (
               <button
                 type="button"
                 disabled={!canGoNextFromStep2}
@@ -747,9 +789,13 @@ export default function FieldParticipationStepper({
               </button>
             ) : null}
 
-            {step === 3 ? (
+            {step === formStep ? (
               <>
-                <HandwrittenSignaturePad enabled={isFoodFactoryTrial} />
+                  {isFoodFactoryTrial && !hasOpinion && !shareConfirmationIdentityReady ? (
+                    <p className="mb-2 rounded-xl bg-white px-3 py-2 text-center text-xs font-black text-slate-600">
+                      이름·소속·확인번호를 입력하면 제출할 수 있습니다.
+                    </p>
+                  ) : null}
               <button
                 type="submit"
                 disabled={isSubmitting || (!hasOpinion && !shareConfirmationIdentityReady)}
@@ -767,7 +813,7 @@ export default function FieldParticipationStepper({
             {step > 1 ? (
               <button
                 type="button"
-                onClick={() => setStep((current) => current === 3 ? 2 : 1)}
+                onClick={() => setStep((current) => isFoodFactoryTrial ? 1 : current === 3 ? 2 : 1)}
                 className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-black text-slate-600"
               >
                 이전 단계
