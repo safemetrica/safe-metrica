@@ -105,7 +105,7 @@ const OPERATING_FIELD_WORKER_COPY: Record<string, OperatingFieldWorkerCopy> = {
       submitButtonLabel: "전자확인·의견 제출하기",
       submittedMessage:
         "㈜리치코리아 관리자가 제출 내용을 확인하고 필요한 피드백 또는 개선 검토 자료로 활용합니다.",
-      feedbackTypes: ["불편사항", "개선의견", "위생·안전 확인", "기타"],
+      feedbackTypes: ["위생·안전 확인", "불편사항", "개선의견", "기타"],
     },
   mons: {
     code: "mons",

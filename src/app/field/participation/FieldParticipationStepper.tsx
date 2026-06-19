@@ -561,7 +561,7 @@ export default function FieldParticipationStepper({
                   <input
                     value={location}
                     onChange={(event) => setLocation(event.target.value)}
-                    placeholder="예: 상차장, 분리수거장, A구역"
+                    placeholder={isFoodFactoryTrial ? "예: 포장실, 세척구역, 원료보관실" : "예: 상차장, 분리수거장, A구역"}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
@@ -621,7 +621,7 @@ export default function FieldParticipationStepper({
                       {isFoodFactoryTrial
                         ? hasOpinion
                           ? "불편사항·개선의견은 익명 제출을 선택할 수 있습니다. 익명 제출 중에는 개인정보 입력란이 비활성화됩니다."
-                          : "전자확인만 제출하는 경우에는 기록 구분을 위해 최소 확인정보가 필요합니다."
+                          : "전자확인만 제출하는 경우에는 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."
                         : hasOpinion
                           ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
                           : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
@@ -682,7 +682,7 @@ export default function FieldParticipationStepper({
 
                     {!hasOpinion && !shareConfirmationIdentityReady ? (
                       <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                        {isFoodFactoryTrial ? "전자확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다." : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 휴대폰 뒷4자리 또는 사번 중 하나가 필요합니다."}
+                        {isFoodFactoryTrial ? "전자확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다." : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
                       </p>
                     ) : null}
                   </div>
