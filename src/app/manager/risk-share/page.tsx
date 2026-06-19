@@ -167,16 +167,34 @@ function readNumber(value: unknown) {
 
 function normalizeSubmissionType(value: unknown) {
   const text = readText(value).toLowerCase();
+  const compactText = text.replace(/[\s_-]+/g, "");
+
+  if (
+    compactText.includes("위생안전확인") ||
+    compactText.includes("위생안전") ||
+    text.includes("hygiene") ||
+    text.includes("food")
+  ) {
+    return "위생·안전 확인";
+  }
+
+  if (compactText.includes("불편사항") || compactText.includes("불편") || text.includes("discomfort")) {
+    return "불편사항";
+  }
+
+  if (compactText.includes("개선의견")) {
+    return "개선의견";
+  }
 
   if (text.includes("공유확인") || text.includes("share")) {
     return "공유확인";
   }
 
-  if (text.includes("위험제보") || text.includes("위험 제보") || text.includes("risk")) {
+  if (text.includes("위험제보") || text.includes("위험") || text.includes("risk")) {
     return "위험제보";
   }
 
-  if (text.includes("아차") || text.includes("near")) {
+  if (text.includes("아차사고") || text.includes("near")) {
     return "아차사고";
   }
 
@@ -218,7 +236,8 @@ function getFieldSubmissionType(row: FieldParticipationSummaryRow) {
 }
 
 function isShareConfirmation(row: FieldParticipationSummaryRow) {
-  return getFieldSubmissionType(row) === "공유확인";
+  const submissionType = getFieldSubmissionType(row);
+  return submissionType === "공유확인" || submissionType === "위생·안전 확인";
 }
 
 function isFieldReviewNeeded(row: FieldParticipationSummaryRow) {
@@ -451,6 +470,7 @@ export default async function RiskSharePackManagerHomePage() {
     isRepresentativeRecordInPeriod(record, currentPeriod),
   );
   const representativeLinks = linkResult.status === "ok" ? linkResult.links : [];
+  const isFoodFactoryTrial = company.code === "richi";
   const summaryCards = buildSummaryCards({
     fieldSummary,
     representativeRecords,
@@ -474,15 +494,68 @@ export default async function RiskSharePackManagerHomePage() {
 
   const companyName = getCompanyDisplayName(company);
 
+  const displaySummaryCards = isFoodFactoryTrial
+    ? summaryCards.map((card) => {
+        if (card.label === "근로자 공유확인") {
+          return {
+            ...card,
+            label: "전자확인 기록",
+            description: "작업 전 위생·안전 확인 제출 건수입니다. 의견 접수와 분리해 봅니다.",
+          };
+        }
+
+        if (card.label === "위험제보·개선의견") {
+          return {
+            ...card,
+            label: "의견·불편사항",
+            description: "불편사항, 개선의견, 기타 의견 등 관리자 확인자료로 볼 제출 건수입니다.",
+          };
+        }
+
+        if (card.label === "관리자 검토 필요") {
+          return {
+            ...card,
+            label: "관리자 확인 필요",
+            description: "의견·불편사항과 보완 의견 중 관리자가 확인할 필요가 있는 기록입니다.",
+          };
+        }
+
+        return card;
+      })
+    : summaryCards;
+
+  const displayActionCards = isFoodFactoryTrial
+    ? [
+        {
+          title: "전자확인·의견 접수함",
+          description: "작업 전 위생·안전 전자확인과 불편사항·개선의견 제출 내용을 확인합니다.",
+          href: "/field/voice",
+          cta: "접수함 보기",
+        },
+        {
+          title: "주간·월간 요약 후보",
+          description: "전자확인, 의견, 사진 첨부 기록을 주간 체험 요약 후보로 확인합니다.",
+          href: "/monthly-report/risk-share",
+          cta: "요약 화면 열기",
+        },
+        {
+          title: "근로자 전자확인 화면",
+          description: "리치코리아 근로자 QR 전자확인 화면을 새 창으로 열어 체험 흐름을 확인합니다.",
+          href: `/field/participation?company=${encodeURIComponent(company.code)}`,
+          cta: "근로자 화면 열기",
+        },
+      ]
+    : actionCards;
+
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-cyan-300">SafeMetrica Risk Share Pack</p>
+              <p className="text-sm font-semibold text-cyan-300">{isFoodFactoryTrial ? "SafeMetrica Trial Manager" : "SafeMetrica Risk Share Pack"}</p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-                Risk Share Pack 관리자 홈
+                {isFoodFactoryTrial ? "리치코리아 전자확인 관리자 홈" : "Risk Share Pack 관리자 홈"}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
                 위험성평가 공유 이후의 확인, 의견 제출, 근로자대표 참여확인,
@@ -516,7 +589,7 @@ export default async function RiskSharePackManagerHomePage() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {summaryCards.map((card) => (
+          {displaySummaryCards.map((card) => (
             <article
               key={card.label}
               className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
@@ -635,7 +708,7 @@ export default async function RiskSharePackManagerHomePage() {
         <RiskSharePackExportPanel companyCode={company.code} />
 
         <section className="grid gap-4 lg:grid-cols-3">
-          {actionCards.map((card) => (
+          {displayActionCards.map((card) => (
             <article
               key={card.title}
               className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
