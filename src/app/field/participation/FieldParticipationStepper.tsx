@@ -503,7 +503,7 @@ export default function FieldParticipationStepper({
               <div>
                 <p className="text-sm font-black text-slate-500">Step 3/4</p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">
-                    {isFoodFactoryTrial ? "불편사항·개선의견 제출" : "의견 / 아차사고 제출"}
+                    {isFoodFactoryTrial ? "의견 제출" : "의견 / 아차사고 제출"}
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                     {isFoodFactoryTrial
@@ -520,10 +520,10 @@ export default function FieldParticipationStepper({
                   </div>
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                       <p className="text-sm font-black text-amber-800">
-                        {isFoodFactoryTrial ? "불편사항·개선의견 있음" : "위험·아차사고·개선의견 있음"}
+                        {isFoodFactoryTrial ? "의견 있음" : "위험·아차사고·개선의견 있음"}
                       </p>
                     <p className="mt-2 text-sm font-bold leading-6 text-amber-900">
-                      제목, 내용 또는 사진을 입력하면 관리자 검토대상으로 저장됩니다.
+                      {isFoodFactoryTrial ? "입력한 의견은 관리자 확인자료로 저장됩니다." : "제목, 내용 또는 사진을 입력하면 관리자 검토대상으로 저장됩니다."}
                     </p>
                   </div>
                 </div>
@@ -565,7 +565,7 @@ export default function FieldParticipationStepper({
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
-                    위치/구역은 기록 보조항목입니다. 제목, 내용 또는 사진이 있을 때만 관리자 검토대상으로 분류됩니다.
+                    {isFoodFactoryTrial ? "위치/구역은 어느 공간의 의견인지 확인하기 위한 보조항목입니다." : "위치/구역은 기록 보조항목입니다. 제목, 내용 또는 사진이 있을 때만 관리자 검토대상으로 분류됩니다."}
                   </p>
                 </div>
 
@@ -711,7 +711,7 @@ export default function FieldParticipationStepper({
                   <p className="mt-2 text-sm leading-6 text-amber-900">
                     {workerCopy?.noticeBody ??
                       "제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다."}
-                    첨부 사진은 세메앱이 용량을 줄여 저장합니다.
+                    {isFoodFactoryTrial ? "필요한 경우 사진을 첨부할 수 있습니다. 첨부 사진은 세메앱이 용량을 줄여 저장합니다." : "첨부 사진은 세메앱이 용량을 줄여 저장합니다."}
                   </p>
                 </div>
               </div>
