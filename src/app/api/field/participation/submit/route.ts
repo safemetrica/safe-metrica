@@ -85,6 +85,57 @@ function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
 
+function buildHandwrittenSignatureRawPayload(formData: FormData) {
+  const signaturePayload: Record<string, unknown> = {};
+
+  const handwrittenSignatureDataUrl = getFormText(formData, "handwritten_signature_data_url");
+  const handwrittenSignatureSignedAt = getFormText(formData, "handwritten_signature_signed_at");
+  const signatureConfirmationMethod = getFormText(formData, "signature_confirmation_method");
+  const signatureConfirmationLabel = getFormText(formData, "signature_confirmation_label");
+  const signatureConfirmationSnapshotJson = getFormText(formData, "signature_confirmation_snapshot_json");
+  const signatureClientSourceRoute = getFormText(formData, "signature_client_source_route");
+  const signatureClientUserAgent = getFormText(formData, "signature_client_user_agent");
+  const signatureMetaCompanyCode = getFormText(formData, "signature_meta_company_code");
+
+  if (handwrittenSignatureDataUrl) {
+    signaturePayload.handwritten_signature_data_url = handwrittenSignatureDataUrl;
+  }
+
+  if (handwrittenSignatureSignedAt) {
+    signaturePayload.handwritten_signature_signed_at = handwrittenSignatureSignedAt;
+  }
+
+  if (signatureConfirmationMethod) {
+    signaturePayload.signature_confirmation_method = signatureConfirmationMethod;
+  }
+
+  if (signatureConfirmationLabel) {
+    signaturePayload.signature_confirmation_label = signatureConfirmationLabel;
+  }
+
+  if (signatureConfirmationSnapshotJson) {
+    try {
+      signaturePayload.signature_confirmation_snapshot_json = JSON.parse(signatureConfirmationSnapshotJson);
+    } catch {
+      signaturePayload.signature_confirmation_snapshot_json = signatureConfirmationSnapshotJson;
+    }
+  }
+
+  if (signatureClientSourceRoute) {
+    signaturePayload.signature_client_source_route = signatureClientSourceRoute;
+  }
+
+  if (signatureClientUserAgent) {
+    signaturePayload.signature_client_user_agent = signatureClientUserAgent;
+  }
+
+  if (signatureMetaCompanyCode) {
+    signaturePayload.signature_meta_company_code = signatureMetaCompanyCode;
+  }
+
+  return signaturePayload;
+}
+
 function normalizeConfirmationType(rawType: string, submissionType: string) {
   const expectedType = submissionType === "공유확인" ? "risk_share_confirm" : "worker_report";
 
@@ -502,6 +553,7 @@ function buildSupabaseFirstFieldParticipationContent(params: {
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
+  const handwrittenSignatureRawPayload = buildHandwrittenSignatureRawPayload(formData);
   const contractorName = getFormText(formData, "contractorName");
   const clientSubmissionId = getFormText(formData, "clientSubmissionId");
 
@@ -648,6 +700,7 @@ export async function POST(req: NextRequest) {
         notion_url: null,
         file_urls: uploadedFiles.map((file) => file.url),
         raw_payload: {
+          ...handwrittenSignatureRawPayload,
           source: "supabase_first_field_participation_submit_v1",
           clientSubmissionId,
           identityMode,
@@ -974,6 +1027,7 @@ export async function POST(req: NextRequest) {
         notion_url: notionUrl,
         file_urls: uploadedFiles.map((file) => file.url),
         raw_payload: {
+          ...handwrittenSignatureRawPayload,
           clientSubmissionId,
           identityMode,
           workerName: anonymous ? "" : submitterInput,
