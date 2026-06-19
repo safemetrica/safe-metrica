@@ -520,10 +520,10 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
 
             <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
               <p className="text-sm font-black text-blue-900">
-                장갑을 착용했거나 칸이 좁으면 휴대폰을 가로로 돌려 크게 작성하세요.
+                카카오톡 안에서 서명이 불편하면 Chrome, Safari 또는 갤럭시 기본브라우저로 열어 주세요.
               </p>
               <p className="mt-1 text-xs leading-5 text-blue-800">
-                가로 화면에서는 서명칸이 더 넓게 표시됩니다.
+                장갑을 착용했거나 칸이 좁으면 휴대폰을 가로로 돌려 크게 작성하세요.
               </p>
             </div>
 
