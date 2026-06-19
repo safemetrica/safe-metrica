@@ -4,6 +4,7 @@ import { riskShareLinkCopy, riskShareLinkSubmissionTypeLabels } from "@/lib/risk
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
+import HandwrittenSignaturePad from "./HandwrittenSignaturePad";
 
 type WorkerCopy = {
   code?: string;
@@ -747,6 +748,8 @@ export default function FieldParticipationStepper({
             ) : null}
 
             {step === 3 ? (
+              <>
+                <HandwrittenSignaturePad enabled={isFoodFactoryTrial} />
               <button
                 type="submit"
                 disabled={isSubmitting || (!hasOpinion && !shareConfirmationIdentityReady)}
@@ -758,6 +761,7 @@ export default function FieldParticipationStepper({
                       ? isFoodFactoryTrial ? "전자확인·의견 제출 →" : "위험 또는 개선의견 제출 →"
                     : isFoodFactoryTrial ? "의견 없음, 전자확인 제출 →" : riskShareLinkCopy.worker.buttons.confirmOnly}
               </button>
+              </>
             ) : null}
 
             {step > 1 ? (

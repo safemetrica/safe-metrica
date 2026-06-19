@@ -78,7 +78,11 @@ function buildFormSnapshot(form: HTMLFormElement, sourceRoute: string) {
   };
 }
 
-export default function HandwrittenSignaturePad() {
+type HandwrittenSignaturePadProps = {
+  enabled?: boolean;
+};
+
+export default function HandwrittenSignaturePad({ enabled = false }: HandwrittenSignaturePadProps) {
   const rootRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -236,12 +240,6 @@ export default function HandwrittenSignaturePad() {
   }
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const companyCode = (params.get("company") || params.get("companyCode") || "")
-      .trim()
-      .toLowerCase();
-
-    const enabled = companyCode === RICHI_COMPANY_CODE;
     setIsRichi(enabled);
 
     if (!enabled) {
@@ -253,7 +251,7 @@ export default function HandwrittenSignaturePad() {
 
     setSourceRoute(nextSourceRoute);
     setClientUserAgent(nextUserAgent);
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     if (!isRichi) {
