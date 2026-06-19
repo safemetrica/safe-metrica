@@ -382,7 +382,7 @@ export default function FieldParticipationStepper({
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isFoodFactoryTrial
-                      ? "작업 전 안내 내용입니다. 아래 내용을 확인해 주세요."
+                      ? "작업 전 위생·안전 확인 내용입니다."
                       : "오늘 작업과 관련된 핵심 위험요인입니다. 아래 내용을 확인해 주세요."}
                 </p>
 
@@ -394,9 +394,9 @@ export default function FieldParticipationStepper({
 
                   {isFoodFactoryTrial ? (
                     <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
-                      <h3 className="text-sm font-black text-emerald-900">리치 확인 체크</h3>
+                      <h3 className="text-sm font-black text-emerald-900">위생·안전 확인 체크</h3>
                       <p className="mt-1 text-xs font-bold leading-5 text-emerald-800">
-                        아래 항목을 직접 체크해야 전자확인 기록으로 남습니다.
+                        아래 항목을 확인하고 체크하면 전자확인 기록으로 남습니다.
                       </p>
 
                       <div className="mt-3 space-y-2">
@@ -432,7 +432,7 @@ export default function FieldParticipationStepper({
                       </div>
 
                       <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-emerald-800">
-                        추후 위험성평가 공유내용도 이 확인 영역에 연결합니다.
+                        정식 운영 시 회사별 확인내용을 이 영역에 연결합니다.
                       </p>
                     </div>
                   ) : null}
@@ -489,7 +489,7 @@ export default function FieldParticipationStepper({
                     {canOpenRiskSummary
                       ? "공유할 위험요인은 아래 버튼에서 확인할 수 있습니다."
                       : isFoodFactoryTrial
-                          ? "작업 전 위생·안전 안내 내용과 현장 주의사항을 확인해 주세요."
+                          ? "작업 전 위생·안전 안내와 현장 주의사항을 확인해 주세요."
                           : "오늘 작업 전 TBM 공유 내용과 현장 주의사항을 확인해 주세요."}
                   </div>
                 )}
