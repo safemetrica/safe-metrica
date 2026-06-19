@@ -4,9 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 const RICHI_COMPANY_CODE = "richi";
 const SIGNATURE_METHOD = "finger_drawn_internal_confirmation_record_v1";
-const SIGNATURE_CANVAS_HEIGHT = 112;
+const SIGNATURE_CANVAS_HEIGHT = 176;
 
 type SnapshotValue = string | string[] | boolean | null;
+
+type HandwrittenSignaturePadProps = {
+  enabled?: boolean;
+};
 
 const EXCLUDED_SNAPSHOT_KEYS = new Set([
   "handwritten_signature_data_url",
@@ -79,19 +83,15 @@ function buildFormSnapshot(form: HTMLFormElement, sourceRoute: string) {
   };
 }
 
-type HandwrittenSignaturePadProps = {
-  enabled?: boolean;
-};
-
 export default function HandwrittenSignaturePad({ enabled = false }: HandwrittenSignaturePadProps) {
   const rootRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContextRef = useRef<CanvasRenderingContext2D | null>(null);
   const drawingRef = useRef(false);
-  const bodyOverflowRef = useRef<string | null>(null);
   const signedRef = useRef(false);
   const signatureDataUrlRef = useRef("");
   const signedAtRef = useRef("");
+  const bodyOverflowRef = useRef<string | null>(null);
 
   const signatureInputRef = useRef<HTMLInputElement | null>(null);
   const signedAtInputRef = useRef<HTMLInputElement | null>(null);
@@ -99,13 +99,14 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
   const sourceRouteInputRef = useRef<HTMLInputElement | null>(null);
   const userAgentInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [isRichi, setIsRichi] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [hasSignature, setHasSignature] = useState(false);
+  const [signaturePreview, setSignaturePreview] = useState("");
   const [sourceRoute, setSourceRoute] = useState("");
   const [clientUserAgent, setClientUserAgent] = useState("");
 
-  function lockPageScrollWhileSigning() {
+  function lockBodyScroll() {
     if (bodyOverflowRef.current !== null) {
       return;
     }
@@ -114,7 +115,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     document.body.style.overflow = "hidden";
   }
 
-  function unlockPageScrollAfterSigning() {
+  function unlockBodyScroll() {
     if (bodyOverflowRef.current === null) {
       return;
     }
@@ -149,7 +150,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
 
     const ratio = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    const width = Math.max(320, Math.floor(rect.width || 320));
+    const width = Math.max(280, Math.floor(rect.width || 320));
     const height = SIGNATURE_CANVAS_HEIGHT;
 
     canvas.width = Math.floor(width * ratio);
@@ -166,7 +167,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     context.fillRect(0, 0, width, height);
     context.strokeStyle = "#0B2742";
     context.fillStyle = "#0B2742";
-    context.lineWidth = 2.6;
+    context.lineWidth = 3;
     context.lineCap = "round";
     context.lineJoin = "round";
 
@@ -186,6 +187,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     signedAtRef.current = now;
     signedRef.current = true;
 
+    setSignaturePreview(dataUrl);
     setHasSignature(true);
     setErrorMessage("");
     syncHiddenFields();
@@ -198,9 +200,28 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     signedAtRef.current = "";
     signedRef.current = false;
 
+    setSignaturePreview("");
     setHasSignature(false);
     setErrorMessage("");
     syncHiddenFields();
+  }
+
+  function openSignatureSheet() {
+    setIsOpen(true);
+    setErrorMessage("");
+  }
+
+  function closeSignatureSheet() {
+    setIsOpen(false);
+  }
+
+  function completeSignature() {
+    if (!signedRef.current || !signatureDataUrlRef.current) {
+      setErrorMessage("손가락으로 이름을 적어 확인서명을 남겨주세요.");
+      return;
+    }
+
+    closeSignatureSheet();
   }
 
   function startDrawing(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -212,14 +233,13 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     }
 
     event.preventDefault();
-    lockPageScrollWhileSigning();
     canvas.setPointerCapture(event.pointerId);
 
     const point = getCanvasPoint(canvas, event.clientX, event.clientY);
     drawingRef.current = true;
 
     context.beginPath();
-    context.arc(point.x, point.y, 1.2, 0, Math.PI * 2);
+    context.arc(point.x, point.y, 1.4, 0, Math.PI * 2);
     context.fill();
     context.beginPath();
     context.moveTo(point.x, point.y);
@@ -257,13 +277,10 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
       // Pointer capture can already be released by the browser.
     }
 
-    unlockPageScrollAfterSigning();
     updateSignatureData();
   }
 
   useEffect(() => {
-    setIsRichi(enabled);
-
     if (!enabled) {
       return;
     }
@@ -276,12 +293,27 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
   }, [enabled]);
 
   useEffect(() => {
-    if (!isRichi) {
+    if (!enabled || !isOpen) {
+      unlockBodyScroll();
       return;
     }
 
-    prepareCanvas();
-    syncHiddenFields();
+    lockBodyScroll();
+
+    const timer = window.setTimeout(() => {
+      prepareCanvas();
+    }, 30);
+
+    return () => {
+      window.clearTimeout(timer);
+      unlockBodyScroll();
+    };
+  }, [enabled, isOpen]);
+
+  useEffect(() => {
+    if (!enabled || !isOpen) {
+      return;
+    }
 
     const handleResize = () => {
       if (!signedRef.current) {
@@ -293,12 +325,11 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      unlockPageScrollAfterSigning();
     };
-  }, [isRichi, sourceRoute, clientUserAgent]);
+  }, [enabled, isOpen]);
 
   useEffect(() => {
-    if (!isRichi) {
+    if (!enabled) {
       return;
     }
 
@@ -331,8 +362,8 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
       if (!signedRef.current || !signatureDataUrlRef.current) {
         event.preventDefault();
         event.stopPropagation();
-        setErrorMessage("손가락으로 이름을 적어 확인서명을 남겨주세요.");
-        root.scrollIntoView({ block: "center", behavior: "smooth" });
+        setErrorMessage("확인서명을 먼저 남겨주세요.");
+        setIsOpen(true);
       }
     };
 
@@ -341,163 +372,149 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     return () => {
       form.removeEventListener("submit", handleSubmit, true);
     };
-  }, [isRichi]);
+  }, [enabled]);
 
-  if (!isRichi) {
+  if (!enabled) {
     return null;
   }
 
   return (
-    <section
-      ref={rootRef}
-      aria-label="모바일 자필 확인서명"
-      style={{
-        marginTop: 12,
-        marginBottom: 12,
-        border: "1px solid #BFE9DC",
-        background: "#F7FCFA",
-        borderRadius: 20,
-        padding: 12,
-        boxShadow: "0 10px 28px rgba(11, 39, 66, 0.08)",
-        touchAction: "none",
-        overscrollBehavior: "contain",
-      }}
-    >
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-        <div
-          aria-hidden="true"
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 10,
-            background: "#EAF8F3",
-            display: "grid",
-            placeItems: "center",
-            color: "#16A085",
-            fontWeight: 800,
-            flex: "0 0 auto",
-          }}
-        >
-          ✓
+    <section ref={rootRef} aria-label="모바일 자필 확인서명" className="my-3">
+      <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-sm font-black text-emerald-600">
+            ✓
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-black text-slate-950">모바일 자필 확인서명</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              확인사항을 읽고 확인했다는 회사 내부 기록입니다.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={openSignatureSheet}
+            className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-800"
+          >
+            {hasSignature ? "수정" : "서명"}
+          </button>
         </div>
 
-        <div>
-          <h3
-            style={{
-              margin: 0,
-              color: "#0B2742",
-              fontSize: 16,
-              lineHeight: 1.3,
-              fontWeight: 800,
-            }}
+        {hasSignature ? (
+          <button
+            type="button"
+            onClick={openSignatureSheet}
+            className="mt-3 flex w-full items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-2 text-left"
           >
-            모바일 자필 확인서명
-          </h3>
-          <p
-            style={{
-              margin: "4px 0 0",
-              color: "#64748B",
-              fontSize: 12,
-              lineHeight: 1.55,
-            }}
-          >
-            위 확인사항을 읽고 확인했다는 회사 내부 기록으로 남깁니다.
-            아래 칸에 손가락으로 이름을 적어주세요.
+            <div className="h-10 w-24 overflow-hidden rounded-lg border border-emerald-100 bg-white">
+              {signaturePreview ? (
+                <img
+                  src={signaturePreview}
+                  alt="입력된 확인서명 미리보기"
+                  className="h-full w-full object-contain"
+                />
+              ) : null}
+            </div>
+            <div>
+              <p className="text-xs font-black text-emerald-700">확인서명이 입력되었습니다.</p>
+              <p className="mt-0.5 text-[11px] text-slate-500">눌러서 다시 작성할 수 있습니다.</p>
+            </div>
+          </button>
+        ) : (
+          <p className="mt-2 text-xs font-bold text-slate-500">
+            제출 전 한 번만 서명하면 됩니다.
           </p>
-        </div>
+        )}
+
+        {errorMessage ? (
+          <p className="mt-2 text-xs font-black text-red-600" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
       </div>
 
-      <div
-        style={{
-          marginTop: 10,
-          borderRadius: 14,
-          background: "#FFFFFF",
-          border: errorMessage ? "2px solid #DC2626" : "1px solid #D8EEE7",
-          overflow: "hidden",
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          aria-label="손가락으로 확인서명을 입력하는 영역"
-          onPointerDown={startDrawing}
-          onPointerMove={draw}
-          onPointerUp={stopDrawing}
-          onPointerCancel={stopDrawing}
+      {isOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="확인서명 작성"
+          className="fixed inset-0 z-50 flex items-end bg-slate-950/45 px-3 pb-3"
           style={{
-            width: "100%",
-            height: SIGNATURE_CANVAS_HEIGHT,
-            display: "block",
-            touchAction: "none",
             overscrollBehavior: "contain",
-            userSelect: "none",
-            WebkitUserSelect: "none",
-            background: "#FFFFFF",
-            cursor: "crosshair",
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-          marginTop: 10,
-          flexWrap: "wrap",
-        }}
-      >
-        <span
-          style={{
-            color: hasSignature ? "#16A085" : "#64748B",
-            fontSize: 13,
-            fontWeight: 700,
           }}
         >
-          {hasSignature ? "확인서명이 입력되었습니다." : "서명 전입니다."}
-        </span>
+          <div className="w-full rounded-3xl bg-white p-4 shadow-2xl">
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-slate-200" />
 
-        <button
-          type="button"
-          onClick={clearSignature}
-          style={{
-            border: "1px solid #CBD5E1",
-            background: "#FFFFFF",
-            color: "#0B2742",
-            borderRadius: 999,
-            padding: "9px 13px",
-            fontSize: 13,
-            fontWeight: 800,
-          }}
-        >
-          다시 쓰기
-        </button>
-      </div>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-black text-slate-950">확인서명 작성</h3>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  아래 흰색 칸에 손가락으로 이름을 적어주세요.
+                </p>
+              </div>
 
-      {errorMessage ? (
-        <p
-          role="alert"
-          style={{
-            margin: "10px 0 0",
-            color: "#B91C1C",
-            fontSize: 13,
-            fontWeight: 800,
-          }}
-        >
-          {errorMessage}
-        </p>
+              <button
+                type="button"
+                onClick={closeSignatureSheet}
+                className="rounded-full border border-slate-200 px-3 py-2 text-xs font-black text-slate-600"
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <canvas
+                ref={canvasRef}
+                aria-label="손가락으로 확인서명을 입력하는 영역"
+                onPointerDown={startDrawing}
+                onPointerMove={draw}
+                onPointerUp={stopDrawing}
+                onPointerCancel={stopDrawing}
+                onPointerLeave={stopDrawing}
+                className="block w-full bg-white"
+                style={{
+                  height: SIGNATURE_CANVAS_HEIGHT,
+                  touchAction: "none",
+                  overscrollBehavior: "contain",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                  cursor: "crosshair",
+                }}
+              />
+            </div>
+
+            {errorMessage ? (
+              <p className="mt-3 text-sm font-black text-red-600" role="alert">
+                {errorMessage}
+              </p>
+            ) : (
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                본인인증 API나 외부 인증서 기능이 아닌, QR 기반 내부 확인기록입니다.
+              </p>
+            )}
+
+            <div className="mt-4 grid grid-cols-[0.8fr_1.2fr] gap-2">
+              <button
+                type="button"
+                onClick={clearSignature}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700"
+              >
+                다시 쓰기
+              </button>
+              <button
+                type="button"
+                onClick={completeSignature}
+                className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white"
+              >
+                서명 완료
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
-
-      <p
-        style={{
-          margin: "10px 0 0",
-          color: "#64748B",
-          fontSize: 12,
-          lineHeight: 1.5,
-        }}
-      >
-        본인인증 API나 외부 인증서 기능이 아닌, QR 기반 내부 확인기록입니다.
-      </p>
 
       <input ref={signatureInputRef} type="hidden" name="handwritten_signature_data_url" defaultValue="" />
       <input ref={signedAtInputRef} type="hidden" name="handwritten_signature_signed_at" defaultValue="" />
