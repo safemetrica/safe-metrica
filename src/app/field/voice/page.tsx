@@ -90,9 +90,19 @@ function normalizeVoiceType(value: string) {
   const compact = compactLabel(value);
 
   if (compact.includes("공유확인") || compact.includes("주지확인")) return "공유확인";
+  if (
+    compact.includes("위생·안전확인") ||
+    compact.includes("위생·안전") ||
+    compact.includes("위생안전확인") ||
+    compact.includes("위생안전")
+  ) {
+    return "위생·안전 확인";
+  }
+  if (compact.includes("불편사항") || compact.includes("불편")) return "불편사항";
   if (compact.includes("위험제보") || compact.includes("위험요인제보") || compact.includes("위험신고")) return "위험제보";
   if (compact.includes("아차사고")) return "아차사고";
-  if (compact.includes("개선제안") || compact.includes("개선의견")) return "개선제안";
+  if (compact.includes("개선의견")) return "개선의견";
+  if (compact.includes("개선제안")) return "개선제안";
   if (compact.includes("기타")) return "기타";
 
   return value || "공유확인";
@@ -116,7 +126,8 @@ function normalizeVoiceStatus(value: string) {
 }
 
 function isAcknowledgementRow(row: FieldVoiceRow) {
-  return normalizeVoiceType(row.type) === "공유확인";
+  const type = normalizeVoiceType(row.type);
+  return type === "공유확인" || type === "위생·안전 확인";
 }
 
 function isActionNeededRow(row: FieldVoiceRow) {
