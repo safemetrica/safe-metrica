@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 const RICHI_COMPANY_CODE = "richi";
 const SIGNATURE_METHOD = "finger_drawn_internal_confirmation_record_v1";
+const SIGNATURE_CANVAS_HEIGHT = 112;
 
 type SnapshotValue = string | string[] | boolean | null;
 
@@ -87,6 +88,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContextRef = useRef<CanvasRenderingContext2D | null>(null);
   const drawingRef = useRef(false);
+  const bodyOverflowRef = useRef<string | null>(null);
   const signedRef = useRef(false);
   const signatureDataUrlRef = useRef("");
   const signedAtRef = useRef("");
@@ -102,6 +104,24 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
   const [hasSignature, setHasSignature] = useState(false);
   const [sourceRoute, setSourceRoute] = useState("");
   const [clientUserAgent, setClientUserAgent] = useState("");
+
+  function lockPageScrollWhileSigning() {
+    if (bodyOverflowRef.current !== null) {
+      return;
+    }
+
+    bodyOverflowRef.current = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
+
+  function unlockPageScrollAfterSigning() {
+    if (bodyOverflowRef.current === null) {
+      return;
+    }
+
+    document.body.style.overflow = bodyOverflowRef.current;
+    bodyOverflowRef.current = null;
+  }
 
   function syncHiddenFields() {
     if (signatureInputRef.current) {
@@ -130,7 +150,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     const ratio = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(320, Math.floor(rect.width || 320));
-    const height = 180;
+    const height = SIGNATURE_CANVAS_HEIGHT;
 
     canvas.width = Math.floor(width * ratio);
     canvas.height = Math.floor(height * ratio);
@@ -192,6 +212,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     }
 
     event.preventDefault();
+    lockPageScrollWhileSigning();
     canvas.setPointerCapture(event.pointerId);
 
     const point = getCanvasPoint(canvas, event.clientX, event.clientY);
@@ -236,6 +257,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
       // Pointer capture can already be released by the browser.
     }
 
+    unlockPageScrollAfterSigning();
     updateSignatureData();
   }
 
@@ -271,6 +293,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      unlockPageScrollAfterSigning();
     };
   }, [isRichi, sourceRoute, clientUserAgent]);
 
@@ -329,22 +352,24 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
       ref={rootRef}
       aria-label="모바일 자필 확인서명"
       style={{
-        marginTop: 18,
-        marginBottom: 18,
+        marginTop: 12,
+        marginBottom: 12,
         border: "1px solid #BFE9DC",
         background: "#F7FCFA",
         borderRadius: 20,
-        padding: 16,
+        padding: 12,
         boxShadow: "0 10px 28px rgba(11, 39, 66, 0.08)",
+        touchAction: "none",
+        overscrollBehavior: "contain",
       }}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <div
           aria-hidden="true"
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 12,
+            width: 30,
+            height: 30,
+            borderRadius: 10,
             background: "#EAF8F3",
             display: "grid",
             placeItems: "center",
@@ -361,7 +386,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
             style={{
               margin: 0,
               color: "#0B2742",
-              fontSize: 18,
+              fontSize: 16,
               lineHeight: 1.3,
               fontWeight: 800,
             }}
@@ -370,9 +395,9 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
           </h3>
           <p
             style={{
-              margin: "6px 0 0",
+              margin: "4px 0 0",
               color: "#64748B",
-              fontSize: 14,
+              fontSize: 12,
               lineHeight: 1.55,
             }}
           >
@@ -384,8 +409,8 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
 
       <div
         style={{
-          marginTop: 14,
-          borderRadius: 16,
+          marginTop: 10,
+          borderRadius: 14,
           background: "#FFFFFF",
           border: errorMessage ? "2px solid #DC2626" : "1px solid #D8EEE7",
           overflow: "hidden",
@@ -400,9 +425,12 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
           onPointerCancel={stopDrawing}
           style={{
             width: "100%",
-            height: 180,
+            height: SIGNATURE_CANVAS_HEIGHT,
             display: "block",
             touchAction: "none",
+            overscrollBehavior: "contain",
+            userSelect: "none",
+            WebkitUserSelect: "none",
             background: "#FFFFFF",
             cursor: "crosshair",
           }}
@@ -468,7 +496,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
           lineHeight: 1.5,
         }}
       >
-        이 기록은 본인인증 API나 외부 인증서 기반 기능이 아니라, QR 기반 확인 흐름에서 사용하는 내부 확인기록입니다.
+        본인인증 API나 외부 인증서 기능이 아닌, QR 기반 내부 확인기록입니다.
       </p>
 
       <input ref={signatureInputRef} type="hidden" name="handwritten_signature_data_url" defaultValue="" />
