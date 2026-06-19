@@ -357,13 +357,19 @@ export default function FieldParticipationStepper({
             {step === 1 ? (
               <div>
                 <p className="text-sm font-black text-slate-500">Step 1/4</p>
-                <h2 className="mt-1 text-xl font-black text-slate-950">오늘 작업 전 핵심 위험 확인</h2>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                    {isFoodFactoryTrial ? "작업 전 위생·안전 확인" : "오늘 작업 전 핵심 위험 확인"}
+                  </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  오늘 작업과 관련된 핵심 위험요인입니다. 아래 내용을 확인해 주세요.
+                  {isFoodFactoryTrial
+                      ? "작업 전 안내 내용입니다. 아래 내용을 확인해 주세요."
+                      : "오늘 작업과 관련된 핵심 위험요인입니다. 아래 내용을 확인해 주세요."}
                 </p>
 
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900">
-                  오늘 작업 전 아래 핵심 위험요인을 반드시 확인하세요.
+                  {isFoodFactoryTrial
+                      ? "작업 전 위생·안전 확인 내용을 반드시 확인하세요."
+                      : "오늘 작업 전 아래 핵심 위험요인을 반드시 확인하세요."}
                 </div>
 
                 {weatherNotice ? (
@@ -417,7 +423,9 @@ export default function FieldParticipationStepper({
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">
                     {canOpenRiskSummary
                       ? "공유할 위험요인은 아래 버튼에서 확인할 수 있습니다."
-                      : "오늘 작업 전 TBM 공유 내용과 현장 주의사항을 확인해 주세요."}
+                      : isFoodFactoryTrial
+                          ? "작업 전 위생·안전 안내 내용과 현장 주의사항을 확인해 주세요."
+                          : "오늘 작업 전 TBM 공유 내용과 현장 주의사항을 확인해 주세요."}
                   </div>
                 )}
 
