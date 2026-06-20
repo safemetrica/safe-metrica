@@ -417,6 +417,47 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     };
   }, [enabled]);
 
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const rootElement = rootRef.current;
+    const formElement = rootElement?.closest("form");
+
+    if (!rootElement || !formElement) {
+      return;
+    }
+
+    const syncSignatureDataUrlBeforeSubmit = () => {
+      const signatureInput = signatureInputRef.current;
+
+      if (!signatureInput) {
+        return;
+      }
+
+      const existingValue = signatureInput.value.trim();
+
+      if (existingValue.startsWith("data:image/") && existingValue.length > 100) {
+        return;
+      }
+
+      const previewImage = rootElement.querySelector<HTMLImageElement>(
+        'img[alt="입력된 확인서명 미리보기"]'
+      );
+
+      if (previewImage?.src?.startsWith("data:image/") && previewImage.src.length > 100) {
+        signatureInput.value = previewImage.src;
+      }
+    };
+
+    formElement.addEventListener("submit", syncSignatureDataUrlBeforeSubmit, true);
+
+    return () => {
+      formElement.removeEventListener("submit", syncSignatureDataUrlBeforeSubmit, true);
+    };
+  }, [enabled]);
+
   if (!enabled) {
     return null;
   }
