@@ -119,19 +119,19 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
             </span>
             <div>
               <p className="text-[13px] font-black leading-none text-[#0B2742]">SafeMetrica 세이프메트리카</p>
-              <p className="mt-1 text-[11px] font-bold text-[#16A085]">리치코리아 현장 QR</p>
+              <p className="mt-1 text-[11px] font-bold text-[#16A085]">(주)리치코리아 현장 QR</p>
             </div>
           </div>
 
           <h1 className="mt-4 text-[22px] font-black tracking-[-0.04em] text-[#0B2742]">
-            SafeMetrica 확인기록
+            작업 전 확인기록
           </h1>
           <p className="mt-2 text-[15px] leading-7 text-[#64748B]">
             작업 전 확인사항을 확인하고 필요한 특이사항만 남겨주세요.
           </p>
 
           <div className="mt-5 grid grid-cols-3 gap-2">
-            {["안내·확인", "의견·서명", "완료"].map((label, index) => {
+            {["안내·확인", "특이사항·서명", "완료"].map((label, index) => {
               const itemStep = index + 1;
               const active = step === itemStep;
               const done = step > itemStep;
@@ -174,7 +174,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                   <p className="text-sm font-black text-[#108469]">● 오늘 확인 요약</p>
                   <p className="shrink-0 text-xs font-bold text-[#64748B]">{todayLabel()}</p>
                 </div>
-                <h3 className="mt-3 text-[18px] font-black text-[#0B2742]">리치코리아 식품가공 작업 전 확인</h3>
+                <h3 className="mt-3 text-[18px] font-black text-[#0B2742]">(주)리치코리아 식품가공 작업 전 확인</h3>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-[#1C3A57]">
                   <li>· 손 씻기와 개인위생 상태를 확인해 주세요.</li>
                   <li>· 위생복·장갑 등 필요한 보호구 착용 상태를 확인해 주세요.</li>
@@ -187,7 +187,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                   <span className="rounded-full bg-[#0B2742] px-3 py-1 text-xs font-black text-white">
                     공유확인
                   </span>
-                  <span className="text-xs font-bold text-[#64748B]">리치코리아 확인기록</span>
+                  <span className="text-xs font-bold text-[#64748B]">(주)리치코리아 확인기록</span>
                 </div>
                 <h3 className="mt-3 text-base font-black text-[#0B2742]">
                   작업 전 확인기록
