@@ -2,7 +2,7 @@ export const FOOD_FACTORY_PACK = {
   packId: "food_factory_confirmation_v1",
   companyCode: "richi",
   companyName: "㈜리치코리아",
-  displayName: "㈜리치코리아 Food Factory 운영팩",
+  displayName: "㈜리치코리아 현장 전자확인·피드백",
   serviceMode: "food_factory_e_confirmation_trial",
   homeHref: "/trial/richi",
   workerHref: "/field/participation?company=richi",
