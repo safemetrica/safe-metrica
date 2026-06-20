@@ -78,12 +78,12 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
   }
 
   return (
-    <main className="min-h-screen bg-[#EEF1F4] px-3 py-5 text-[#0B2742]">
+    <main className="min-h-[100dvh] bg-white px-0 py-0 text-[#0B2742] sm:bg-[#EEF1F4] sm:px-3 sm:py-5">
       <form
         action="/api/field/participation/submit"
         method="post"
         encType="multipart/form-data"
-        className="mx-auto flex min-h-[calc(100dvh-40px)] w-full max-w-[430px] flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_18px_50px_rgba(11,39,66,0.14)]"
+        className="mx-auto flex min-h-[100dvh] w-full max-w-none flex-col overflow-hidden bg-white shadow-none sm:min-h-[calc(100dvh-40px)] sm:max-w-[430px] sm:rounded-[28px] sm:shadow-[0_18px_50px_rgba(11,39,66,0.14)]"
       >
         <input type="hidden" name="companyCode" value={companyCode} readOnly />
         <input type="hidden" name="submissionType" value={hasOpinion ? "quick_feedback" : "worker_qr_e_confirmation"} readOnly />
@@ -110,12 +110,24 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
         <input type="hidden" name="source" value="richi_worker_confirmation_flow_v1" readOnly />
         <input type="hidden" name="siteName" value="식품가공 현장" readOnly />
 
-        <header className="border-b border-[#E3E7EC] px-5 pb-4 pt-5">
-          <p className="text-xs font-black text-[#16A085]">세이프메트리카 현장 전자확인</p>
-          <h1 className="mt-2 text-xl font-black tracking-[-0.03em] text-[#0B2742]">
+        <header className="border-b border-[#E3E7EC] px-5 pb-4 pt-[max(18px,env(safe-area-inset-top))]">
+          <div className="flex items-center gap-2">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#EAF8F3] text-[#16A085]">
+              <svg aria-hidden="true" viewBox="0 0 32 32" className="h-5 w-5" fill="none">
+                <path d="M16 4.5c3.8 3.2 7.2 3.9 10.5 4.1v6.3c0 6.5-4.1 10.7-10.5 12.6C9.6 25.6 5.5 21.4 5.5 14.9V8.6C8.8 8.4 12.2 7.7 16 4.5Z" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+                <path d="M11.2 16.1l3.1 3.1 6.6-7.1" stroke="#0B2742" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-[13px] font-black leading-none text-[#0B2742]">SafeMetrica 세이프메트리카</p>
+              <p className="mt-1 text-[11px] font-bold text-[#16A085]">현장 전자확인 기록</p>
+            </div>
+          </div>
+
+          <h1 className="mt-4 text-[22px] font-black tracking-[-0.04em] text-[#0B2742]">
             ㈜리치코리아 현장 전자확인
           </h1>
-          <p className="mt-2 text-sm leading-6 text-[#64748B]">
+          <p className="mt-2 text-[15px] leading-7 text-[#64748B]">
             작업 전 위생·안전 확인 후 필요한 의견만 짧게 남겨주세요.
           </p>
 
@@ -151,10 +163,10 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
           {step === 1 ? (
             <section>
               <p className="text-sm font-black text-[#64748B]">Step 1/3</p>
-              <h2 className="mt-1 text-2xl font-black tracking-[-0.04em] text-[#0B2742]">
+              <h2 className="mt-1 text-[24px] font-black tracking-[-0.04em] text-[#0B2742]">
                 작업 전 위생·안전 확인
               </h2>
-              <p className="mt-2 text-base leading-7 text-[#52606D]">
+              <p className="mt-2 text-[15px] leading-7 text-[#52606D]">
                 아래 내용을 확인하고 체크를 완료해주세요.
               </p>
 
@@ -163,7 +175,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                   <p className="text-sm font-black text-[#108469]">● 오늘 확인 요약</p>
                   <p className="shrink-0 text-xs font-bold text-[#64748B]">{todayLabel()}</p>
                 </div>
-                <h3 className="mt-3 text-lg font-black text-[#0B2742]">식품가공 작업 전 확인</h3>
+                <h3 className="mt-3 text-[18px] font-black text-[#0B2742]">식품가공 작업 전 확인</h3>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-[#1C3A57]">
                   <li>· 손 씻기와 개인위생 상태를 확인해 주세요.</li>
                   <li>· 위생복·장갑 등 필요한 보호구 착용 상태를 확인해 주세요.</li>
@@ -222,10 +234,10 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
           {step === 2 ? (
             <section>
               <p className="text-sm font-black text-[#64748B]">Step 2/3</p>
-              <h2 className="mt-1 text-2xl font-black tracking-[-0.04em] text-[#0B2742]">
+              <h2 className="mt-1 text-[24px] font-black tracking-[-0.04em] text-[#0B2742]">
                 의견 작성 및 확인서명
               </h2>
-              <p className="mt-2 text-base leading-7 text-[#52606D]">
+              <p className="mt-2 text-[15px] leading-7 text-[#52606D]">
                 의견이 없다면 바로 서명하고, 불편사항이 있으면 짧게 남겨주세요.
               </p>
 
