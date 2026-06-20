@@ -331,12 +331,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                     />
                   </label>
 
-                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <p className="text-sm font-black text-amber-900">익명 의견은 별도 분리 예정</p>
-                    <p className="mt-1 text-xs leading-5 text-amber-800">
-                      이 화면은 작업 전 확인과 자필서명을 함께 남기는 회사 내부 확인기록입니다. 익명 의견 전용 제출은 별도 화면으로 분리합니다.
-                    </p>
-                  </div>
+
                 </div>
               ) : (
                 <div className="mt-5 rounded-[20px] border border-[#BCE3D6] bg-[#EAF8F3] p-4">
