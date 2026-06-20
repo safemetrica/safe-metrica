@@ -429,32 +429,70 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
       return;
     }
 
-    const syncSignatureDataUrlBeforeSubmit = () => {
+    const findSignatureDataUrl = () => {
       const signatureInput = signatureInputRef.current;
-
-      if (!signatureInput) {
-        return;
-      }
-
-      const existingValue = signatureInput.value.trim();
+      const existingValue = signatureInput?.value.trim() ?? "";
 
       if (existingValue.startsWith("data:image/") && existingValue.length > 100) {
-        return;
+        return existingValue;
       }
 
-      const previewImage = rootElement.querySelector<HTMLImageElement>(
-        'img[alt="입력된 확인서명 미리보기"]'
-      );
+      const previewImages = Array.from(rootElement.querySelectorAll<HTMLImageElement>("img"));
+      const previewDataUrl = previewImages
+        .map((image) => image.src)
+        .find((src) => src.startsWith("data:image/") && src.length > 100);
 
-      if (previewImage?.src?.startsWith("data:image/") && previewImage.src.length > 100) {
-        signatureInput.value = previewImage.src;
+      if (previewDataUrl) {
+        return previewDataUrl;
+      }
+
+      const canvas = canvasRef.current;
+
+      if (canvas) {
+        try {
+          const canvasDataUrl = canvas.toDataURL("image/png");
+
+          if (canvasDataUrl.startsWith("data:image/") && canvasDataUrl.length > 100) {
+            return canvasDataUrl;
+          }
+        } catch {
+          return "";
+        }
+      }
+
+      return "";
+    };
+
+    const syncSignatureInput = () => {
+      const dataUrl = findSignatureDataUrl();
+      const signatureInput = signatureInputRef.current;
+
+      if (signatureInput && dataUrl) {
+        signatureInput.value = dataUrl;
+      }
+
+      return dataUrl;
+    };
+
+    const syncSignatureDataUrlBeforeSubmit = () => {
+      syncSignatureInput();
+    };
+
+    const syncSignatureDataUrlWithFormData = (event: Event) => {
+      const dataUrl = syncSignatureInput();
+      const formDataEvent = event as Event & { formData?: FormData };
+
+      if (dataUrl && formDataEvent.formData) {
+        formDataEvent.formData.set("handwritten_signature_data_url", dataUrl);
       }
     };
 
     formElement.addEventListener("submit", syncSignatureDataUrlBeforeSubmit, true);
+    formElement.addEventListener("formdata", syncSignatureDataUrlWithFormData);
 
     return () => {
       formElement.removeEventListener("submit", syncSignatureDataUrlBeforeSubmit, true);
+      formElement.removeEventListener("formdata", syncSignatureDataUrlWithFormData);
     };
   }, [enabled]);
 
