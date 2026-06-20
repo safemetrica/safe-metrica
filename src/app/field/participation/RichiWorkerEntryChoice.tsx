@@ -19,7 +19,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
             </span>
             <div>
               <p className="text-[13px] font-black leading-none text-[#0B2742]">SafeMetrica 세이프메트리카</p>
-              <p className="mt-1 text-[11px] font-bold text-[#16A085]">리치코리아 현장 QR</p>
+              <p className="mt-1 text-[11px] font-bold text-[#16A085]">(주)리치코리아 현장 QR</p>
             </div>
           </div>
 
@@ -36,7 +36,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
             href={signedHref}
             className="block w-full rounded-[24px] border border-[#BCE3D6] bg-[#EAF8F3] p-5 shadow-sm active:scale-[0.99]"
           >
-            <p className="text-xs font-black text-[#16A085]">실명 확인기록</p>
+            <p className="text-xs font-black text-[#16A085]">작업 전 확인기록</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-[#0B2742]">
               작업 전 확인·서명
             </h2>
@@ -46,7 +46,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
             <ul className="mt-4 space-y-2 text-sm font-bold text-[#0B2742]">
               <li>· 확인정보 입력</li>
               <li>· 모바일 자필 확인서명</li>
-              <li>· 전자확인 원장 저장</li>
+              <li>· 회사 확인기록 저장</li>
             </ul>
           </a>
 
