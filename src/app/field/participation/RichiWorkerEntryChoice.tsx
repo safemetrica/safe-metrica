@@ -24,7 +24,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
           </div>
 
           <h1 className="mt-5 text-[24px] font-black tracking-[-0.04em] text-[#0B2742]">
-            어떤 기록을 남기시겠습니까?
+            현장 기록 선택
           </h1>
           <p className="mt-2 text-[15px] leading-7 text-[#64748B]">
             작업 전 확인기록과 익명 의견은 서로 다른 방식으로 저장됩니다.
@@ -38,7 +38,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
           >
             <p className="text-xs font-black text-[#16A085]">실명 확인기록</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-[#0B2742]">
-              작업 전 확인하고 서명하기
+              작업 전 확인·서명
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#1C3A57]">
               작업 전 위생·안전 확인 후 회사 내부 확인기록으로 저장합니다.
@@ -56,7 +56,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
           >
             <p className="text-xs font-black text-[#64748B]">익명 의견</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-[#0B2742]">
-              익명으로 의견만 남기기
+              익명 의견
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#52606D]">
               불편사항이나 개선의견만 익명으로 접수합니다.
