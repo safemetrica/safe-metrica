@@ -41,7 +41,6 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
   const [opinionTitle, setOpinionTitle] = useState("");
   const [opinionLocation, setOpinionLocation] = useState("");
   const [opinionContent, setOpinionContent] = useState("");
-  const [anonymous, setAnonymous] = useState(false);
   const [workerName, setWorkerName] = useState("");
   const [workerTeam, setWorkerTeam] = useState("");
   const [confirmCode, setConfirmCode] = useState("");
@@ -96,14 +95,14 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
         <input type="hidden" name="reportTitle" value={finalTitle} readOnly />
         <input type="hidden" name="location" value={finalLocation} readOnly />
         <input type="hidden" name="content" value={contentValue} readOnly />
-        <input type="hidden" name="submitter" value={anonymous && hasOpinion ? "익명" : workerName} readOnly />
+        <input type="hidden" name="submitter" value={workerName} readOnly />
         <input type="hidden" name="workerName" value={workerName} readOnly />
         <input type="hidden" name="department" value={workerTeam} readOnly />
         <input type="hidden" name="team" value={workerTeam} readOnly />
         <input type="hidden" name="phoneLast4" value={confirmCode} readOnly />
         <input type="hidden" name="verificationCode" value={confirmCode} readOnly />
-        <input type="hidden" name="identityMode" value={anonymous && hasOpinion ? "anonymous" : "identified"} readOnly />
-        <input type="hidden" name="anonymous" value={anonymous && hasOpinion ? "true" : "false"} readOnly />
+        <input type="hidden" name="identityMode" value="identified" readOnly />
+        <input type="hidden" name="anonymous" value="false" readOnly />
         <input type="hidden" name="riskCheck" value={checkedItems[0] ? "true" : "false"} readOnly />
         <input type="hidden" name="riskAssessmentCheck" value={checkedItems[1] ? "true" : "false"} readOnly />
         <input type="hidden" name="safetyMeasureCheck" value={checkedItems[2] ? "true" : "false"} readOnly />
@@ -332,15 +331,12 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                     />
                   </label>
 
-                  <label className="mt-4 flex items-center justify-between rounded-2xl border border-[#E3E7EC] px-4 py-3">
-                    <span className="text-sm font-black text-[#0B2742]">익명으로 제출</span>
-                    <input
-                      type="checkbox"
-                      checked={anonymous}
-                      onChange={(event) => setAnonymous(event.currentTarget.checked)}
-                      className="h-5 w-5 accent-[#16A085]"
-                    />
-                  </label>
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-sm font-black text-amber-900">익명 의견은 별도 분리 예정</p>
+                    <p className="mt-1 text-xs leading-5 text-amber-800">
+                      이 화면은 작업 전 확인과 자필서명을 함께 남기는 회사 내부 확인기록입니다. 익명 의견 전용 제출은 별도 화면으로 분리합니다.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-5 rounded-[20px] border border-[#BCE3D6] bg-[#EAF8F3] p-4">
