@@ -85,6 +85,21 @@ function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
 
+function parseJsonPayloadSafely(rawValue: string) {
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawValue) as unknown;
+  } catch {
+    return {
+      parse_error: true,
+      raw_preview: rawValue.slice(0, 500),
+    };
+  }
+}
+
 function buildHandwrittenSignatureRawPayload(formData: FormData) {
   const signaturePayload: Record<string, unknown> = {};
 
@@ -634,6 +649,147 @@ export async function POST(req: NextRequest) {
   const processingStatus = "접수";
 
   const evidenceFiles = formData.getAll("evidenceFiles").filter(isFile);
+
+  const signatureClientSourceRoute = getFormText(formData, "signature_client_source_route");
+  const signatureClientUserAgent = getFormText(formData, "signature_client_user_agent");
+  const signatureConfirmationMethod = getFormText(formData, "signature_confirmation_method");
+  const signatureConfirmationLabel = getFormText(formData, "signature_confirmation_label");
+  const signatureConfirmationSnapshotJson = getFormText(formData, "signature_confirmation_snapshot_json");
+  const handwrittenSignatureSignedAt = getFormText(formData, "handwritten_signature_signed_at");
+  const handwrittenSignatureDataUrl = getFormText(formData, "handwritten_signature_data_url");
+  const signatureMetaCompanyCode = getFormText(formData, "signature_meta_company_code");
+  const workerConfirmationLedgerMarker = getFormText(formData, "worker_confirmation_ledger_marker");
+
+  const ledgerSourceRoute = signatureClientSourceRoute || req.nextUrl.pathname + req.nextUrl.search;
+  const ledgerUserAgent = signatureClientUserAgent || req.headers.get("user-agent") || "";
+  const isRichiLedgerSubmission = company.code === "richi";
+  const checkedAt = new Date().toISOString();
+  const signatureSnapshotPayload = parseJsonPayloadSafely(signatureConfirmationSnapshotJson);
+
+  const richiDailySummarySnapshot = isRichiLedgerSubmission
+    ? {
+        source_type: "daily_summary",
+        source_id: "richi-daily-summary-v1",
+        source_version: "v1",
+        title: "오늘 확인 요약",
+        items: [
+          "작업 전 위생과 위생복·장갑 착용 상태를 확인하세요.",
+          "포장실·세척구역 바닥 미끄럼과 이동 동선을 확인하세요.",
+          "불편사항이나 개선의견이 있으면 다음 단계에서 남겨 주세요.",
+        ],
+      }
+    : null;
+
+  const richiCompanyConfirmSnapshot = isRichiLedgerSubmission
+    ? {
+        source_type: "company_confirm_content",
+        source_id: "richi-company-confirm-v1",
+        source_version: "v1",
+        title: "위생·안전 확인 체크",
+        items: [
+          "오늘 확인 요약을 읽었습니다.",
+          "작업 전 위생·안전 주의사항을 확인했습니다.",
+          "불편사항이 있으면 의견으로 남기겠습니다.",
+        ],
+      }
+    : null;
+
+  const riskShareSnapshot = sharedRiskSummary
+    ? {
+        source_type: "risk_share_snapshot",
+        source_id: `${company.code}-risk-share-summary-v1`,
+        source_version: "legacy-summary-v1",
+        title: "위험성평가 공유내용",
+        summary: sharedRiskSummary,
+      }
+    : null;
+
+  const confirmationSources = [
+    richiDailySummarySnapshot,
+    richiCompanyConfirmSnapshot,
+    riskShareSnapshot,
+  ].filter(Boolean);
+
+  const checkedSources = [
+    riskCheck
+      ? {
+          source_type: isRichiLedgerSubmission ? "daily_summary" : "risk_summary",
+          source_id: isRichiLedgerSubmission ? "richi-daily-summary-v1" : `${company.code}-risk-summary-v1`,
+          checked_label: isRichiLedgerSubmission
+            ? "오늘 확인 요약을 읽었습니다."
+            : "오늘 작업의 주요 위험요인을 확인했습니다.",
+          checked_at: checkedAt,
+        }
+      : null,
+    riskAssessmentCheck
+      ? {
+          source_type: isRichiLedgerSubmission ? "company_confirm_content" : "risk_assessment",
+          source_id: isRichiLedgerSubmission ? "richi-company-confirm-v1" : `${company.code}-risk-assessment-v1`,
+          checked_label: isRichiLedgerSubmission
+            ? "작업 전 위생·안전 주의사항을 확인했습니다."
+            : "위험성평가 내용을 확인했습니다.",
+          checked_at: checkedAt,
+        }
+      : null,
+    safetyMeasureCheck
+      ? {
+          source_type: isRichiLedgerSubmission ? "feedback_prompt" : "safety_measure",
+          source_id: isRichiLedgerSubmission ? "richi-feedback-prompt-v1" : `${company.code}-safety-measure-v1`,
+          checked_label: isRichiLedgerSubmission
+            ? "불편사항이 있으면 의견으로 남기겠습니다."
+            : "안전조치와 주의사항을 확인했습니다.",
+          checked_at: checkedAt,
+        }
+      : null,
+  ].filter(Boolean);
+
+  const signatureMetadata = {
+    signature_method: signatureConfirmationMethod || null,
+    signature_label: signatureConfirmationLabel || null,
+    signed_at: handwrittenSignatureSignedAt || null,
+    signature_data_url_present: Boolean(handwrittenSignatureDataUrl),
+    signature_data_url_length: handwrittenSignatureDataUrl.length,
+    signature_snapshot_present: Boolean(signatureConfirmationSnapshotJson),
+    signature_client_source_route: signatureClientSourceRoute || null,
+    signature_client_user_agent_present: Boolean(signatureClientUserAgent),
+    signature_meta_company_code: signatureMetaCompanyCode || null,
+  };
+
+  const workerConfirmationLedgerPayload = {
+    ledger_schema: "worker_confirmation_raw_payload_v1",
+    worker_confirmation_ledger_marker: workerConfirmationLedgerMarker || null,
+    source_route: ledgerSourceRoute,
+    user_agent: ledgerUserAgent,
+    client_submission_id: clientSubmissionId || null,
+    company_code: company.code,
+    tenant_code: company.code,
+    company_name: company.name,
+    site_id: "default",
+    service_mode: isRichiLedgerSubmission ? "food_factory_e_confirmation_trial" : "field_participation",
+    confirmation_type: confirmationType,
+    confirmation_status: confirmationStatus,
+    source_step: sourceStep,
+    entry_intent: entryIntent,
+    identity_mode: rawIdentityMode || null,
+    worker_name: anonymous ? "" : submitterInput,
+    worker_team: anonymous ? "" : workerTeam,
+    worker_phone_last4: anonymous ? "" : workerPhoneLast4,
+    worker_employee_no: anonymous ? "" : workerEmployeeNo,
+    confirmation_sources: confirmationSources,
+    checked_sources: checkedSources,
+    daily_summary_snapshot: richiDailySummarySnapshot,
+    company_confirm_snapshot: richiCompanyConfirmSnapshot,
+    risk_share_snapshot: riskShareSnapshot,
+    signature_confirmation_method: signatureConfirmationMethod || null,
+    signature_confirmation_label: signatureConfirmationLabel || null,
+    signature_confirmation_snapshot_json: signatureSnapshotPayload,
+    handwritten_signature_signed_at: handwrittenSignatureSignedAt || null,
+    signature_metadata: signatureMetadata,
+    signature_data_url_present: Boolean(handwrittenSignatureDataUrl),
+    ...(handwrittenSignatureDataUrl
+      ? { handwritten_signature_data_url: handwrittenSignatureDataUrl }
+      : {}),
+  };
   const oversizedFile = evidenceFiles.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
 
   if (oversizedFile) {
@@ -700,6 +856,7 @@ export async function POST(req: NextRequest) {
         notion_url: null,
         file_urls: uploadedFiles.map((file) => file.url),
         raw_payload: {
+          ...workerConfirmationLedgerPayload,
           ...handwrittenSignatureRawPayload,
           source: "supabase_first_field_participation_submit_v1",
           clientSubmissionId,
@@ -1027,6 +1184,7 @@ export async function POST(req: NextRequest) {
         notion_url: notionUrl,
         file_urls: uploadedFiles.map((file) => file.url),
         raw_payload: {
+          ...workerConfirmationLedgerPayload,
           ...handwrittenSignatureRawPayload,
           clientSubmissionId,
           identityMode,
