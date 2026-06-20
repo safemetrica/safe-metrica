@@ -239,6 +239,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
     return (
       <FieldParticipationStepper
         companyCode={companyCode}
+          flow={flow}
         initialStep={initialStep}
         entryIntent={intent ?? "default"}
         siteValue={siteValue}
