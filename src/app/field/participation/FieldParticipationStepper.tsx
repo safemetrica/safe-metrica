@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import HandwrittenSignaturePad from "./HandwrittenSignaturePad";
+import RichiWorkerConfirmationFlow from "./RichiWorkerConfirmationFlow";
 
 const RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY = "safemetrica:richi:worker-confirmation-info:v1";
 
@@ -387,6 +388,10 @@ export default function FieldParticipationStepper({
     }
 
     setIsSpeaking(false);
+  }
+
+  if (isFoodFactoryTrial) {
+    return <RichiWorkerConfirmationFlow companyCode={companyCode} />;
   }
 
   return (
