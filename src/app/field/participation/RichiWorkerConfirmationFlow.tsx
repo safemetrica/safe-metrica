@@ -30,7 +30,7 @@ function buildDefaultContent(feedbackMode: FeedbackMode, opinionContent: string)
     return opinionContent.trim();
   }
 
-  return "작업 전 위생·안전 확인사항을 읽고 확인했습니다. 별도 의견 없음.";
+  return "작업 전 위생·안전 확인사항을 읽고 확인했습니다. 별도 특이사항 없음.";
 }
 
 export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorkerConfirmationFlowProps) {
@@ -58,7 +58,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
   );
 
   const finalTitle = hasOpinion
-    ? opinionTitle.trim() || "리치코리아 현장 의견"
+    ? opinionTitle.trim() || "리치코리아 현장 특이사항"
     : "리치코리아 작업 전 위생·안전 전자확인";
 
   const finalLocation = hasOpinion
@@ -90,7 +90,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
         <input type="hidden" name="confirmation_type" value="food_factory_e_confirmation" readOnly />
         <input type="hidden" name="reportType" value={hasOpinion ? "개선제안" : "공유확인"} readOnly />
         <input type="hidden" name="type" value={hasOpinion ? opinionType : "공유확인"} readOnly />
-        <input type="hidden" name="feedbackType" value={hasOpinion ? opinionType : "의견 없음"} readOnly />
+        <input type="hidden" name="feedbackType" value={hasOpinion ? opinionType : "특이사항 없음"} readOnly />
         <input type="hidden" name="title" value={finalTitle} readOnly />
         <input type="hidden" name="reportTitle" value={finalTitle} readOnly />
         <input type="hidden" name="location" value={finalLocation} readOnly />
@@ -234,10 +234,10 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
             <section>
               <p className="text-sm font-black text-[#64748B]">Step 2/3</p>
               <h2 className="mt-1 text-[24px] font-black tracking-[-0.04em] text-[#0B2742]">
-                의견·확인서명
+                특이사항·확인서명
               </h2>
               <p className="mt-2 text-[15px] leading-7 text-[#52606D]">
-                의견이 없다면 바로 서명하고, 불편사항이 있으면 짧게 남겨주세요.
+                작업 전 확인 중 특이사항이 있으면 확인기록에 함께 남겨주세요.
               </p>
 
               <div className="mt-5 grid grid-cols-2 rounded-full bg-[#EAF8F3] p-1">
@@ -249,7 +249,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                     feedbackMode === "none" ? "bg-[#16A085] text-white" : "text-[#108469]",
                   ].join(" ")}
                 >
-                  의견 없음
+                  특이사항 없음
                 </button>
                 <button
                   type="button"
@@ -259,14 +259,14 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                     feedbackMode === "has" ? "bg-[#0B2742] text-white" : "text-[#108469]",
                   ].join(" ")}
                 >
-                  의견 남김
+                  특이사항 있음
                 </button>
               </div>
 
               {hasOpinion ? (
                 <div className="mt-5 rounded-[20px] border border-[#E3E7EC] bg-white p-4">
                   <label className="block text-sm font-black text-[#0B2742]">
-                    의견 제목
+                    특이사항 제목
                     <input
                       name="opinion_title_display"
                       value={opinionTitle}
@@ -314,7 +314,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                       name="opinion_content_display"
                       value={opinionContent}
                       onChange={(event) => setOpinionContent(event.currentTarget.value)}
-                      placeholder="확인된 내용을 적어주세요"
+                      placeholder="특이사항 내용을 적어주세요"
                       rows={4}
                       className="mt-2 w-full resize-none rounded-2xl border border-[#E3E7EC] px-4 py-3 text-base leading-7 text-[#0B2742] outline-none focus:border-[#16A085]"
                     />
@@ -335,9 +335,9 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                 </div>
               ) : (
                 <div className="mt-5 rounded-[20px] border border-[#BCE3D6] bg-[#EAF8F3] p-4">
-                  <h3 className="text-base font-black text-[#0B2742]">의견 없음</h3>
+                  <h3 className="text-base font-black text-[#0B2742]">특이사항 없음</h3>
                   <p className="mt-2 text-sm leading-6 text-[#3D5266]">
-                    별도 의견이 없으면 전자확인 기록으로 저장됩니다.
+                    특이사항이 없으면 확인기록으로 저장됩니다.
                   </p>
                 </div>
               )}
@@ -404,7 +404,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
 
               {!canSubmit ? (
                 <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-[#64748B]">
-                  이름·소속·확인번호와 필요한 의견 내용을 입력하면 제출할 수 있습니다.
+                  이름·소속·확인번호와 필요한 특이사항 내용을 입력하면 제출할 수 있습니다.
                 </p>
               ) : null}
             </section>
@@ -452,7 +452,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                 disabled={!canSubmit}
                 className="w-full rounded-full bg-[#0B2742] px-5 py-4 text-base font-black text-white disabled:bg-[#C7CFD8] disabled:text-[#7A8795]"
               >
-                {hasOpinion ? "전자확인·의견 제출 →" : "의견 없음, 전자확인 제출 →"}
+                {hasOpinion ? "확인기록 제출 →" : "특이사항 없음, 전자확인 제출 →"}
               </button>
               <button
                 type="button"
