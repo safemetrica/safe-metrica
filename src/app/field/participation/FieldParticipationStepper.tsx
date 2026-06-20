@@ -6,6 +6,8 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import HandwrittenSignaturePad from "./HandwrittenSignaturePad";
 
+const RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY = "safemetrica:richi:worker-confirmation-info:v1";
+
 type WorkerCopy = {
   code?: string;
   badge: string;
@@ -166,6 +168,7 @@ export default function FieldParticipationStepper({
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
   const isFoodFactoryTrial = workerCopy?.code === "richi";
+
   const formStep = isFoodFactoryTrial ? 2 : 3;
   const stepLabels = isFoodFactoryTrial ? richiStepLabels : defaultStepLabels;
   const feedbackTypeOptions = useMemo(() => {
@@ -188,6 +191,7 @@ export default function FieldParticipationStepper({
   const [workerTeam, setWorkerTeam] = useState("");
   const [workerPhoneLast4, setWorkerPhoneLast4] = useState("");
   const [workerEmployeeNo, setWorkerEmployeeNo] = useState("");
+  const [rememberWorkerInfo, setRememberWorkerInfo] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
   const [content, setContent] = useState("");
   const [hasEvidenceFiles, setHasEvidenceFiles] = useState(false);
@@ -218,6 +222,69 @@ export default function FieldParticipationStepper({
   const normalizedWorkerPhoneLast4 = workerPhoneLast4.trim();
   const normalizedWorkerEmployeeNo = workerEmployeeNo.trim();
   const richiConfirmationCodeValue = workerEmployeeNo || workerPhoneLast4;
+  useEffect(() => {
+    if (!isFoodFactoryTrial || typeof window === "undefined") {
+      return;
+    }
+
+    const rawSavedInfo = window.localStorage.getItem(RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY);
+
+    if (!rawSavedInfo) {
+      return;
+    }
+
+    try {
+      const savedInfo = JSON.parse(rawSavedInfo) as {
+        schema?: string;
+        workerName?: string;
+        workerTeam?: string;
+        workerPhoneLast4?: string;
+        workerEmployeeNo?: string;
+      };
+
+      if (savedInfo.schema !== "saved_worker_confirmation_info_v1") {
+        return;
+      }
+
+      if (savedInfo.workerName && !workerName) {
+        setSubmitter(savedInfo.workerName.slice(0, 60));
+      }
+
+      if (savedInfo.workerTeam && !workerTeam) {
+        setWorkerTeam(savedInfo.workerTeam.slice(0, 80));
+      }
+
+      if (savedInfo.workerPhoneLast4 && !workerPhoneLast4) {
+        setWorkerPhoneLast4(savedInfo.workerPhoneLast4.replace(/\D/g, "").slice(0, 4));
+      }
+
+      if (savedInfo.workerEmployeeNo && !workerEmployeeNo) {
+        setWorkerEmployeeNo(savedInfo.workerEmployeeNo.slice(0, 40));
+      }
+
+      setRememberWorkerInfo(true);
+    } catch {
+      window.localStorage.removeItem(RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY);
+    }
+  }, [isFoodFactoryTrial, workerName, workerTeam, workerPhoneLast4, workerEmployeeNo]);
+
+  useEffect(() => {
+    if (!isFoodFactoryTrial || !rememberWorkerInfo || typeof window === "undefined") {
+      return;
+    }
+
+    const payload = {
+      schema: "saved_worker_confirmation_info_v1",
+      workerName: workerName.trim().slice(0, 60),
+      workerTeam: workerTeam.trim().slice(0, 80),
+      workerPhoneLast4: workerPhoneLast4.replace(/\D/g, "").slice(0, 4),
+      workerEmployeeNo: workerEmployeeNo.trim().slice(0, 40),
+      savedAt: new Date().toISOString(),
+    };
+
+    window.localStorage.setItem(RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY, JSON.stringify(payload));
+  }, [isFoodFactoryTrial, rememberWorkerInfo, workerName, workerTeam, workerPhoneLast4, workerEmployeeNo]);
+
 
   function handleRichiConfirmationCodeChange(value: string) {
     const nextValue = value.trim().slice(0, 60);
@@ -789,7 +856,31 @@ export default function FieldParticipationStepper({
 
                   {isFoodFactoryTrial ? (
                     <div className="mt-4">
-                      <HandwrittenSignaturePad enabled={isFoodFactoryTrial} />
+                      {isFoodFactoryTrial ? (
+                    <label className="mt-3 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 rounded border-slate-300"
+                        checked={rememberWorkerInfo}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setRememberWorkerInfo(checked);
+
+                          if (!checked && typeof window !== "undefined") {
+                            window.localStorage.removeItem(RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY);
+                          }
+                        }}
+                      />
+                      <span>
+                        <span className="block text-slate-900">이 기기에서 내 확인정보 기억하기</span>
+                        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">
+                          공용 휴대폰이면 체크하지 마세요. 이름, 소속/작업조, 확인번호만 이 브라우저에 저장됩니다.
+                        </span>
+                      </span>
+                    </label>
+                  ) : null}
+
+                  <HandwrittenSignaturePad enabled={isFoodFactoryTrial} />
                     </div>
                   ) : null}
 
