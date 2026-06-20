@@ -1,4 +1,17 @@
+import type { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
+
+const ALLOWED_ANONYMOUS_FEEDBACK_COMPANY_CODES = new Set(["richi"]);
+
 
 type PageProps = {
   searchParams?: Promise<{
@@ -22,6 +35,31 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
   const isRichi = companyCode === "richi";
+  const isAllowedCompany = ALLOWED_ANONYMOUS_FEEDBACK_COMPANY_CODES.has(companyCode);
+
+  if (!isAllowedCompany) {
+    return (
+      <main className="grid min-h-[100dvh] place-items-center bg-[#EEF1F4] px-5 py-8 text-[#0B2742]">
+        <section className="w-full max-w-[430px] rounded-[28px] bg-white p-6 shadow-[0_18px_50px_rgba(11,39,66,0.14)]">
+          <p className="text-[13px] font-black text-[#16A085]">SafeMetrica 세이프메트리카</p>
+          <h1 className="mt-3 text-[22px] font-black tracking-[-0.04em]">
+            익명 의견 접수 화면을 열 수 없습니다.
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[#64748B]">
+            현재 이 익명 의견 경로는 지정된 현장 QR에서만 사용할 수 있습니다.
+          </p>
+          {companyCode ? (
+            <a
+              href={`/field/participation?company=${encodeURIComponent(companyCode)}`}
+              className="mt-5 block rounded-full bg-[#0B2742] px-5 py-3 text-center text-sm font-black text-white"
+            >
+              작업 전 확인 화면으로 돌아가기
+            </a>
+          ) : null}
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-[100dvh] bg-white px-0 py-0 text-[#0B2742] sm:bg-[#EEF1F4] sm:px-3 sm:py-5">
