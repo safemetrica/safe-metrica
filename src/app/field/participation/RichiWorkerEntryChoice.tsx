@@ -34,7 +34,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
         <section className="flex-1 px-5 py-5">
           <a
             href={signedHref}
-            className="block rounded-[24px] border border-[#BCE3D6] bg-[#EAF8F3] p-5 shadow-sm active:scale-[0.99]"
+            className="block w-full rounded-[24px] border border-[#BCE3D6] bg-[#EAF8F3] p-5 shadow-sm active:scale-[0.99]"
           >
             <p className="text-xs font-black text-[#16A085]">실명 확인기록</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-[#0B2742]">
@@ -52,7 +52,7 @@ export default function RichiWorkerEntryChoice({ companyCode }: RichiWorkerEntry
 
           <a
             href={anonymousHref}
-            className="mt-4 block rounded-[24px] border border-[#D8DEE6] bg-white p-5 shadow-sm active:scale-[0.99]"
+            className="mt-4 block w-full rounded-[24px] border border-[#D8DEE6] bg-white p-5 shadow-sm active:scale-[0.99]"
           >
             <p className="text-xs font-black text-[#64748B]">익명 의견</p>
             <h2 className="mt-2 text-xl font-black tracking-[-0.03em] text-[#0B2742]">
