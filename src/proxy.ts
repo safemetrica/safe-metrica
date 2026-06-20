@@ -4,6 +4,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/field/participation",
+  "/field/anonymous-feedback",
   "/field/representative-confirmation",
   "/api/field/participation/submit",
   "/api/field/anonymous-feedback/submit",
