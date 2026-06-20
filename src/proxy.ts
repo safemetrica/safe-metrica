@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/field/participation",
   "/field/representative-confirmation",
   "/api/field/participation/submit",
+  "/api/field/anonymous-feedback/submit",
   "/api/worker-representative/confirmation/submit",
   "/select-tenant",
   "/owner",
