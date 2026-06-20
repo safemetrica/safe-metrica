@@ -100,6 +100,11 @@ function parseJsonPayloadSafely(rawValue: string) {
   }
 }
 
+function hasValidHandwrittenSignatureDataUrl(dataUrl: string) {
+  return dataUrl.startsWith("data:image/") && dataUrl.length > 100;
+}
+
+
 function buildHandwrittenSignatureRawPayload(formData: FormData) {
   const signaturePayload: Record<string, unknown> = {};
 
@@ -663,6 +668,17 @@ export async function POST(req: NextRequest) {
   const ledgerSourceRoute = signatureClientSourceRoute || req.nextUrl.pathname + req.nextUrl.search;
   const ledgerUserAgent = signatureClientUserAgent || req.headers.get("user-agent") || "";
   const isRichiLedgerSubmission = company.code === "richi";
+
+  if (
+    isRichiLedgerSubmission &&
+    !hasValidHandwrittenSignatureDataUrl(handwrittenSignatureDataUrl)
+  ) {
+    return redirectTo(req, "/field/participation/submitted", {
+      status: "signature_required",
+      companyCode: company.code,
+    });
+  }
+
   const checkedAt = new Date().toISOString();
   const signatureSnapshotPayload = parseJsonPayloadSafely(signatureConfirmationSnapshotJson);
 
