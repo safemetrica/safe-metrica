@@ -6,6 +6,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import HandwrittenSignaturePad from "./HandwrittenSignaturePad";
 import RichiWorkerConfirmationFlow from "./RichiWorkerConfirmationFlow";
+import RichiWorkerEntryChoice from "./RichiWorkerEntryChoice";
 
 const RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY = "safemetrica:richi:worker-confirmation-info:v1";
 
@@ -48,6 +49,7 @@ type WeatherNotice = {
 
 type Props = {
   companyCode: string;
+  flow?: string;
   initialStep: 1 | 2 | 3;
   entryIntent: "risk" | "share" | "report" | "default";
   siteValue: string;
@@ -153,6 +155,7 @@ function StepHeader({ step, completedSteps, labels }: { step: number; completedS
 
 export default function FieldParticipationStepper({
   companyCode,
+  flow = "",
   initialStep,
   entryIntent,
   siteValue,
@@ -389,10 +392,13 @@ export default function FieldParticipationStepper({
 
     setIsSpeaking(false);
   }
+    if (normalizedCompanyCode === "richi" && flow !== "signed") {
+      return <RichiWorkerEntryChoice companyCode={companyCode} />;
+    }
 
-  if (isFoodFactoryTrial) {
-    return <RichiWorkerConfirmationFlow companyCode={companyCode} />;
-  }
+    if (normalizedCompanyCode === "richi" && flow === "signed") {
+      return <RichiWorkerConfirmationFlow companyCode={companyCode} />;
+    }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
