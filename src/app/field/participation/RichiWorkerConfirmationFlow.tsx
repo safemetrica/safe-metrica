@@ -234,7 +234,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
             <section>
               <p className="text-sm font-black text-[#64748B]">Step 2/3</p>
               <h2 className="mt-1 text-[24px] font-black tracking-[-0.04em] text-[#0B2742]">
-                의견 작성 및 확인서명
+                의견·확인서명
               </h2>
               <p className="mt-2 text-[15px] leading-7 text-[#52606D]">
                 의견이 없다면 바로 서명하고, 불편사항이 있으면 짧게 남겨주세요.
@@ -259,7 +259,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                     feedbackMode === "has" ? "bg-[#0B2742] text-white" : "text-[#108469]",
                   ].join(" ")}
                 >
-                  의견 있음
+                  의견 남김
                 </button>
               </div>
 
