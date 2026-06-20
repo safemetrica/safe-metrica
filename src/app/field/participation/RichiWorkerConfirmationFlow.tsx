@@ -30,7 +30,7 @@ function buildDefaultContent(feedbackMode: FeedbackMode, opinionContent: string)
     return opinionContent.trim();
   }
 
-  return "작업 전 위생·안전 확인사항을 읽고 확인했습니다. 별도 특이사항 없음.";
+  return "오늘 작업 전 확인사항사항을 읽고 확인했습니다. 별도 특이사항 없음.";
 }
 
 export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorkerConfirmationFlowProps) {
@@ -59,7 +59,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
 
   const finalTitle = hasOpinion
     ? opinionTitle.trim() || "리치코리아 현장 특이사항"
-    : "리치코리아 작업 전 위생·안전 전자확인";
+    : "리치코리아 작업 전 확인기록";
 
   const finalLocation = hasOpinion
     ? opinionLocation.trim() || "식품가공 현장"
@@ -119,15 +119,15 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
             </span>
             <div>
               <p className="text-[13px] font-black leading-none text-[#0B2742]">SafeMetrica 세이프메트리카</p>
-              <p className="mt-1 text-[11px] font-bold text-[#16A085]">현장 전자확인 기록</p>
+              <p className="mt-1 text-[11px] font-bold text-[#16A085]">리치코리아 현장 QR</p>
             </div>
           </div>
 
           <h1 className="mt-4 text-[22px] font-black tracking-[-0.04em] text-[#0B2742]">
-            ㈜리치코리아 현장 전자확인
+            SafeMetrica 확인기록
           </h1>
           <p className="mt-2 text-[15px] leading-7 text-[#64748B]">
-            작업 전 위생·안전 확인 후 필요한 의견만 짧게 남겨주세요.
+            작업 전 확인사항을 확인하고 필요한 특이사항만 남겨주세요.
           </p>
 
           <div className="mt-5 grid grid-cols-3 gap-2">
@@ -163,10 +163,10 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
             <section>
               <p className="text-sm font-black text-[#64748B]">Step 1/3</p>
               <h2 className="mt-1 text-[24px] font-black tracking-[-0.04em] text-[#0B2742]">
-                작업 전 위생·안전 확인
+                오늘 작업 전 확인사항
               </h2>
               <p className="mt-2 text-[15px] leading-7 text-[#52606D]">
-                아래 내용을 확인하고 체크를 완료해주세요.
+                내용을 확인한 뒤 아래 체크 항목을 완료해주세요.
               </p>
 
               <div className="mt-5 rounded-[20px] border border-[#BCE3D6] bg-[#EAF8F3] p-4">
@@ -174,7 +174,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                   <p className="text-sm font-black text-[#108469]">● 오늘 확인 요약</p>
                   <p className="shrink-0 text-xs font-bold text-[#64748B]">{todayLabel()}</p>
                 </div>
-                <h3 className="mt-3 text-[18px] font-black text-[#0B2742]">식품가공 작업 전 확인</h3>
+                <h3 className="mt-3 text-[18px] font-black text-[#0B2742]">리치코리아 식품가공 작업 전 확인</h3>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-[#1C3A57]">
                   <li>· 손 씻기와 개인위생 상태를 확인해 주세요.</li>
                   <li>· 위생복·장갑 등 필요한 보호구 착용 상태를 확인해 주세요.</li>
@@ -190,10 +190,10 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                   <span className="text-xs font-bold text-[#64748B]">리치코리아 확인기록</span>
                 </div>
                 <h3 className="mt-3 text-base font-black text-[#0B2742]">
-                  작업 전 위생·안전 전자확인
+                  작업 전 확인기록
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-[#3D5266]">
-                  본 화면은 회사 내부 확인기록으로 저장됩니다. 외부 전자서명 솔루션이나 인증 대체 기능이 아닙니다.
+                  관리자가 공유한 작업 전 확인사항입니다. 본 화면은 회사 내부 확인기록으로 저장됩니다.
                 </p>
               </div>
 
@@ -343,7 +343,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
               )}
 
               <div className="mt-5 rounded-[20px] border border-[#E3E7EC] bg-white p-4">
-                <h3 className="text-base font-black text-[#0B2742]">전자확인 최소 확인정보</h3>
+                <h3 className="text-base font-black text-[#0B2742]">확인정보</h3>
                 <p className="mt-1 text-sm leading-6 text-[#64748B]">
                   이름, 소속, 확인번호가 필요합니다.
                 </p>
@@ -415,9 +415,9 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
               <div className="grid h-24 w-24 place-items-center rounded-full bg-[#EAF8F3] text-5xl text-[#16A085]">
                 ✓
               </div>
-              <h2 className="mt-6 text-2xl font-black text-[#0B2742]">확인기록이 저장됩니다</h2>
+              <h2 className="mt-6 text-2xl font-black text-[#0B2742]">확인기록이 저장되었습니다</h2>
               <p className="mt-3 text-base leading-7 text-[#64748B]">
-                제출 버튼을 누르면 담당자가 확인 후 필요한 경우 조치합니다.
+                현장 담당자가 확인 후 필요한 경우 조치합니다.
               </p>
             </section>
           ) : null}
@@ -440,7 +440,7 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
                 onClick={goNextFromStep1}
                 className="w-full rounded-full bg-[#0B2742] px-5 py-4 text-base font-black text-white disabled:bg-[#C7CFD8] disabled:text-[#7A8795]"
               >
-                체크 후 의견·서명으로 →
+                다음 단계로
               </button>
             </>
           ) : null}
