@@ -2,6 +2,8 @@ import "server-only";
 
 import { cookies, headers } from "next/headers";
 
+import { getTenantRegistryConfigByCode, type TenantRegistryConfig } from "@/lib/supabaseServer";
+
 export type CompanyConfig = {
   code: string;
   name: string;
@@ -236,7 +238,7 @@ async function queryCompanyRow(code: string) {
   return null;
 }
 
-export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
+async function getLegacyCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
   const code = assertSafeCompanyCode(rawCode);
 
   const notionApiKey = process.env.NOTION_API_KEY;
@@ -319,6 +321,61 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
     safetyCaseEnabled,
     safetyCaseMode,
   };
+}
+
+
+const TENANT_REGISTRY_COMPANY_CONFIG_STATUSES = new Set(["onboarding", "active", "internal_test"]);
+
+function readTenantRegistryRawString(tenant: TenantRegistryConfig, key: string) {
+  const value = tenant.rawPayload[key];
+
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readTenantRegistryRawBoolean(tenant: TenantRegistryConfig, key: string) {
+  const value = tenant.rawPayload[key];
+
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function isTenantRegistryCompanyConfigEnabled(tenant: TenantRegistryConfig) {
+  return TENANT_REGISTRY_COMPANY_CONFIG_STATUSES.has(tenant.status);
+}
+
+function buildTenantRegistryCompanyConfig(tenant: TenantRegistryConfig): CompanyConfig {
+  const rawSafetyCaseMode = readTenantRegistryRawString(tenant, "safety_case_mode");
+  const safetyCaseMode =
+    rawSafetyCaseMode === "common-only" || rawSafetyCaseMode === "manual"
+      ? rawSafetyCaseMode
+      : "tenant-aware";
+
+  return {
+    code: tenant.code,
+    name: tenant.name,
+    notionApiKey: "",
+    tbmDbId: "",
+    ebmDbId: "",
+    ptwDbId: "",
+    industryTag: readTenantRegistryRawString(tenant, "industry_tag") || undefined,
+    safetyCaseEnabled: readTenantRegistryRawBoolean(tenant, "safety_case_enabled") ?? true,
+    safetyCaseMode,
+  };
+}
+
+export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
+  const code = assertSafeCompanyCode(rawCode);
+
+  try {
+    return await getLegacyCompanyConfigByCode(code);
+  } catch (error) {
+    const tenant = await getTenantRegistryConfigByCode(code).catch(() => null);
+
+    if (!tenant || !isTenantRegistryCompanyConfigEnabled(tenant)) {
+      throw error;
+    }
+
+    return buildTenantRegistryCompanyConfig(tenant);
+  }
 }
 
 export async function getCompanyConfig(): Promise<CompanyConfig> {
