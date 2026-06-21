@@ -206,6 +206,38 @@ function getRichiDisplayRiskTags(
     .slice(0, 4);
 }
 
+function cleanRichiTbmPreviewText(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return value
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(/^\s*\[음성 TBM 직접저장\]\s*/u, "")
+        .replace(/^\s*\[작업 내용\]\s*/u, "")
+        .replace(/^\s*\[TBM 음성 작성 내용\]\s*/u, "")
+        .replace(/^\s*사업장:\s*리치코리아\s*/u, "")
+        .trim(),
+    )
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+function getRichiTbmPreviewText(row: TbmVoiceSubmissionListRow) {
+  const mainText =
+    row.snapshot && typeof row.snapshot.main_text === "string"
+      ? row.snapshot.main_text
+      : null;
+
+  return (
+    cleanRichiTbmPreviewText(mainText) ||
+    cleanRichiTbmPreviewText(row.safety_notice)
+  );
+}
+
 export default async function TbmPage() {
   const company = await getCompanyConfig();
   const isRichi = company.code === "richi";
@@ -251,7 +283,7 @@ export default async function TbmPage() {
   return (
     <main
       className={`min-h-screen overflow-x-hidden pb-[calc(3rem+env(safe-area-inset-bottom))] ${
-        isRichi ? "bg-[#F4F9F7] text-[#102033]" : "bg-gray-950"
+        isRichi ? "bg-[#EAF6F1] text-[#102033]" : "bg-gray-950"
       }`}
     >
       {isRichi ? <RichiTbmTopBar /> : <SafeNav />}
@@ -260,7 +292,7 @@ export default async function TbmPage() {
         className={`mx-auto w-full px-3 py-4 sm:px-6 sm:py-8 ${isRichi ? "max-w-6xl" : "max-w-4xl"}`}
       >
         {isRichi ? (
-          <div className="mb-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <div className="mb-5 rounded-[2rem] border border-[#D6EDE6] bg-white p-5 shadow-sm sm:p-7">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -330,7 +362,7 @@ export default async function TbmPage() {
         {isRichi ? (
           <>
             <div className="mb-5 grid max-w-full grid-cols-1 gap-3 lg:grid-cols-3">
-              <div className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm lg:col-span-2">
+              <div className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm lg:col-span-2">
                 <p
                   className={`text-sm font-black ${
                     todayRichiRows.length > 0
@@ -352,7 +384,7 @@ export default async function TbmPage() {
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm">
                 <p className="text-sm font-bold text-slate-500">
                   최근 저장 기록
                 </p>
@@ -365,7 +397,7 @@ export default async function TbmPage() {
               </div>
             </div>
 
-            <section className="mb-5 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <section className="mb-5 rounded-[2rem] border border-[#D6EDE6] bg-white p-4 shadow-sm sm:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-black tracking-[0.18em] text-teal-700">
@@ -474,7 +506,7 @@ export default async function TbmPage() {
         {isRichi ? (
           <section
             id="recent-tbm-records"
-            className="max-w-full rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+            className="max-w-full rounded-[2rem] border border-[#D6EDE6] bg-white p-4 shadow-sm sm:p-6"
           >
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -491,7 +523,7 @@ export default async function TbmPage() {
             </div>
 
             <div className="space-y-5">
-              {groupedRecentRichiRows.map((group) => (
+              {groupedRecentRichiRows.map((group, groupIndex) => (
                 <div key={group.date}>
                   <div className="mb-2 flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-teal-500" />
@@ -500,20 +532,38 @@ export default async function TbmPage() {
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                    {group.rows.map((row) => {
+                    {group.rows.map((row, rowIndex) => {
+                      const isHighlightedRecent =
+                        groupIndex === 0 && rowIndex === 0;
+                      const hasPhotos = (row.uploaded_file_count ?? 0) > 0;
                       const riskTags = getRichiDisplayRiskTags(
                         row.risk_tags,
-                      ).slice(0, (row.uploaded_file_count ?? 0) > 0 ? 1 : 2);
+                      ).slice(0, hasPhotos ? 3 : 4);
+                      const previewText = getRichiTbmPreviewText(row);
                       return (
                         <article
                           key={row.id}
-                          className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-200 hover:shadow-md"
+                          className={`relative overflow-hidden rounded-3xl border bg-white p-4 shadow-sm transition hover:border-teal-200 ${
+                            isHighlightedRecent
+                              ? "border-teal-200 shadow-teal-900/5"
+                              : "border-slate-200"
+                          }`}
                         >
+                          {isHighlightedRecent && (
+                            <div className="absolute inset-y-0 left-0 w-1.5 bg-teal-500" />
+                          )}
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <p className="line-clamp-1 text-base font-black text-[#102033] sm:text-lg">
-                                {row.title || "TBM 운영기록"}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="line-clamp-1 text-base font-black text-[#102033] sm:text-lg">
+                                  {row.title || "TBM 운영기록"}
+                                </p>
+                                {isHighlightedRecent && (
+                                  <span className="shrink-0 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700">
+                                    최근 기록
+                                  </span>
+                                )}
+                              </div>
                               <p className="mt-1 text-sm font-medium text-slate-500">
                                 {row.supervisor_name
                                   ? `${row.supervisor_name} · `
@@ -529,8 +579,8 @@ export default async function TbmPage() {
                           </div>
 
                           <div className="mt-3 flex flex-wrap gap-1.5">
-                            {(row.uploaded_file_count ?? 0) > 0 && (
-                              <span className="rounded-full border border-cyan-100 bg-cyan-50 px-2.5 py-1 text-xs font-black text-cyan-700">
+                            {hasPhotos && (
+                              <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-black text-teal-800">
                                 사진 {row.uploaded_file_count}건
                               </span>
                             )}
@@ -544,9 +594,9 @@ export default async function TbmPage() {
                             ))}
                           </div>
 
-                          {row.safety_notice && (
-                            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-600">
-                              {row.safety_notice}
+                          {previewText && (
+                            <p className="mt-4 line-clamp-3 whitespace-pre-line rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-2.5 text-sm leading-relaxed text-slate-700">
+                              {previewText}
                             </p>
                           )}
                         </article>
