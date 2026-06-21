@@ -5,6 +5,7 @@ import { getCompanyConfig, TenantRequiredError, UnknownCompanyError } from "@/li
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { detectTbmVoiceIntent } from "@/lib/tbmVoiceIntent";
 import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
+import { applyRichiFoodFactoryVoiceProfile } from "@/lib/tbmVoiceIndustryProfiles";
 import {
   insertTbmVoiceSubmissionShadowRecord,
   isSupabaseTbmShadowWriteEnabled,
@@ -885,7 +886,9 @@ export async function POST(req: NextRequest) {
   const startTime = getFormText(formData, "startTime") || getTimeValue();
   const endTime = getTimeValue();
   const mainText = editedDraftText || draftText || transcript;
-  const normalizedText = normalizeTbmVoiceTranscript(mainText);
+  const baseNormalizedText = normalizeTbmVoiceTranscript(mainText);
+  const richiVoiceProfile = isRichiCompany ? applyRichiFoodFactoryVoiceProfile(baseNormalizedText) : null;
+  const normalizedText = richiVoiceProfile?.normalizedTranscript ?? baseNormalizedText;
 
   const selectedFileCount =
     signatureFiles.length + siteFiles.length + workFiles.length + actionFiles.length;
@@ -933,7 +936,8 @@ export async function POST(req: NextRequest) {
     const workTags = isSafetyPolicyIntent
       ? ["안전보건방침", "경영방침 공유", "근로자 공유"]
       : inferWorkTags(normalizedText, company.code);
-    const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(normalizedText, company.code);
+    const baseRiskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(normalizedText, company.code);
+    const riskTags = Array.from(new Set([...baseRiskTags, ...(richiVoiceProfile?.matchedRiskFactors ?? [])]));
     const actionStatus = isSafetyPolicyIntent ? "조치 불필요" : hasSpecialIssue ? "조치 필요" : "해당 없음";
     const uploadedFiles = {
       signature: uploadedSignatureFiles,
@@ -961,6 +965,14 @@ export async function POST(req: NextRequest) {
         uploadedFileCount,
       },
       uploadedFiles,
+      industryProfile: richiVoiceProfile?.industryProfile,
+      voiceProfile: richiVoiceProfile?.voiceProfile,
+      rawTranscript: transcript,
+      normalizedTranscript: normalizedText,
+      matchedAliases: richiVoiceProfile?.matchedAliases ?? [],
+      matchedRiskFactors: richiVoiceProfile?.matchedRiskFactors ?? [],
+      matchedWorkAreas: richiVoiceProfile?.matchedWorkAreas ?? [],
+      voiceQualityNotes: richiVoiceProfile?.voiceQualityNotes ?? [],
     };
 
     const insertResult = await insertTbmVoiceSubmissionShadowRecord({
