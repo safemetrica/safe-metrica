@@ -99,8 +99,11 @@ export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorker
         <input type="hidden" name="workerName" value={workerName} readOnly />
         <input type="hidden" name="department" value={workerTeam} readOnly />
         <input type="hidden" name="team" value={workerTeam} readOnly />
+        <input type="hidden" name="workerTeam" value={workerTeam} readOnly />
         <input type="hidden" name="phoneLast4" value={confirmCode} readOnly />
         <input type="hidden" name="verificationCode" value={confirmCode} readOnly />
+        <input type="hidden" name="workerPhoneLast4" value={confirmCode.replace(/\D/g, "").slice(0, 4)} readOnly />
+        <input type="hidden" name="workerEmployeeNo" value={confirmCode} readOnly />
         <input type="hidden" name="identityMode" value="identified" readOnly />
         <input type="hidden" name="anonymous" value="false" readOnly />
         <input type="hidden" name="riskCheck" value={checkedItems[0] ? "true" : "false"} readOnly />
