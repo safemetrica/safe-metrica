@@ -818,8 +818,7 @@ export async function POST(req: NextRequest) {
   };
   const isRichiSignedConfirmationSubmission =
     isRichiLedgerSubmission &&
-    rawIdentityMode === "identified" &&
-    signatureMetaCompanyCode === "richi";
+    !anonymous;
 
   const richiSignedIdentityReady =
     !isRichiSignedConfirmationSubmission ||
