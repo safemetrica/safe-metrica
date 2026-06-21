@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
 
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
+import { applyRichiFoodFactoryVoiceProfile } from "@/lib/tbmVoiceIndustryProfiles";
 import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
 
 type Props = {
@@ -113,9 +114,11 @@ function inferRiskBullets(text: string) {
 
 function buildTbmDraftText(params: {
   companyName?: string | null;
+  companyCode?: string | null;
   transcript: string;
 }) {
-  const raw = normalizeTbmVoiceTranscript(params.transcript);
+  const baseRaw = normalizeTbmVoiceTranscript(params.transcript);
+  const raw = params.companyCode === "richi" ? applyRichiFoodFactoryVoiceProfile(baseRaw).normalizedTranscript : baseRaw;
   if (!raw) return "";
 
   const riskBullets = inferRiskBullets(raw);
@@ -181,9 +184,10 @@ export default function TbmVoiceDraftHelper({
     () =>
       buildTbmDraftText({
         companyName,
+        companyCode,
         transcript: combinedTranscript,
       }),
-    [companyName, combinedTranscript]
+    [companyName, companyCode, combinedTranscript]
   );
 
   const draftEditorValue = hasEditedDraftText ? editedDraftText : draftText;
@@ -457,6 +461,7 @@ export default function TbmVoiceDraftHelper({
     );
   }
 
+  const isRichiCompany = companyCode === "richi";
   const hasGeneratedVoiceContent = Boolean(combinedTranscript || draftText);
   const hasVoiceContent = hasGeneratedVoiceContent;
   const canSubmit = hasGeneratedVoiceContent && !isRecording;
@@ -479,7 +484,9 @@ export default function TbmVoiceDraftHelper({
           <p className="text-sm font-black text-cyan-200">TBM 음성 작성지원</p>
           <h2 className="mt-1 text-xl font-black text-white">🎙️ 말로 TBM 작성</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-            현장관리자가 말한 내용을 인식된 TBM 내용으로 정리하고, 사진을 첨부한 뒤 바로 Notion TBM DB에 저장합니다.
+            {isRichiCompany
+              ? "현장관리자가 말한 내용을 식품공장 TBM 운영기록으로 정리하고, 사진을 첨부한 뒤 Supabase 운영기록에 저장합니다."
+              : "현장관리자가 말한 내용을 인식된 TBM 내용으로 정리하고, 사진을 첨부한 뒤 바로 Notion TBM DB에 저장합니다."}
           </p>
         </div>
       </div>
@@ -538,10 +545,12 @@ export default function TbmVoiceDraftHelper({
 
           <div className="mt-3 grid gap-3 lg:grid-cols-2">
             <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
-              <p className="text-xs font-black text-slate-400">녹음 내용 확인 및 수정</p>
+              <p className="text-xs font-black text-slate-400">{isRichiCompany ? "보정 후 TBM 정리본" : "녹음 내용 확인 및 수정"}</p>
               <p className="mt-1 text-[11px] leading-5 text-slate-500">
                 {hasGeneratedVoiceContent
-                  ? "저장 전 핵심 내용을 먼저 확인해 주세요. 수정한 내용 기준으로 TBM이 저장됩니다."
+                  ? isRichiCompany
+                    ? "저장 전 핵심 문구를 확인해 주세요. 보정된 정리본은 수정한 내용 기준으로 저장됩니다."
+                    : "저장 전 핵심 내용을 먼저 확인해 주세요. 수정한 내용 기준으로 TBM이 저장됩니다."
                   : "녹음 완료 후 수정할 수 있습니다."}
               </p>
               <textarea
@@ -554,7 +563,7 @@ export default function TbmVoiceDraftHelper({
             </div>
 
             <details className="rounded-xl border border-slate-700 bg-slate-900/80 p-3">
-              <summary className="cursor-pointer text-xs font-black text-slate-400">원본 음성 인식 내용 보기</summary>
+              <summary className="cursor-pointer text-xs font-black text-slate-400">{isRichiCompany ? "원본 음성 인식 내용" : "원본 음성 인식 내용 보기"}</summary>
               <p className="mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-800 bg-slate-950/70 p-3 text-sm leading-6 text-slate-300">
                 {combinedTranscript || "녹음 시작 후 현장 작업 내용을 말해 주세요."}
               </p>
@@ -654,13 +663,33 @@ export default function TbmVoiceDraftHelper({
         </p>
       ) : null}
 
+      {hasSubmitted && isRichiCompany ? (
+        <div className="mt-3 flex flex-wrap gap-2 rounded-xl border border-emerald-700 bg-emerald-950/30 p-3">
+          <p className="w-full text-sm font-bold leading-6 text-emerald-100">저장 완료되었습니다. 다음 회차는 새 TBM 작성으로 시작하세요.</p>
+          <button
+            type="button"
+            onClick={clearDraft}
+            className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950"
+          >
+            새 TBM 작성
+          </button>
+          <button
+            type="button"
+            onClick={clearDraft}
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-black text-slate-200"
+          >
+            내용 초기화
+          </button>
+        </div>
+      ) : null}
+
       {hasVoiceContent ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-emerald-700/60 bg-slate-950/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl shadow-black/50 backdrop-blur">
           <div className="mx-auto flex w-full max-w-4xl items-center gap-3">
             <div className="hidden min-w-0 flex-1 sm:block">
               <p className="text-xs font-black text-emerald-200">4단계 · 하단 고정 저장</p>
               <p className="truncate text-xs text-slate-400">
-                사진 {totalPhotoCount}개 선택됨
+                {hasSubmitted && isRichiCompany ? "저장 완료 · 새 TBM 작성은 내용 초기화를 눌러 시작하세요" : `사진 ${totalPhotoCount}개 선택됨`}
               </p>
             </div>
             <button
