@@ -829,18 +829,20 @@ export async function POST(req: NextRequest) {
       (workerPhoneLast4.length === 4 || workerEmployeeNo.length > 0)
     );
 
+  const isRichiEmptyNoteContent =
+    !content || content === "오늘은 추가 의견 없음.";
+
   const isRichiSignedAcknowledgementOnly =
     isRichiSignedConfirmationSubmission &&
-    !title &&
-    !content;
+    (!title || isRichiEmptyNoteContent);
 
   const finalSubmissionTitle =
-    isRichiSignedAcknowledgementOnly && !title
+    isRichiSignedAcknowledgementOnly
       ? "리치코리아 작업 전 확인기록"
       : title;
 
   const finalSubmissionContent =
-    isRichiSignedAcknowledgementOnly && !content
+    isRichiSignedAcknowledgementOnly
       ? "특이사항 없음. 작업 전 위생·안전 확인 항목을 확인하고 자필서명을 완료했습니다."
       : content;
 
@@ -933,6 +935,7 @@ export async function POST(req: NextRequest) {
           isAcknowledgementOnly,
           richiSignedConfirmationSubmission: isRichiSignedConfirmationSubmission,
           richiSignedIdentityReady,
+          richiEmptyNoteContent: isRichiEmptyNoteContent,
           richiSignedAcknowledgementOnly: isRichiSignedAcknowledgementOnly,
           selectedFileCount: evidenceFiles.length,
           uploadedFileCount: uploadedFiles.length,
@@ -1263,6 +1266,7 @@ export async function POST(req: NextRequest) {
           isAcknowledgementOnly,
           richiSignedConfirmationSubmission: isRichiSignedConfirmationSubmission,
           richiSignedIdentityReady,
+          richiEmptyNoteContent: isRichiEmptyNoteContent,
           richiSignedAcknowledgementOnly: isRichiSignedAcknowledgementOnly,
           selectedFileCount: evidenceFiles.length,
           uploadedFileCount: uploadedFiles.length,
