@@ -73,14 +73,36 @@ async function getTbmRows(): Promise<TbmRow[]> {
   });
 }
 
-function getSnapshotProfileBadges(snapshot: TbmVoiceSubmissionListRow["snapshot"]) {
-  if (!snapshot) {
+const RICHI_RISK_TAG_PRIORITY = [
+  "미끄럼",
+  "절단·베임",
+  "이물혼입",
+  "보호구",
+  "개인위생",
+  "포장실",
+  "냉장·냉동",
+  "컨베이어·포장기",
+];
+
+const RICHI_HIDDEN_RISK_TAGS = ["차량 충돌", "후진 충돌", "사각지대", "지게차 충돌"];
+
+function getRichiDisplayRiskTags(riskTags: TbmVoiceSubmissionListRow["risk_tags"]) {
+  if (!Array.isArray(riskTags)) {
     return [];
   }
 
-  return ["voiceProfile", "industryProfile"]
-    .map((key) => snapshot[key])
-    .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+  const hiddenTags = new Set(RICHI_HIDDEN_RISK_TAGS);
+  const uniqueTags = riskTags.filter(
+    (tag, index, tags) => tag.trim().length > 0 && !hiddenTags.has(tag) && tags.indexOf(tag) === index,
+  );
+
+  return uniqueTags
+    .sort((a, b) => {
+      const aPriority = RICHI_RISK_TAG_PRIORITY.indexOf(a);
+      const bPriority = RICHI_RISK_TAG_PRIORITY.indexOf(b);
+      return (aPriority === -1 ? 999 : aPriority) - (bPriority === -1 ? 999 : bPriority);
+    })
+    .slice(0, 4);
 }
 
 export default async function TbmPage() {
@@ -111,7 +133,7 @@ export default async function TbmPage() {
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
               {isRichi
-                ? "말로 작성한 TBM을 Supabase 운영기록으로 저장하고 월별 보관함 연결을 준비합니다."
+                ? "말로 작성한 TBM 운영기록을 간결하게 확인합니다."
                 : "등록된 TBM과 특이사항, 증빙 연결 상태를 확인합니다."}
             </p>
               <TbmFormAction
@@ -148,7 +170,7 @@ export default async function TbmPage() {
               <>
                 <p className="text-sm font-bold text-emerald-200">사진 첨부</p>
                 <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{사진첨부}</div>
-                <p className="mt-1 text-sm text-emerald-100/80">월별 보관 연결 준비</p>
+                <p className="mt-1 text-sm text-emerald-100/80">첨부된 기록</p>
               </>
             ) : (
               <>
@@ -204,9 +226,7 @@ export default async function TbmPage() {
 
         <div className="max-w-full space-y-3">
           {richiRows.map((row) => {
-            const riskTags = Array.isArray(row.risk_tags) ? row.risk_tags.slice(0, 5) : [];
-            const profileBadges = getSnapshotProfileBadges(row.snapshot);
-
+            const riskTags = getRichiDisplayRiskTags(row.risk_tags);
             return (
               <div
                 key={row.id}
@@ -218,15 +238,12 @@ export default async function TbmPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="mb-2 flex flex-wrap gap-1.5">
-                      <span className="rounded-full border border-blue-700 bg-blue-950/40 px-2.5 py-1 text-xs font-bold text-blue-200">
-                        말로 작성한 TBM 운영기록
+                    <div className="mb-2 flex flex-nowrap gap-1.5 overflow-hidden">
+                      <span className="shrink-0 rounded-full border border-blue-700 bg-blue-950/40 px-2.5 py-1 text-xs font-bold text-blue-200">
+                        말로 TBM
                       </span>
-                      <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-200">
-                        Supabase 운영기록
-                      </span>
-                      <span className="rounded-full border border-purple-700 bg-purple-950/40 px-2.5 py-1 text-xs font-bold text-purple-200">
-                        월별 보관함 연결 준비
+                      <span className="shrink-0 rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-200">
+                        월별 보관 준비
                       </span>
                     </div>
                     <p className="truncate text-base font-black text-white sm:text-xl">
@@ -237,18 +254,13 @@ export default async function TbmPage() {
                       {row.supervisor_name ? ` · ${row.supervisor_name}` : ""}
                     </p>
 
-                    <div className="mt-3 flex max-w-full flex-wrap gap-1.5 sm:gap-2">
+                    <div className="mt-2 flex max-w-full flex-wrap gap-1.5 sm:gap-2">
                       <span className="rounded-full border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs font-bold text-slate-300 sm:px-3 sm:text-sm">
-                        상세 연결 준비 중
+                        운영기록
                       </span>
                       {row.has_special_issue && (
                         <span className="rounded-full border border-amber-700 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200 sm:px-3 sm:text-sm">
-                          특이사항 있음
-                        </span>
-                      )}
-                      {row.action_status && (
-                        <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-200 sm:px-3 sm:text-sm">
-                          {row.action_status}
+                          특이사항
                         </span>
                       )}
                       {(row.uploaded_file_count ?? 0) > 0 && (
@@ -264,14 +276,6 @@ export default async function TbmPage() {
                           {tag}
                         </span>
                       ))}
-                      {profileBadges.map((badge) => (
-                        <span
-                          key={badge}
-                          className="rounded-full border border-indigo-700 bg-indigo-950/40 px-2.5 py-1 text-xs font-bold text-indigo-200 sm:px-3 sm:text-sm"
-                        >
-                          {badge}
-                        </span>
-                      ))}
                     </div>
 
                     {row.safety_notice && (
@@ -279,6 +283,11 @@ export default async function TbmPage() {
                         {row.safety_notice}
                       </p>
                     )}
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-slate-500">
+                      <span>상세 연결은 준비 중</span>
+                      {row.action_status && <span>· 조치상태 {row.action_status}</span>}
+                    </div>
                   </div>
                 </div>
               </div>
