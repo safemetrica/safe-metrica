@@ -490,7 +490,9 @@ export default async function RiskSharePackManagerHomePage() {
   const totalReviewNeededCount =
     fieldSummary.fieldReviewNeededCount + representativeReviewNeededCount;
   const versionLockLoadFailed = versionLockSummary.status !== "ok";
-  const hasMonthlySummaryWarning = fieldLoadFailed || linkResult.status !== "ok" || versionLockLoadFailed;
+    const versionLockAffectsMonthlyWarning = !isRichiFullOperation && versionLockLoadFailed;
+    const hasMonthlySummaryWarning =
+      fieldLoadFailed || linkResult.status !== "ok" || versionLockAffectsMonthlyWarning;
 
   const companyName = getCompanyDisplayName(company);
 
@@ -519,6 +521,17 @@ export default async function RiskSharePackManagerHomePage() {
             description: "의견·불편사항과 보완 의견 중 관리자가 확인할 필요가 있는 기록입니다.",
           };
         }
+
+          if (card.label === "최종 공유본 확정") {
+            return {
+              ...card,
+              label: "위험성평가 확인·월별보관",
+              value: versionLockLoadFailed ? "준비 중" : card.value,
+              description: versionLockLoadFailed
+                ? "리치 Full 운영에서는 최종 공유본 원장 조회를 필수 오류로 보지 않습니다. 현재는 작업 전 확인·서명, 익명 의견, 관리자 검토 흐름을 우선 확인합니다."
+                : "월별 보관에 반영할 위험성평가 확인 항목입니다.",
+            };
+          }
 
         return card;
       })
@@ -639,11 +652,15 @@ export default async function RiskSharePackManagerHomePage() {
                 label: "확정 공유 항목",
                 status:
                   versionLockSummary.status !== "ok"
-                    ? "확인 필요"
+                    ? isRichiFullOperation
+                      ? "준비 중"
+                      : "확인 필요"
                     : `${versionLockSummary.lockedItemCount}건`,
                 description:
                   versionLockSummary.status !== "ok"
-                    ? "최종 공유본 원장 조회 실패 상태입니다. Supabase migration 적용 여부를 확인하세요."
+                    ? isRichiFullOperation
+                      ? "리치 Full 운영에서는 위험성평가 확인·월별보관을 선택 흐름으로 표시합니다. 현재는 작업 전 확인·서명과 익명 의견 흐름을 우선 확인합니다."
+                      : "최종 공유본 원장 조회 실패 상태입니다. Supabase migration 적용 여부를 확인하세요."
                     : `이번 달 확정 공유본 ${versionLockSummary.lockCount}회, 근로자 QR 노출 항목 ${versionLockSummary.workerVisibleCount}건입니다.`,
               },
               {
