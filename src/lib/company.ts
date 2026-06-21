@@ -2,6 +2,8 @@ import "server-only";
 
 import { cookies, headers } from "next/headers";
 
+import { getTenantRegistryConfigByCode, type TenantRegistryConfig } from "@/lib/supabaseServer";
+
 export type CompanyConfig = {
   code: string;
   name: string;
