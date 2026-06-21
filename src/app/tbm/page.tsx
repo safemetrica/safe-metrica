@@ -283,7 +283,7 @@ export default async function TbmPage() {
   return (
     <main
       className={`min-h-screen overflow-x-hidden pb-[calc(3rem+env(safe-area-inset-bottom))] ${
-        isRichi ? "bg-[#F4F9F7] text-[#102033]" : "bg-gray-950"
+        isRichi ? "bg-[#EAF6F1] text-[#102033]" : "bg-gray-950"
       }`}
     >
       {isRichi ? <RichiTbmTopBar /> : <SafeNav />}
@@ -292,7 +292,7 @@ export default async function TbmPage() {
         className={`mx-auto w-full px-3 py-4 sm:px-6 sm:py-8 ${isRichi ? "max-w-6xl" : "max-w-4xl"}`}
       >
         {isRichi ? (
-          <div className="mb-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <div className="mb-5 rounded-[2rem] border border-[#D6EDE6] bg-white p-5 shadow-sm sm:p-7">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -362,7 +362,7 @@ export default async function TbmPage() {
         {isRichi ? (
           <>
             <div className="mb-5 grid max-w-full grid-cols-1 gap-3 lg:grid-cols-3">
-              <div className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm lg:col-span-2">
+              <div className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm lg:col-span-2">
                 <p
                   className={`text-sm font-black ${
                     todayRichiRows.length > 0
@@ -384,7 +384,7 @@ export default async function TbmPage() {
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm">
                 <p className="text-sm font-bold text-slate-500">
                   최근 저장 기록
                 </p>
@@ -397,7 +397,7 @@ export default async function TbmPage() {
               </div>
             </div>
 
-            <section className="mb-5 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <section className="mb-5 rounded-[2rem] border border-[#D6EDE6] bg-white p-4 shadow-sm sm:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-black tracking-[0.18em] text-teal-700">
@@ -506,7 +506,7 @@ export default async function TbmPage() {
         {isRichi ? (
           <section
             id="recent-tbm-records"
-            className="max-w-full rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+            className="max-w-full rounded-[2rem] border border-[#D6EDE6] bg-white p-4 shadow-sm sm:p-6"
           >
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
