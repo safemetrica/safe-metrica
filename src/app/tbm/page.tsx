@@ -26,12 +26,15 @@ type TbmRow = {
 
 type NotionPageResult = {
   id: string;
-  properties?: Record<string, {
-    title?: Array<{ plain_text?: string }>;
-    date?: { start?: string };
-    select?: { name?: string };
-    relation?: unknown[];
-  }>;
+  properties?: Record<
+    string,
+    {
+      title?: Array<{ plain_text?: string }>;
+      date?: { start?: string };
+      select?: { name?: string };
+      relation?: unknown[];
+    }
+  >;
 };
 async function getTbmRows(): Promise<TbmRow[]> {
   const apiBase = "https://api.notion.com/v1/databases";
@@ -84,23 +87,76 @@ const RICHI_RISK_TAG_PRIORITY = [
   "컨베이어·포장기",
 ];
 
-const RICHI_HIDDEN_RISK_TAGS = ["차량 충돌", "후진 충돌", "사각지대", "지게차 충돌"];
+const RICHI_HIDDEN_RISK_TAGS = [
+  "차량 충돌",
+  "후진 충돌",
+  "사각지대",
+  "지게차 충돌",
+];
 
-function getRichiDisplayRiskTags(riskTags: TbmVoiceSubmissionListRow["risk_tags"]) {
+function formatKstDateValue(date = new Date()) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function formatKstDateValueFromString(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return formatKstDateValue(date);
+}
+
+function formatKstTimeValue(value?: string | null) {
+  if (!value) {
+    return "작성 시간 미기록";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "작성 시간 미기록";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+function getRichiDisplayRiskTags(
+  riskTags: TbmVoiceSubmissionListRow["risk_tags"],
+) {
   if (!Array.isArray(riskTags)) {
     return [];
   }
 
   const hiddenTags = new Set(RICHI_HIDDEN_RISK_TAGS);
   const uniqueTags = riskTags.filter(
-    (tag, index, tags) => tag.trim().length > 0 && !hiddenTags.has(tag) && tags.indexOf(tag) === index,
+    (tag, index, tags) =>
+      tag.trim().length > 0 &&
+      !hiddenTags.has(tag) &&
+      tags.indexOf(tag) === index,
   );
 
   return uniqueTags
     .sort((a, b) => {
       const aPriority = RICHI_RISK_TAG_PRIORITY.indexOf(a);
       const bPriority = RICHI_RISK_TAG_PRIORITY.indexOf(b);
-      return (aPriority === -1 ? 999 : aPriority) - (bPriority === -1 ? 999 : bPriority);
+      return (
+        (aPriority === -1 ? 999 : aPriority) -
+        (bPriority === -1 ? 999 : bPriority)
+      );
     })
     .slice(0, 4);
 }
@@ -109,99 +165,230 @@ export default async function TbmPage() {
   const company = await getCompanyConfig();
   const isRichi = company.code === "richi";
   const rows = isRichi ? [] : await getTbmRows();
-  const richiRows = isRichi ? await selectTbmVoiceSubmissionListRows(company.code) : [];
+  const richiRows = isRichi
+    ? await selectTbmVoiceSubmissionListRows(company.code)
+    : [];
   const tbmFormUrl = getTbmFormUrl(company);
   const 특이사항건수 = isRichi
     ? richiRows.filter((r) => r.has_special_issue).length
     : rows.filter((r) => r.특이사항).length;
   const EB누락 = rows.filter((r) => r.EB필요 && r.연결EB === 0).length;
   const 조치필요 = rows.filter((r) => r.조치상태 === "조치 필요").length;
-  const 사진첨부 = richiRows.filter((r) => (r.uploaded_file_count ?? 0) > 0).length;
   const hasTodayActionItems = EB누락 > 0 || 조치필요 > 0;
   const totalRows = isRichi ? richiRows.length : rows.length;
+  const todayDate = formatKstDateValue();
+  const todayRichiRows = richiRows.filter((row) => {
+    if (row.date_value) {
+      return row.date_value === todayDate;
+    }
+
+    return formatKstDateValueFromString(row.created_at) === todayDate;
+  });
+  const recentRichiRows = richiRows.slice(0, 5);
+  const groupedRecentRichiRows = recentRichiRows.reduce<
+    Array<{ date: string; rows: TbmVoiceSubmissionListRow[] }>
+  >((groups, row) => {
+    const date =
+      row.date_value ??
+      formatKstDateValueFromString(row.created_at) ??
+      "날짜 미지정";
+    const existingGroup = groups.find((group) => group.date === date);
+
+    if (existingGroup) {
+      existingGroup.rows.push(row);
+    } else {
+      groups.push({ date, rows: [row] });
+    }
+
+    return groups;
+  }, []);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-gray-950 pb-[calc(3rem+env(safe-area-inset-bottom))]">
+    <main
+      className={`min-h-screen overflow-x-hidden pb-[calc(3rem+env(safe-area-inset-bottom))] ${
+        isRichi ? "bg-[#F6F8F9] text-[#102033]" : "bg-gray-950"
+      }`}
+    >
       <SafeNav />
 
-      <div className="mx-auto w-full max-w-4xl px-3 py-4 sm:px-6 sm:py-8">
-        <div className="mb-4 flex max-w-full items-start justify-between gap-2 sm:mb-5 sm:items-end sm:gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-blue-300 sm:text-sm">TBM · 현장 안전기록</p>
-            <h1 className="mt-1 text-2xl font-black text-white sm:text-3xl">
-              📋 TBM 현황
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
-              {isRichi
-                ? "말로 작성한 TBM 운영기록을 간결하게 확인합니다."
-                : "등록된 TBM과 특이사항, 증빙 연결 상태를 확인합니다."}
-            </p>
+      <div
+        className={`mx-auto w-full px-3 py-4 sm:px-6 sm:py-8 ${isRichi ? "max-w-6xl" : "max-w-4xl"}`}
+      >
+        {isRichi ? (
+          <div className="mb-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700">
+                    SafeMetrica TBM
+                  </p>
+                  <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-black text-teal-700">
+                    리치코리아
+                  </span>
+                </div>
+                <h1 className="mt-4 text-3xl font-black tracking-tight text-[#102033] sm:text-4xl">
+                  TBM 현황
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                  작업 전 TBM 기록을 말로 남기고, 월별 운영기록으로 정리합니다.
+                </p>
+                <TbmFormAction
+                  tbmFormUrl={tbmFormUrl}
+                  voiceDraftHref="#tbm-voice-draft"
+                  compact
+                  className="mt-5"
+                />
+              </div>
+
+              <div className="shrink-0 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3 text-center">
+                <p className="text-xs font-bold text-teal-700">저장된 기록</p>
+                <p className="mt-1 text-2xl font-black text-[#102033]">
+                  {totalRows}건
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 flex max-w-full items-start justify-between gap-2 sm:mb-5 sm:items-end sm:gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-blue-300 sm:text-sm">
+                TBM · 현장 안전기록
+              </p>
+              <h1 className="mt-1 text-2xl font-black text-white sm:text-3xl">
+                📋 TBM 현황
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
+                등록된 TBM과 특이사항, 증빙 연결 상태를 확인합니다.
+              </p>
               <TbmFormAction
                 tbmFormUrl={tbmFormUrl}
                 voiceDraftHref="#tbm-voice-draft"
                 compact
                 className="mt-4"
               />
+            </div>
 
+            <div className="shrink-0 whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-slate-200 sm:px-3 sm:py-2 sm:text-sm">
+              {totalRows}건
+            </div>
           </div>
+        )}
 
-          <div className="shrink-0 whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-slate-200 sm:px-3 sm:py-2 sm:text-sm">
-            {totalRows}건
-          </div>
-        </div>
+        {isRichi ? (
+          <>
+            <div className="mb-5 grid max-w-full grid-cols-1 gap-3 lg:grid-cols-3">
+              <div className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm lg:col-span-2">
+                <p className="text-sm font-black text-teal-700">
+                  {todayRichiRows.length > 0
+                    ? "오늘 TBM 작성 완료"
+                    : "오늘 TBM 작성 전이에요"}
+                </p>
+                <p className="mt-3 text-2xl font-black tracking-tight text-[#102033] sm:text-3xl">
+                  {todayRichiRows.length > 0
+                    ? `오늘 ${todayRichiRows.length}건의 TBM 운영기록이 저장됐어요`
+                    : "아래에서 음성이나 텍스트로 간편하게 남겨주세요"}
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                  날짜별 운영기록은 최근 작성 순서로 정리됩니다.
+                </p>
+              </div>
 
-        <div className="mb-5 grid max-w-full grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="max-w-full rounded-2xl border border-blue-700 bg-blue-950/35 p-4 sm:p-5">
-            <p className="text-sm font-bold text-blue-200">전체 TBM</p>
-            <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{totalRows}</div>
-            <p className="mt-1 text-sm text-blue-200/80">등록된 안전기록</p>
-          </div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p className="text-sm font-bold text-slate-500">
+                  최근 저장 기록
+                </p>
+                <div className="mt-3 text-4xl font-black text-[#102033]">
+                  {totalRows}
+                </div>
+                <p className="mt-2 text-sm text-slate-500">
+                  리치코리아 TBM 운영기록
+                </p>
+              </div>
+            </div>
 
-          <div className={`max-w-full rounded-2xl border p-4 sm:p-5 ${특이사항건수 > 0 ? "border-amber-700 bg-amber-950/30" : "border-slate-700 bg-slate-900"}`}>
-            <p className="text-sm font-bold text-amber-200">특이사항</p>
-            <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{특이사항건수}</div>
-            <p className="mt-1 text-sm text-amber-100/80">
-              {특이사항건수 > 0 ? "확인 필요 항목" : "특이사항 없음"}
-            </p>
-          </div>
+            <section className="mb-5 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black tracking-[0.18em] text-teal-700">
+                    작성
+                  </p>
+                  <h2 className="mt-1 text-xl font-black text-[#102033]">
+                    오늘 TBM 작성
+                  </h2>
+                </div>
+                <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-black text-teal-700">
+                  간편 기록
+                </span>
+              </div>
+              <TbmVoiceDraftHelper
+                tbmFormUrl={tbmFormUrl}
+                companyName={company.name}
+                companyCode={company.code}
+              />
+            </section>
+          </>
+        ) : (
+          <>
+            <div className="mb-5 grid max-w-full grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="max-w-full rounded-2xl border border-blue-700 bg-blue-950/35 p-4 sm:p-5">
+                <p className="text-sm font-bold text-blue-200">전체 TBM</p>
+                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">
+                  {totalRows}
+                </div>
+                <p className="mt-1 text-sm text-blue-200/80">등록된 안전기록</p>
+              </div>
 
-          <div className={`max-w-full rounded-2xl border p-4 sm:p-5 ${!isRichi && EB누락 > 0 ? "border-red-700 bg-red-950/35" : "border-emerald-700 bg-emerald-950/25"}`}>
-            {isRichi ? (
-              <>
-                <p className="text-sm font-bold text-emerald-200">사진 첨부</p>
-                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{사진첨부}</div>
-                <p className="mt-1 text-sm text-emerald-100/80">첨부된 기록</p>
-              </>
-            ) : (
-              <>
-                <p className={`text-sm font-bold ${EB누락 > 0 ? "text-red-200" : "text-emerald-200"}`}>
+              <div
+                className={`max-w-full rounded-2xl border p-4 sm:p-5 ${특이사항건수 > 0 ? "border-amber-700 bg-amber-950/30" : "border-slate-700 bg-slate-900"}`}
+              >
+                <p className="text-sm font-bold text-amber-200">특이사항</p>
+                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">
+                  {특이사항건수}
+                </div>
+                <p className="mt-1 text-sm text-amber-100/80">
+                  {특이사항건수 > 0 ? "확인 필요 항목" : "특이사항 없음"}
+                </p>
+              </div>
+
+              <div
+                className={`max-w-full rounded-2xl border p-4 sm:p-5 ${EB누락 > 0 ? "border-red-700 bg-red-950/35" : "border-emerald-700 bg-emerald-950/25"}`}
+              >
+                <p
+                  className={`text-sm font-bold ${EB누락 > 0 ? "text-red-200" : "text-emerald-200"}`}
+                >
                   EB 연결 필요
                 </p>
-                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{EB누락}</div>
-                <p className={`mt-1 text-sm ${EB누락 > 0 ? "text-red-100/80" : "text-emerald-100/80"}`}>
+                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">
+                  {EB누락}
+                </div>
+                <p
+                  className={`mt-1 text-sm ${EB누락 > 0 ? "text-red-100/80" : "text-emerald-100/80"}`}
+                >
                   {EB누락 > 0 ? "조치상태 기준 미연결" : "누락 없음"}
                 </p>
-              </>
-            )}
-          </div>
-        </div>
-        <TbmVoiceDraftHelper
-          tbmFormUrl={tbmFormUrl}
-          companyName={company.name}
-          companyCode={company.code}
-          className="mb-5"
-        />
+              </div>
+            </div>
+            <TbmVoiceDraftHelper
+              tbmFormUrl={tbmFormUrl}
+              companyName={company.name}
+              companyCode={company.code}
+              className="mb-5"
+            />
+          </>
+        )}
 
         {!isRichi && (
           <div
             className={`mb-5 max-w-full rounded-2xl border p-4 sm:p-5 ${
-            hasTodayActionItems
-              ? "border-red-700 bg-red-950/30"
-              : "border-emerald-700 bg-emerald-950/20"
-          }`}
+              hasTodayActionItems
+                ? "border-red-700 bg-red-950/30"
+                : "border-emerald-700 bg-emerald-950/20"
+            }`}
           >
             <div className="flex items-start gap-3">
-              <span className="text-2xl">{hasTodayActionItems ? "🔴" : "✅"}</span>
+              <span className="text-2xl">
+                {hasTodayActionItems ? "🔴" : "✅"}
+              </span>
               <div>
                 <p
                   className={`text-base font-black ${
@@ -224,143 +411,177 @@ export default async function TbmPage() {
           </div>
         )}
 
-        <div className="max-w-full space-y-3">
-          {richiRows.map((row) => {
-            const riskTags = getRichiDisplayRiskTags(row.risk_tags);
-            return (
-              <div
-                key={row.id}
-                className={`max-w-full rounded-2xl border p-3 sm:p-5 ${
-                  row.has_special_issue
-                    ? "border-amber-800 bg-amber-950/20"
-                    : "border-slate-700 bg-slate-900"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-2 flex flex-nowrap gap-1.5 overflow-hidden">
-                      <span className="shrink-0 rounded-full border border-blue-700 bg-blue-950/40 px-2.5 py-1 text-xs font-bold text-blue-200">
-                        말로 TBM
-                      </span>
-                      <span className="shrink-0 rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-200">
-                        월별 보관 준비
-                      </span>
-                    </div>
-                    <p className="truncate text-base font-black text-white sm:text-xl">
-                      {row.title || "말로 작성한 TBM 운영기록"}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-slate-400">
-                      {row.date_value ?? row.created_at ?? "날짜 없음"}
-                      {row.supervisor_name ? ` · ${row.supervisor_name}` : ""}
-                    </p>
+        {isRichi ? (
+          <section className="max-w-full rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black tracking-[0.18em] text-teal-700">
+                  기록
+                </p>
+                <h2 className="mt-1 text-xl font-black text-[#102033]">
+                  최근 TBM 운영기록
+                </h2>
+              </div>
+              <p className="text-sm font-bold text-slate-500">
+                최근 5건 우선 표시
+              </p>
+            </div>
 
-                    <div className="mt-2 flex max-w-full flex-wrap gap-1.5 sm:gap-2">
-                      <span className="rounded-full border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs font-bold text-slate-300 sm:px-3 sm:text-sm">
-                        운영기록
-                      </span>
-                      {row.has_special_issue && (
-                        <span className="rounded-full border border-amber-700 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200 sm:px-3 sm:text-sm">
-                          특이사항
-                        </span>
-                      )}
-                      {(row.uploaded_file_count ?? 0) > 0 && (
-                        <span className="rounded-full border border-cyan-700 bg-cyan-950/40 px-2.5 py-1 text-xs font-bold text-cyan-200 sm:px-3 sm:text-sm">
-                          사진 {row.uploaded_file_count}건
-                        </span>
-                      )}
-                      {riskTags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs font-bold text-slate-300 sm:px-3 sm:text-sm"
+            <div className="space-y-5">
+              {groupedRecentRichiRows.map((group) => (
+                <div key={group.date}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-teal-500" />
+                    <h3 className="text-sm font-black text-[#102033]">
+                      {group.date}
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    {group.rows.map((row) => {
+                      const riskTags = getRichiDisplayRiskTags(
+                        row.risk_tags,
+                      ).slice(0, (row.uploaded_file_count ?? 0) > 0 ? 1 : 2);
+                      return (
+                        <article
+                          key={row.id}
+                          className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-200 hover:shadow-md"
                         >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="line-clamp-1 text-base font-black text-[#102033] sm:text-lg">
+                                {row.title || "TBM 운영기록"}
+                              </p>
+                              <p className="mt-1 text-sm font-medium text-slate-500">
+                                {row.supervisor_name
+                                  ? `${row.supervisor_name} · `
+                                  : ""}
+                                {formatKstTimeValue(row.created_at)}
+                              </p>
+                            </div>
+                            {row.has_special_issue && (
+                              <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700">
+                                특이사항
+                              </span>
+                            )}
+                          </div>
 
-                    {row.safety_notice && (
-                      <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-300">
-                        {row.safety_notice}
-                      </p>
-                    )}
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {(row.uploaded_file_count ?? 0) > 0 && (
+                              <span className="rounded-full border border-cyan-100 bg-cyan-50 px-2.5 py-1 text-xs font-black text-cyan-700">
+                                사진 {row.uploaded_file_count}건
+                              </span>
+                            )}
+                            {riskTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-600"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-slate-500">
-                      <span>상세 연결은 준비 중</span>
-                      {row.action_status && <span>· 조치상태 {row.action_status}</span>}
-                    </div>
+                          {row.safety_notice && (
+                            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-600">
+                              {row.safety_notice}
+                            </p>
+                          )}
+                        </article>
+                      );
+                    })}
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {recentRichiRows.length === 0 && (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-bold text-slate-500">
+                아직 저장된 TBM 운영기록이 없습니다.
               </div>
-            );
-          })}
+            )}
 
-          {rows.map((row) => {
-            const needsEb = row.EB필요 && row.연결EB === 0;
-            const needsAction = row.조치상태 === "조치 필요";
+            <div className="mt-5 rounded-2xl border border-dashed border-teal-200 bg-teal-50/70 px-4 py-3 text-sm font-bold text-teal-800">
+              월별 보관함 연결 준비
+            </div>
+          </section>
+        ) : (
+          <div className="max-w-full space-y-3">
+            {rows.map((row) => {
+              const needsEb = row.EB필요 && row.연결EB === 0;
+              const needsAction = row.조치상태 === "조치 필요";
 
-            return (
-              <Link key={row.id} href={`/tbm/${row.id}`} className="block max-w-full">
-                <div
-                  className={`max-w-full rounded-2xl border p-3 transition hover:-translate-y-0.5 hover:border-blue-500 sm:p-5 ${
-                    needsEb || needsAction
-                      ? "border-red-800 bg-red-950/25"
-                      : row.특이사항
-                        ? "border-amber-800 bg-amber-950/20"
-                        : "border-slate-700 bg-slate-900"
-                  }`}
+              return (
+                <Link
+                  key={row.id}
+                  href={`/tbm/${row.id}`}
+                  className="block max-w-full"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-black text-white sm:text-xl">
-                        {row.작업명 || "작업명 없음"}
-                      </p>
-                      <p className="mt-1 text-sm font-medium text-slate-400">{row.날짜}</p>
+                  <div
+                    className={`max-w-full rounded-2xl border p-3 transition hover:-translate-y-0.5 hover:border-blue-500 sm:p-5 ${
+                      needsEb || needsAction
+                        ? "border-red-800 bg-red-950/25"
+                        : row.특이사항
+                          ? "border-amber-800 bg-amber-950/20"
+                          : "border-slate-700 bg-slate-900"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-base font-black text-white sm:text-xl">
+                          {row.작업명 || "작업명 없음"}
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-slate-400">
+                          {row.날짜}
+                        </p>
 
-                      <div className="mt-3 flex max-w-full flex-wrap gap-1.5 sm:gap-2">
-                        {row.특이사항 ? (
-                          <span className="rounded-full border border-amber-700 bg-amber-950/40 px-2.5 py-1 text-xs sm:px-3 sm:text-sm font-bold text-amber-200">
-                            특이사항 있음
-                          </span>
-                        ) : (
-                          <span className="whitespace-nowrap rounded-full border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs sm:px-3 sm:text-sm font-bold text-slate-300">
-                            특이사항 없음
-                          </span>
-                        )}
+                        <div className="mt-3 flex max-w-full flex-wrap gap-1.5 sm:gap-2">
+                          {row.특이사항 ? (
+                            <span className="rounded-full border border-amber-700 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200 sm:px-3 sm:text-sm">
+                              특이사항 있음
+                            </span>
+                          ) : (
+                            <span className="whitespace-nowrap rounded-full border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs font-bold text-slate-300 sm:px-3 sm:text-sm">
+                              특이사항 없음
+                            </span>
+                          )}
 
-                        {row.조치상태 && (
-                          <span className={`rounded-full border px-2.5 py-1 text-xs sm:px-3 sm:text-sm font-bold ${
-                            needsAction
-                              ? "border-red-700 bg-red-950/50 text-red-200"
-                              : "border-emerald-700 bg-emerald-950/40 text-emerald-200"
-                          }`}>
-                            {row.조치상태}
-                          </span>
-                        )}
+                          {row.조치상태 && (
+                            <span
+                              className={`rounded-full border px-2.5 py-1 text-xs font-bold sm:px-3 sm:text-sm ${
+                                needsAction
+                                  ? "border-red-700 bg-red-950/50 text-red-200"
+                                  : "border-emerald-700 bg-emerald-950/40 text-emerald-200"
+                              }`}
+                            >
+                              {row.조치상태}
+                            </span>
+                          )}
 
-                        {needsEb && (
-                          <span className="rounded-full border border-red-700 bg-red-950/50 px-2.5 py-1 text-xs sm:px-3 sm:text-sm font-bold text-red-200">
-                            EB 연결 필요
-                          </span>
-                        )}
+                          {needsEb && (
+                            <span className="rounded-full border border-red-700 bg-red-950/50 px-2.5 py-1 text-xs font-bold text-red-200 sm:px-3 sm:text-sm">
+                              EB 연결 필요
+                            </span>
+                          )}
 
-                        {!needsEb && row.연결EB > 0 && (
-                          <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs sm:px-3 sm:text-sm font-bold text-emerald-200">
-                            EB {row.연결EB}건 연결
-                          </span>
-                        )}
+                          {!needsEb && row.연결EB > 0 && (
+                            <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-200 sm:px-3 sm:text-sm">
+                              EB {row.연결EB}건 연결
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mt-4 h-12 rounded-xl border border-slate-700 bg-slate-950/40 px-4 text-sm font-bold text-slate-300 flex items-center justify-between sm:hidden">
-                    <span>상세 확인</span>
-                    <span>→</span>
+                    <div className="mt-4 flex h-12 items-center justify-between rounded-xl border border-slate-700 bg-slate-950/40 px-4 text-sm font-bold text-slate-300 sm:hidden">
+                      <span>상세 확인</span>
+                      <span>→</span>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );
