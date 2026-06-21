@@ -816,11 +816,21 @@ export async function POST(req: NextRequest) {
       ? { handwritten_signature_data_url: handwrittenSignatureDataUrl }
       : {}),
   };
-  const isRichiSignedAcknowledgementOnly =
+  const isRichiSignedConfirmationSubmission =
     isRichiLedgerSubmission &&
     identityMode === "identified" &&
-    !anonymous &&
-    allChecksConfirmed &&
+    !anonymous;
+
+  const richiSignedIdentityReady =
+    !isRichiSignedConfirmationSubmission ||
+    (
+      submitterInput.length > 0 &&
+      workerTeam.length > 0 &&
+      (workerPhoneLast4.length === 4 || workerEmployeeNo.length > 0)
+    );
+
+  const isRichiSignedAcknowledgementOnly =
+    isRichiSignedConfirmationSubmission &&
     !title &&
     !content;
 
@@ -856,7 +866,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (!hasRequiredSubmissionText || !shareConfirmationIdentityReady) {
+  if (!hasRequiredSubmissionText || !shareConfirmationIdentityReady || !richiSignedIdentityReady) {
     return redirectTo(req, "/field/participation/submitted", {
       status: "missing_required",
       company: company.code,
@@ -921,6 +931,8 @@ export async function POST(req: NextRequest) {
           sourceStep,
           entryIntent,
           isAcknowledgementOnly,
+          richiSignedConfirmationSubmission: isRichiSignedConfirmationSubmission,
+          richiSignedIdentityReady,
           richiSignedAcknowledgementOnly: isRichiSignedAcknowledgementOnly,
           selectedFileCount: evidenceFiles.length,
           uploadedFileCount: uploadedFiles.length,
@@ -1249,6 +1261,8 @@ export async function POST(req: NextRequest) {
           sourceStep,
           entryIntent,
           isAcknowledgementOnly,
+          richiSignedConfirmationSubmission: isRichiSignedConfirmationSubmission,
+          richiSignedIdentityReady,
           richiSignedAcknowledgementOnly: isRichiSignedAcknowledgementOnly,
           selectedFileCount: evidenceFiles.length,
           uploadedFileCount: uploadedFiles.length,
