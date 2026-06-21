@@ -759,11 +759,18 @@ export async function POST(req: NextRequest) {
       : null,
   ].filter(Boolean);
 
+  const signatureRequired = isRichiLedgerSubmission;
+  const signaturePresent = Boolean(handwrittenSignatureDataUrl);
+  const signatureFlow = isRichiLedgerSubmission ? "richi_prework_signed_confirmation" : null;
+
   const signatureMetadata = {
+    signature_required: signatureRequired,
+    signature_present: signaturePresent,
+    signature_flow: signatureFlow,
     signature_method: signatureConfirmationMethod || null,
     signature_label: signatureConfirmationLabel || null,
     signed_at: handwrittenSignatureSignedAt || null,
-    signature_data_url_present: Boolean(handwrittenSignatureDataUrl),
+    signature_data_url_present: signaturePresent,
     signature_data_url_length: handwrittenSignatureDataUrl.length,
     signature_snapshot_present: Boolean(signatureConfirmationSnapshotJson),
     signature_client_source_route: signatureClientSourceRoute || null,
@@ -782,6 +789,9 @@ export async function POST(req: NextRequest) {
     company_name: company.name,
     site_id: "default",
     service_mode: isRichiLedgerSubmission ? "full_safemetrica" : "field_participation",
+    signature_required: signatureRequired,
+    signature_present: signaturePresent,
+    signature_flow: signatureFlow,
     confirmation_type: confirmationType,
     confirmation_status: confirmationStatus,
     source_step: sourceStep,
