@@ -236,7 +236,7 @@ async function queryCompanyRow(code: string) {
   return null;
 }
 
-export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
+async function getLegacyCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
   const code = assertSafeCompanyCode(rawCode);
 
   const notionApiKey = process.env.NOTION_API_KEY;
