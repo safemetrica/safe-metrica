@@ -324,6 +324,7 @@ export default async function TbmPage() {
                 tbmFormUrl={tbmFormUrl}
                 companyName={company.name}
                 companyCode={company.code}
+                visualMode="richiCompact"
               />
             </section>
           </>
