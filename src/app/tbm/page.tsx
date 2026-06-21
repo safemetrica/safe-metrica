@@ -76,7 +76,7 @@ async function getTbmRows(): Promise<TbmRow[]> {
   });
 }
 
-const RICHI_RISK_TAG_PRIORITY = [
+const RICHI_ALLOWED_RISK_TAGS = [
   "미끄럼",
   "절단·베임",
   "이물혼입",
@@ -85,6 +85,10 @@ const RICHI_RISK_TAG_PRIORITY = [
   "포장실",
   "냉장·냉동",
   "컨베이어·포장기",
+  "세척",
+  "위생복",
+  "장갑",
+  "마스크",
 ];
 
 const RICHI_HIDDEN_RISK_TAGS = [
@@ -92,6 +96,20 @@ const RICHI_HIDDEN_RISK_TAGS = [
   "후진 충돌",
   "사각지대",
   "지게차 충돌",
+  "수거",
+  "적재함",
+  "침출수",
+  "골목길",
+  "청소차",
+  "생활폐기물",
+  "폐기물",
+  "생폐",
+  "폐기물수거",
+  "생활폐기물수거",
+  "수거차량",
+  "차량",
+  "후진",
+  "적재",
 ];
 
 function RichiTbmTopBar() {
@@ -186,24 +204,87 @@ function getRichiDisplayRiskTags(
     return [];
   }
 
+  const allowedTags = new Set(RICHI_ALLOWED_RISK_TAGS);
   const hiddenTags = new Set(RICHI_HIDDEN_RISK_TAGS);
-  const uniqueTags = riskTags.filter(
-    (tag, index, tags) =>
-      tag.trim().length > 0 &&
-      !hiddenTags.has(tag) &&
-      tags.indexOf(tag) === index,
-  );
+  return riskTags
+    .reduce<string[]>((tags, tag) => {
+      const trimmedTag = tag.trim();
 
-  return uniqueTags
-    .sort((a, b) => {
-      const aPriority = RICHI_RISK_TAG_PRIORITY.indexOf(a);
-      const bPriority = RICHI_RISK_TAG_PRIORITY.indexOf(b);
-      return (
-        (aPriority === -1 ? 999 : aPriority) -
-        (bPriority === -1 ? 999 : bPriority)
-      );
-    })
+      if (
+        trimmedTag.length === 0 ||
+        hiddenTags.has(trimmedTag) ||
+        !allowedTags.has(trimmedTag) ||
+        tags.includes(trimmedTag)
+      ) {
+        return tags;
+      }
+
+      return [...tags, trimmedTag];
+    }, [])
+    .sort(
+      (a, b) =>
+        RICHI_ALLOWED_RISK_TAGS.indexOf(a) - RICHI_ALLOWED_RISK_TAGS.indexOf(b),
+    )
     .slice(0, 4);
+}
+
+const RICHI_TBM_PREVIEW_MAX_LINES = 3;
+const RICHI_TBM_PREVIEW_MAX_LENGTH = 180;
+
+const RICHI_TBM_PREVIEW_REMOVABLE_PATTERNS = [
+  /\[음성\s*TBM\s*직접저장\]/giu,
+  /\[작업\s*내용\]/giu,
+  /\[TBM\s*음성\s*작성\s*내용\]/giu,
+  /사업장\s*:\s*리치코리아/giu,
+  /\s*[1-5]\.\s*(?:작업\s*내용|오늘\s*공유할\s*주요\s*위험요인|근로자\s*주의사항|특이사항\/조치\s*필요|사진\/증빙\s*첨부\s*안내)\s*[:：-]?\s*/giu,
+];
+
+function normalizeRichiTbmMisrecognitions(value: string) {
+  return value.replace(/\bTV\s*M\b|\bTVN\b|티비엔|티비엠/giu, "TBM");
+}
+
+function trimRichiPreviewToCustomerLines(value: string) {
+  const normalized = value
+    .replace(/\r\n?/gu, "\n")
+    .replace(/[ \t]+/gu, " ")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const lines: string[] = [];
+  const sentences = normalized
+    .replace(/\n+/gu, " ")
+    .split(/(?<=[.!?。！？]|[다요죠함음임됨됨니다습니다세요])\s+/u)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  for (const sentence of sentences.length > 0 ? sentences : [normalized]) {
+    const nextText = [...lines, sentence].join(" ");
+
+    if (
+      lines.length >= RICHI_TBM_PREVIEW_MAX_LINES ||
+      nextText.length > RICHI_TBM_PREVIEW_MAX_LENGTH
+    ) {
+      break;
+    }
+
+    lines.push(sentence);
+  }
+
+  const preview = (lines.length > 0 ? lines : [normalized])
+    .slice(0, RICHI_TBM_PREVIEW_MAX_LINES)
+    .join(" ")
+    .trim();
+
+  return preview.length > RICHI_TBM_PREVIEW_MAX_LENGTH
+    ? `${preview.slice(0, RICHI_TBM_PREVIEW_MAX_LENGTH).trimEnd()}…`
+    : preview;
 }
 
 function cleanRichiTbmPreviewText(value?: string | null) {
@@ -211,31 +292,34 @@ function cleanRichiTbmPreviewText(value?: string | null) {
     return "";
   }
 
-  return value
-    .split("\n")
-    .map((line) =>
-      line
-        .replace(/^\s*\[음성 TBM 직접저장\]\s*/u, "")
-        .replace(/^\s*\[작업 내용\]\s*/u, "")
-        .replace(/^\s*\[TBM 음성 작성 내용\]\s*/u, "")
-        .replace(/^\s*사업장:\s*리치코리아\s*/u, "")
-        .trim(),
-    )
-    .filter(Boolean)
-    .join("\n")
-    .trim();
+  const withoutStorageLabels = RICHI_TBM_PREVIEW_REMOVABLE_PATTERNS.reduce(
+    (text, pattern) => text.replace(pattern, " "),
+    value,
+  );
+
+  return trimRichiPreviewToCustomerLines(
+    normalizeRichiTbmMisrecognitions(withoutStorageLabels),
+  );
 }
 
 function getRichiTbmPreviewText(row: TbmVoiceSubmissionListRow) {
-  const mainText =
-    row.snapshot && typeof row.snapshot.main_text === "string"
-      ? row.snapshot.main_text
-      : null;
+  const previewCandidates = [
+    row.normalized_text,
+    row.draft_text,
+    row.main_text,
+    row.safety_notice,
+    row.transcript,
+  ];
 
-  return (
-    cleanRichiTbmPreviewText(mainText) ||
-    cleanRichiTbmPreviewText(row.safety_notice)
-  );
+  for (const candidate of previewCandidates) {
+    const previewText = cleanRichiTbmPreviewText(candidate);
+
+    if (previewText) {
+      return previewText;
+    }
+  }
+
+  return "";
 }
 
 export default async function TbmPage() {
