@@ -171,10 +171,10 @@ export default function FieldParticipationStepper({
   const [riskCheck, setRiskCheck] = useState(false);
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
-  const isFoodFactoryTrial = workerCopy?.code === "richi";
+  const isRichiPreworkConfirmationFlow = workerCopy?.code === "richi";
 
-  const formStep = isFoodFactoryTrial ? 2 : 3;
-  const stepLabels = isFoodFactoryTrial ? richiStepLabels : defaultStepLabels;
+  const formStep = isRichiPreworkConfirmationFlow ? 2 : 3;
+  const stepLabels = isRichiPreworkConfirmationFlow ? richiStepLabels : defaultStepLabels;
   const feedbackTypeOptions = useMemo(() => {
     const source =
     feedbackTypes.length > 0
@@ -227,7 +227,7 @@ export default function FieldParticipationStepper({
   const normalizedWorkerEmployeeNo = workerEmployeeNo.trim();
   const richiConfirmationCodeValue = workerEmployeeNo || workerPhoneLast4;
   useEffect(() => {
-    if (!isFoodFactoryTrial || typeof window === "undefined") {
+    if (!isRichiPreworkConfirmationFlow || typeof window === "undefined") {
       return;
     }
 
@@ -270,10 +270,10 @@ export default function FieldParticipationStepper({
     } catch {
       window.localStorage.removeItem(RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY);
     }
-  }, [isFoodFactoryTrial, workerName, workerTeam, workerPhoneLast4, workerEmployeeNo]);
+  }, [isRichiPreworkConfirmationFlow, workerName, workerTeam, workerPhoneLast4, workerEmployeeNo]);
 
   useEffect(() => {
-    if (!isFoodFactoryTrial || !rememberWorkerInfo || typeof window === "undefined") {
+    if (!isRichiPreworkConfirmationFlow || !rememberWorkerInfo || typeof window === "undefined") {
       return;
     }
 
@@ -287,7 +287,7 @@ export default function FieldParticipationStepper({
     };
 
     window.localStorage.setItem(RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY, JSON.stringify(payload));
-  }, [isFoodFactoryTrial, rememberWorkerInfo, workerName, workerTeam, workerPhoneLast4, workerEmployeeNo]);
+  }, [isRichiPreworkConfirmationFlow, rememberWorkerInfo, workerName, workerTeam, workerPhoneLast4, workerEmployeeNo]);
 
 
   function handleRichiConfirmationCodeChange(value: string) {
@@ -312,11 +312,11 @@ export default function FieldParticipationStepper({
       ? "anonymous"
       : "identified"
     : "identified";
-  const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : isFoodFactoryTrial ? "위생·안전 확인" : "공유확인";
+  const finalFeedbackType = hasOpinion ? normalizeParticipationType(feedbackType) : isRichiPreworkConfirmationFlow ? "위생·안전 확인" : "공유확인";
   const finalContent = hasOpinion ? content.trim() || "상세 내용 미입력" : "오늘은 추가 의견 없음.";
   const finalTitle = hasOpinion
     ? reportTitle.trim() || `${finalFeedbackType} - 현장근로자 참여`
-    : isFoodFactoryTrial ? "작업 전 위생·안전 전자확인 완료" : "위험성평가 공유확인 완료";
+    : isRichiPreworkConfirmationFlow ? "작업 전 위생·안전 전자확인 완료" : "위험성평가 공유확인 완료";
   const confirmationType = hasOpinion ? "worker_report" : "risk_share_confirm";
   const confirmationStatus = canGoNextFromStep2 ? "confirmed" : "pending";
 
@@ -438,10 +438,10 @@ export default function FieldParticipationStepper({
               {workerCopy?.badge ?? "SafeMetrica 현장근로자 참여"}
             </p>
             <h1 className="mt-2 text-2xl font-black text-slate-950">
-              {isFoodFactoryTrial ? "㈜리치코리아 전자확인" : (workerCopy?.title ?? "현장근로자 안전참여")}
+              {isRichiPreworkConfirmationFlow ? "㈜리치코리아 전자확인" : (workerCopy?.title ?? "현장근로자 안전참여")}
             </h1>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              {isFoodFactoryTrial
+              {isRichiPreworkConfirmationFlow
                   ? "작업 전 위생·안전 확인 후 필요한 의견만 남겨 주세요."
                   : "현장 작업 전 핵심 위험을 확인하고, 필요한 의견을 남겨 주세요."}
             </p>
@@ -454,23 +454,23 @@ export default function FieldParticipationStepper({
           <section className="mt-4 flex-1 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             {step === 1 ? (
               <div>
-                <p className="text-sm font-black text-slate-500">{isFoodFactoryTrial ? "Step 1/3" : "Step 1/4"}</p>
+                <p className="text-sm font-black text-slate-500">{isRichiPreworkConfirmationFlow ? "Step 1/3" : "Step 1/4"}</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">
-                    {isFoodFactoryTrial ? "작업 전 위생·안전 확인" : "오늘 작업 전 핵심 위험 확인"}
+                    {isRichiPreworkConfirmationFlow ? "작업 전 위생·안전 확인" : "오늘 작업 전 핵심 위험 확인"}
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {isFoodFactoryTrial
+                  {isRichiPreworkConfirmationFlow
                       ? "작업 전 위생·안전 확인 내용입니다."
                       : "오늘 작업과 관련된 핵심 위험요인입니다. 아래 내용을 확인해 주세요."}
                 </p>
 
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900">
-                  {isFoodFactoryTrial
+                  {isRichiPreworkConfirmationFlow
                       ? "작업 전 위생·안전 내용을 확인하세요."
                       : "오늘 작업 전 아래 핵심 위험요인을 반드시 확인하세요."}
                 </div>
 
-                  {isFoodFactoryTrial ? (
+                  {isRichiPreworkConfirmationFlow ? (
                     <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-3">
                       <h3 className="text-sm font-black text-blue-900">오늘 확인 요약</h3>
                       <div className="mt-2 space-y-1 text-sm font-bold leading-6 text-blue-950">
@@ -481,7 +481,7 @@ export default function FieldParticipationStepper({
                     </div>
                   ) : null}
 
-                  {isFoodFactoryTrial ? (
+                  {isRichiPreworkConfirmationFlow ? (
                     <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
                       <h3 className="text-sm font-black text-emerald-900">위생·안전 확인 체크</h3>
                       <p className="mt-1 text-xs font-bold leading-5 text-emerald-800">
@@ -577,7 +577,7 @@ export default function FieldParticipationStepper({
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">
                     {canOpenRiskSummary
                       ? "공유할 위험요인은 아래 버튼에서 확인할 수 있습니다."
-                      : isFoodFactoryTrial
+                      : isRichiPreworkConfirmationFlow
                           ? "작업 전 위생·안전 안내와 현장 주의사항을 확인해 주세요."
                           : "오늘 작업 전 TBM 공유 내용과 현장 주의사항을 확인해 주세요."}
                   </div>
@@ -594,24 +594,24 @@ export default function FieldParticipationStepper({
               </div>
             ) : null}
 
-            {!isFoodFactoryTrial && step === 2 ? (
+            {!isRichiPreworkConfirmationFlow && step === 2 ? (
               <div>
                 <p className="text-sm font-black text-slate-500">Step 2/4</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">
-                    {isFoodFactoryTrial ? "위생·안전 확인 / 의견제출" : riskShareLinkCopy.worker.title}
+                    {isRichiPreworkConfirmationFlow ? "위생·안전 확인 / 의견제출" : riskShareLinkCopy.worker.title}
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {isFoodFactoryTrial
+                    {isRichiPreworkConfirmationFlow
                       ? "필요한 의견만 짧게 남겨 주세요."
                       : "위험요인 확인 후 공유·주지 확인을 남겨주세요. 아래 항목을 직접 확인해야 기록됩니다."}
                   </p>
 
                 <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
                     <h3 className="text-base font-black text-slate-950">
-                      {isFoodFactoryTrial ? "작업 전 위생·안전 안내" : "산업안전보건법 제36조"}
+                      {isRichiPreworkConfirmationFlow ? "작업 전 위생·안전 안내" : "산업안전보건법 제36조"}
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-slate-700">
-                      {isFoodFactoryTrial
+                      {isRichiPreworkConfirmationFlow
                         ? "불편사항이나 개선의견이 있으면 아래에 남겨 주세요."
                         : "사업주는 위험성평가 결과와 조치사항을 해당 작업에 종사하는 근로자에게 알려야 합니다."}
                     </p>
@@ -625,7 +625,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setRiskCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{isFoodFactoryTrial ? "오늘 확인 요약을 읽었습니다." : "오늘 작업의 주요 위험요인을 확인했습니다."}</span>
+                    <span>{isRichiPreworkConfirmationFlow ? "오늘 확인 요약을 읽었습니다." : "오늘 작업의 주요 위험요인을 확인했습니다."}</span>
                   </label>
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
                     <input
@@ -634,7 +634,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setRiskAssessmentCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{isFoodFactoryTrial ? "작업 전 위생·안전 주의사항을 확인했습니다." : riskShareLinkCopy.worker.checks.riskAssessment}</span>
+                    <span>{isRichiPreworkConfirmationFlow ? "작업 전 위생·안전 주의사항을 확인했습니다." : riskShareLinkCopy.worker.checks.riskAssessment}</span>
                   </label>
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
                     <input
@@ -643,7 +643,7 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setSafetyMeasureCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{isFoodFactoryTrial ? "불편사항이 있으면 의견으로 남기겠습니다." : riskShareLinkCopy.worker.checks.safetyMeasure}</span>
+                    <span>{isRichiPreworkConfirmationFlow ? "불편사항이 있으면 의견으로 남기겠습니다." : riskShareLinkCopy.worker.checks.safetyMeasure}</span>
                   </label>
                 </div>
               </div>
@@ -651,12 +651,12 @@ export default function FieldParticipationStepper({
 
             {step === formStep ? (
               <div>
-                <p className="text-sm font-black text-slate-500">{isFoodFactoryTrial ? "Step 2/3" : "Step 3/4"}</p>
+                <p className="text-sm font-black text-slate-500">{isRichiPreworkConfirmationFlow ? "Step 2/3" : "Step 3/4"}</p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">
-                    {isFoodFactoryTrial ? "의견 제출" : "의견 / 아차사고 제출"}
+                    {isRichiPreworkConfirmationFlow ? "의견 제출" : "의견 / 아차사고 제출"}
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {isFoodFactoryTrial
+                    {isRichiPreworkConfirmationFlow
                       ? "작업 전 확인 후 불편사항이나 개선의견이 있으면 짧게 남겨 주세요."
                       : riskShareLinkCopy.worker.intro}
                 </p>
@@ -665,27 +665,27 @@ export default function FieldParticipationStepper({
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <p className="text-sm font-black text-emerald-800">의견 없음</p>
                     <p className="mt-2 text-sm font-bold leading-6 text-emerald-900">
-                      {isFoodFactoryTrial ? "의견이 없으면 전자확인 기록으로 저장됩니다." : "제목, 내용, 사진을 입력하지 않고 제출하면 공유확인 기록으로 저장됩니다."}
+                      {isRichiPreworkConfirmationFlow ? "의견이 없으면 전자확인 기록으로 저장됩니다." : "제목, 내용, 사진을 입력하지 않고 제출하면 공유확인 기록으로 저장됩니다."}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                       <p className="text-sm font-black text-amber-800">
-                        {isFoodFactoryTrial ? "의견 있음" : "위험·아차사고·개선의견 있음"}
+                        {isRichiPreworkConfirmationFlow ? "의견 있음" : "위험·아차사고·개선의견 있음"}
                       </p>
                     <p className="mt-2 text-sm font-bold leading-6 text-amber-900">
-                      {isFoodFactoryTrial ? "입력한 의견은 관리자 확인자료로 저장됩니다." : "제목, 내용 또는 사진을 입력하면 관리자 검토대상으로 저장됩니다."}
+                      {isRichiPreworkConfirmationFlow ? "입력한 의견은 관리자 확인자료로 저장됩니다." : "제목, 내용 또는 사진을 입력하면 관리자 검토대상으로 저장됩니다."}
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-4">
                     <label className="text-sm font-bold text-slate-700">
-                      {isFoodFactoryTrial ? "의견 제목" : "제보 제목"}
+                      {isRichiPreworkConfirmationFlow ? "의견 제목" : "제보 제목"}
                     </label>
                   <input
                     value={reportTitle}
                     onChange={(event) => setReportTitle(event.target.value.slice(0, 80))}
-                      placeholder={isFoodFactoryTrial ? "예: 포장실 동선이 불편합니다" : "예: 재활용장 바닥 깨진 병 조각 발견"}
+                      placeholder={isRichiPreworkConfirmationFlow ? "예: 포장실 동선이 불편합니다" : "예: 재활용장 바닥 깨진 병 조각 발견"}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-1 text-right text-xs font-bold text-slate-500">{reportTitle.length}/80</p>
@@ -693,7 +693,7 @@ export default function FieldParticipationStepper({
 
                 <div className="mt-4">
                     <label className="text-sm font-bold text-slate-700">
-                      {isFoodFactoryTrial ? "의견 유형" : "제보 유형"}
+                      {isRichiPreworkConfirmationFlow ? "의견 유형" : "제보 유형"}
                     </label>
                   <select
                     value={feedbackType}
@@ -711,11 +711,11 @@ export default function FieldParticipationStepper({
                   <input
                     value={location}
                     onChange={(event) => setLocation(event.target.value)}
-                    placeholder={isFoodFactoryTrial ? "예: 포장실, 세척구역, 원료보관실" : "예: 상차장, 분리수거장, A구역"}
+                    placeholder={isRichiPreworkConfirmationFlow ? "예: 포장실, 세척구역, 원료보관실" : "예: 상차장, 분리수거장, A구역"}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
-                    {isFoodFactoryTrial ? "위치/구역은 어느 공간의 의견인지 확인하기 위한 보조항목입니다." : "위치/구역은 기록 보조항목입니다. 제목, 내용 또는 사진이 있을 때만 관리자 검토대상으로 분류됩니다."}
+                    {isRichiPreworkConfirmationFlow ? "위치/구역은 어느 공간의 의견인지 확인하기 위한 보조항목입니다." : "위치/구역은 기록 보조항목입니다. 제목, 내용 또는 사진이 있을 때만 관리자 검토대상으로 분류됩니다."}
                   </p>
                 </div>
 
@@ -724,8 +724,8 @@ export default function FieldParticipationStepper({
                   <textarea
                     value={content}
                     onChange={(event) => setContent(event.target.value.slice(0, 500))}
-                    rows={isFoodFactoryTrial ? 3 : 4}
-                      placeholder={isFoodFactoryTrial ? "예: 손 세척 동선이 불편합니다 / 작업대 위치 조정이 필요합니다" : "예: 통로 바닥이 미끄럽습니다 / 적치 위치 조정이 필요합니다"}
+                    rows={isRichiPreworkConfirmationFlow ? 3 : 4}
+                      placeholder={isRichiPreworkConfirmationFlow ? "예: 손 세척 동선이 불편합니다 / 작업대 위치 조정이 필요합니다" : "예: 통로 바닥이 미끄럽습니다 / 적치 위치 조정이 필요합니다"}
                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base leading-6 text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
                   <p className="mt-1 text-right text-xs font-bold text-slate-500">{content.length}/500</p>
@@ -734,7 +734,7 @@ export default function FieldParticipationStepper({
                   <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
                     <h3 className="text-sm font-black text-blue-900">제출 방식</h3>
                     <p className="mt-2 text-sm leading-6 text-blue-900">
-                        {isFoodFactoryTrial
+                        {isRichiPreworkConfirmationFlow
                           ? hasOpinion
                             ? "의견은 익명 제출할 수 있습니다. 익명 선택 시 내용 중심으로 접수됩니다."
                             : "의견이 없으면 확인자 정보와 자필서명으로 저장합니다."
@@ -753,7 +753,7 @@ export default function FieldParticipationStepper({
                         onChange={(event) => setAnonymous(event.target.checked)}
                         className="h-5 w-5 rounded border-slate-300 disabled:opacity-50"
                       />
-                        <span>{isFoodFactoryTrial ? "익명으로 의견 제출" : "익명으로 제보 제출"}</span>
+                        <span>{isRichiPreworkConfirmationFlow ? "익명으로 의견 제출" : "익명으로 제보 제출"}</span>
                     </label>
 
                     <p className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-blue-800">
@@ -764,11 +764,11 @@ export default function FieldParticipationStepper({
                 <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                   <h3 className="text-sm font-black text-emerald-900">
                       {hasOpinion
-                        ? isFoodFactoryTrial ? "의견 제출자 정보" : "제보 제출자 정보"
-                        : isFoodFactoryTrial ? "전자확인 최소 확인정보" : "공유확인 최소 확인정보"}
+                        ? isRichiPreworkConfirmationFlow ? "의견 제출자 정보" : "제보 제출자 정보"
+                        : isRichiPreworkConfirmationFlow ? "전자확인 최소 확인정보" : "공유확인 최소 확인정보"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-emerald-900">
-                      {isFoodFactoryTrial
+                      {isRichiPreworkConfirmationFlow
                         ? hasOpinion
                           ? "익명 제출을 선택하면 이름·소속·확인번호 입력란은 사용하지 않습니다."
                           : "전자확인만 제출할 때는 이름, 소속, 확인번호가 필요합니다."
@@ -804,7 +804,7 @@ export default function FieldParticipationStepper({
                       />
                     </div>
 
-                      {isFoodFactoryTrial ? (
+                      {isRichiPreworkConfirmationFlow ? (
                         <div>
                           <label className="text-sm font-bold text-slate-700">확인번호 *</label>
                           <input
@@ -847,13 +847,13 @@ export default function FieldParticipationStepper({
                       )}
                     {!hasOpinion && !shareConfirmationIdentityReady ? (
                       <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                        {isFoodFactoryTrial ? "전자확인은 이름, 소속, 확인번호가 필요합니다." : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
+                        {isRichiPreworkConfirmationFlow ? "전자확인은 이름, 소속, 확인번호가 필요합니다." : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
                       </p>
                     ) : null}
                   </div>
                 </div>
 
-                {hasOpinion && !isFoodFactoryTrial ? (
+                {hasOpinion && !isRichiPreworkConfirmationFlow ? (
                   <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
                     <input
                       type="checkbox"
@@ -865,9 +865,9 @@ export default function FieldParticipationStepper({
                   </label>
                 ) : null}
 
-                  {isFoodFactoryTrial ? (
+                  {isRichiPreworkConfirmationFlow ? (
                     <div className="mt-4">
-                      {isFoodFactoryTrial ? (
+                      {isRichiPreworkConfirmationFlow ? (
                     <label className="mt-3 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">
                       <input
                         type="checkbox"
@@ -891,7 +891,7 @@ export default function FieldParticipationStepper({
                     </label>
                   ) : null}
 
-                  <HandwrittenSignaturePad enabled={isFoodFactoryTrial} />
+                  <HandwrittenSignaturePad enabled={isRichiPreworkConfirmationFlow} />
                     </div>
                   ) : null}
 
@@ -906,7 +906,7 @@ export default function FieldParticipationStepper({
                   <p className="mt-2 text-sm leading-6 text-amber-900">
                     {workerCopy?.noticeBody ??
                       "제보 내용은 불이익 목적이 아니라 현장 위험을 줄이기 위한 안전 개선 자료로 활용됩니다."}
-                    {isFoodFactoryTrial ? "사진은 필요한 경우에만 첨부하세요." : "첨부 사진은 세메앱이 용량을 줄여 저장합니다."}
+                    {isRichiPreworkConfirmationFlow ? "사진은 필요한 경우에만 첨부하세요." : "첨부 사진은 세메앱이 용량을 줄여 저장합니다."}
                   </p>
                 </div>
               </div>
@@ -917,18 +917,18 @@ export default function FieldParticipationStepper({
             {step === 1 ? (
               <button
                 type="button"
-                disabled={isFoodFactoryTrial && !canGoNextFromStep2}
+                disabled={isRichiPreworkConfirmationFlow && !canGoNextFromStep2}
                 onClick={() => {
                   setCompletedSteps((current) => new Set(current).add(1));
-                  setStep(isFoodFactoryTrial ? formStep : 2);
+                  setStep(isRichiPreworkConfirmationFlow ? formStep : 2);
                 }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300 disabled:text-slate-100"
               >
-                {isFoodFactoryTrial ? "체크 후 의견·서명으로 →" : "핵심 위험 확인 완료 →"}
+                {isRichiPreworkConfirmationFlow ? "체크 후 의견·서명으로 →" : "핵심 위험 확인 완료 →"}
               </button>
             ) : null}
 
-            {!isFoodFactoryTrial && step === 2 ? (
+            {!isRichiPreworkConfirmationFlow && step === 2 ? (
               <button
                 type="button"
                 disabled={!canGoNextFromStep2}
@@ -938,13 +938,13 @@ export default function FieldParticipationStepper({
                 }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300"
               >
-                {isFoodFactoryTrial ? "확인 기록 남기기 →" : "공유 내용 확인 →"}
+                {isRichiPreworkConfirmationFlow ? "확인 기록 남기기 →" : "공유 내용 확인 →"}
               </button>
             ) : null}
 
             {step === formStep ? (
               <>
-                  {isFoodFactoryTrial && !hasOpinion && !shareConfirmationIdentityReady ? (
+                  {isRichiPreworkConfirmationFlow && !hasOpinion && !shareConfirmationIdentityReady ? (
                     <p className="mb-2 rounded-xl bg-white px-3 py-2 text-center text-xs font-black text-slate-600">
                       이름·소속·확인번호를 입력하면 제출할 수 있습니다.
                     </p>
@@ -957,8 +957,8 @@ export default function FieldParticipationStepper({
                 {isSubmitting
                   ? riskShareLinkCopy.worker.buttons.submitting
                   : hasOpinion
-                      ? isFoodFactoryTrial ? "전자확인·의견 제출 →" : "위험 또는 개선의견 제출 →"
-                    : isFoodFactoryTrial ? "의견 없음, 전자확인 제출 →" : riskShareLinkCopy.worker.buttons.confirmOnly}
+                      ? isRichiPreworkConfirmationFlow ? "전자확인·의견 제출 →" : "위험 또는 개선의견 제출 →"
+                    : isRichiPreworkConfirmationFlow ? "의견 없음, 전자확인 제출 →" : riskShareLinkCopy.worker.buttons.confirmOnly}
               </button>
               </>
             ) : null}
@@ -966,7 +966,7 @@ export default function FieldParticipationStepper({
             {step > 1 ? (
               <button
                 type="button"
-                onClick={() => setStep((current) => isFoodFactoryTrial ? 1 : current === 3 ? 2 : 1)}
+                onClick={() => setStep((current) => isRichiPreworkConfirmationFlow ? 1 : current === 3 ? 2 : 1)}
                 className="mt-3 w-full rounded-xl px-4 py-2 text-sm font-black text-slate-600"
               >
                 이전 단계

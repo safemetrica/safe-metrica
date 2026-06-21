@@ -24,17 +24,17 @@ type StatusCopy = {
 };
 
 function getStatusCopy(status?: string, workerCopyCode?: string): StatusCopy {
-  const isFoodFactoryTrial = workerCopyCode === "richi";
+  const isRichiPreworkConfirmationFlow = workerCopyCode === "richi";
 
   if (status === "saved") {
     return {
-      title: isFoodFactoryTrial ? "전자확인 저장 완료" : "현장참여 저장 완료",
-      message: isFoodFactoryTrial
+      title: isRichiPreworkConfirmationFlow ? "전자확인 저장 완료" : "현장참여 저장 완료",
+      message: isRichiPreworkConfirmationFlow
         ? "입력한 내용이 작업 전 확인기록으로 저장되었습니다."
         : "입력한 내용이 현장 의견 DB에 저장되었습니다.",
       tone: "emerald",
-      badge: isFoodFactoryTrial ? "㈜리치코리아 현장 전자확인" : undefined,
-      completionMessage: isFoodFactoryTrial
+      badge: isRichiPreworkConfirmationFlow ? "㈜리치코리아 현장 전자확인" : undefined,
+      completionMessage: isRichiPreworkConfirmationFlow
         ? "관리자가 작업 전 확인기록과 특이사항을 확인하고 필요한 경우 개선 검토 자료로 활용합니다."
         : undefined,
     };
@@ -43,12 +43,12 @@ function getStatusCopy(status?: string, workerCopyCode?: string): StatusCopy {
   if (status === "anonymous_feedback_received") {
     return {
       title: "익명 의견 접수 완료",
-      message: isFoodFactoryTrial
+      message: isRichiPreworkConfirmationFlow
         ? "입력한 의견이 식별정보·서명 없이 접수되었습니다."
         : "입력한 의견이 익명 의견으로 접수되었습니다.",
       tone: "emerald",
-      badge: isFoodFactoryTrial ? "㈜리치코리아 익명 의견" : "SafeMetrica 익명 의견",
-      completionMessage: isFoodFactoryTrial
+      badge: isRichiPreworkConfirmationFlow ? "㈜리치코리아 익명 의견" : "SafeMetrica 익명 의견",
+      completionMessage: isRichiPreworkConfirmationFlow
         ? "제출 내용은 관리자 확인자료로 분류되며, 이름·소속·확인번호·서명 없이 저장됩니다."
         : "제출 내용은 익명 의견으로 접수되었습니다.",
     };
