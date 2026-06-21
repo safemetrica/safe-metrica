@@ -540,7 +540,7 @@ export default async function RiskSharePackManagerHomePage() {
         },
         {
           title: "근로자 전자확인 화면",
-          description: "리치코리아 근로자 QR 전자확인 화면을 새 창으로 열어 체험 흐름을 확인합니다.",
+          description: "리치코리아 근로자 QR 전자확인 화면을 새 창으로 열어 운영 흐름을 확인합니다.",
           href: `/field/participation?company=${encodeURIComponent(company.code)}`,
           cta: "근로자 화면 열기",
         },
@@ -560,7 +560,7 @@ export default async function RiskSharePackManagerHomePage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
                 위험성평가 공유 이후의 확인, 의견 제출, 근로자대표 참여확인,
                 관리자 검토, 월간 요약, 고객 전달 자료 흐름을 확인하는 전용 홈입니다.
-                TBM은 현장관리자의 기본 운영 기능이며, 이 화면에서는 위험성평가 공유 이후의 확인·의견·제보·관리자 검토 흐름을 중심으로 표시합니다.
+                TBM은 현장관리자의 기본 운영 기능이며, 이 화면에서는 작업 전 확인·서명, 익명 의견, 제보·관리자 검토 흐름을 중심으로 표시합니다.
               </p>
             </div>
 
