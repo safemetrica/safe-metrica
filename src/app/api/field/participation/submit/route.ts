@@ -816,6 +816,24 @@ export async function POST(req: NextRequest) {
       ? { handwritten_signature_data_url: handwrittenSignatureDataUrl }
       : {}),
   };
+  const isRichiSignedAcknowledgementOnly =
+    isRichiLedgerSubmission &&
+    identityMode === "identified" &&
+    !anonymous &&
+    isAcknowledgementOnly;
+
+  const finalSubmissionTitle =
+    isRichiSignedAcknowledgementOnly && !title
+      ? "리치코리아 작업 전 확인기록"
+      : title;
+
+  const finalSubmissionContent =
+    isRichiSignedAcknowledgementOnly && !content
+      ? "작업 전 위생·안전 확인 항목을 확인하고 자필서명을 완료했습니다."
+      : content;
+
+  const hasRequiredSubmissionText = Boolean(finalSubmissionTitle && finalSubmissionContent);
+
   const oversizedFile = evidenceFiles.find((file) => file.size > MAX_SERVER_FILE_SIZE_BYTES);
 
   if (oversizedFile) {
@@ -836,7 +854,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (!title || !content || !shareConfirmationIdentityReady) {
+  if (!hasRequiredSubmissionText || !shareConfirmationIdentityReady) {
     return redirectTo(req, "/field/participation/submitted", {
       status: "missing_required",
       company: company.code,
@@ -845,7 +863,7 @@ export async function POST(req: NextRequest) {
 
     if (company.source === "tenant_registry") {
       const finalContent = buildSupabaseFirstFieldParticipationContent({
-        content,
+        content: finalSubmissionContent,
         sharedRiskSummary,
         riskCheck,
         riskAssessmentCheck,
@@ -871,7 +889,7 @@ export async function POST(req: NextRequest) {
         company_name: company.name,
         submission_type: submissionType,
         legacy_type: type,
-        title,
+        title: finalSubmissionTitle,
         content: finalContent,
         location,
         submitter,
