@@ -7,6 +7,10 @@ import Link from "next/link";
 import { getCompanyConfig } from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
 import TbmVoiceDraftHelper from "@/components/TbmVoiceDraftHelper";
+import {
+  selectTbmVoiceSubmissionListRows,
+  type TbmVoiceSubmissionListRow,
+} from "@/lib/supabaseServer";
 
 import { getTbmFormUrl } from "@/lib/tenantLinks";
 
@@ -69,14 +73,30 @@ async function getTbmRows(): Promise<TbmRow[]> {
   });
 }
 
+function getSnapshotProfileBadges(snapshot: TbmVoiceSubmissionListRow["snapshot"]) {
+  if (!snapshot) {
+    return [];
+  }
+
+  return ["voiceProfile", "industryProfile"]
+    .map((key) => snapshot[key])
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+}
+
 export default async function TbmPage() {
-  const rows = await getTbmRows();
   const company = await getCompanyConfig();
+  const isRichi = company.code === "richi";
+  const rows = isRichi ? [] : await getTbmRows();
+  const richiRows = isRichi ? await selectTbmVoiceSubmissionListRows(company.code) : [];
   const tbmFormUrl = getTbmFormUrl(company);
-  const 특이사항건수 = rows.filter((r) => r.특이사항).length;
+  const 특이사항건수 = isRichi
+    ? richiRows.filter((r) => r.has_special_issue).length
+    : rows.filter((r) => r.특이사항).length;
   const EB누락 = rows.filter((r) => r.EB필요 && r.연결EB === 0).length;
   const 조치필요 = rows.filter((r) => r.조치상태 === "조치 필요").length;
+  const 사진첨부 = richiRows.filter((r) => (r.uploaded_file_count ?? 0) > 0).length;
   const hasTodayActionItems = EB누락 > 0 || 조치필요 > 0;
+  const totalRows = isRichi ? richiRows.length : rows.length;
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-gray-950 pb-[calc(3rem+env(safe-area-inset-bottom))]">
@@ -90,7 +110,9 @@ export default async function TbmPage() {
               📋 TBM 현황
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
-              등록된 TBM과 특이사항, 증빙 연결 상태를 확인합니다.
+              {isRichi
+                ? "말로 작성한 TBM을 Supabase 운영기록으로 저장하고 월별 보관함 연결을 준비합니다."
+                : "등록된 TBM과 특이사항, 증빙 연결 상태를 확인합니다."}
             </p>
               <TbmFormAction
                 tbmFormUrl={tbmFormUrl}
@@ -102,14 +124,14 @@ export default async function TbmPage() {
           </div>
 
           <div className="shrink-0 whitespace-nowrap rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-slate-200 sm:px-3 sm:py-2 sm:text-sm">
-            {rows.length}건
+            {totalRows}건
           </div>
         </div>
 
         <div className="mb-5 grid max-w-full grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="max-w-full rounded-2xl border border-blue-700 bg-blue-950/35 p-4 sm:p-5">
             <p className="text-sm font-bold text-blue-200">전체 TBM</p>
-            <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{rows.length}</div>
+            <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{totalRows}</div>
             <p className="mt-1 text-sm text-blue-200/80">등록된 안전기록</p>
           </div>
 
@@ -121,14 +143,24 @@ export default async function TbmPage() {
             </p>
           </div>
 
-          <div className={`max-w-full rounded-2xl border p-4 sm:p-5 ${EB누락 > 0 ? "border-red-700 bg-red-950/35" : "border-emerald-700 bg-emerald-950/25"}`}>
-            <p className={`text-sm font-bold ${EB누락 > 0 ? "text-red-200" : "text-emerald-200"}`}>
-              EB 연결 필요
-            </p>
-            <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{EB누락}</div>
-            <p className={`mt-1 text-sm ${EB누락 > 0 ? "text-red-100/80" : "text-emerald-100/80"}`}>
-              {EB누락 > 0 ? "조치상태 기준 미연결" : "누락 없음"}
-            </p>
+          <div className={`max-w-full rounded-2xl border p-4 sm:p-5 ${!isRichi && EB누락 > 0 ? "border-red-700 bg-red-950/35" : "border-emerald-700 bg-emerald-950/25"}`}>
+            {isRichi ? (
+              <>
+                <p className="text-sm font-bold text-emerald-200">사진 첨부</p>
+                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{사진첨부}</div>
+                <p className="mt-1 text-sm text-emerald-100/80">월별 보관 연결 준비</p>
+              </>
+            ) : (
+              <>
+                <p className={`text-sm font-bold ${EB누락 > 0 ? "text-red-200" : "text-emerald-200"}`}>
+                  EB 연결 필요
+                </p>
+                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">{EB누락}</div>
+                <p className={`mt-1 text-sm ${EB누락 > 0 ? "text-red-100/80" : "text-emerald-100/80"}`}>
+                  {EB누락 > 0 ? "조치상태 기준 미연결" : "누락 없음"}
+                </p>
+              </>
+            )}
           </div>
         </div>
         <TbmVoiceDraftHelper
@@ -138,37 +170,121 @@ export default async function TbmPage() {
           className="mb-5"
         />
 
-        <div
-          className={`mb-5 max-w-full rounded-2xl border p-4 sm:p-5 ${
+        {!isRichi && (
+          <div
+            className={`mb-5 max-w-full rounded-2xl border p-4 sm:p-5 ${
             hasTodayActionItems
               ? "border-red-700 bg-red-950/30"
               : "border-emerald-700 bg-emerald-950/20"
           }`}
-        >
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">{hasTodayActionItems ? "🔴" : "✅"}</span>
-            <div>
-              <p
-                className={`text-base font-black ${
-                  hasTodayActionItems ? "text-red-100" : "text-emerald-100"
-                }`}
-              >
-                {hasTodayActionItems
-                  ? "오늘 먼저 확인할 항목이 있습니다."
-                  : "현재 조치 필요 항목은 없습니다."}
-              </p>
-              <p
-                className={`mt-1 text-sm leading-relaxed ${
-                  hasTodayActionItems ? "text-red-200" : "text-emerald-200"
-                }`}
-              >
-                EB 연결 필요 {EB누락}건, 조치 필요 {조치필요}건입니다.
-              </p>
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">{hasTodayActionItems ? "🔴" : "✅"}</span>
+              <div>
+                <p
+                  className={`text-base font-black ${
+                    hasTodayActionItems ? "text-red-100" : "text-emerald-100"
+                  }`}
+                >
+                  {hasTodayActionItems
+                    ? "오늘 먼저 확인할 항목이 있습니다."
+                    : "현재 조치 필요 항목은 없습니다."}
+                </p>
+                <p
+                  className={`mt-1 text-sm leading-relaxed ${
+                    hasTodayActionItems ? "text-red-200" : "text-emerald-200"
+                  }`}
+                >
+                  EB 연결 필요 {EB누락}건, 조치 필요 {조치필요}건입니다.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="max-w-full space-y-3">
+          {richiRows.map((row) => {
+            const riskTags = Array.isArray(row.risk_tags) ? row.risk_tags.slice(0, 5) : [];
+            const profileBadges = getSnapshotProfileBadges(row.snapshot);
+
+            return (
+              <div
+                key={row.id}
+                className={`max-w-full rounded-2xl border p-3 sm:p-5 ${
+                  row.has_special_issue
+                    ? "border-amber-800 bg-amber-950/20"
+                    : "border-slate-700 bg-slate-900"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <span className="rounded-full border border-blue-700 bg-blue-950/40 px-2.5 py-1 text-xs font-bold text-blue-200">
+                        말로 작성한 TBM 운영기록
+                      </span>
+                      <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-200">
+                        Supabase 운영기록
+                      </span>
+                      <span className="rounded-full border border-purple-700 bg-purple-950/40 px-2.5 py-1 text-xs font-bold text-purple-200">
+                        월별 보관함 연결 준비
+                      </span>
+                    </div>
+                    <p className="truncate text-base font-black text-white sm:text-xl">
+                      {row.title || "말로 작성한 TBM 운영기록"}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-400">
+                      {row.date_value ?? row.created_at ?? "날짜 없음"}
+                      {row.supervisor_name ? ` · ${row.supervisor_name}` : ""}
+                    </p>
+
+                    <div className="mt-3 flex max-w-full flex-wrap gap-1.5 sm:gap-2">
+                      <span className="rounded-full border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs font-bold text-slate-300 sm:px-3 sm:text-sm">
+                        상세 연결 준비 중
+                      </span>
+                      {row.has_special_issue && (
+                        <span className="rounded-full border border-amber-700 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-200 sm:px-3 sm:text-sm">
+                          특이사항 있음
+                        </span>
+                      )}
+                      {row.action_status && (
+                        <span className="rounded-full border border-emerald-700 bg-emerald-950/40 px-2.5 py-1 text-xs font-bold text-emerald-200 sm:px-3 sm:text-sm">
+                          {row.action_status}
+                        </span>
+                      )}
+                      {(row.uploaded_file_count ?? 0) > 0 && (
+                        <span className="rounded-full border border-cyan-700 bg-cyan-950/40 px-2.5 py-1 text-xs font-bold text-cyan-200 sm:px-3 sm:text-sm">
+                          사진 {row.uploaded_file_count}건
+                        </span>
+                      )}
+                      {riskTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs font-bold text-slate-300 sm:px-3 sm:text-sm"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {profileBadges.map((badge) => (
+                        <span
+                          key={badge}
+                          className="rounded-full border border-indigo-700 bg-indigo-950/40 px-2.5 py-1 text-xs font-bold text-indigo-200 sm:px-3 sm:text-sm"
+                        >
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+
+                    {row.safety_notice && (
+                      <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-300">
+                        {row.safety_notice}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
           {rows.map((row) => {
             const needsEb = row.EB필요 && row.연결EB === 0;
             const needsAction = row.조치상태 === "조치 필요";
