@@ -687,7 +687,7 @@ export default function TbmVoiceDraftHelper({
         panelTitle: "text-teal-700",
         mutedTitle: "text-slate-600",
         primaryButton:
-          "bg-teal-500 text-white disabled:bg-slate-200 disabled:text-slate-400",
+          "bg-[#16A085] text-white hover:bg-[#12806A] disabled:bg-slate-200 disabled:text-slate-400",
         secondaryButton:
           "border border-slate-200 bg-white text-slate-700 disabled:bg-slate-50 disabled:text-slate-400",
         textarea:
@@ -729,9 +729,16 @@ export default function TbmVoiceDraftHelper({
           <span className="min-w-0 flex-1 text-sm font-black text-slate-500 sm:text-base">
             오늘 TBM 내용을 말하거나 입력해주세요
           </span>
-          <span className="shrink-0 rounded-full bg-teal-500 px-4 py-2 text-sm font-black text-white">
-            🎙️ 말로 작성
+          <span className="shrink-0 rounded-full bg-[#16A085] px-4 py-2 text-sm font-black text-white">
+            🎙️ 말로 TBM 작성
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsCompactComposerExpanded(true)}
+          className="mt-3 text-sm font-black text-slate-600 underline decoration-teal-300 underline-offset-4 transition hover:text-teal-700"
+        >
+          직접 입력하기
         </button>
       </section>
     );
@@ -859,7 +866,7 @@ export default function TbmVoiceDraftHelper({
           >
             <summary className="cursor-pointer text-xs font-black text-slate-400">
               {isRichiCompany
-                ? "원본 음성 인식 내용"
+                ? "음성 인식 내용 확인"
                 : "원본 음성 인식 내용 보기"}
             </summary>
             <p
@@ -953,16 +960,16 @@ export default function TbmVoiceDraftHelper({
         </div>
 
         <div
-          className={`mt-3 rounded-xl border p-3 ${isRichiCompact ? "border-teal-100 bg-teal-50/70" : "border-emerald-800/70 bg-emerald-950/20"}`}
+          className={`mt-3 rounded-xl border p-3 ${isRichiCompact ? "border-emerald-100 bg-emerald-50/80" : "border-emerald-800/70 bg-emerald-950/20"}`}
         >
           <div className="flex items-center justify-between gap-3">
             <p
-              className={`text-xs font-black ${isRichiCompact ? "text-teal-700" : "text-emerald-200"}`}
+              className={`text-xs font-black ${isRichiCompact ? "text-emerald-700" : "text-emerald-200"}`}
             >
               저장 전 첨부 확인
             </p>
             <p
-              className={`text-[11px] font-bold ${isRichiCompact ? "text-teal-700" : "text-emerald-100"}`}
+              className={`text-[11px] font-bold ${isRichiCompact ? "text-emerald-700" : "text-emerald-100"}`}
             >
               총 {totalPhotoCount}장
             </p>
@@ -971,7 +978,7 @@ export default function TbmVoiceDraftHelper({
             {photoSummaryItems.map((item) => (
               <div
                 key={item.label}
-                className={`rounded-lg border px-3 py-2 ${isRichiCompact ? "border-teal-100 bg-white" : "border-slate-700 bg-slate-950/70"}`}
+                className={`rounded-lg border px-3 py-2 ${isRichiCompact ? "border-emerald-100 bg-white" : "border-slate-700 bg-slate-950/70"}`}
               >
                 <p
                   className={`text-[11px] font-black ${isRichiCompact ? "text-slate-700" : "text-slate-300"}`}
@@ -980,7 +987,7 @@ export default function TbmVoiceDraftHelper({
                 </p>
                 <p className="mt-1 text-[11px] text-slate-500">{item.hint}</p>
                 <p
-                  className={`mt-2 text-xs font-black ${item.count > 0 ? (isRichiCompact ? "text-teal-700" : "text-emerald-300") : "text-slate-500"}`}
+                  className={`mt-2 text-xs font-black ${item.count > 0 ? (isRichiCompact ? "text-emerald-700" : "text-emerald-300") : "text-slate-500"}`}
                 >
                   {item.count > 0 ? `${item.count}장 선택됨` : "없음"}
                 </p>
@@ -997,7 +1004,7 @@ export default function TbmVoiceDraftHelper({
 
       {submitMessage ? (
         <p
-          className={`mt-3 rounded-xl border p-3 text-sm font-bold leading-6 ${isRichiCompact ? "border-teal-100 bg-teal-50 text-teal-800" : "border-emerald-700 bg-emerald-950/40 text-emerald-100"}`}
+          className={`mt-3 rounded-xl border p-3 text-sm font-bold leading-6 ${isRichiCompact ? "border-emerald-100 bg-emerald-50 text-emerald-800" : "border-emerald-700 bg-emerald-950/40 text-emerald-100"}`}
         >
           {submitMessage}
         </p>
@@ -1005,10 +1012,10 @@ export default function TbmVoiceDraftHelper({
 
       {hasSubmitted && isRichiCompany ? (
         <div
-          className={`mt-3 flex flex-wrap gap-2 rounded-xl border p-3 ${isRichiCompact ? "border-teal-100 bg-teal-50" : "border-emerald-700 bg-emerald-950/30"}`}
+          className={`mt-3 flex flex-wrap gap-2 rounded-xl border p-3 ${isRichiCompact ? "border-emerald-100 bg-emerald-50" : "border-emerald-700 bg-emerald-950/30"}`}
         >
           <p
-            className={`w-full text-sm font-bold leading-6 ${isRichiCompact ? "text-teal-800" : "text-emerald-100"}`}
+            className={`w-full text-sm font-bold leading-6 ${isRichiCompact ? "text-emerald-800" : "text-emerald-100"}`}
           >
             저장 완료되었습니다. 다음 회차는 새 TBM 작성으로 시작하세요.
           </p>
@@ -1036,7 +1043,7 @@ export default function TbmVoiceDraftHelper({
           <div className="mx-auto flex w-full max-w-4xl items-center gap-3">
             <div className="hidden min-w-0 flex-1 sm:block">
               <p
-                className={`text-xs font-black ${isRichiCompact ? "text-teal-700" : "text-emerald-200"}`}
+                className={`text-xs font-black ${isRichiCompact ? "text-emerald-700" : "text-emerald-200"}`}
               >
                 4단계 · 하단 고정 저장
               </p>
@@ -1050,7 +1057,7 @@ export default function TbmVoiceDraftHelper({
               type="button"
               onClick={submitDirectTbm}
               disabled={!canSubmit || isSubmitting || hasSubmitted}
-              className={`w-full rounded-xl px-4 py-3 text-sm font-black sm:w-56 ${isRichiCompact ? "bg-teal-500 text-white disabled:bg-slate-200 disabled:text-slate-400" : "bg-emerald-500 text-slate-950 disabled:bg-slate-700 disabled:text-slate-400"}`}
+              className={`w-full rounded-xl px-4 py-3 text-sm font-black sm:w-56 ${isRichiCompact ? "bg-[#16A085] text-white hover:bg-[#12806A] disabled:bg-slate-200 disabled:text-slate-400" : "bg-emerald-500 text-slate-950 disabled:bg-slate-700 disabled:text-slate-400"}`}
             >
               {saveButtonLabel}
             </button>

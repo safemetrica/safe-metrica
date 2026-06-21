@@ -102,29 +102,34 @@ function RichiTbmTopBar() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-teal-300/20 bg-[#0B2742] text-white shadow-lg shadow-slate-950/10">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/tbm" className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-base font-black tracking-tight text-[#102033]">
+            <span className="text-base font-black tracking-tight text-white">
               SafeMetrica™ TBM
             </span>
-            <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-black text-teal-700">
+            <span className="rounded-full border border-[#BDEFE0] bg-[#DDF8EE] px-2.5 py-1 text-xs font-black text-[#0B5F52]">
               리치코리아
             </span>
           </div>
         </Link>
 
         <nav
-          className="flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50/80 p-1"
+          className="flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1"
           aria-label="리치코리아 TBM 메뉴"
         >
-          {navItems.map((item) => (
+          {navItems.map((item, index) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3 py-1.5 text-xs font-black text-slate-600 transition hover:bg-white hover:text-teal-700 hover:shadow-sm sm:text-sm"
+              className={`relative rounded-full px-3 py-1.5 text-xs font-black transition hover:bg-white/10 sm:text-sm ${
+                index === 0 ? "text-white" : "text-white/75 hover:text-white"
+              }`}
             >
+              {index === 0 ? (
+                <span className="absolute inset-x-3 -bottom-1 h-0.5 rounded-full bg-[#16A085]" />
+              ) : null}
               {item.label}
             </Link>
           ))}
@@ -246,7 +251,7 @@ export default async function TbmPage() {
   return (
     <main
       className={`min-h-screen overflow-x-hidden pb-[calc(3rem+env(safe-area-inset-bottom))] ${
-        isRichi ? "bg-[#F6F8F9] text-[#102033]" : "bg-gray-950"
+        isRichi ? "bg-[#F4F9F7] text-[#102033]" : "bg-gray-950"
       }`}
     >
       {isRichi ? <RichiTbmTopBar /> : <SafeNav />}
@@ -275,15 +280,15 @@ export default async function TbmPage() {
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                   <a
                     href="#tbm-voice-draft"
-                    className="inline-flex items-center justify-center rounded-full bg-[#102033] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#18324d]"
+                    className="inline-flex items-center justify-center rounded-full bg-[#16A085] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#12806A]"
                   >
-                    말로 TBM 작성
+                    🎙️ 말로 TBM 작성
                   </a>
                   <a
                     href="#recent-tbm-records"
-                    className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-teal-50 px-5 py-3 text-sm font-black text-teal-800 transition hover:border-teal-300 hover:bg-teal-100"
+                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
                   >
-                    최근 기록 보기
+                    작성내역 확인
                   </a>
                 </div>
               </div>
@@ -326,9 +331,15 @@ export default async function TbmPage() {
           <>
             <div className="mb-5 grid max-w-full grid-cols-1 gap-3 lg:grid-cols-3">
               <div className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm lg:col-span-2">
-                <p className="text-sm font-black text-teal-700">
+                <p
+                  className={`text-sm font-black ${
+                    todayRichiRows.length > 0
+                      ? "text-emerald-700"
+                      : "text-teal-700"
+                  }`}
+                >
                   {todayRichiRows.length > 0
-                    ? "오늘 TBM 작성 완료"
+                    ? "오늘 TBM 저장됨"
                     : "오늘 TBM 작성 전이에요"}
                 </p>
                 <p className="mt-3 text-2xl font-black tracking-tight text-[#102033] sm:text-3xl">
@@ -361,11 +372,11 @@ export default async function TbmPage() {
                     작성
                   </p>
                   <h2 className="mt-1 text-xl font-black text-[#102033]">
-                    오늘 TBM 작성
+                    말로 TBM 작성
                   </h2>
                 </div>
-                <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-black text-teal-700">
-                  간편 기록
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                  저장 준비
                 </span>
               </div>
               <TbmVoiceDraftHelper
