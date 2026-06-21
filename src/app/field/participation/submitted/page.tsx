@@ -15,16 +15,42 @@ type PageProps = {
   }>;
 };
 
-function getStatusCopy(status?: string, workerCopyCode?: string) {
+type StatusCopy = {
+  title: string;
+  message: string;
+  tone: "emerald" | "red" | "amber";
+  badge?: string;
+  completionMessage?: string;
+};
+
+function getStatusCopy(status?: string, workerCopyCode?: string): StatusCopy {
   const isFoodFactoryTrial = workerCopyCode === "richi";
 
   if (status === "saved") {
     return {
       title: isFoodFactoryTrial ? "전자확인 저장 완료" : "현장참여 저장 완료",
       message: isFoodFactoryTrial
-        ? "입력한 내용이 전자확인 기록으로 저장되었습니다."
+        ? "입력한 내용이 작업 전 확인기록으로 저장되었습니다."
         : "입력한 내용이 현장 의견 DB에 저장되었습니다.",
       tone: "emerald",
+      badge: isFoodFactoryTrial ? "㈜리치코리아 현장 전자확인" : undefined,
+      completionMessage: isFoodFactoryTrial
+        ? "관리자가 작업 전 확인기록과 특이사항을 확인하고 필요한 경우 개선 검토 자료로 활용합니다."
+        : undefined,
+    };
+  }
+
+  if (status === "anonymous_feedback_received") {
+    return {
+      title: "익명 의견 접수 완료",
+      message: isFoodFactoryTrial
+        ? "입력한 의견이 식별정보·서명 없이 접수되었습니다."
+        : "입력한 의견이 익명 의견으로 접수되었습니다.",
+      tone: "emerald",
+      badge: isFoodFactoryTrial ? "㈜리치코리아 익명 의견" : "SafeMetrica 익명 의견",
+      completionMessage: isFoodFactoryTrial
+        ? "제출 내용은 관리자 확인자료로 분류되며, 이름·소속·확인번호·서명 없이 저장됩니다."
+        : "제출 내용은 익명 의견으로 접수되었습니다.",
     };
   }
 
@@ -79,9 +105,13 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
   const params = (await searchParams) ?? {};
   const workerCopy = getOperatingFieldWorkerCopy(params.company);
   const copy = getStatusCopy(params.status, workerCopy?.code);
+  const isAnonymousFeedbackReceived = params.status === "anonymous_feedback_received";
   const participationHref = params.company
-    ? `/field/participation?company=${encodeURIComponent(params.company)}`
+    ? isAnonymousFeedbackReceived
+      ? `/field/anonymous-feedback?company=${encodeURIComponent(params.company)}`
+      : `/field/participation?company=${encodeURIComponent(params.company)}`
     : "/field/participation";
+  const primaryActionLabel = isAnonymousFeedbackReceived ? "다른 익명 의견 남기기" : "다른 의견 남기기";
 
   const toneClass =
     copy.tone === "red"
@@ -95,7 +125,7 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
       <div className="mx-auto max-w-2xl">
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs font-black text-blue-700">
-            {workerCopy?.badge ?? "SafeMetrica 현장참여"}
+            {copy.badge ?? workerCopy?.badge ?? "SafeMetrica 현장참여"}
           </p>
           <h1 className="mt-2 text-2xl font-black text-slate-950">{copy.title}</h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -104,7 +134,8 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
 
           <div className={`mt-4 rounded-2xl border p-4 ${toneClass}`}>
             <p className="text-sm font-bold">
-              {workerCopy?.submittedMessage ??
+              {copy.completionMessage ??
+                workerCopy?.submittedMessage ??
                 riskShareLinkCopy.worker.completion.report}
             </p>
             {params.message ? (
@@ -119,7 +150,7 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
               href={participationHref}
               className="rounded-xl bg-blue-700 px-4 py-3 text-center text-sm font-black text-white"
             >
-              다른 의견 남기기
+              {primaryActionLabel}
             </Link>
             <Link
               href="/"
