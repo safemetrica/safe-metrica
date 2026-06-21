@@ -54,6 +54,10 @@ export type TbmVoiceSubmissionListRow = {
   action_status: string | null;
   has_special_issue: boolean | null;
   safety_notice: string | null;
+  normalized_text: string | null;
+  draft_text: string | null;
+  main_text: string | null;
+  transcript: string | null;
   risk_tags: string[] | null;
   uploaded_file_count: number | null;
   snapshot: Record<string, unknown> | null;
@@ -225,7 +229,7 @@ export async function selectTbmVoiceSubmissionListRows(
 ): Promise<TbmVoiceSubmissionListRow[]> {
   const query = new URLSearchParams({
     select:
-      "id,company_code,title,date_value,created_at,supervisor_name,action_status,has_special_issue,safety_notice,risk_tags,uploaded_file_count,snapshot",
+      "id,company_code,title,date_value,created_at,supervisor_name,action_status,has_special_issue,safety_notice,normalized_text,draft_text,main_text,transcript,risk_tags,uploaded_file_count,snapshot",
     company_code: `eq.${companyCode}`,
     order: "date_value.desc.nullslast,created_at.desc.nullslast",
     limit: "100",
