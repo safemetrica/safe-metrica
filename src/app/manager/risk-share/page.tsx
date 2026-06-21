@@ -470,7 +470,7 @@ export default async function RiskSharePackManagerHomePage() {
     isRepresentativeRecordInPeriod(record, currentPeriod),
   );
   const representativeLinks = linkResult.status === "ok" ? linkResult.links : [];
-  const isFoodFactoryTrial = company.code === "richi";
+  const isRichiFullOperation = company.code === "richi";
   const summaryCards = buildSummaryCards({
     fieldSummary,
     representativeRecords,
@@ -494,7 +494,7 @@ export default async function RiskSharePackManagerHomePage() {
 
   const companyName = getCompanyDisplayName(company);
 
-  const displaySummaryCards = isFoodFactoryTrial
+  const displaySummaryCards = isRichiFullOperation
     ? summaryCards.map((card) => {
         if (card.label === "근로자 공유확인") {
           return {
@@ -524,7 +524,7 @@ export default async function RiskSharePackManagerHomePage() {
       })
     : summaryCards;
 
-  const displayActionCards = isFoodFactoryTrial
+  const displayActionCards = isRichiFullOperation
     ? [
         {
           title: "전자확인·의견 접수함",
@@ -553,9 +553,9 @@ export default async function RiskSharePackManagerHomePage() {
         <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-cyan-300">{isFoodFactoryTrial ? "SafeMetrica Trial Manager" : "SafeMetrica Risk Share Pack"}</p>
+              <p className="text-sm font-semibold text-cyan-300">{isRichiFullOperation ? "SafeMetrica Operation Manager" : "SafeMetrica 운영 관리자"}</p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-                {isFoodFactoryTrial ? "리치코리아 전자확인 관리자 홈" : "Risk Share Pack 관리자 홈"}
+                {isRichiFullOperation ? "(주)리치코리아 SafeMetrica 운영 관리자 홈" : "SafeMetrica 운영 관리자 홈"}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
                 위험성평가 공유 이후의 확인, 의견 제출, 근로자대표 참여확인,

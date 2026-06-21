@@ -781,7 +781,7 @@ export async function POST(req: NextRequest) {
     tenant_code: company.code,
     company_name: company.name,
     site_id: "default",
-    service_mode: isRichiLedgerSubmission ? "food_factory_e_confirmation_trial" : "field_participation",
+    service_mode: isRichiLedgerSubmission ? "full_safemetrica_operation" : "field_participation",
     confirmation_type: confirmationType,
     confirmation_status: confirmationStatus,
     source_step: sourceStep,
