@@ -236,6 +236,8 @@ const RICHI_TBM_PREVIEW_REMOVABLE_PATTERNS = [
   /\[작업\s*내용\]/giu,
   /\[TBM\s*음성\s*작성\s*내용\]/giu,
   /사업장\s*:\s*리치코리아/giu,
+  /리치\s*TBM\s*검증\s*\d+\s*입니다\s*/giu,
+  /리치\s*TBM\s*\d+\s*고유\s*문구\s*입니다\s*/giu,
   /\s*[1-5]\.\s*(?:작업\s*내용|오늘\s*공유할\s*주요\s*위험요인|근로자\s*주의사항|특이사항\/조치\s*필요|사진\/증빙\s*첨부\s*안내)\s*[:：-]?\s*/giu,
 ];
 
