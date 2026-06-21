@@ -818,8 +818,8 @@ export async function POST(req: NextRequest) {
   };
   const isRichiSignedConfirmationSubmission =
     isRichiLedgerSubmission &&
-    identityMode === "identified" &&
-    !anonymous;
+    rawIdentityMode === "identified" &&
+    signatureMetaCompanyCode === "richi";
 
   const richiSignedIdentityReady =
     !isRichiSignedConfirmationSubmission ||
@@ -830,19 +830,22 @@ export async function POST(req: NextRequest) {
     );
 
   const isRichiEmptyNoteContent =
-    !content || content === "오늘은 추가 의견 없음.";
+    !content ||
+    content === "오늘은 추가 의견 없음." ||
+    content === "특이사항 없음" ||
+    content === "특이사항 없음.";
 
   const isRichiSignedAcknowledgementOnly =
     isRichiSignedConfirmationSubmission &&
-    (!title || isRichiEmptyNoteContent);
+    isRichiEmptyNoteContent;
 
   const finalSubmissionTitle =
-    isRichiSignedAcknowledgementOnly
+    isRichiSignedConfirmationSubmission && !title
       ? "리치코리아 작업 전 확인기록"
       : title;
 
   const finalSubmissionContent =
-    isRichiSignedAcknowledgementOnly
+    isRichiSignedConfirmationSubmission && isRichiEmptyNoteContent
       ? "특이사항 없음. 작업 전 위생·안전 확인 항목을 확인하고 자필서명을 완료했습니다."
       : content;
 
