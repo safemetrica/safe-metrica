@@ -44,6 +44,21 @@ export type TbmVoiceSubmissionShadowRecord = {
   snapshot: Record<string, unknown>;
 };
 
+export type TbmVoiceSubmissionListRow = {
+  id: string;
+  company_code: string;
+  title: string | null;
+  date_value: string | null;
+  created_at: string | null;
+  supervisor_name: string | null;
+  action_status: string | null;
+  has_special_issue: boolean | null;
+  safety_notice: string | null;
+  risk_tags: string[] | null;
+  uploaded_file_count: number | null;
+  snapshot: Record<string, unknown> | null;
+};
+
 
 export type FieldParticipationSubmissionShadowRecord = {
   tenant_code: string;
@@ -203,6 +218,20 @@ export async function selectSupabaseExportRows<T extends Record<string, unknown>
       return rows;
     }
   }
+}
+
+export async function selectTbmVoiceSubmissionListRows(
+  companyCode: string
+): Promise<TbmVoiceSubmissionListRow[]> {
+  const query = new URLSearchParams({
+    select:
+      "id,company_code,title,date_value,created_at,supervisor_name,action_status,has_special_issue,safety_notice,risk_tags,uploaded_file_count,snapshot",
+    company_code: `eq.${companyCode}`,
+    order: "date_value.desc.nullslast,created_at.desc.nullslast",
+    limit: "100",
+  });
+
+  return selectSupabaseExportRows<TbmVoiceSubmissionListRow>("tbm_voice_submissions", query);
 }
 
 export async function insertTbmVoiceSubmissionShadowRecord(
