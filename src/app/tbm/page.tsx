@@ -94,6 +94,46 @@ const RICHI_HIDDEN_RISK_TAGS = [
   "지게차 충돌",
 ];
 
+function RichiTbmTopBar() {
+  const navItems = [
+    { href: "/tbm", label: "TBM" },
+    { href: "/home", label: "현장 홈" },
+    { href: "/monthly-report", label: "월간보고서" },
+  ];
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <Link href="/tbm" className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-base font-black tracking-tight text-[#102033]">
+              SafeMetrica™ TBM
+            </span>
+            <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-black text-teal-700">
+              리치코리아
+            </span>
+          </div>
+        </Link>
+
+        <nav
+          className="flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-slate-50/80 p-1"
+          aria-label="리치코리아 TBM 메뉴"
+        >
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-full px-3 py-1.5 text-xs font-black text-slate-600 transition hover:bg-white hover:text-teal-700 hover:shadow-sm sm:text-sm"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
 function formatKstDateValue(date = new Date()) {
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
@@ -209,7 +249,7 @@ export default async function TbmPage() {
         isRichi ? "bg-[#F6F8F9] text-[#102033]" : "bg-gray-950"
       }`}
     >
-      <SafeNav />
+      {isRichi ? <RichiTbmTopBar /> : <SafeNav />}
 
       <div
         className={`mx-auto w-full px-3 py-4 sm:px-6 sm:py-8 ${isRichi ? "max-w-6xl" : "max-w-4xl"}`}
@@ -232,12 +272,20 @@ export default async function TbmPage() {
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
                   작업 전 TBM 기록을 말로 남기고, 월별 운영기록으로 정리합니다.
                 </p>
-                <TbmFormAction
-                  tbmFormUrl={tbmFormUrl}
-                  voiceDraftHref="#tbm-voice-draft"
-                  compact
-                  className="mt-5"
-                />
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                  <a
+                    href="#tbm-voice-draft"
+                    className="inline-flex items-center justify-center rounded-full bg-[#102033] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#18324d]"
+                  >
+                    말로 TBM 작성
+                  </a>
+                  <a
+                    href="#recent-tbm-records"
+                    className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-teal-50 px-5 py-3 text-sm font-black text-teal-800 transition hover:border-teal-300 hover:bg-teal-100"
+                  >
+                    최근 기록 보기
+                  </a>
+                </div>
               </div>
 
               <div className="shrink-0 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3 text-center">
@@ -413,7 +461,10 @@ export default async function TbmPage() {
         )}
 
         {isRichi ? (
-          <section className="max-w-full rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <section
+            id="recent-tbm-records"
+            className="max-w-full rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+          >
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-black tracking-[0.18em] text-teal-700">
