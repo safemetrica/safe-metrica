@@ -321,6 +321,61 @@ export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyCo
   };
 }
 
+
+const TENANT_REGISTRY_COMPANY_CONFIG_STATUSES = new Set(["onboarding", "active", "internal_test"]);
+
+function readTenantRegistryRawString(tenant: TenantRegistryConfig, key: string) {
+  const value = tenant.rawPayload[key];
+
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readTenantRegistryRawBoolean(tenant: TenantRegistryConfig, key: string) {
+  const value = tenant.rawPayload[key];
+
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function isTenantRegistryCompanyConfigEnabled(tenant: TenantRegistryConfig) {
+  return TENANT_REGISTRY_COMPANY_CONFIG_STATUSES.has(tenant.status);
+}
+
+function buildTenantRegistryCompanyConfig(tenant: TenantRegistryConfig): CompanyConfig {
+  const rawSafetyCaseMode = readTenantRegistryRawString(tenant, "safety_case_mode");
+  const safetyCaseMode =
+    rawSafetyCaseMode === "common-only" || rawSafetyCaseMode === "manual"
+      ? rawSafetyCaseMode
+      : "tenant-aware";
+
+  return {
+    code: tenant.code,
+    name: tenant.name,
+    notionApiKey: "",
+    tbmDbId: "",
+    ebmDbId: "",
+    ptwDbId: "",
+    industryTag: readTenantRegistryRawString(tenant, "industry_tag") || undefined,
+    safetyCaseEnabled: readTenantRegistryRawBoolean(tenant, "safety_case_enabled") ?? true,
+    safetyCaseMode,
+  };
+}
+
+export async function getCompanyConfigByCode(rawCode: string): Promise<CompanyConfig> {
+  const code = assertSafeCompanyCode(rawCode);
+
+  try {
+    return await getLegacyCompanyConfigByCode(code);
+  } catch (error) {
+    const tenant = await getTenantRegistryConfigByCode(code).catch(() => null);
+
+    if (!tenant || !isTenantRegistryCompanyConfigEnabled(tenant)) {
+      throw error;
+    }
+
+    return buildTenantRegistryCompanyConfig(tenant);
+  }
+}
+
 export async function getCompanyConfig(): Promise<CompanyConfig> {
   const code = await getCompanyCodeFromRequest();
   return getCompanyConfigByCode(code);

@@ -22,6 +22,13 @@ function requiresTenantToken(companyCode: string) {
   return companyCode in TENANT_TOKEN_ENV_BY_COMPANY;
 }
 
+const SAFE_NEXT_PATHS = new Set([
+  "/home",
+  "/manager/risk-share",
+  "/monthly-report/risk-share",
+  "/manager/representative-confirmations",
+]);
+
 function getSafeNextPath(rawNext: string | null) {
   if (!rawNext) return "/home";
   if (!rawNext.startsWith("/") || rawNext.startsWith("//")) return "/home";
@@ -29,15 +36,15 @@ function getSafeNextPath(rawNext: string | null) {
   try {
     const parsed = new URL(rawNext, "https://safe-metrica.local");
 
-    if (parsed.pathname !== "/home") {
+    if (!SAFE_NEXT_PATHS.has(parsed.pathname)) {
       return "/home";
     }
 
-    if (parsed.searchParams.get("role") === "manager") {
+    if (parsed.pathname === "/home" && parsed.searchParams.get("role") === "manager") {
       return "/home?role=manager";
     }
 
-    return "/home";
+    return parsed.pathname;
   } catch {
     return "/home";
   }
