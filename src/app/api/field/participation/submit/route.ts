@@ -820,7 +820,9 @@ export async function POST(req: NextRequest) {
     isRichiLedgerSubmission &&
     identityMode === "identified" &&
     !anonymous &&
-    isAcknowledgementOnly;
+    allChecksConfirmed &&
+    !title &&
+    !content;
 
   const finalSubmissionTitle =
     isRichiSignedAcknowledgementOnly && !title
@@ -829,7 +831,7 @@ export async function POST(req: NextRequest) {
 
   const finalSubmissionContent =
     isRichiSignedAcknowledgementOnly && !content
-      ? "작업 전 위생·안전 확인 항목을 확인하고 자필서명을 완료했습니다."
+      ? "특이사항 없음. 작업 전 위생·안전 확인 항목을 확인하고 자필서명을 완료했습니다."
       : content;
 
   const hasRequiredSubmissionText = Boolean(finalSubmissionTitle && finalSubmissionContent);
@@ -919,6 +921,7 @@ export async function POST(req: NextRequest) {
           sourceStep,
           entryIntent,
           isAcknowledgementOnly,
+          richiSignedAcknowledgementOnly: isRichiSignedAcknowledgementOnly,
           selectedFileCount: evidenceFiles.length,
           uploadedFileCount: uploadedFiles.length,
           tenantRegistry: {
@@ -1246,6 +1249,7 @@ export async function POST(req: NextRequest) {
           sourceStep,
           entryIntent,
           isAcknowledgementOnly,
+          richiSignedAcknowledgementOnly: isRichiSignedAcknowledgementOnly,
           selectedFileCount: evidenceFiles.length,
           uploadedFileCount: uploadedFiles.length,
           uploadedFiles: uploadedFiles.map((file) => ({
