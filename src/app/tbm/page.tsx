@@ -197,16 +197,69 @@ function formatKstTimeValue(value?: string | null) {
   }).format(date);
 }
 
-function getRichiDisplayRiskTags(
-  riskTags: TbmVoiceSubmissionListRow["risk_tags"],
-) {
-  if (!Array.isArray(riskTags)) {
+type RichiDisplayRiskTag = (typeof RICHI_ALLOWED_RISK_TAGS)[number];
+
+const RICHI_PREVIEW_RISK_TAG_RULES: Array<{
+  tag: RichiDisplayRiskTag;
+  patterns: RegExp[];
+}> = [
+  { tag: "미끄럼", patterns: [/미끄럼/u, /바닥\s*물기/u, /물기/u, /침출수/u] },
+  {
+    tag: "절단·베임",
+    patterns: [/칼/u, /절단/u, /베임/u, /절상/u, /칼날/u, /커터/u],
+  },
+  { tag: "이물혼입", patterns: [/이물/u, /이물\s*혼입/u, /혼입/u] },
+  {
+    tag: "보호구",
+    patterns: [/보호구/u, /장갑/u, /마스크/u, /안전화/u, /모자/u, /위생복/u],
+  },
+  {
+    tag: "개인위생",
+    patterns: [
+      /위생/u,
+      /위생복/u,
+      /손\s*씻기/u,
+      /손\s*세척/u,
+      /장갑/u,
+      /마스크/u,
+      /모자/u,
+    ],
+  },
+  { tag: "포장실", patterns: [/포장실/u, /포장\s*라인/u, /포장라인/u] },
+  { tag: "냉장·냉동", patterns: [/냉장/u, /냉동/u, /저온/u] },
+  {
+    tag: "컨베이어·포장기",
+    patterns: [/컨베이어/u, /포장기/u, /실링기/u, /롤러/u],
+  },
+  { tag: "세척", patterns: [/세척/u, /세척실/u] },
+];
+
+function inferRichiDisplayTagsFromPreview(previewText: string): string[] {
+  if (!previewText.trim()) {
     return [];
   }
 
-  const allowedTags = new Set(RICHI_ALLOWED_RISK_TAGS);
-  const hiddenTags = new Set(RICHI_HIDDEN_RISK_TAGS);
-  return riskTags
+  return RICHI_PREVIEW_RISK_TAG_RULES.reduce<string[]>((tags, rule) => {
+    if (rule.patterns.some((pattern) => pattern.test(previewText))) {
+      return [...tags, rule.tag];
+    }
+
+    return tags;
+  }, []);
+}
+
+function getRichiDisplayRiskTags(
+  riskTags: TbmVoiceSubmissionListRow["risk_tags"],
+  previewText = "",
+) {
+  const allowedTags = new Set<string>(RICHI_ALLOWED_RISK_TAGS);
+  const hiddenTags = new Set<string>(RICHI_HIDDEN_RISK_TAGS);
+  const candidateTags = [
+    ...(Array.isArray(riskTags) ? riskTags : []),
+    ...inferRichiDisplayTagsFromPreview(previewText),
+  ];
+
+  return candidateTags
     .reduce<string[]>((tags, tag) => {
       const trimmedTag = tag.trim();
 
@@ -223,7 +276,8 @@ function getRichiDisplayRiskTags(
     }, [])
     .sort(
       (a, b) =>
-        RICHI_ALLOWED_RISK_TAGS.indexOf(a) - RICHI_ALLOWED_RISK_TAGS.indexOf(b),
+        RICHI_ALLOWED_RISK_TAGS.indexOf(a as RichiDisplayRiskTag) -
+        RICHI_ALLOWED_RISK_TAGS.indexOf(b as RichiDisplayRiskTag),
     )
     .slice(0, 4);
 }
@@ -294,14 +348,13 @@ function cleanRichiTbmPreviewText(value?: string | null) {
     return "";
   }
 
+  const normalizedMisrecognitions = normalizeRichiTbmMisrecognitions(value);
   const withoutStorageLabels = RICHI_TBM_PREVIEW_REMOVABLE_PATTERNS.reduce(
     (text, pattern) => text.replace(pattern, " "),
-    value,
+    normalizedMisrecognitions,
   );
 
-  return trimRichiPreviewToCustomerLines(
-    normalizeRichiTbmMisrecognitions(withoutStorageLabels),
-  );
+  return trimRichiPreviewToCustomerLines(withoutStorageLabels);
 }
 
 function getRichiTbmPreviewText(row: TbmVoiceSubmissionListRow) {
@@ -622,10 +675,11 @@ export default async function TbmPage() {
                       const isHighlightedRecent =
                         groupIndex === 0 && rowIndex === 0;
                       const hasPhotos = (row.uploaded_file_count ?? 0) > 0;
+                      const previewText = getRichiTbmPreviewText(row);
                       const riskTags = getRichiDisplayRiskTags(
                         row.risk_tags,
+                        previewText,
                       ).slice(0, hasPhotos ? 3 : 4);
-                      const previewText = getRichiTbmPreviewText(row);
                       return (
                         <article
                           key={row.id}
