@@ -33,6 +33,10 @@ async function getTbmRows(): Promise<TbmRow[]> {
   const apiBase = "https://api.notion.com/v1/databases";
   const company = await getCompanyConfig();
 
+  if (company.code === "richi") {
+    return [];
+  }
+
   const res = await fetch(`${apiBase}/${company.tbmDbId}/query`, {
     method: "POST",
     headers: {

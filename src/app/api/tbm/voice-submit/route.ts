@@ -10,7 +10,8 @@ import {
   isSupabaseTbmShadowWriteEnabled,
 } from "@/lib/supabaseServer";
 
-const SUPPORTED_COMPANY_CODES = new Set(["daedo", "bubblemon", "hankookgreen", "dongwoo"]);
+const RICHI_COMPANY_CODE = "richi";
+const SUPPORTED_COMPANY_CODES = new Set(["daedo", "bubblemon", "hankookgreen", "dongwoo", RICHI_COMPANY_CODE]);
 const WASTE_COLLECTION_COMPANY_CODES = new Set(["daedo", "hankookgreen", "dongwoo"]);
 const MAX_FILES_PER_GROUP = 6;
 const MAX_SERVER_FILE_SIZE_BYTES = 8 * 1024 * 1024;
@@ -839,10 +840,12 @@ export async function POST(req: NextRequest) {
 
   if (!SUPPORTED_COMPANY_CODES.has(company.code)) {
     return NextResponse.json(
-      { ok: false, error: "unsupported_company", message: "현재 TBM 음성 직접저장은 정식 운영 4개사만 지원합니다." },
+      { ok: false, error: "unsupported_company", message: "현재 TBM 음성 직접저장을 지원하지 않는 업체입니다." },
       { status: 403 }
     );
   }
+
+  const isRichiCompany = company.code === RICHI_COMPANY_CODE;
 
   const formData = await req.formData();
   const transcript = getFormText(formData, "transcript");
@@ -871,7 +874,7 @@ export async function POST(req: NextRequest) {
 
   const notionApiKey = company.notionApiKey || process.env.NOTION_API_KEY;
 
-  if (!notionApiKey || !company.tbmDbId) {
+  if (!isRichiCompany && (!notionApiKey || !company.tbmDbId)) {
     return NextResponse.json(
       { ok: false, error: "missing_tbm_config", message: "TBM 저장 DB 설정을 확인해 주세요." },
       { status: 500 }
@@ -913,10 +916,111 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const uploadedFileCount =
+    uploadedSignatureFiles.length + uploadedSiteFiles.length + uploadedWorkFiles.length + uploadedActionFiles.length;
+
+  if (isRichiCompany) {
+    const voiceIntent = detectTbmVoiceIntent(mainText);
+    const isSafetyPolicyIntent = voiceIntent === "safety_policy";
+    const title = isSafetyPolicyIntent ? "안전보건경영방침 공유" : inferWorkTitle(normalizedText);
+    const safetyNotice = buildSafetyNotice(normalizedText, company.code);
+    const specialIssueAnalysis = isSafetyPolicyIntent
+      ? { hasSpecialIssue: false, content: "특이사항 없음", needsAction: false }
+      : analyzeTbmSpecialIssue(mainText);
+    const hasSpecialIssue = specialIssueAnalysis.hasSpecialIssue;
+    const workType = inferWorkType(normalizedText, company.code);
+    const workTypesMulti = isSafetyPolicyIntent ? [] : inferWorkTypesMulti(normalizedText, company.code);
+    const workTags = isSafetyPolicyIntent
+      ? ["안전보건방침", "경영방침 공유", "근로자 공유"]
+      : inferWorkTags(normalizedText, company.code);
+    const riskTags = isSafetyPolicyIntent ? ["안전보건관리체계"] : inferRiskTags(normalizedText, company.code);
+    const actionStatus = isSafetyPolicyIntent ? "조치 불필요" : hasSpecialIssue ? "조치 필요" : "해당 없음";
+    const uploadedFiles = {
+      signature: uploadedSignatureFiles,
+      site: uploadedSiteFiles,
+      work: uploadedWorkFiles,
+      action: uploadedActionFiles,
+    };
+    const snapshot = {
+      supabaseFirst: true,
+      calculations: {
+        dateValue,
+        startTime,
+        endTime,
+        voiceIntent,
+        title,
+        safetyNotice,
+        hasSpecialIssue,
+        actionStatus,
+        supervisorName,
+        workType,
+        workTypes: workTypesMulti,
+        workTags,
+        riskTags,
+        selectedFileCount,
+        uploadedFileCount,
+      },
+      uploadedFiles,
+    };
+
+    const insertResult = await insertTbmVoiceSubmissionShadowRecord({
+      company_code: company.code,
+      company_name: company.name,
+      notion_tbm_db_id: "",
+      notion_page_id: null,
+      notion_page_url: null,
+      date_value: dateValue,
+      start_time: startTime,
+      end_time: endTime,
+      voice_intent: voiceIntent,
+      title,
+      transcript,
+      draft_text: draftText,
+      main_text: mainText,
+      normalized_text: normalizedText,
+      supervisor_name: supervisorName,
+      work_type: workType,
+      work_types: workTypesMulti,
+      work_tags: workTags,
+      risk_tags: riskTags,
+      safety_notice: safetyNotice,
+      has_special_issue: hasSpecialIssue,
+      special_issue_content: hasSpecialIssue ? mainText : "특이사항 없음",
+      action_status: actionStatus,
+      selected_file_count: selectedFileCount,
+      uploaded_file_count: uploadedFileCount,
+      uploaded_files: uploadedFiles,
+      notion_properties_snapshot: {},
+      snapshot,
+    });
+
+    if (!insertResult.ok) {
+      console.error("Supabase TBM primary-write failed", {
+        companyCode: company.code,
+        status: insertResult.status,
+        statusText: insertResult.statusText,
+        message: insertResult.message,
+      });
+
+      return NextResponse.json(
+        { ok: false, error: "supabase_insert_error", message: "TBM 저장 중 Supabase 오류가 발생했습니다." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      uploadedFileCount,
+      message: uploadedFileCount > 0 ? "TBM 내용과 사진이 저장되었습니다." : "TBM 내용이 저장되었습니다.",
+    });
+  }
+
+  const checkedNotionApiKey = notionApiKey as string;
+  const checkedTbmDbId = company.tbmDbId as string;
   let meta: NotionPropertiesMeta;
 
   try {
-    meta = await getTbmDbProperties(notionApiKey, company.tbmDbId);
+    meta = await getTbmDbProperties(checkedNotionApiKey, checkedTbmDbId);
   } catch {
     return NextResponse.json(
       { ok: false, error: "notion_meta_error", message: "TBM DB 속성 조회 중 오류가 발생했습니다." },
@@ -1006,7 +1110,7 @@ export async function POST(req: NextRequest) {
     },
     body: JSON.stringify({
       parent: {
-        database_id: company.tbmDbId,
+        database_id: checkedTbmDbId,
       },
       properties,
     }),
@@ -1025,8 +1129,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const uploadedFileCount =
-    uploadedSignatureFiles.length + uploadedSiteFiles.length + uploadedWorkFiles.length + uploadedActionFiles.length;
   const supabaseShadowWriteEnabled = isSupabaseTbmShadowWriteEnabled(company.code);
 
   console.log("[tbm-voice-submit] supabase shadow-write check", {
@@ -1048,7 +1150,7 @@ export async function POST(req: NextRequest) {
     const notionPageUrl = createData?.url ?? null;
     const snapshot = {
       notion: {
-        databaseId: company.tbmDbId,
+        databaseId: checkedTbmDbId,
         pageId: notionPageId,
         pageUrl: notionPageUrl,
         properties,
@@ -1083,7 +1185,7 @@ export async function POST(req: NextRequest) {
       const shadowWriteResult = await insertTbmVoiceSubmissionShadowRecord({
         company_code: company.code,
         company_name: company.name,
-        notion_tbm_db_id: company.tbmDbId,
+        notion_tbm_db_id: checkedTbmDbId,
         notion_page_id: notionPageId,
         notion_page_url: notionPageUrl,
         date_value: dateValue,
