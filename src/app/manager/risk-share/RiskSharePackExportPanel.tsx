@@ -77,26 +77,54 @@ export default function RiskSharePackExportPanel({
   return (
     <section
       id="risk-share-export-panel"
-      className="rounded-3xl border border-cyan-500/25 bg-slate-900/85 p-5 shadow-xl shadow-slate-950/30"
+      className={
+        isRichiFullOperation
+          ? "rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm"
+          : "rounded-3xl border border-cyan-500/25 bg-slate-900/85 p-5 shadow-xl shadow-slate-950/30"
+      }
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-bold text-cyan-300">
+          <p
+            className={
+              isRichiFullOperation
+                ? "text-sm font-bold text-teal-700"
+                : "text-sm font-bold text-cyan-300"
+            }
+          >
             월별 보관파일 준비 현황
           </p>
-          <h2 className="mt-1 text-xl font-black text-white">
+          <h2
+            className={
+              isRichiFullOperation
+                ? "mt-1 text-xl font-black text-[#102033]"
+                : "mt-1 text-xl font-black text-white"
+            }
+          >
             {isRichiFullOperation
               ? "고객 전달자료 준비"
               : "Risk Share Pack 고객 전달자료"}
           </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+          <p
+            className={
+              isRichiFullOperation
+                ? "mt-2 max-w-3xl text-sm leading-6 text-slate-600"
+                : "mt-2 max-w-3xl text-sm leading-6 text-slate-300"
+            }
+          >
             {isRichiFullOperation
               ? "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 확인 후 고객에게 전달할 파일 구성을 안내합니다."
               : "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 Owner Export Center에서 확인·생성 후 고객에게 전달할 파일 구성을 안내합니다."}
           </p>
         </div>
 
-        <span className="w-fit rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-black text-cyan-200">
+        <span
+          className={
+            isRichiFullOperation
+              ? "w-fit rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-black text-teal-700"
+              : "w-fit rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-black text-cyan-200"
+          }
+        >
           {isRichiFullOperation
             ? "리치코리아 운영 링크"
             : `대상 업체: ${companyCode}`}
@@ -107,15 +135,39 @@ export default function RiskSharePackExportPanel({
         {fileCabinetItems.map((item) => (
           <article
             key={item.label}
-            className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4"
+            className={
+              isRichiFullOperation
+                ? "rounded-2xl border border-[#D6EDE6] bg-white p-4"
+                : "rounded-2xl border border-slate-700 bg-slate-950/60 p-4"
+            }
           >
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-sm font-black text-white">{item.label}</h3>
-              <span className="shrink-0 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-black text-cyan-100">
+              <h3
+                className={
+                  isRichiFullOperation
+                    ? "text-sm font-black text-[#102033]"
+                    : "text-sm font-black text-white"
+                }
+              >
+                {item.label}
+              </h3>
+              <span
+                className={
+                  isRichiFullOperation
+                    ? "shrink-0 rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700"
+                    : "shrink-0 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-black text-cyan-100"
+                }
+              >
                 {item.status}
               </span>
             </div>
-            <p className="mt-3 text-xs leading-5 text-slate-400">
+            <p
+              className={
+                isRichiFullOperation
+                  ? "mt-3 text-xs leading-5 text-slate-600"
+                  : "mt-3 text-xs leading-5 text-slate-400"
+              }
+            >
               {item.description}
             </p>
           </article>
@@ -125,13 +177,23 @@ export default function RiskSharePackExportPanel({
       <div className="mt-5 grid gap-3 lg:grid-cols-2">
         <Link
           href="/monthly-report/risk-share"
-          className="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
+          className={
+            isRichiFullOperation
+              ? "inline-flex items-center justify-center rounded-2xl bg-[#16A085] px-4 py-3 text-sm font-black text-white hover:bg-[#12806A]"
+              : "inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300"
+          }
         >
           {isRichiFullOperation
             ? "월간 운영기록 확인"
             : "공유팩 월간보고서 확인"}
         </Link>
-        <div className="rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-xs leading-5 text-amber-100">
+        <div
+          className={
+            isRichiFullOperation
+              ? "rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800"
+              : "rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-xs leading-5 text-amber-100"
+          }
+        >
           {isRichiFullOperation
             ? "고객 전달자료에는 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보를 포함하지 않습니다."
             : "실제 CSV 다운로드는 Owner Export Center에서 내부 운영자가 수행합니다. 고객에게는 이 관리자 화면이나 내부 API 링크를 공유하지 않습니다. locked_share_items CSV도 Owner가 검토 후 전달합니다."}

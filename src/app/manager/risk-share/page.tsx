@@ -622,22 +622,52 @@ export default async function RiskSharePackManagerHomePage() {
     : actionCards;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100">
+    <main
+      className={
+        isRichiFullOperation
+          ? "min-h-screen bg-[#EAF6F1] px-4 py-6 text-[#102033]"
+          : "min-h-screen bg-slate-950 px-4 py-6 text-slate-100"
+      }
+    >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40">
+        <section
+          className={
+            isRichiFullOperation
+              ? "rounded-[2rem] border border-[#D6EDE6] bg-white p-6 shadow-sm"
+              : "rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40"
+          }
+        >
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-cyan-300">
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "text-sm font-semibold text-teal-700"
+                    : "text-sm font-semibold text-cyan-300"
+                }
+              >
                 {isRichiFullOperation
                   ? "SafeMetrica Operation Manager"
                   : "SafeMetrica 운영 관리자"}
               </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
+              <h1
+                className={
+                  isRichiFullOperation
+                    ? "mt-2 text-3xl font-bold tracking-tight text-[#102033]"
+                    : "mt-2 text-3xl font-bold tracking-tight text-white"
+                }
+              >
                 {isRichiFullOperation
                   ? "(주)리치코리아 SafeMetrica 운영 관리자 홈"
                   : "SafeMetrica 운영 관리자 홈"}
               </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-3 max-w-3xl text-sm leading-6 text-slate-600"
+                    : "mt-3 max-w-3xl text-sm leading-6 text-slate-300"
+                }
+              >
                 {isRichiFullOperation
                   ? "작업 전 확인·서명, 익명 의견, 관리자 검토, TBM 운영기록, 근로자대표 확인, 월간 운영기록과 고객 전달자료 준비 상태를 확인하는 관리자 홈입니다."
                   : "위험성평가 공유 이후의 확인, 의견 제출, 근로자대표 참여확인, 관리자 검토, 월간 요약, 고객 전달 자료 흐름을 확인하는 전용 홈입니다. TBM은 현장관리자의 기본 운영 기능이며, 이 화면에서는 작업 전 확인·서명, 익명 의견, 제보·관리자 검토 흐름을 중심으로 표시합니다."}
@@ -646,24 +676,46 @@ export default async function RiskSharePackManagerHomePage() {
 
             <Link
               href="/home"
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-cyan-400 hover:text-cyan-200"
+              className={
+                isRichiFullOperation
+                  ? "inline-flex items-center justify-center rounded-2xl border border-[#D6EDE6] bg-white px-4 py-2 text-sm font-semibold text-[#102033] hover:border-teal-300 hover:text-teal-700"
+                  : "inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-cyan-400 hover:text-cyan-200"
+              }
             >
               전체 홈으로 이동
             </Link>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <span className="rounded-full border border-cyan-400/40 bg-cyan-400/10 px-4 py-2 text-sm font-bold text-cyan-100">
+            <span
+              className={
+                isRichiFullOperation
+                  ? "rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-sm font-bold text-teal-700"
+                  : "rounded-full border border-cyan-400/40 bg-cyan-400/10 px-4 py-2 text-sm font-bold text-cyan-100"
+              }
+            >
               현재 업체: {companyName}
             </span>
-            <span className="rounded-full border border-slate-700 bg-slate-950/70 px-4 py-2 text-sm font-bold text-slate-300">
+            <span
+              className={
+                isRichiFullOperation
+                  ? "rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-sm font-bold text-teal-700"
+                  : "rounded-full border border-slate-700 bg-slate-950/70 px-4 py-2 text-sm font-bold text-slate-300"
+              }
+            >
               {isRichiFullOperation
                 ? "운영 구분: Full SafeMetrica"
                 : `업체 코드: ${company.code}`}
             </span>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+          <div
+            className={
+              isRichiFullOperation
+                ? "mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800"
+                : "mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100"
+            }
+          >
             이 화면은 운영기록 확인을 위한 관리자 화면입니다. 법적 판단이나
             조치완료 확정을 대신하지 않습니다. 최종 검토와 조치 판단은 관리자와
             사업주가 수행합니다.
@@ -674,27 +726,77 @@ export default async function RiskSharePackManagerHomePage() {
           {displaySummaryCards.map((card) => (
             <article
               key={card.label}
-              className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
+              className={
+                isRichiFullOperation
+                  ? "rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm"
+                  : "rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
+              }
             >
-              <p className="text-sm font-semibold text-slate-400">
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "text-sm font-semibold text-teal-700"
+                    : "text-sm font-semibold text-slate-400"
+                }
+              >
                 {card.label}
               </p>
-              <p className="mt-3 text-2xl font-bold text-white">{card.value}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-3 text-2xl font-bold text-[#102033]"
+                    : "mt-3 text-2xl font-bold text-white"
+                }
+              >
+                {card.value}
+              </p>
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-3 text-sm leading-6 text-slate-600"
+                    : "mt-3 text-sm leading-6 text-slate-300"
+                }
+              >
                 {card.description}
               </p>
             </article>
           ))}
         </section>
 
-        <section className="rounded-3xl border border-emerald-400/25 bg-emerald-400/10 p-5 shadow-xl shadow-slate-950/30">
+        <section
+          className={
+            isRichiFullOperation
+              ? "rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm"
+              : "rounded-3xl border border-emerald-400/25 bg-emerald-400/10 p-5 shadow-xl shadow-slate-950/30"
+          }
+        >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-sm font-bold text-emerald-300">월별 보관함</p>
-              <h2 className="mt-1 text-xl font-black text-white">
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "text-sm font-bold text-teal-700"
+                    : "text-sm font-bold text-emerald-300"
+                }
+              >
+                월별 보관함
+              </p>
+              <h2
+                className={
+                  isRichiFullOperation
+                    ? "mt-1 text-xl font-black text-[#102033]"
+                    : "mt-1 text-xl font-black text-white"
+                }
+              >
                 이번 달 운영기록 파일 준비
               </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-2 max-w-3xl text-sm leading-6 text-slate-600"
+                    : "mt-2 max-w-3xl text-sm leading-6 text-slate-300"
+                }
+              >
                 {isRichiFullOperation
                   ? "작업 전 확인·서명, 익명 의견, TBM 운영기록, 근로자대표 확인 자료를 월별 파일로 정리해 감독관, 구청, 발주처, 대표 보고 시 확인자료로 활용할 수 있게 준비합니다."
                   : "공유확인, 위험제보, 근로자대표 참여확인, 증빙목록을 월별 파일로 정리해 감독관, 구청, 발주처, 대표 보고 시 확인자료로 활용할 수 있게 준비합니다."}
@@ -704,13 +806,21 @@ export default async function RiskSharePackManagerHomePage() {
             <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
               <Link
                 href="/monthly-report/risk-share"
-                className="inline-flex items-center justify-center rounded-2xl bg-emerald-300 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-200"
+                className={
+                  isRichiFullOperation
+                    ? "inline-flex items-center justify-center rounded-2xl bg-[#16A085] px-4 py-3 text-sm font-black text-white hover:bg-[#12806A]"
+                    : "inline-flex items-center justify-center rounded-2xl bg-emerald-300 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-200"
+                }
               >
                 월간보고서 보기
               </Link>
               <Link
                 href="#risk-share-export-panel"
-                className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/50 px-4 py-3 text-sm font-black text-emerald-100 hover:border-emerald-200 hover:text-emerald-50"
+                className={
+                  isRichiFullOperation
+                    ? "inline-flex items-center justify-center rounded-2xl border border-[#D6EDE6] bg-white px-4 py-3 text-sm font-black text-[#102033] hover:border-teal-300 hover:text-teal-700"
+                    : "inline-flex items-center justify-center rounded-2xl border border-emerald-300/50 px-4 py-3 text-sm font-black text-emerald-100 hover:border-emerald-200 hover:text-emerald-50"
+                }
               >
                 {isRichiFullOperation
                   ? "고객 전달자료 준비"
@@ -766,17 +876,39 @@ export default async function RiskSharePackManagerHomePage() {
             ].map((item) => (
               <article
                 key={item.label}
-                className="rounded-2xl border border-emerald-300/20 bg-slate-950/50 p-4"
+                className={
+                  isRichiFullOperation
+                    ? "rounded-2xl border border-[#D6EDE6] bg-white p-4"
+                    : "rounded-2xl border border-emerald-300/20 bg-slate-950/50 p-4"
+                }
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-base font-black text-white">
+                  <h3
+                    className={
+                      isRichiFullOperation
+                        ? "text-base font-black text-[#102033]"
+                        : "text-base font-black text-white"
+                    }
+                  >
                     {item.label}
                   </h3>
-                  <span className="shrink-0 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-100">
+                  <span
+                    className={
+                      isRichiFullOperation
+                        ? "shrink-0 rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-black text-teal-700"
+                        : "shrink-0 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-100"
+                    }
+                  >
                     {item.status}
                   </span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-300">
+                <p
+                  className={
+                    isRichiFullOperation
+                      ? "mt-3 text-sm leading-6 text-slate-600"
+                      : "mt-3 text-sm leading-6 text-slate-300"
+                  }
+                >
                   {item.description}
                 </p>
               </article>
@@ -825,18 +957,40 @@ export default async function RiskSharePackManagerHomePage() {
           {displayActionCards.map((card) => (
             <article
               key={card.title}
-              className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
+              className={
+                isRichiFullOperation
+                  ? "flex flex-col justify-between rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm"
+                  : "flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
+              }
             >
               <div>
-                <h2 className="text-lg font-bold text-white">{card.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-300">
+                <h2
+                  className={
+                    isRichiFullOperation
+                      ? "text-lg font-bold text-[#102033]"
+                      : "text-lg font-bold text-white"
+                  }
+                >
+                  {card.title}
+                </h2>
+                <p
+                  className={
+                    isRichiFullOperation
+                      ? "mt-3 text-sm leading-6 text-slate-600"
+                      : "mt-3 text-sm leading-6 text-slate-300"
+                  }
+                >
                   {card.description}
                 </p>
               </div>
 
               <Link
                 href={card.href}
-                className="mt-5 inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300"
+                className={
+                  isRichiFullOperation
+                    ? "mt-5 inline-flex items-center justify-center rounded-2xl bg-[#16A085] px-4 py-3 text-sm font-bold text-white hover:bg-[#12806A]"
+                    : "mt-5 inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300"
+                }
               >
                 {card.cta}
               </Link>

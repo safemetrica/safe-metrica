@@ -61,41 +61,97 @@ export default function RiskSharePackCustomerLinksPanel({
     : INTERNAL_MANAGER_LINKS;
 
   return (
-    <section className="rounded-3xl border border-emerald-500/25 bg-slate-900/85 p-5 shadow-xl shadow-slate-950/30">
+    <section
+      className={
+        isRichiFullOperation
+          ? "rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm"
+          : "rounded-3xl border border-emerald-500/25 bg-slate-900/85 p-5 shadow-xl shadow-slate-950/30"
+      }
+    >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-bold text-emerald-300">고객별 링크 표</p>
-          <h2 className="mt-1 text-xl font-black text-white">
+          <p
+            className={
+              isRichiFullOperation
+                ? "text-sm font-bold text-teal-700"
+                : "text-sm font-bold text-emerald-300"
+            }
+          >
+            고객별 링크 표
+          </p>
+          <h2
+            className={
+              isRichiFullOperation
+                ? "mt-1 text-xl font-black text-[#102033]"
+                : "mt-1 text-xl font-black text-white"
+            }
+          >
             {isRichiFullOperation
               ? `${companyName} 운영 링크 확인`
               : `${companyName} 공유팩 링크 확인`}
           </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+          <p
+            className={
+              isRichiFullOperation
+                ? "mt-2 max-w-3xl text-sm leading-6 text-slate-600"
+                : "mt-2 max-w-3xl text-sm leading-6 text-slate-300"
+            }
+          >
             {isRichiFullOperation
               ? "QR 배포와 고객 안내 전에 리치코리아 현장 운영 링크 구성을 확인합니다."
               : "QR 배포와 고객 안내 전에 현재 업체 코드가 포함된 링크인지 확인합니다. 현장 근로자용 링크에는 반드시 company query가 포함되어야 합니다."}
           </p>
         </div>
 
-        <span className="w-fit rounded-full border border-slate-700 bg-slate-950/70 px-4 py-2 text-xs font-black text-slate-300">
+        <span
+          className={
+            isRichiFullOperation
+              ? "w-fit rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-xs font-black text-teal-700"
+              : "w-fit rounded-full border border-slate-700 bg-slate-950/70 px-4 py-2 text-xs font-black text-slate-300"
+          }
+        >
           {isRichiFullOperation
             ? "리치코리아 운영 링크"
             : `company=${companyCode}`}
         </span>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+      <div
+        className={
+          isRichiFullOperation
+            ? "mt-5 rounded-2xl border border-teal-100 bg-teal-50/70 p-4"
+            : "mt-5 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-4"
+        }
+      >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-black text-cyan-100">
+            <p
+              className={
+                isRichiFullOperation
+                  ? "text-sm font-black text-[#102033]"
+                  : "text-sm font-black text-cyan-100"
+              }
+            >
               {isRichiFullOperation
                 ? "근로자 현장 확인·의견 배포 링크"
                 : "근로자 공유확인·현장 의견 배포 링크"}
             </p>
-            <p className="mt-2 break-all rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2 text-xs font-bold text-slate-200">
+            <p
+              className={
+                isRichiFullOperation
+                  ? "mt-2 break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
+                  : "mt-2 break-all rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2 text-xs font-bold text-slate-200"
+              }
+            >
               {fieldParticipationPath}
             </p>
-            <p className="mt-2 text-xs leading-5 text-cyan-100/80">
+            <p
+              className={
+                isRichiFullOperation
+                  ? "mt-2 text-xs leading-5 text-slate-600"
+                  : "mt-2 text-xs leading-5 text-cyan-100/80"
+              }
+            >
               {isRichiFullOperation
                 ? "QR 포스터에 우선 사용할 현장근로자용 링크입니다. 배포 전 운영 안내 문구를 확인합니다."
                 : "QR 포스터에 우선 사용할 현장근로자용 링크입니다. 고객사 코드가 빠진 링크는 배포하지 않습니다."}
@@ -106,7 +162,11 @@ export default function RiskSharePackCustomerLinksPanel({
             <CopyLinkButton value={fieldParticipationPath} />
             <Link
               href={fieldParticipationPath}
-              className="rounded-xl bg-cyan-400 px-3 py-2 text-xs font-black text-slate-950 hover:bg-cyan-300"
+              className={
+                isRichiFullOperation
+                  ? "rounded-xl bg-[#16A085] px-3 py-2 text-xs font-black text-white hover:bg-[#12806A]"
+                  : "rounded-xl bg-cyan-400 px-3 py-2 text-xs font-black text-slate-950 hover:bg-cyan-300"
+              }
             >
               열기
             </Link>
@@ -118,20 +178,48 @@ export default function RiskSharePackCustomerLinksPanel({
         {internalManagerLinks.map((item) => (
           <article
             key={item.path}
-            className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4"
+            className={
+              isRichiFullOperation
+                ? "rounded-2xl border border-[#D6EDE6] bg-white p-4"
+                : "rounded-2xl border border-slate-700 bg-slate-950/60 p-4"
+            }
           >
-            <h3 className="text-base font-black text-white">{item.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
+            <h3
+              className={
+                isRichiFullOperation
+                  ? "text-base font-black text-[#102033]"
+                  : "text-base font-black text-white"
+              }
+            >
+              {item.title}
+            </h3>
+            <p
+              className={
+                isRichiFullOperation
+                  ? "mt-2 text-sm leading-6 text-slate-600"
+                  : "mt-2 text-sm leading-6 text-slate-400"
+              }
+            >
               {item.description}
             </p>
-            <p className="mt-3 break-all rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300">
+            <p
+              className={
+                isRichiFullOperation
+                  ? "mt-3 break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
+                  : "mt-3 break-all rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300"
+              }
+            >
               {item.path}
             </p>
             <div className="mt-3 flex gap-2">
               <CopyLinkButton value={item.path} />
               <Link
                 href={item.path}
-                className="rounded-xl border border-slate-600 px-3 py-2 text-xs font-black text-slate-200 hover:border-cyan-400 hover:text-cyan-100"
+                className={
+                  isRichiFullOperation
+                    ? "rounded-xl border border-[#D6EDE6] bg-white px-3 py-2 text-xs font-black text-[#102033] hover:border-teal-300 hover:text-teal-700"
+                    : "rounded-xl border border-slate-600 px-3 py-2 text-xs font-black text-slate-200 hover:border-cyan-400 hover:text-cyan-100"
+                }
               >
                 열기
               </Link>
@@ -140,7 +228,13 @@ export default function RiskSharePackCustomerLinksPanel({
         ))}
       </div>
 
-      <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
+      <div
+        className={
+          isRichiFullOperation
+            ? "mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800"
+            : "mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100"
+        }
+      >
         {isRichiFullOperation
           ? "고객 전달자료에는 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보를 포함하지 않습니다."
           : "근로자대표 참여확인 제출 링크는 고정 링크가 아니라 관리 화면에서 확인 범위와 만료일을 지정해 linkId 방식으로 발급합니다. 고객별 안내문에는 실제 고객 데이터, 내부 인증정보, 내부 원장 주소를 포함하지 않습니다."}
