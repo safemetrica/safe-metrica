@@ -4,7 +4,11 @@ export const dynamic = "force-dynamic";
 
 import { SafeNav } from "@/components/SafeLayout";
 import Link from "next/link";
-import { getCompanyConfig } from "@/lib/company";
+import {
+  getCompanyConfig,
+  getCompanyConfigByCode,
+  type CompanyConfig,
+} from "@/lib/company";
 import TbmFormAction from "@/components/TbmFormAction";
 import TbmVoiceDraftHelper from "@/components/TbmVoiceDraftHelper";
 import {
@@ -36,9 +40,8 @@ type NotionPageResult = {
     }
   >;
 };
-async function getTbmRows(): Promise<TbmRow[]> {
+async function getTbmRows(company: CompanyConfig): Promise<TbmRow[]> {
   const apiBase = "https://api.notion.com/v1/databases";
-  const company = await getCompanyConfig();
 
   if (company.code === "richi") {
     return [];
@@ -114,15 +117,15 @@ const RICHI_HIDDEN_RISK_TAGS = [
 
 function RichiTbmTopBar() {
   const navItems = [
-    { href: "/tbm", label: "TBM" },
-    { href: "/home", label: "현장 홈" },
-    { href: "/monthly-report", label: "월간보고서" },
+    { href: "/tbm?company=richi", label: "TBM" },
+    { href: "/manager/risk-share?company=richi", label: "관리자 홈" },
+    { href: "/monthly-report/risk-share?company=richi", label: "월간보고서" },
   ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-teal-300/20 bg-[#0B2742] text-white shadow-lg shadow-slate-950/10">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/tbm" className="min-w-0">
+        <Link href="/tbm?company=richi" className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-base font-black tracking-tight text-white">
               SafeMetrica™ TBM
@@ -377,10 +380,33 @@ function getRichiTbmPreviewText(row: TbmVoiceSubmissionListRow) {
   return "";
 }
 
-export default async function TbmPage() {
-  const company = await getCompanyConfig();
+type TbmPageSearchParams = {
+  company?: string | string[];
+};
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+async function getTbmCompany(searchParams?: TbmPageSearchParams) {
+  const rawCompanyQuery = getSingleSearchParam(searchParams?.company);
+
+  if (rawCompanyQuery === "richi") {
+    return getCompanyConfigByCode("richi");
+  }
+
+  return getCompanyConfig();
+}
+
+export default async function TbmPage({
+  searchParams,
+}: {
+  searchParams?: Promise<TbmPageSearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
+  const company = await getTbmCompany(params);
   const isRichi = company.code === "richi";
-  const rows = isRichi ? [] : await getTbmRows();
+  const rows = isRichi ? [] : await getTbmRows(company);
   const richiRows = isRichi
     ? await selectTbmVoiceSubmissionListRows(company.code)
     : [];

@@ -6,6 +6,7 @@ import {
   TenantRequiredError,
   UnknownCompanyError,
   getCompanyConfig,
+  getCompanyConfigByCode,
 } from "@/lib/company";
 
 export const dynamic = "force-dynamic";
@@ -624,11 +625,34 @@ function VoiceSection({
   );
 }
 
-export default async function FieldVoiceReviewPage() {
+type FieldVoiceSearchParams = {
+  company?: string | string[];
+};
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+async function getFieldVoiceCompany(searchParams?: FieldVoiceSearchParams) {
+  const rawCompanyQuery = getSingleSearchParam(searchParams?.company);
+
+  if (rawCompanyQuery === "richi") {
+    return getCompanyConfigByCode("richi");
+  }
+
+  return getCompanyConfig();
+}
+
+export default async function FieldVoiceReviewPage({
+  searchParams,
+}: {
+  searchParams?: Promise<FieldVoiceSearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
   let company;
 
   try {
-    company = await getCompanyConfig();
+    company = await getFieldVoiceCompany(params);
   } catch (error) {
     if (error instanceof TenantRequiredError) {
       return (

@@ -29,18 +29,18 @@ const INTERNAL_MANAGER_LINKS = [
 const RICHI_INTERNAL_MANAGER_LINKS = [
   {
     title: "운영 관리자 홈",
-    path: "/manager/risk-share",
+    path: "/manager/risk-share?company=richi",
     description:
       "현장 확인·의견, 근로자대표 참여확인, 전달자료 준비, 월간 운영기록을 확인합니다.",
   },
   {
     title: "월간 운영기록 요약",
-    path: "/monthly-report/risk-share",
+    path: "/monthly-report/risk-share?company=richi",
     description: "월간 운영기록 및 인쇄/PDF 저장 화면입니다.",
   },
   {
     title: "근로자대표 참여확인 관리",
-    path: "/manager/representative-confirmations",
+    path: "/manager/representative-confirmations?company=richi",
     description:
       "근로자대표 확인 링크 발급, 제출 현황, 폐기·만료 상태를 관리합니다.",
   },
@@ -55,7 +55,9 @@ export default function RiskSharePackCustomerLinksPanel({
   companyCode: string;
   isRichiFullOperation?: boolean;
 }) {
-  const fieldParticipationPath = buildFieldParticipationPath(companyCode);
+  const fieldParticipationPath = isRichiFullOperation
+    ? "/field/participation?company=richi"
+    : buildFieldParticipationPath(companyCode);
   const internalManagerLinks = isRichiFullOperation
     ? RICHI_INTERNAL_MANAGER_LINKS
     : INTERNAL_MANAGER_LINKS;
