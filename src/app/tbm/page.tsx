@@ -431,42 +431,42 @@ export default async function TbmPage() {
         className={`mx-auto w-full px-3 py-4 sm:px-6 sm:py-8 ${isRichi ? "max-w-6xl" : "max-w-4xl"}`}
       >
         {isRichi ? (
-          <div className="mb-5 rounded-[2rem] border border-[#D6EDE6] bg-white p-5 shadow-sm sm:p-7">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="mb-3 rounded-2xl border border-[#D6EDE6] bg-white p-3 shadow-sm sm:mb-5 sm:rounded-[2rem] sm:p-7">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700">
                     SafeMetrica TBM
                   </p>
-                  <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-black text-teal-700">
+                  <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-0.5 text-[11px] font-black text-teal-700 sm:px-3 sm:py-1 sm:text-xs">
                     리치코리아
                   </span>
                 </div>
-                <h1 className="mt-4 text-3xl font-black tracking-tight text-[#102033] sm:text-4xl">
+                <h1 className="mt-2 text-2xl font-black tracking-tight text-[#102033] sm:mt-4 sm:text-4xl">
                   TBM 현황
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-slate-600 sm:mt-3 sm:text-base sm:leading-relaxed">
                   작업 전 TBM 기록을 말로 남기고, 월별 운영기록으로 정리합니다.
                 </p>
-                <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                <div className="mt-3 flex flex-col gap-2 sm:mt-5 sm:flex-row">
                   <a
                     href="#tbm-voice-draft"
-                    className="inline-flex items-center justify-center rounded-full bg-[#16A085] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#12806A]"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#16A085] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#12806A] sm:w-auto"
                   >
                     🎙️ 말로 TBM 작성
                   </a>
                   <a
                     href="#recent-tbm-records"
-                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 transition hover:border-teal-300 hover:text-teal-700 sm:px-5 sm:py-3"
                   >
                     작성내역 확인
                   </a>
                 </div>
               </div>
 
-              <div className="shrink-0 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3 text-center">
-                <p className="text-xs font-bold text-teal-700">저장된 기록</p>
-                <p className="mt-1 text-2xl font-black text-[#102033]">
+              <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-teal-100 bg-teal-50 px-3 py-1.5 text-center sm:block sm:rounded-2xl sm:px-4 sm:py-3">
+                <p className="text-[11px] font-bold text-teal-700 sm:text-xs">저장된 기록</p>
+                <p className="text-base font-black text-[#102033] sm:mt-1 sm:text-2xl">
                   {totalRows}건
                 </p>
               </div>
@@ -500,8 +500,8 @@ export default async function TbmPage() {
 
         {isRichi ? (
           <>
-            <div className="mb-5 grid max-w-full grid-cols-1 gap-3 lg:grid-cols-3">
-              <div className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm lg:col-span-2">
+            <div className="mb-3 grid max-w-full grid-cols-1 gap-2 sm:mb-5 sm:gap-3 lg:grid-cols-3">
+              <div className="rounded-2xl border border-[#D6EDE6] bg-white p-3 shadow-sm sm:rounded-3xl sm:p-5 lg:col-span-2">
                 <p
                   className={`text-sm font-black ${
                     todayRichiRows.length > 0
@@ -513,21 +513,21 @@ export default async function TbmPage() {
                     ? "오늘 TBM 저장됨"
                     : "오늘 TBM 작성 전이에요"}
                 </p>
-                <p className="mt-3 text-2xl font-black tracking-tight text-[#102033] sm:text-3xl">
+                <p className="mt-1.5 text-lg font-black tracking-tight text-[#102033] sm:mt-3 sm:text-3xl">
                   {todayRichiRows.length > 0
                     ? `오늘 ${todayRichiRows.length}건의 TBM 운영기록이 저장됐어요`
                     : "아래에서 음성이나 텍스트로 간편하게 남겨주세요"}
                 </p>
-                <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                <p className="mt-1.5 text-xs leading-5 text-slate-500 sm:mt-3 sm:text-sm sm:leading-relaxed">
                   날짜별 운영기록은 최근 작성 순서로 정리됩니다.
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-[#D6EDE6] bg-white p-3 shadow-sm sm:rounded-3xl sm:p-5">
                 <p className="text-sm font-bold text-slate-500">
                   최근 저장 기록
                 </p>
-                <div className="mt-3 text-4xl font-black text-[#102033]">
+                <div className="mt-1 text-2xl font-black text-[#102033] sm:mt-3 sm:text-4xl">
                   {totalRows}
                 </div>
                 <p className="mt-2 text-sm text-slate-500">
@@ -536,7 +536,7 @@ export default async function TbmPage() {
               </div>
             </div>
 
-            <section className="mb-5 rounded-[2rem] border border-[#D6EDE6] bg-white p-4 shadow-sm sm:p-6">
+            <section className="mb-5 rounded-2xl border border-[#D6EDE6] bg-white p-3 shadow-sm sm:rounded-[2rem] sm:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-black tracking-[0.18em] text-teal-700">
