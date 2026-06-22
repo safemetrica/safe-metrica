@@ -35,23 +35,23 @@ export default function RiskSharePackMonthlySummary({
         : "근로자 공유확인, 현장 의견, 근로자대표 참여확인을 합산한 월간 운영기록입니다.",
     },
     {
-      label: "관리자 검토 필요",
+      label: isRichiFullOperation ? "검토 대기 항목" : "관리자 검토 필요",
       value: `${reviewNeededCount}건`,
       description: isRichiFullOperation
         ? "현장 확인을 제외하고, 검토 또는 보완 확인이 필요한 기록입니다."
         : "공유확인을 제외하고, 검토 또는 보완 확인이 필요한 기록입니다.",
     },
     {
-      label: "보완 의견",
+      label: isRichiFullOperation ? "검토 의견" : "보완 의견",
       value: `${objectionCount}건`,
       description:
         "근로자대표 참여확인 중 별도 의견 또는 보완 의견이 포함된 기록입니다.",
     },
     {
-      label: "고객 전달자료",
+      label: isRichiFullOperation ? "이번 달 자료" : "고객 전달자료",
       value: exportReadyStatus,
       description: isRichiFullOperation
-        ? "내부 운영자가 확인 후 월간 운영기록 또는 고객 전달자료로 정리할 수 있는 상태입니다."
+        ? "내부 운영자가 확인 후 이번 달 운영기록 또는 전달자료로 정리할 수 있는 상태입니다."
         : "내부 운영자가 확인 후 월간 요약 또는 CSV 전달자료로 정리할 수 있는 상태입니다.",
     },
   ];
@@ -83,7 +83,7 @@ export default function RiskSharePackMonthlySummary({
             }
           >
             {isRichiFullOperation
-              ? "월간 운영기록 요약"
+              ? "이번 달 운영기록"
               : "Risk Share Pack 월간 운영요약"}
           </h2>
           <p
@@ -166,8 +166,8 @@ export default function RiskSharePackMonthlySummary({
       </div>
 
       <p className="mt-4 text-xs leading-5 text-slate-500">
-        월간 요약은 입력된 운영기록을 정리하는 화면입니다. 법적 판단이나
-        조치완료 확정을 대신하지 않습니다.
+        월간 요약은 입력된 운영기록을 정리하는 화면입니다. 법적 판단이나 조치
+        판단을 대신하지 않습니다.
       </p>
     </section>
   );
