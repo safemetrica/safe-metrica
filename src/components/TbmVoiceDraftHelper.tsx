@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -588,6 +589,25 @@ export default function TbmVoiceDraftHelper({
   const isRichiCompany = companyCode === "richi";
   const isRichiCompact = isRichiCompany || visualMode === "richiCompact";
 
+  useEffect(() => {
+    if (!isRichiCompact) {
+      return undefined;
+    }
+
+    function expandComposerFromHash() {
+      if (window.location.hash === "#tbm-voice-draft") {
+        setIsCompactComposerExpanded(true);
+      }
+    }
+
+    expandComposerFromHash();
+    window.addEventListener("hashchange", expandComposerFromHash);
+
+    return () => {
+      window.removeEventListener("hashchange", expandComposerFromHash);
+    };
+  }, [isRichiCompact]);
+
   function renderPhotoInput(params: {
     label: string;
     description: string;
@@ -677,7 +697,7 @@ export default function TbmVoiceDraftHelper({
 
   const tone = isRichiCompact
     ? {
-        section: "border-teal-100 bg-white p-3 shadow-sm sm:p-4",
+        section: "border-teal-100 bg-white p-2.5 shadow-sm sm:p-4",
         eyebrow: "text-teal-700",
         title: "text-[#102033]",
         body: "text-slate-600",
@@ -723,20 +743,20 @@ export default function TbmVoiceDraftHelper({
         <button
           type="button"
           onClick={() => setIsCompactComposerExpanded(true)}
-          className="flex w-full items-center justify-between gap-3 rounded-[1.5rem] border border-teal-100 bg-white px-4 py-3 text-left shadow-sm transition hover:border-teal-200 hover:shadow-md sm:px-5 sm:py-4"
+          className="flex w-full items-center justify-between gap-2 rounded-2xl border border-teal-100 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-teal-200 hover:shadow-md sm:gap-3 sm:rounded-[1.5rem] sm:px-5 sm:py-4"
           aria-expanded="false"
         >
-          <span className="min-w-0 flex-1 text-sm font-black text-slate-500 sm:text-base">
+          <span className="min-w-0 flex-1 text-xs font-black text-slate-500 sm:text-base">
             오늘 TBM 내용을 말하거나 입력해주세요
           </span>
-          <span className="shrink-0 rounded-full bg-[#16A085] px-4 py-2 text-sm font-black text-white">
+          <span className="shrink-0 rounded-full bg-[#16A085] px-3 py-2 text-xs font-black text-white sm:px-4 sm:text-sm">
             🎙️ 말로 TBM 작성
           </span>
         </button>
         <button
           type="button"
           onClick={() => setIsCompactComposerExpanded(true)}
-          className="mt-3 text-sm font-black text-slate-600 underline decoration-teal-300 underline-offset-4 transition hover:text-teal-700"
+          className="mt-2 text-xs font-black text-slate-600 underline decoration-teal-300 underline-offset-4 transition hover:text-teal-700 sm:mt-3 sm:text-sm"
         >
           직접 입력하기
         </button>
@@ -749,15 +769,15 @@ export default function TbmVoiceDraftHelper({
       id="tbm-voice-draft"
       className={`max-w-full scroll-mt-24 rounded-2xl border ${tone.section} ${className}`}
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className={isRichiCompact ? "flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2" : "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"}>
         <div>
           <p className={`text-sm font-black ${tone.eyebrow}`}>
             TBM 음성 작성지원
           </p>
-          <h2 className={`mt-1 text-xl font-black ${tone.title}`}>
+          <h2 className={`${isRichiCompact ? "mt-1 text-lg font-black sm:text-xl" : "mt-1 text-xl font-black"} ${tone.title}`}>
             🎙️ 말로 TBM 작성
           </h2>
-          <p className={`mt-2 text-sm leading-6 ${tone.body}`}>
+          <p className={`${isRichiCompact ? "mt-1 text-xs leading-5 sm:mt-2 sm:text-sm sm:leading-6" : "mt-2 text-sm leading-6"} ${tone.body}`}>
             {isRichiCompact
               ? "말한 내용을 TBM 운영기록으로 정리하고, 사진을 첨부한 뒤 저장합니다."
               : "현장관리자가 말한 내용을 인식된 TBM 내용으로 정리하고, 사진을 첨부한 뒤 바로 Notion TBM DB에 저장합니다."}
@@ -765,27 +785,13 @@ export default function TbmVoiceDraftHelper({
         </div>
       </div>
 
-      <div className={`mt-4 rounded-xl border p-3 ${tone.card}`}>
+      <div className={`${isRichiCompact ? "mt-3 rounded-xl border p-2.5 sm:mt-4 sm:p-3" : "mt-4 rounded-xl border p-3"} ${tone.card}`}>
         <p className={`text-xs font-black ${tone.panelTitle}`}>
           {isRichiCompact
-            ? "1단계 · 녹음 시작/확인"
+            ? "1단계 · 녹음 시작/종료"
             : "1단계 · 녹음 시작 / 완료"}
         </p>
-        <div
-          className={`mt-3 rounded-xl border p-3 text-xs leading-5 ${isRichiCompact ? "border-teal-100 bg-teal-50/70 text-slate-600" : "border-cyan-700/40 bg-cyan-950/30 text-cyan-50/90"}`}
-        >
-          <p
-            className={`font-black ${isRichiCompact ? "text-teal-700" : "text-cyan-100"}`}
-          >
-            현장 소음 안내
-          </p>
-          <p className="mt-1">
-            {isRichiCompact
-              ? "녹음하거나 직접 입력한 뒤 저장 전 내용을 확인하세요."
-              : "녹음 시작 시 마이크 권한과 소음 억제 설정을 요청합니다. 지원 여부는 기기·브라우저마다 다르므로, 소음이 큰 현장에서는 휴대폰을 가까이 두고 10초 단위로 짧게 말한 뒤 저장 전 내용을 수정하세요."}
-          </p>
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className={isRichiCompact ? "mt-2 grid gap-2 sm:mt-3 sm:grid-cols-2" : "mt-3 grid gap-2 sm:grid-cols-2"}>
           <button
             type="button"
             onClick={startRecording}
@@ -802,6 +808,20 @@ export default function TbmVoiceDraftHelper({
           >
             녹음 완료
           </button>
+        </div>
+        <div
+          className={`${isRichiCompact ? "mt-2 rounded-xl border p-2.5 text-xs leading-5 sm:mt-3 sm:p-3" : "mt-3 rounded-xl border p-3 text-xs leading-5"} ${isRichiCompact ? "border-teal-100 bg-teal-50/70 text-slate-600" : "border-cyan-700/40 bg-cyan-950/30 text-cyan-50/90"}`}
+        >
+          <p
+            className={`font-black ${isRichiCompact ? "text-teal-700" : "text-cyan-100"}`}
+          >
+            현장 소음 안내
+          </p>
+          <p className="mt-1">
+            {isRichiCompact
+              ? "녹음 후 내용을 확인하고 저장하세요."
+              : "녹음 시작 시 마이크 권한과 소음 억제 설정을 요청합니다. 지원 여부는 기기·브라우저마다 다르므로, 소음이 큰 현장에서는 휴대폰을 가까이 두고 10초 단위로 짧게 말한 뒤 저장 전 내용을 수정하세요."}
+          </p>
         </div>
         {voiceQualityMessage ? (
           <p
@@ -820,12 +840,10 @@ export default function TbmVoiceDraftHelper({
         </p>
       ) : null}
 
-      <div className={`mt-4 rounded-xl border p-3 ${tone.mutedCard}`}>
+      <div className={`${isRichiCompact ? "mt-3 rounded-xl border p-2.5 sm:mt-4 sm:p-3" : "mt-4 rounded-xl border p-3"} ${tone.mutedCard}`}>
         <div className="flex items-center justify-between gap-3">
           <p className={`text-xs font-black ${tone.panelTitle}`}>
-            {isRichiCompact
-              ? "2단계 · 보정 후 TBM 정리본"
-              : "2단계 · 인식된 음성 및 TBM 내용"}
+            2단계 · 인식된 음성 및 TBM 내용
           </p>
           <button
             type="button"
@@ -836,14 +854,14 @@ export default function TbmVoiceDraftHelper({
           </button>
         </div>
 
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <div className={isRichiCompact ? "mt-2 grid gap-2 sm:mt-3 sm:gap-3 lg:grid-cols-2" : "mt-3 grid gap-3 lg:grid-cols-2"}>
           <div
-            className={`rounded-xl border p-3 ${isRichiCompact ? "border-slate-200 bg-slate-50" : "border-slate-700 bg-slate-900/80"}`}
+            className={`${isRichiCompact ? "rounded-xl border p-2.5 sm:p-3" : "rounded-xl border p-3"} ${isRichiCompact ? "border-slate-200 bg-slate-50" : "border-slate-700 bg-slate-900/80"}`}
           >
             <p className={`text-xs font-black ${tone.mutedTitle}`}>
               {isRichiCompany ? "보정 후 TBM 정리본" : "녹음 내용 확인 및 수정"}
             </p>
-            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+            <p className={isRichiCompact ? "mt-1 text-[11px] leading-4 text-slate-500 sm:leading-5" : "mt-1 text-[11px] leading-5 text-slate-500"}>
               {hasGeneratedVoiceContent
                 ? isRichiCompany
                   ? "저장 전 핵심 문구를 확인해 주세요."
@@ -857,7 +875,7 @@ export default function TbmVoiceDraftHelper({
               onChange={handleEditedDraftTextChange}
               disabled={isRichiCompact ? false : !hasGeneratedVoiceContent}
               placeholder="녹음 후 생성된 TBM 내용이 여기에 표시됩니다. 오인식된 부분은 저장 전에 수정해 주세요."
-              className={`mt-2 min-h-40 max-h-72 w-full resize-y overflow-y-auto rounded-lg border p-3 text-sm leading-6 outline-none [word-break:keep-all] focus:ring-2 disabled:cursor-not-allowed sm:min-h-48 ${tone.textarea}`}
+              className={`${isRichiCompact ? "mt-2 min-h-32 max-h-72 w-full resize-y overflow-y-auto rounded-lg border p-2.5 text-sm leading-6 outline-none [word-break:keep-all] focus:ring-2 disabled:cursor-not-allowed sm:min-h-48 sm:p-3" : "mt-2 min-h-40 max-h-72 w-full resize-y overflow-y-auto rounded-lg border p-3 text-sm leading-6 outline-none [word-break:keep-all] focus:ring-2 disabled:cursor-not-allowed sm:min-h-48"} ${tone.textarea}`}
             />
           </div>
 
@@ -912,7 +930,7 @@ export default function TbmVoiceDraftHelper({
         </details>
       </div>
 
-      <div className={`mt-4 rounded-xl border p-3 ${tone.mutedCard}`}>
+      <div className={`${isRichiCompact ? "mt-3 rounded-xl border p-2.5 sm:mt-4 sm:p-3" : "mt-4 rounded-xl border p-3"} ${tone.mutedCard}`}>
         <p className={`text-xs font-black ${tone.panelTitle}`}>
           {isRichiCompact ? "3단계 · 사진 첨부" : "3단계 · 사진 촬영/첨부"}
         </p>
