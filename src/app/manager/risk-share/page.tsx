@@ -745,6 +745,28 @@ export default async function RiskSharePackManagerHomePage({
           </div>
         </section>
 
+        {isRichiFullOperation ? (
+          <section className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm">
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-bold text-teal-700">운영브리핑</p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  이번 달에는 작업 전 확인·서명 {fieldSummary.shareConfirmationCount}
+                  건, 의견·불편사항 {fieldSummary.workerReportCount}건이
+                  저장되었습니다. 관리자 검토가 필요한 항목은 {
+                    totalReviewNeededCount
+                  }
+                  건입니다.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+                이 브리핑은 운영 확인을 돕는 요약이며, 법적 판단이나
+                조치완료 확정을 대신하지 않습니다.
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {displaySummaryCards.map((card) => (
             <article

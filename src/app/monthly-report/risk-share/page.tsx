@@ -534,6 +534,19 @@ export default async function RiskSharePackMonthlyReportPage({
     ? "mt-2 text-2xl font-black text-[#102033] print:text-slate-950"
     : "mt-2 text-2xl font-black text-white print:text-slate-950";
 
+  const evidenceTotalCount =
+    evidenceSummary.status === "ok" ? evidenceSummary.totalCount : 0;
+  const displayRichiMonthlyTbmCount = richiMonthlyTbmCount ?? 0;
+  const richiPrioritySignals = [
+    totalReviewNeeded > 0 ? `관리자 검토 필요 ${totalReviewNeeded}건` : null,
+    displayRichiMonthlyTbmCount > 0
+      ? `TBM 운영기록 ${displayRichiMonthlyTbmCount}건`
+      : null,
+    evidenceTotalCount > 0 ? `증빙 파일 ${evidenceTotalCount}건` : null,
+  ]
+    .filter((signal): signal is string => Boolean(signal))
+    .slice(0, 3);
+
   return (
     <main className={mainClassName}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
@@ -702,6 +715,46 @@ export default async function RiskSharePackMonthlyReportPage({
             isRichiFullOperation={isRichiFullOperation}
           />
         </section>
+
+        {isRichiFullOperation ? (
+          <section className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm print:border-slate-300 print:bg-white">
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-sm font-bold text-teal-700 print:text-teal-800">
+                  월간 운영브리핑
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700 print:text-slate-800">
+                  이번 달에는 작업 전 확인·서명 {
+                    fieldSummary.shareConfirmationCount
+                  }
+                  건, 의견·불편사항 {fieldSummary.workerReportCount}건, TBM
+                  운영기록 {displayRichiMonthlyTbmCount}건이 저장되었습니다.
+                  관리자 검토가 필요한 항목은 {totalReviewNeeded}건이며,
+                  증빙 파일은 {evidenceTotalCount}건 연결되어 있습니다.
+                  월간 운영기록은 고객 전달 전 내부 운영자가 확인합니다.
+                </p>
+              </div>
+
+              {richiPrioritySignals.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {richiPrioritySignals.map((signal) => (
+                    <span
+                      key={signal}
+                      className="rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800"
+                    >
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800 print:border-amber-300 print:bg-amber-50 print:text-amber-900">
+                이 브리핑은 운영 확인을 돕는 요약이며, 법적 판단이나
+                조치완료 확정을 대신하지 않습니다.
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className={shellClassName}>
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
