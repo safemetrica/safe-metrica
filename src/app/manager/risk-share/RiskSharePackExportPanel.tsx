@@ -176,7 +176,11 @@ export default function RiskSharePackExportPanel({
 
       <div className="mt-5 grid gap-3 lg:grid-cols-2">
         <Link
-          href="/monthly-report/risk-share"
+          href={
+            isRichiFullOperation
+              ? "/monthly-report/risk-share?company=richi"
+              : "/monthly-report/risk-share"
+          }
           className={
             isRichiFullOperation
               ? "inline-flex items-center justify-center rounded-2xl bg-[#16A085] px-4 py-3 text-sm font-black text-white hover:bg-[#12806A]"
@@ -196,14 +200,14 @@ export default function RiskSharePackExportPanel({
         >
           {isRichiFullOperation
             ? "고객 전달자료에는 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보를 포함하지 않습니다."
-            : "실제 CSV 다운로드는 Owner Export Center에서 내부 운영자가 수행합니다. 고객에게는 이 관리자 화면이나 내부 API 링크를 공유하지 않습니다. locked_share_items CSV도 Owner가 검토 후 전달합니다."}
+            : "실제 CSV 다운로드는 Owner Export Center에서 내부 운영자가 수행합니다. 고객에게는 이 관리자 화면이나 내부 운영 링크를 공유하지 않습니다. locked_share_items CSV도 Owner가 검토 후 전달합니다."}
         </div>
       </div>
 
       <p className="mt-4 text-xs leading-5 text-slate-500">
         {isRichiFullOperation
           ? "고객 전달자료에는 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보를 포함하지 않습니다."
-          : "월별 보관파일은 운영기록을 정리해 확인자료로 활용하기 위한 보조 흐름입니다. 최종 공유본 확정 전 항목, 고객 확인 전 항목, raw_payload, Owner 링크, API 링크, 토큰·환경변수 유사 문자열은 고객 전달자료에 포함하지 않습니다. 법적 판단, 면책, 조치완료 확정을 대신하지 않습니다."}
+          : "월별 보관파일은 운영기록을 정리해 확인자료로 활용하기 위한 보조 흐름입니다. 최종 공유본 확정 전 항목, 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보는 고객 전달자료에 포함하지 않습니다. 법적 판단, 면책, 조치완료 확정을 대신하지 않습니다."}
       </p>
     </section>
   );

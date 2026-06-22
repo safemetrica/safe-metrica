@@ -500,6 +500,10 @@ export default function TbmVoiceDraftHelper({
     formData.append("startTime", recordingStartTime || getCurrentTimeText());
     formData.append("supervisorName", defaultSupervisorName);
 
+    if (companyCode) {
+      formData.append("companyCode", companyCode);
+    }
+
     signatureFiles.forEach((file) =>
       formData.append(TBM_VOICE_UPLOAD_FIELD_KEYS.signature, file, file.name),
     );

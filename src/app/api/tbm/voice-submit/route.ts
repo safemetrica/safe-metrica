@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 
-import { getCompanyConfig, TenantRequiredError, UnknownCompanyError } from "@/lib/company";
+import {
+  getCompanyConfig,
+  getCompanyConfigByCode,
+  TenantRequiredError,
+  UnknownCompanyError,
+} from "@/lib/company";
 import { TBM_VOICE_UPLOAD_FIELD_KEYS } from "@/lib/tbmVoiceUploadFields";
 import { detectTbmVoiceIntent } from "@/lib/tbmVoiceIntent";
 import { normalizeTbmVoiceTranscript } from "@/lib/tbmVoiceTranscriptNormalize";
@@ -813,11 +818,22 @@ async function getTbmDbProperties(notionApiKey: string, tbmDbId: string): Promis
   return data?.properties ?? {};
 }
 
+async function getTbmSubmitCompany(formData: FormData) {
+  const companyCode = getFormText(formData, "companyCode");
+
+  if (companyCode === RICHI_COMPANY_CODE) {
+    return getCompanyConfigByCode(RICHI_COMPANY_CODE);
+  }
+
+  return getCompanyConfig();
+}
+
 export async function POST(req: NextRequest) {
+  const formData = await req.formData();
   let company;
 
   try {
-    company = await getCompanyConfig();
+    company = await getTbmSubmitCompany(formData);
   } catch (error) {
     if (error instanceof TenantRequiredError) {
       return NextResponse.json(
@@ -848,7 +864,6 @@ export async function POST(req: NextRequest) {
 
   const isRichiCompany = company.code === RICHI_COMPANY_CODE;
 
-  const formData = await req.formData();
   const transcript = getFormText(formData, "transcript");
   const draftText = getFormText(formData, "draftText");
   const editedDraftText = getFormText(formData, "editedDraftText");
@@ -1015,7 +1030,7 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json(
-        { ok: false, error: "supabase_insert_error", message: "TBM 저장 중 Supabase 오류가 발생했습니다." },
+        { ok: false, error: "supabase_insert_error", message: "TBM 저장 중 오류가 발생했습니다." },
         { status: 500 }
       );
     }
@@ -1135,7 +1150,7 @@ export async function POST(req: NextRequest) {
       {
         ok: false,
         error: "notion_create_error",
-        message: createData?.message ?? "TBM 저장 중 Notion 오류가 발생했습니다.",
+        message: "TBM 저장 중 오류가 발생했습니다.",
       },
       { status: 500 }
     );

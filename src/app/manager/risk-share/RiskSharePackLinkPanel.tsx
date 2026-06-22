@@ -17,21 +17,28 @@ export default function RiskSharePackLinkPanel({
           title: "근로자 현장 확인·의견",
           description:
             "근로자가 작업 전 위생·안전 확인, 의견 없음 제출, 불편사항, 개선의견을 입력하는 현장 진입 화면입니다.",
-          href: `/field/participation?company=${encodedCompanyCode}`,
+          href: "/field/participation?company=richi",
           cta: "현장참여 화면 열기",
+        },
+        {
+          title: "TBM 운영기록",
+          description:
+            "작업 전 TBM 기록을 작성하고 최근 운영기록을 확인하는 화면입니다.",
+          href: "/tbm?company=richi",
+          cta: "TBM 화면 열기",
         },
         {
           title: "근로자대표 참여확인",
           description:
             "근로자대표 확인 링크 생성, 제출 현황, 폐기·만료 상태를 관리하는 화면입니다.",
-          href: "/manager/representative-confirmations",
+          href: "/manager/representative-confirmations?company=richi",
           cta: "대표확인 링크 관리",
         },
         {
           title: "월간 운영기록",
           description:
             "현장 확인·의견, 근로자대표 참여확인 중심의 월간 운영기록입니다.",
-          href: "/monthly-report/risk-share",
+          href: "/monthly-report/risk-share?company=richi",
           cta: "월간 운영기록 보기",
         },
       ]

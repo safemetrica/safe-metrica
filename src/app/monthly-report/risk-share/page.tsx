@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getCompanyConfig } from "@/lib/company";
+import { getCompanyConfig, getCompanyConfigByCode } from "@/lib/company";
 import PrintButton from "./PrintButton";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
@@ -16,6 +16,7 @@ const EVIDENCE_ITEM_LIMIT = 1000;
 
 type SearchParams = {
   month?: string | string[];
+  company?: string | string[];
 };
 
 type MonthPeriod = {
@@ -62,6 +63,42 @@ type EvidenceSummary = {
   fieldParticipationAttachmentCount: number;
   tbmAttachmentCount: number;
 };
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+async function getRiskShareMonthlyCompany(searchParams?: SearchParams) {
+  const rawCompanyQuery = getSingleSearchParam(searchParams?.company);
+
+  if (rawCompanyQuery === "richi") {
+    return getCompanyConfigByCode("richi").catch(() => null);
+  }
+
+  return getCompanyConfig().catch(() => null);
+}
+
+type TbmVoiceMonthlyCountRow = {
+  id?: unknown;
+};
+
+async function fetchRichiMonthlyTbmCount(period: MonthPeriod) {
+  const query = new URLSearchParams({
+    select: "id",
+    company_code: "eq.richi",
+    date_value: `gte.${period.startDate}`,
+    order: "date_value.desc,created_at.desc",
+  });
+
+  query.append("date_value", `lte.${period.endDate}`);
+
+  const rows = await selectSupabaseExportRows<TbmVoiceMonthlyCountRow>(
+    "tbm_voice_submissions",
+    query,
+  );
+
+  return rows.length;
+}
 
 function getKstDateString(date: Date) {
   const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
@@ -363,7 +400,7 @@ export default async function RiskSharePackMonthlyReportPage({
   const monthKey = normalizeMonthParam(params.month);
   const period = getMonthPeriod(monthKey);
 
-  const company = await getCompanyConfig().catch(() => null);
+  const company = await getRiskShareMonthlyCompany(params);
 
   if (!company) {
     redirect("/login?error=tenant_required");
@@ -373,14 +410,18 @@ export default async function RiskSharePackMonthlyReportPage({
     redirect("/login?error=risk_share_pack_not_available");
   }
 
-  const [fieldSummary, evidenceSummary, representativeStore] = await Promise.all([
-    fetchFieldParticipationSummary(company.code, period),
-    fetchEvidenceSummary(company.code, period),
-    fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
-      status: "failed" as const,
-      records: [] as WorkerRepresentativeConfirmationRecord[],
-    })),
-  ]);
+  const [fieldSummary, evidenceSummary, representativeStore, richiMonthlyTbmCount] =
+    await Promise.all([
+      fetchFieldParticipationSummary(company.code, period),
+      fetchEvidenceSummary(company.code, period),
+      fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
+        status: "failed" as const,
+        records: [] as WorkerRepresentativeConfirmationRecord[],
+      })),
+      company.code === "richi"
+        ? fetchRichiMonthlyTbmCount(period).catch(() => null)
+        : Promise.resolve(null),
+    ]);
 
   const representativeRecords = representativeStore.records.filter((record) =>
     isRepresentativeRecordInPeriod(record, period),
@@ -418,7 +459,11 @@ export default async function RiskSharePackMonthlyReportPage({
 
             <div className="flex flex-wrap gap-2 print:hidden">
               <Link
-                href="/manager/risk-share"
+                href={
+                  company.code === "richi"
+                    ? "/manager/risk-share?company=richi"
+                    : "/manager/risk-share"
+                }
                 className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-400 hover:text-cyan-200"
               >
                 공유팩 홈
@@ -530,9 +575,19 @@ export default async function RiskSharePackMonthlyReportPage({
               </p>
             </div>
             <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
-              <p className="text-sm font-bold text-slate-400 print:text-slate-700">TBM 보완 증빙</p>
+              <p className="text-sm font-bold text-slate-400 print:text-slate-700">
+                {company.code === "richi"
+                  ? "해당 월 작성된 TBM 운영기록"
+                  : "TBM 보완 증빙"}
+              </p>
               <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
-                {evidenceSummary.status === "ok" ? `${evidenceSummary.tbmAttachmentCount}건` : "확인 필요"}
+                {company.code === "richi"
+                  ? richiMonthlyTbmCount === null
+                    ? "확인 필요"
+                    : `${richiMonthlyTbmCount}건`
+                  : evidenceSummary.status === "ok"
+                    ? `${evidenceSummary.tbmAttachmentCount}건`
+                    : "확인 필요"}
               </p>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getCompanyConfig } from "@/lib/company";
+import { getCompanyConfig, getCompanyConfigByCode } from "@/lib/company";
 import RiskSharePackExportPanel from "./RiskSharePackExportPanel";
 import RiskSharePackMonthlySummary from "./RiskSharePackMonthlySummary";
 import RiskSharePackLinkPanel from "./RiskSharePackLinkPanel";
@@ -491,8 +491,31 @@ function buildSummaryCards(params: {
   ];
 }
 
-export default async function RiskSharePackManagerHomePage() {
-  const company = await getCompanyConfig().catch(() => null);
+type PageSearchParams = {
+  company?: string | string[];
+};
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+async function getRiskShareCompany(searchParams?: PageSearchParams) {
+  const rawCompanyQuery = getSingleSearchParam(searchParams?.company);
+
+  if (rawCompanyQuery === "richi") {
+    return getCompanyConfigByCode("richi").catch(() => null);
+  }
+
+  return getCompanyConfig().catch(() => null);
+}
+
+export default async function RiskSharePackManagerHomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<PageSearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
+  const company = await getRiskShareCompany(params);
 
   if (!company) {
     redirect("/login?error=tenant_required");
@@ -601,14 +624,14 @@ export default async function RiskSharePackManagerHomePage() {
           title: "전자확인·의견 접수함",
           description:
             "작업 전 위생·안전 전자확인과 불편사항·개선의견 제출 내용을 확인합니다.",
-          href: "/field/voice",
+          href: "/field/voice?company=richi",
           cta: "접수함 보기",
         },
         {
           title: "월간 운영기록",
           description:
             "작업 전 확인·서명, 익명 의견, 사진 첨부 기록을 월간 운영기록 화면에서 확인합니다.",
-          href: "/monthly-report/risk-share",
+          href: "/monthly-report/risk-share?company=richi",
           cta: "월간 운영기록 보기",
         },
         {
@@ -805,7 +828,11 @@ export default async function RiskSharePackManagerHomePage() {
 
             <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
               <Link
-                href="/monthly-report/risk-share"
+                href={
+                  isRichiFullOperation
+                    ? "/monthly-report/risk-share?company=richi"
+                    : "/monthly-report/risk-share"
+                }
                 className={
                   isRichiFullOperation
                     ? "inline-flex items-center justify-center rounded-2xl bg-[#16A085] px-4 py-3 text-sm font-black text-white hover:bg-[#12806A]"

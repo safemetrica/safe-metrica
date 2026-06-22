@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { SafeNav } from "@/components/SafeLayout";
-import { getCompanyConfig } from "@/lib/company";
+import { getCompanyConfig, getCompanyConfigByCode } from "@/lib/company";
 import {
   fetchWorkerRepresentativeConfirmationLinks,
   type WorkerRepresentativeConfirmationLink,
@@ -286,8 +286,33 @@ function SafeNotice({ message }: { message: string }) {
   );
 }
 
-export default async function RepresentativeConfirmationsPage() {
-  const company = await getCompanyConfig().catch(() => null);
+type RepresentativeConfirmationsSearchParams = {
+  company?: string | string[];
+};
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+async function getRepresentativeConfirmationsCompany(
+  searchParams?: RepresentativeConfirmationsSearchParams,
+) {
+  const rawCompanyQuery = getSingleSearchParam(searchParams?.company);
+
+  if (rawCompanyQuery === "richi") {
+    return getCompanyConfigByCode("richi").catch(() => null);
+  }
+
+  return getCompanyConfig().catch(() => null);
+}
+
+export default async function RepresentativeConfirmationsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<RepresentativeConfirmationsSearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
+  const company = await getRepresentativeConfirmationsCompany(params);
 
   if (!company) {
     return (
