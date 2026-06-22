@@ -163,7 +163,11 @@ function normalizeSubmissionType(value: unknown) {
     return "공유확인";
   }
 
-  if (text.includes("위험제보") || text.includes("위험 제보") || text.includes("risk")) {
+  if (
+    text.includes("위험제보") ||
+    text.includes("위험 제보") ||
+    text.includes("risk")
+  ) {
     return "위험제보";
   }
 
@@ -171,7 +175,11 @@ function normalizeSubmissionType(value: unknown) {
     return "아차사고";
   }
 
-  if (text.includes("개선제안") || text.includes("개선 제안") || text.includes("improvement")) {
+  if (
+    text.includes("개선제안") ||
+    text.includes("개선 제안") ||
+    text.includes("improvement")
+  ) {
     return "개선제안";
   }
 
@@ -181,7 +189,12 @@ function normalizeSubmissionType(value: unknown) {
 function normalizeStatus(value: unknown) {
   const text = readText(value).toLowerCase();
 
-  if (text.includes("조치완료") || text.includes("완료") || text.includes("done") || text.includes("completed")) {
+  if (
+    text.includes("조치완료") ||
+    text.includes("완료") ||
+    text.includes("done") ||
+    text.includes("completed")
+  ) {
     return "조치완료";
   }
 
@@ -189,7 +202,11 @@ function normalizeStatus(value: unknown) {
     return "반려";
   }
 
-  if (text.includes("조치필요") || text.includes("필요") || text.includes("action_required")) {
+  if (
+    text.includes("조치필요") ||
+    text.includes("필요") ||
+    text.includes("action_required")
+  ) {
     return "조치필요";
   }
 
@@ -220,7 +237,10 @@ function getEvidenceRole(row: EvidenceItemRow) {
 }
 
 function isTbmEvidence(row: EvidenceItemRow) {
-  return readText(row.source_type) === "tbm_voice" || getEvidenceRole(row).startsWith("tbm_");
+  return (
+    readText(row.source_type) === "tbm_voice" ||
+    getEvidenceRole(row).startsWith("tbm_")
+  );
 }
 
 function getSubmissionType(row: FieldParticipationRow) {
@@ -269,7 +289,9 @@ function isRepresentativeRecordInPeriod(
   );
 }
 
-function isRepresentativeReviewNeeded(record: WorkerRepresentativeConfirmationRecord) {
+function isRepresentativeReviewNeeded(
+  record: WorkerRepresentativeConfirmationRecord,
+) {
   return (
     record.hasObjection ||
     record.reviewStatus === "미확인" ||
@@ -284,7 +306,8 @@ async function fetchEvidenceSummary(
   period: MonthPeriod,
 ): Promise<EvidenceSummary> {
   const query = new URLSearchParams({
-    select: "company_code,source_type,submission_type,evidence_type_code,evidence_role,submitted_at,created_at",
+    select:
+      "company_code,source_type,submission_type,evidence_type_code,evidence_role,submitted_at,created_at",
     company_code: `eq.${companyCode}`,
     or: buildTimestampPeriodFilter("created_at", "submitted_at", period),
     order: "created_at.desc",
@@ -321,7 +344,9 @@ async function fetchEvidenceSummary(
     const message = error instanceof Error ? error.message : "";
 
     return {
-      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      status: message.includes("configuration is missing")
+        ? "not_configured"
+        : "failed",
       totalCount: 0,
       shareConfirmationAttachmentCount: 0,
       workerReportAttachmentCount: 0,
@@ -338,7 +363,8 @@ async function fetchFieldParticipationSummary(
   period: MonthPeriod,
 ): Promise<FieldParticipationSummary> {
   const query = new URLSearchParams({
-    select: "tenant_code,submission_type,legacy_type,title,status,reported_date,created_at",
+    select:
+      "tenant_code,submission_type,legacy_type,title,status,reported_date,created_at",
     tenant_code: `eq.${companyCode}`,
     or: buildPeriodFilter("created_at", "reported_date", period),
     order: "reported_date.desc",
@@ -353,7 +379,8 @@ async function fetchFieldParticipationSummary(
 
     const shareConfirmationCount = rows.filter(isShareConfirmation).length;
     const workerReportRows = rows.filter((row) => !isShareConfirmation(row));
-    const reviewNeededCount = workerReportRows.filter(isFieldReviewNeeded).length;
+    const reviewNeededCount =
+      workerReportRows.filter(isFieldReviewNeeded).length;
 
     return {
       status: "ok",
@@ -365,7 +392,9 @@ async function fetchFieldParticipationSummary(
     const message = error instanceof Error ? error.message : "";
 
     return {
-      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      status: message.includes("configuration is missing")
+        ? "not_configured"
+        : "failed",
       shareConfirmationCount: 0,
       workerReportCount: 0,
       reviewNeededCount: 0,
@@ -377,16 +406,48 @@ function StatCard({
   label,
   value,
   hint,
+  isRichiFullOperation = false,
 }: {
   label: string;
   value: string;
   hint: string;
+  isRichiFullOperation?: boolean;
 }) {
   return (
-    <article className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30">
-      <p className="text-sm font-bold text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-black text-white">{value}</p>
-      <p className="mt-3 text-sm leading-6 text-slate-300">{hint}</p>
+    <article
+      className={
+        isRichiFullOperation
+          ? "rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm"
+          : "rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
+      }
+    >
+      <p
+        className={
+          isRichiFullOperation
+            ? "text-sm font-bold text-teal-700"
+            : "text-sm font-bold text-slate-400"
+        }
+      >
+        {label}
+      </p>
+      <p
+        className={
+          isRichiFullOperation
+            ? "mt-3 text-3xl font-black text-[#102033]"
+            : "mt-3 text-3xl font-black text-white"
+        }
+      >
+        {value}
+      </p>
+      <p
+        className={
+          isRichiFullOperation
+            ? "mt-3 text-sm leading-6 text-slate-600"
+            : "mt-3 text-sm leading-6 text-slate-300"
+        }
+      >
+        {hint}
+      </p>
     </article>
   );
 }
@@ -410,18 +471,24 @@ export default async function RiskSharePackMonthlyReportPage({
     redirect("/login?error=risk_share_pack_not_available");
   }
 
-  const [fieldSummary, evidenceSummary, representativeStore, richiMonthlyTbmCount] =
-    await Promise.all([
-      fetchFieldParticipationSummary(company.code, period),
-      fetchEvidenceSummary(company.code, period),
-      fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
-        status: "failed" as const,
-        records: [] as WorkerRepresentativeConfirmationRecord[],
-      })),
-      company.code === "richi"
-        ? fetchRichiMonthlyTbmCount(period).catch(() => null)
-        : Promise.resolve(null),
-    ]);
+  const isRichiFullOperation = company.code === "richi";
+
+  const [
+    fieldSummary,
+    evidenceSummary,
+    representativeStore,
+    richiMonthlyTbmCount,
+  ] = await Promise.all([
+    fetchFieldParticipationSummary(company.code, period),
+    fetchEvidenceSummary(company.code, period),
+    fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
+      status: "failed" as const,
+      records: [] as WorkerRepresentativeConfirmationRecord[],
+    })),
+    isRichiFullOperation
+      ? fetchRichiMonthlyTbmCount(period).catch(() => null)
+      : Promise.resolve(null),
+  ]);
 
   const representativeRecords = representativeStore.records.filter((record) =>
     isRepresentativeRecordInPeriod(record, period),
@@ -439,149 +506,282 @@ export default async function RiskSharePackMonthlyReportPage({
     evidenceSummary.status !== "ok" ||
     representativeStore.status !== "ok";
   const reportReadyStatus = hasLoadWarning ? "확인 필요" : "준비 가능";
+  const mainClassName = isRichiFullOperation
+    ? "min-h-screen bg-[#EAF6F1] px-4 py-6 text-[#102033] print:bg-white print:text-slate-950"
+    : "min-h-screen bg-slate-950 px-4 py-6 text-slate-100 print:bg-white print:text-slate-950";
+  const shellClassName = isRichiFullOperation
+    ? "rounded-3xl border border-[#D6EDE6] bg-white p-6 shadow-sm print:border-slate-300 print:bg-white"
+    : "rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white";
+  const eyebrowClassName = isRichiFullOperation
+    ? "text-sm font-bold text-teal-700 print:text-cyan-700"
+    : "text-sm font-bold text-cyan-300 print:text-cyan-700";
+  const headingClassName = isRichiFullOperation
+    ? "text-xl font-black text-[#102033] print:text-slate-950"
+    : "text-xl font-black text-white print:text-slate-950";
+  const bodyClassName = isRichiFullOperation
+    ? "text-sm leading-6 text-slate-600 print:text-slate-700"
+    : "text-sm leading-6 text-slate-400 print:text-slate-700";
+  const secondaryButtonClassName = isRichiFullOperation
+    ? "rounded-2xl border border-[#D6EDE6] bg-white px-4 py-2 text-sm font-bold text-[#102033] hover:border-[#16A085] hover:text-[#12806A]"
+    : "rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-400 hover:text-cyan-200";
+  const evidenceCardClassName = isRichiFullOperation
+    ? "rounded-2xl border border-[#D6EDE6] bg-white p-4 shadow-sm print:border-slate-300 print:bg-slate-50"
+    : "rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50";
+  const evidenceLabelClassName = isRichiFullOperation
+    ? "text-sm font-bold text-teal-700 print:text-slate-700"
+    : "text-sm font-bold text-slate-400 print:text-slate-700";
+  const evidenceValueClassName = isRichiFullOperation
+    ? "mt-2 text-2xl font-black text-[#102033] print:text-slate-950"
+    : "mt-2 text-2xl font-black text-white print:text-slate-950";
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 print:bg-white print:text-slate-950">
+    <main className={mainClassName}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white">
+        <section className={shellClassName}>
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="text-sm font-bold text-cyan-300 print:text-cyan-700">
-                Risk Share Pack Monthly Report
+              <p className={eyebrowClassName}>
+                {isRichiFullOperation
+                  ? "SafeMetrica Monthly Operation Report"
+                  : "Risk Share Pack Monthly Report"}
               </p>
-              <h1 className="mt-2 text-3xl font-black text-white print:text-slate-950">
-                공유팩 월간 운영요약
+              <h1
+                className={
+                  isRichiFullOperation
+                    ? "mt-2 text-3xl font-black text-[#102033] print:text-slate-950"
+                    : "mt-2 text-3xl font-black text-white print:text-slate-950"
+                }
+              >
+                {isRichiFullOperation
+                  ? "월간 운영기록 요약"
+                  : "공유팩 월간 운영요약"}
               </h1>
-              <p className="mt-3 text-sm leading-6 text-slate-300 print:text-slate-700">
-                {company.name} · {monthKey} 기준 · 공유확인, 현장 의견, 근로자대표 참여확인 중심
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-3 text-sm leading-6 text-slate-600 print:text-slate-700"
+                    : "mt-3 text-sm leading-6 text-slate-300 print:text-slate-700"
+                }
+              >
+                {company.name} · {monthKey} 기준 ·{" "}
+                {isRichiFullOperation
+                  ? "작업 전 확인·서명, 익명 의견, TBM 운영기록, 근로자대표 확인 중심"
+                  : "공유확인, 현장 의견, 근로자대표 참여확인 중심"}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2 print:hidden">
               <Link
                 href={
-                  company.code === "richi"
+                  isRichiFullOperation
                     ? "/manager/risk-share?company=richi"
                     : "/manager/risk-share"
                 }
-                className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-400 hover:text-cyan-200"
+                className={secondaryButtonClassName}
               >
-                공유팩 홈
+                {isRichiFullOperation ? "관리자 홈" : "공유팩 홈"}
               </Link>
-              <Link
-                href="/monthly-report"
-                className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:border-blue-400 hover:text-blue-200"
-              >
-                전체 월간보고서
-              </Link>
+              {isRichiFullOperation ? null : (
+                <Link
+                  href="/monthly-report"
+                  className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 hover:border-blue-400 hover:text-blue-200"
+                >
+                  전체 월간보고서
+                </Link>
+              )}
               <PrintButton />
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100 print:border-amber-300 print:bg-amber-50 print:text-amber-900">
-            이 보고서는 공유팩 운영기록을 월간 단위로 정리하는 자료입니다.
-            법적 판단이나 조치완료 확정을 대신하지 않습니다.
+          <div
+            className={
+              isRichiFullOperation
+                ? "mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800 print:border-amber-300 print:bg-amber-50 print:text-amber-900"
+                : "mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100 print:border-amber-300 print:bg-amber-50 print:text-amber-900"
+            }
+          >
+            {isRichiFullOperation
+              ? "이 화면은 작업 전 확인·서명, 익명 의견, TBM 운영기록, 근로자대표 확인 자료를 월간 단위로 정리하는 운영 확인 화면입니다. 법적 판단이나 조치완료 확정을 대신하지 않습니다."
+              : "이 보고서는 공유팩 운영기록을 월간 단위로 정리하는 자료입니다. 법적 판단이나 조치완료 확정을 대신하지 않습니다."}
           </div>
         </section>
 
         {hasLoadWarning ? (
-          <section className="rounded-3xl border border-amber-500/40 bg-amber-500/10 p-5 text-sm font-bold leading-6 text-amber-100 print:border-amber-300 print:bg-amber-50 print:text-amber-900">
-            일부 원장 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 접수함과 Export를 다시 확인하세요.
+          <section
+            className={
+              isRichiFullOperation
+                ? "rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm font-bold leading-6 text-amber-800 print:border-amber-300 print:bg-amber-50 print:text-amber-900"
+                : "rounded-3xl border border-amber-500/40 bg-amber-500/10 p-5 text-sm font-bold leading-6 text-amber-100 print:border-amber-300 print:bg-amber-50 print:text-amber-900"
+            }
+          >
+            {isRichiFullOperation
+              ? "일부 운영기록 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 관리자 화면의 접수 내용을 다시 확인하세요."
+              : "일부 원장 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 접수함과 Export를 다시 확인하세요."}
           </section>
         ) : null}
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <StatCard
-            label="근로자 공유확인"
-            value={fieldSummary.status === "ok" ? `${fieldSummary.shareConfirmationCount}건` : "확인 필요"}
-            hint="위험성평가 공유확인 제출 기록입니다. 조치 KPI에는 섞지 않습니다."
+            label={
+              isRichiFullOperation ? "작업 전 확인·서명" : "근로자 공유확인"
+            }
+            value={
+              fieldSummary.status === "ok"
+                ? `${fieldSummary.shareConfirmationCount}건`
+                : "확인 필요"
+            }
+            hint={
+              isRichiFullOperation
+                ? "작업 전 확인·서명 제출 기록입니다. 조치 KPI에는 섞지 않습니다."
+                : "위험성평가 공유확인 제출 기록입니다. 조치 KPI에는 섞지 않습니다."
+            }
+            isRichiFullOperation={isRichiFullOperation}
           />
           <StatCard
-            label="위험제보·개선의견"
-            value={fieldSummary.status === "ok" ? `${fieldSummary.workerReportCount}건` : "확인 필요"}
-            hint="위험제보, 아차사고, 개선제안 등 관리자 검토대상 기록입니다."
+            label={isRichiFullOperation ? "의견·불편사항" : "위험제보·개선의견"}
+            value={
+              fieldSummary.status === "ok"
+                ? `${fieldSummary.workerReportCount}건`
+                : "확인 필요"
+            }
+            hint={
+              isRichiFullOperation
+                ? "익명 의견, 불편사항, 개선제안 등 관리자 검토대상 기록입니다."
+                : "위험제보, 아차사고, 개선제안 등 관리자 검토대상 기록입니다."
+            }
+            isRichiFullOperation={isRichiFullOperation}
           />
           <StatCard
             label="관리자 검토 필요"
-            value={fieldSummary.status === "ok" ? `${totalReviewNeeded}건` : "확인 필요"}
-            hint="공유확인을 제외한 현장 의견과 근로자대표 보완 의견 중 검토 후보입니다."
+            value={
+              fieldSummary.status === "ok"
+                ? `${totalReviewNeeded}건`
+                : "확인 필요"
+            }
+            hint={
+              isRichiFullOperation
+                ? "작업 전 확인·서명을 제외한 현장 의견과 근로자대표 보완 의견 중 검토 후보입니다."
+                : "공유확인을 제외한 현장 의견과 근로자대표 보완 의견 중 검토 후보입니다."
+            }
+            isRichiFullOperation={isRichiFullOperation}
           />
           <StatCard
             label="근로자대표 참여확인"
             value={`${representativeRecords.length}건`}
             hint="근로자대표가 제출한 참여확인 기록입니다."
+            isRichiFullOperation={isRichiFullOperation}
           />
           <StatCard
             label="보완 의견 있음"
             value={`${representativeObjectionCount}건`}
             hint="근로자대표 참여확인 중 별도 의견 또는 보완 의견이 포함된 기록입니다."
+            isRichiFullOperation={isRichiFullOperation}
           />
           <StatCard
             label="증빙 파일"
-            value={evidenceSummary.status === "ok" ? `${evidenceSummary.totalCount}건` : "확인 필요"}
-            hint="evidence_items 원장 기준 사진·파일 증빙 수입니다. 조치완료를 자동 확정하지 않습니다."
+            value={
+              evidenceSummary.status === "ok"
+                ? `${evidenceSummary.totalCount}건`
+                : "확인 필요"
+            }
+            hint={
+              isRichiFullOperation
+                ? "월간 운영 확인을 위해 모인 사진·파일 증빙 수입니다. 조치완료를 자동 확정하지 않습니다."
+                : "evidence_items 원장 기준 사진·파일 증빙 수입니다. 조치완료를 자동 확정하지 않습니다."
+            }
+            isRichiFullOperation={isRichiFullOperation}
           />
           <StatCard
             label="고객 전달자료"
             value={reportReadyStatus}
-            hint="내부 운영자가 확인 후 월간 요약 또는 CSV 전달자료로 정리합니다."
+            hint={
+              isRichiFullOperation
+                ? "내부 운영자가 확인 후 월간 운영기록 전달자료로 정리합니다."
+                : "내부 운영자가 확인 후 월간 요약 또는 CSV 전달자료로 정리합니다."
+            }
+            isRichiFullOperation={isRichiFullOperation}
           />
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white">
+        <section className={shellClassName}>
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-xl font-black text-white print:text-slate-950">
-                증빙 요약
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400 print:text-slate-700">
-                evidence_items 원장 기준의 월간 사진·파일 증빙 집계입니다.
+              <h2 className={headingClassName}>증빙 요약</h2>
+              <p className={`mt-2 ${bodyClassName}`}>
+                {isRichiFullOperation
+                  ? "월간 운영 확인을 위한 사진·파일 증빙 집계입니다."
+                  : "evidence_items 원장 기준의 월간 사진·파일 증빙 집계입니다."}
               </p>
             </div>
             <p className="text-sm font-bold text-cyan-200 print:text-cyan-800">
-              총 {evidenceSummary.status === "ok" ? `${evidenceSummary.totalCount}건` : "확인 필요"}
+              총{" "}
+              {evidenceSummary.status === "ok"
+                ? `${evidenceSummary.totalCount}건`
+                : "확인 필요"}
             </p>
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
-              <p className="text-sm font-bold text-slate-400 print:text-slate-700">공유확인 첨부</p>
-              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
-                {evidenceSummary.status === "ok" ? `${evidenceSummary.shareConfirmationAttachmentCount}건` : "확인 필요"}
+            <div className={evidenceCardClassName}>
+              <p className={evidenceLabelClassName}>
+                {isRichiFullOperation ? "확인기록 첨부" : "공유확인 첨부"}
+              </p>
+              <p className={evidenceValueClassName}>
+                {evidenceSummary.status === "ok"
+                  ? `${evidenceSummary.shareConfirmationAttachmentCount}건`
+                  : "확인 필요"}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
-              <p className="text-sm font-bold text-slate-400 print:text-slate-700">위험제보 첨부</p>
-              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
-                {evidenceSummary.status === "ok" ? `${evidenceSummary.workerReportAttachmentCount}건` : "확인 필요"}
+            <div className={evidenceCardClassName}>
+              <p className={evidenceLabelClassName}>
+                {isRichiFullOperation ? "의견 첨부" : "위험제보 첨부"}
+              </p>
+              <p className={evidenceValueClassName}>
+                {evidenceSummary.status === "ok"
+                  ? `${evidenceSummary.workerReportAttachmentCount}건`
+                  : "확인 필요"}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
-              <p className="text-sm font-bold text-slate-400 print:text-slate-700">아차사고 첨부</p>
-              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
-                {evidenceSummary.status === "ok" ? `${evidenceSummary.nearMissAttachmentCount}건` : "확인 필요"}
+            <div className={evidenceCardClassName}>
+              <p className={evidenceLabelClassName}>
+                {isRichiFullOperation ? "현장 의견 첨부" : "아차사고 첨부"}
+              </p>
+              <p className={evidenceValueClassName}>
+                {evidenceSummary.status === "ok"
+                  ? `${evidenceSummary.nearMissAttachmentCount}건`
+                  : "확인 필요"}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
-              <p className="text-sm font-bold text-slate-400 print:text-slate-700">개선제안 첨부</p>
-              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
-                {evidenceSummary.status === "ok" ? `${evidenceSummary.improvementSuggestionAttachmentCount}건` : "확인 필요"}
+            <div className={evidenceCardClassName}>
+              <p className={evidenceLabelClassName}>
+                {isRichiFullOperation ? "개선 의견 첨부" : "개선제안 첨부"}
+              </p>
+              <p className={evidenceValueClassName}>
+                {evidenceSummary.status === "ok"
+                  ? `${evidenceSummary.improvementSuggestionAttachmentCount}건`
+                  : "확인 필요"}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
-              <p className="text-sm font-bold text-slate-400 print:text-slate-700">현장참여 첨부 전체</p>
-              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
-                {evidenceSummary.status === "ok" ? `${evidenceSummary.fieldParticipationAttachmentCount}건` : "확인 필요"}
+            <div className={evidenceCardClassName}>
+              <p className={evidenceLabelClassName}>
+                {isRichiFullOperation
+                  ? "현장 의견 첨부 전체"
+                  : "현장참여 첨부 전체"}
+              </p>
+              <p className={evidenceValueClassName}>
+                {evidenceSummary.status === "ok"
+                  ? `${evidenceSummary.fieldParticipationAttachmentCount}건`
+                  : "확인 필요"}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 print:border-slate-300 print:bg-slate-50">
-              <p className="text-sm font-bold text-slate-400 print:text-slate-700">
-                {company.code === "richi"
+            <div className={evidenceCardClassName}>
+              <p className={evidenceLabelClassName}>
+                {isRichiFullOperation
                   ? "해당 월 작성된 TBM 운영기록"
                   : "TBM 보완 증빙"}
               </p>
-              <p className="mt-2 text-2xl font-black text-white print:text-slate-950">
-                {company.code === "richi"
+              <p className={evidenceValueClassName}>
+                {isRichiFullOperation
                   ? richiMonthlyTbmCount === null
                     ? "확인 필요"
                     : `${richiMonthlyTbmCount}건`
@@ -592,57 +792,137 @@ export default async function RiskSharePackMonthlyReportPage({
             </div>
           </div>
 
-          <p className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-xs leading-5 text-slate-400 print:border-slate-300 print:bg-slate-50 print:text-slate-700">
-            사진·파일 증빙은 운영 확인을 위한 참고자료이며, 조치완료 또는 법적 적합성을 자동 확정하지 않습니다.
+          <p
+            className={
+              isRichiFullOperation
+                ? "mt-4 rounded-2xl border border-[#D6EDE6] bg-white p-4 text-xs leading-5 text-slate-600 print:border-slate-300 print:bg-slate-50 print:text-slate-700"
+                : "mt-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-xs leading-5 text-slate-400 print:border-slate-300 print:bg-slate-50 print:text-slate-700"
+            }
+          >
+            사진·파일 증빙은 운영 확인을 위한 참고자료이며, 조치완료 또는 법적
+            적합성을 자동 확정하지 않습니다.
           </p>
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white">
-          <h2 className="text-xl font-black text-white print:text-slate-950">
-            월간 운영 판단 후보
-          </h2>
+        <section className={shellClassName}>
+          <h2 className={headingClassName}>월간 운영 판단 후보</h2>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 print:border-emerald-300 print:bg-emerald-50">
-              <p className="text-sm font-black text-emerald-200 print:text-emerald-900">
+            <div
+              className={
+                isRichiFullOperation
+                  ? "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 print:border-emerald-300 print:bg-emerald-50"
+                  : "rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 print:border-emerald-300 print:bg-emerald-50"
+              }
+            >
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "text-sm font-black text-emerald-800 print:text-emerald-900"
+                    : "text-sm font-black text-emerald-200 print:text-emerald-900"
+                }
+              >
                 유지할 흐름
               </p>
-              <p className="mt-2 text-sm leading-6 text-emerald-50 print:text-emerald-900">
-                공유확인과 근로자대표 참여확인이 꾸준히 쌓이면 다음 정기 위험성평가 검토에 활용할 수 있습니다.
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-2 text-sm leading-6 text-emerald-900 print:text-emerald-900"
+                    : "mt-2 text-sm leading-6 text-emerald-50 print:text-emerald-900"
+                }
+              >
+                {isRichiFullOperation
+                  ? "작업 전 확인·서명과 근로자대표 확인이 꾸준히 쌓이면 다음 정기 운영 검토에 활용할 수 있습니다."
+                  : "공유확인과 근로자대표 참여확인이 꾸준히 쌓이면 다음 정기 위험성평가 검토에 활용할 수 있습니다."}
               </p>
             </div>
-            <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 print:border-amber-300 print:bg-amber-50">
-              <p className="text-sm font-black text-amber-200 print:text-amber-900">
+            <div
+              className={
+                isRichiFullOperation
+                  ? "rounded-2xl border border-amber-200 bg-amber-50 p-4 print:border-amber-300 print:bg-amber-50"
+                  : "rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 print:border-amber-300 print:bg-amber-50"
+              }
+            >
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "text-sm font-black text-amber-800 print:text-amber-900"
+                    : "text-sm font-black text-amber-200 print:text-amber-900"
+                }
+              >
                 확인할 항목
               </p>
-              <p className="mt-2 text-sm leading-6 text-amber-50 print:text-amber-900">
-                검토 필요 항목은 관리자 검토 메모, 조치 경과, 다음 달 재확인 대상으로 분리해 관리합니다.
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-2 text-sm leading-6 text-amber-900 print:text-amber-900"
+                    : "mt-2 text-sm leading-6 text-amber-50 print:text-amber-900"
+                }
+              >
+                검토 필요 항목은 관리자 검토 메모, 조치 경과, 다음 달 재확인
+                대상으로 분리해 관리합니다.
               </p>
             </div>
-            <div className="rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-4 print:border-cyan-300 print:bg-cyan-50">
-              <p className="text-sm font-black text-cyan-200 print:text-cyan-900">
+            <div
+              className={
+                isRichiFullOperation
+                  ? "rounded-2xl border border-teal-200 bg-teal-50 p-4 print:border-teal-300 print:bg-teal-50"
+                  : "rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-4 print:border-cyan-300 print:bg-cyan-50"
+              }
+            >
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "text-sm font-black text-teal-800 print:text-teal-900"
+                    : "text-sm font-black text-cyan-200 print:text-cyan-900"
+                }
+              >
                 고객 전달자료
               </p>
-              <p className="mt-2 text-sm leading-6 text-cyan-50 print:text-cyan-900">
-                월간 요약은 내부 운영자가 확인한 뒤 고객 전달자료 또는 CSV Export와 함께 정리합니다.
+              <p
+                className={
+                  isRichiFullOperation
+                    ? "mt-2 text-sm leading-6 text-teal-900 print:text-teal-900"
+                    : "mt-2 text-sm leading-6 text-cyan-50 print:text-cyan-900"
+                }
+              >
+                {isRichiFullOperation
+                  ? "월간 운영기록은 내부 운영자가 확인한 뒤 고객 전달자료로 정리합니다."
+                  : "월간 요약은 내부 운영자가 확인한 뒤 고객 전달자료 또는 CSV Export와 함께 정리합니다."}
               </p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 text-sm leading-6 text-slate-300 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white print:text-slate-700">
-          <h2 className="text-xl font-black text-white print:text-slate-950">
-            포함 범위
-          </h2>
+        <section
+          className={
+            isRichiFullOperation
+              ? "rounded-3xl border border-[#D6EDE6] bg-white p-6 text-sm leading-6 text-slate-600 shadow-sm print:border-slate-300 print:bg-white print:text-slate-700"
+              : "rounded-3xl border border-slate-800 bg-slate-900 p-6 text-sm leading-6 text-slate-300 shadow-xl shadow-slate-950/30 print:border-slate-300 print:bg-white print:text-slate-700"
+          }
+        >
+          <h2 className={headingClassName}>포함 범위</h2>
           <ul className="mt-4 grid gap-2 md:grid-cols-2">
-            <li>• 근로자 공유확인 기록</li>
-            <li>• 위험제보·아차사고·개선제안 기록</li>
+            <li>
+              •{" "}
+              {isRichiFullOperation
+                ? "작업 전 확인·서명 기록"
+                : "근로자 공유확인 기록"}
+            </li>
+            <li>
+              •{" "}
+              {isRichiFullOperation
+                ? "익명 의견·불편사항·개선제안 기록"
+                : "위험제보·아차사고·개선제안 기록"}
+            </li>
             <li>• 관리자 검토 필요 후보</li>
             <li>• 근로자대표 참여확인 기록</li>
             <li>• 보완 의견 또는 별도 의견</li>
             <li>• 고객 전달자료 준비 상태</li>
           </ul>
           <p className="mt-4 text-xs leading-5 text-slate-500 print:text-slate-600">
-            TBM, PTW, Evidence Book, Full SafeMetrica 대표 대시보드 항목은 공유팩 전용 월간요약에서 제외합니다.
+            {isRichiFullOperation
+              ? "이 화면은 월간 운영 확인에 필요한 주요 기록을 정리하며, 세부 운영 자료는 별도 관리 화면에서 확인합니다."
+              : "TBM, PTW, Evidence Book, Full SafeMetrica 대표 대시보드 항목은 공유팩 전용 월간요약에서 제외합니다."}
           </p>
         </section>
       </div>
