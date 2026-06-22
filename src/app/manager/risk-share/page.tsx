@@ -784,21 +784,22 @@ export default async function RiskSharePackManagerHomePage() {
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-500">
-            월별 보관함은 운영기록을 고객이 확인 가능한 파일 단위로 정리하는
-            UX입니다. 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보는 고객
-            전달자료에 포함하지 않습니다. 법적 판단, 면책, 조치완료 확정을
-            대신하지 않습니다.
+            {isRichiFullOperation
+              ? "고객 전달자료에는 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보를 포함하지 않습니다."
+              : "월별 보관함은 운영기록을 고객이 확인 가능한 파일 단위로 정리하는 UX입니다. 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보는 고객 전달자료에 포함하지 않습니다. 법적 판단, 면책, 조치완료 확정을 대신하지 않습니다."}
           </p>
         </section>
 
         <RiskSharePackCustomerLinksPanel
           companyName={companyName}
           companyCode={company.code}
+          isRichiFullOperation={isRichiFullOperation}
         />
 
         <RiskSharePackLinkPanel
           companyName={companyName}
           companyCode={company.code}
+          isRichiFullOperation={isRichiFullOperation}
         />
 
         <RiskSharePackMonthlySummary
@@ -812,9 +813,13 @@ export default async function RiskSharePackManagerHomePage() {
             hasMonthlySummaryWarning ? "확인 필요" : "준비 가능"
           }
           hasLoadWarning={hasMonthlySummaryWarning}
+          isRichiFullOperation={isRichiFullOperation}
         />
 
-        <RiskSharePackExportPanel companyCode={company.code} />
+        <RiskSharePackExportPanel
+          companyCode={company.code}
+          isRichiFullOperation={isRichiFullOperation}
+        />
 
         <section className="grid gap-4 lg:grid-cols-3">
           {displayActionCards.map((card) => (
