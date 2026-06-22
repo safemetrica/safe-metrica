@@ -102,7 +102,7 @@ export default function RiskSharePackExportPanel({
             }
           >
             {isRichiFullOperation
-              ? "고객 전달자료 준비"
+              ? "이번 달 자료 준비"
               : "Risk Share Pack 고객 전달자료"}
           </h2>
           <p
@@ -113,7 +113,7 @@ export default function RiskSharePackExportPanel({
             }
           >
             {isRichiFullOperation
-              ? "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 확인 후 고객에게 전달할 파일 구성을 안내합니다."
+              ? "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 확인 후 이번 달 전달 파일 구성을 안내합니다."
               : "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 Owner Export Center에서 확인·생성 후 고객에게 전달할 파일 구성을 안내합니다."}
           </p>
         </div>
@@ -207,7 +207,7 @@ export default function RiskSharePackExportPanel({
       <p className="mt-4 text-xs leading-5 text-slate-500">
         {isRichiFullOperation
           ? "고객 전달자료에는 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보를 포함하지 않습니다."
-          : "월별 보관파일은 운영기록을 정리해 확인자료로 활용하기 위한 보조 흐름입니다. 최종 공유본 확정 전 항목, 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보는 고객 전달자료에 포함하지 않습니다. 법적 판단, 면책, 조치완료 확정을 대신하지 않습니다."}
+          : "월별 보관파일은 운영기록을 정리해 확인자료로 활용하기 위한 보조 흐름입니다. 최종 공유본 확정 전 항목, 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보는 고객 전달자료에 포함하지 않습니다. 법적 판단, 면책, 조치 판단을 대신하지 않습니다."}
       </p>
     </section>
   );
