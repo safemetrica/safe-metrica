@@ -126,25 +126,32 @@ function isRepresentativeRecordInPeriod(
 const actionCards = [
   {
     title: "근로자대표 참여확인 관리",
-    description: "근로자대표 확인 링크 생성, 제출 현황, 폐기·만료 상태를 관리합니다.",
+    description:
+      "근로자대표 확인 링크 생성, 제출 현황, 폐기·만료 상태를 관리합니다.",
     href: "/manager/representative-confirmations",
     cta: "관리 화면 열기",
   },
   {
     title: "월간보고서 확인",
-    description: "공유확인, 위험제보, 근로자대표 참여확인 기록만 월간 단위로 확인합니다.",
+    description:
+      "공유확인, 위험제보, 근로자대표 참여확인 기록만 월간 단위로 확인합니다.",
     href: "/monthly-report/risk-share",
     cta: "공유팩 월간요약 보기",
   },
   {
     title: "현장 의견 접수함",
-    description: "위험제보, 아차사고, 개선제안 등 검토가 필요한 현장 의견을 확인합니다.",
+    description:
+      "위험제보, 아차사고, 개선제안 등 검토가 필요한 현장 의견을 확인합니다.",
     href: "/field/voice",
     cta: "접수함 보기",
   },
 ];
 
-function getCompanyDisplayName(company: { name?: string; companyName?: string; code: string }) {
+function getCompanyDisplayName(company: {
+  name?: string;
+  companyName?: string;
+  code: string;
+}) {
   return company.name || company.companyName || company.code;
 }
 
@@ -178,7 +185,11 @@ function normalizeSubmissionType(value: unknown) {
     return "위생·안전 확인";
   }
 
-  if (compactText.includes("불편사항") || compactText.includes("불편") || text.includes("discomfort")) {
+  if (
+    compactText.includes("불편사항") ||
+    compactText.includes("불편") ||
+    text.includes("discomfort")
+  ) {
     return "불편사항";
   }
 
@@ -190,7 +201,11 @@ function normalizeSubmissionType(value: unknown) {
     return "공유확인";
   }
 
-  if (text.includes("위험제보") || text.includes("위험") || text.includes("risk")) {
+  if (
+    text.includes("위험제보") ||
+    text.includes("위험") ||
+    text.includes("risk")
+  ) {
     return "위험제보";
   }
 
@@ -198,7 +213,11 @@ function normalizeSubmissionType(value: unknown) {
     return "아차사고";
   }
 
-  if (text.includes("개선제안") || text.includes("개선 제안") || text.includes("improvement")) {
+  if (
+    text.includes("개선제안") ||
+    text.includes("개선 제안") ||
+    text.includes("improvement")
+  ) {
     return "개선제안";
   }
 
@@ -208,7 +227,12 @@ function normalizeSubmissionType(value: unknown) {
 function normalizeFieldStatus(value: unknown) {
   const text = readText(value).toLowerCase();
 
-  if (text.includes("조치완료") || text.includes("완료") || text.includes("done") || text.includes("completed")) {
+  if (
+    text.includes("조치완료") ||
+    text.includes("완료") ||
+    text.includes("done") ||
+    text.includes("completed")
+  ) {
     return "조치완료";
   }
 
@@ -216,7 +240,11 @@ function normalizeFieldStatus(value: unknown) {
     return "반려";
   }
 
-  if (text.includes("조치필요") || text.includes("필요") || text.includes("action_required")) {
+  if (
+    text.includes("조치필요") ||
+    text.includes("필요") ||
+    text.includes("action_required")
+  ) {
     return "조치필요";
   }
 
@@ -256,7 +284,8 @@ async function fetchVersionLockMonthlySummary(
 ): Promise<VersionLockMonthlySummary> {
   const lockMonth = period.startDate.slice(0, 7);
   const query = new URLSearchParams({
-    select: "id,created_at,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status",
+    select:
+      "id,created_at,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status",
     company_code: `eq.${companyCode}`,
     lock_month: `eq.${lockMonth}`,
     lock_status: "eq.active",
@@ -273,7 +302,10 @@ async function fetchVersionLockMonthlySummary(
     return {
       status: "ok",
       lockCount: rows.length,
-      lockedItemCount: rows.reduce((sum, row) => sum + readNumber(row.item_count), 0),
+      lockedItemCount: rows.reduce(
+        (sum, row) => sum + readNumber(row.item_count),
+        0,
+      ),
       customerConfirmedCount: rows.reduce(
         (sum, row) => sum + readNumber(row.customer_confirmed_count),
         0,
@@ -288,7 +320,9 @@ async function fetchVersionLockMonthlySummary(
     const message = error instanceof Error ? error.message : "";
 
     return {
-      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      status: message.includes("configuration is missing")
+        ? "not_configured"
+        : "failed",
       lockCount: 0,
       lockedItemCount: 0,
       customerConfirmedCount: 0,
@@ -303,7 +337,8 @@ async function fetchFieldParticipationSummary(
   period: SummaryPeriod,
 ): Promise<FieldParticipationSummary> {
   const query = new URLSearchParams({
-    select: "tenant_code,submission_type,legacy_type,title,status,reported_date,created_at",
+    select:
+      "tenant_code,submission_type,legacy_type,title,status,reported_date,created_at",
     tenant_code: `eq.${companyCode}`,
     or: buildPeriodFilter("created_at", "reported_date", period),
     order: "reported_date.desc",
@@ -318,7 +353,8 @@ async function fetchFieldParticipationSummary(
 
     const shareConfirmationCount = rows.filter(isShareConfirmation).length;
     const workerReportRows = rows.filter((row) => !isShareConfirmation(row));
-    const fieldReviewNeededCount = workerReportRows.filter(isFieldReviewNeeded).length;
+    const fieldReviewNeededCount =
+      workerReportRows.filter(isFieldReviewNeeded).length;
 
     return {
       status: "ok",
@@ -330,7 +366,9 @@ async function fetchFieldParticipationSummary(
     const message = error instanceof Error ? error.message : "";
 
     return {
-      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      status: message.includes("configuration is missing")
+        ? "not_configured"
+        : "failed",
       shareConfirmationCount: 0,
       workerReportCount: 0,
       fieldReviewNeededCount: 0,
@@ -355,7 +393,9 @@ function getLinkStatus(link: WorkerRepresentativeConfirmationLink) {
   return "active";
 }
 
-function isRepresentativeReviewNeeded(record: WorkerRepresentativeConfirmationRecord) {
+function isRepresentativeReviewNeeded(
+  record: WorkerRepresentativeConfirmationRecord,
+) {
   return (
     record.hasObjection ||
     record.reviewStatus === "미확인" ||
@@ -380,9 +420,15 @@ function buildSummaryCards(params: {
     versionLockSummary,
   } = params;
 
-  const objectionCount = representativeRecords.filter((record) => record.hasObjection).length;
-  const representativeReviewNeededCount = representativeRecords.filter(isRepresentativeReviewNeeded).length;
-  const activeLinkCount = representativeLinks.filter((link) => getLinkStatus(link) === "active").length;
+  const objectionCount = representativeRecords.filter(
+    (record) => record.hasObjection,
+  ).length;
+  const representativeReviewNeededCount = representativeRecords.filter(
+    isRepresentativeReviewNeeded,
+  ).length;
+  const activeLinkCount = representativeLinks.filter(
+    (link) => getLinkStatus(link) === "active",
+  ).length;
   const fieldLoadFailed = fieldSummary.status !== "ok";
   const totalReviewNeededCount =
     fieldSummary.fieldReviewNeededCount + representativeReviewNeededCount;
@@ -390,14 +436,18 @@ function buildSummaryCards(params: {
   return [
     {
       label: "근로자 공유확인",
-      value: fieldLoadFailed ? "확인 필요" : `${fieldSummary.shareConfirmationCount}건`,
+      value: fieldLoadFailed
+        ? "확인 필요"
+        : `${fieldSummary.shareConfirmationCount}건`,
       description: fieldLoadFailed
         ? "현장참여 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
         : "공유확인 제출 건수입니다. 조치 KPI에는 섞지 않습니다.",
     },
     {
       label: "위험제보·개선의견",
-      value: fieldLoadFailed ? "확인 필요" : `${fieldSummary.workerReportCount}건`,
+      value: fieldLoadFailed
+        ? "확인 필요"
+        : `${fieldSummary.workerReportCount}건`,
       description: fieldLoadFailed
         ? "현장참여 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
         : "위험제보, 아차사고, 개선제안 등 관리자 검토대상 제출 건수입니다.",
@@ -417,7 +467,8 @@ function buildSummaryCards(params: {
     {
       label: "보완 의견 있음",
       value: `${objectionCount}건`,
-      description: "별도 의견 또는 보완 의견이 포함된 근로자대표 참여확인 기록입니다.",
+      description:
+        "별도 의견 또는 보완 의견이 포함된 근로자대표 참여확인 기록입니다.",
     },
     {
       label: "사용 가능 링크",
@@ -434,7 +485,7 @@ function buildSummaryCards(params: {
           : `${versionLockSummary.lockCount}회 / ${versionLockSummary.lockedItemCount}건`,
       description:
         versionLockSummary.status !== "ok"
-          ? "최종 공유본 원장 조회가 실패했습니다. Supabase migration 적용 상태를 확인하세요."
+          ? "최종 공유본 원장 조회가 실패했습니다. 운영 원장 설정 상태를 확인하세요."
           : "이번 달 월별 보관함에 반영할 확정 공유 항목 기준입니다.",
     },
   ];
@@ -453,23 +504,25 @@ export default async function RiskSharePackManagerHomePage() {
 
   const currentPeriod = getCurrentKstMonthPeriod();
 
-  const [fieldSummary, versionLockSummary, recordResult, linkResult] = await Promise.all([
-    fetchFieldParticipationSummary(company.code, currentPeriod),
-    fetchVersionLockMonthlySummary(company.code, currentPeriod),
-    fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
-      status: "failed" as const,
-      records: [] as WorkerRepresentativeConfirmationRecord[],
-    })),
-    fetchWorkerRepresentativeConfirmationLinks(company.code).catch(() => ({
-      status: "failed" as const,
-      links: [] as WorkerRepresentativeConfirmationLink[],
-    })),
-  ]);
+  const [fieldSummary, versionLockSummary, recordResult, linkResult] =
+    await Promise.all([
+      fetchFieldParticipationSummary(company.code, currentPeriod),
+      fetchVersionLockMonthlySummary(company.code, currentPeriod),
+      fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
+        status: "failed" as const,
+        records: [] as WorkerRepresentativeConfirmationRecord[],
+      })),
+      fetchWorkerRepresentativeConfirmationLinks(company.code).catch(() => ({
+        status: "failed" as const,
+        links: [] as WorkerRepresentativeConfirmationLink[],
+      })),
+    ]);
 
   const representativeRecords = recordResult.records.filter((record) =>
     isRepresentativeRecordInPeriod(record, currentPeriod),
   );
-  const representativeLinks = linkResult.status === "ok" ? linkResult.links : [];
+  const representativeLinks =
+    linkResult.status === "ok" ? linkResult.links : [];
   const isRichiFullOperation = company.code === "richi";
   const summaryCards = buildSummaryCards({
     fieldSummary,
@@ -478,7 +531,6 @@ export default async function RiskSharePackManagerHomePage() {
     linkLoadFailed: linkResult.status !== "ok",
     versionLockSummary,
   });
-
 
   const fieldLoadFailed = fieldSummary.status !== "ok";
   const representativeReviewNeededCount = representativeRecords.filter(
@@ -490,9 +542,12 @@ export default async function RiskSharePackManagerHomePage() {
   const totalReviewNeededCount =
     fieldSummary.fieldReviewNeededCount + representativeReviewNeededCount;
   const versionLockLoadFailed = versionLockSummary.status !== "ok";
-    const versionLockAffectsMonthlyWarning = !isRichiFullOperation && versionLockLoadFailed;
-    const hasMonthlySummaryWarning =
-      fieldLoadFailed || linkResult.status !== "ok" || versionLockAffectsMonthlyWarning;
+  const versionLockAffectsMonthlyWarning =
+    !isRichiFullOperation && versionLockLoadFailed;
+  const hasMonthlySummaryWarning =
+    fieldLoadFailed ||
+    linkResult.status !== "ok" ||
+    versionLockAffectsMonthlyWarning;
 
   const companyName = getCompanyDisplayName(company);
 
@@ -502,7 +557,8 @@ export default async function RiskSharePackManagerHomePage() {
           return {
             ...card,
             label: "전자확인 기록",
-            description: "작업 전 위생·안전 확인 제출 건수입니다. 의견 접수와 분리해 봅니다.",
+            description:
+              "작업 전 위생·안전 확인 제출 건수입니다. 의견 접수와 분리해 봅니다.",
           };
         }
 
@@ -510,7 +566,8 @@ export default async function RiskSharePackManagerHomePage() {
           return {
             ...card,
             label: "의견·불편사항",
-            description: "불편사항, 개선의견, 기타 의견 등 관리자 확인자료로 볼 제출 건수입니다.",
+            description:
+              "불편사항, 개선의견, 기타 의견 등 관리자 확인자료로 볼 제출 건수입니다.",
           };
         }
 
@@ -518,20 +575,21 @@ export default async function RiskSharePackManagerHomePage() {
           return {
             ...card,
             label: "관리자 확인 필요",
-            description: "의견·불편사항과 보완 의견 중 관리자가 확인할 필요가 있는 기록입니다.",
+            description:
+              "의견·불편사항과 보완 의견 중 관리자가 확인할 필요가 있는 기록입니다.",
           };
         }
 
-          if (card.label === "최종 공유본 확정") {
-            return {
-              ...card,
-              label: "위험성평가 확인·월별보관",
-              value: versionLockLoadFailed ? "준비 중" : card.value,
-              description: versionLockLoadFailed
-                ? "리치 Full 운영에서는 최종 공유본 원장 조회를 필수 오류로 보지 않습니다. 현재는 작업 전 확인·서명, 익명 의견, 관리자 검토 흐름을 우선 확인합니다."
-                : "월별 보관에 반영할 위험성평가 확인 항목입니다.",
-            };
-          }
+        if (card.label === "최종 공유본 확정") {
+          return {
+            ...card,
+            label: "위험성평가 확인·월별보관",
+            value: versionLockLoadFailed ? "준비 중" : card.value,
+            description: versionLockLoadFailed
+              ? "현재는 작업 전 확인·서명, 익명 의견, 관리자 검토 흐름을 우선 확인합니다."
+              : "월별 보관에 반영할 위험성평가 확인 항목입니다.",
+          };
+        }
 
         return card;
       })
@@ -541,19 +599,22 @@ export default async function RiskSharePackManagerHomePage() {
     ? [
         {
           title: "전자확인·의견 접수함",
-          description: "작업 전 위생·안전 전자확인과 불편사항·개선의견 제출 내용을 확인합니다.",
+          description:
+            "작업 전 위생·안전 전자확인과 불편사항·개선의견 제출 내용을 확인합니다.",
           href: "/field/voice",
           cta: "접수함 보기",
         },
         {
-          title: "주간·월간 요약 후보",
-          description: "전자확인, 의견, 사진 첨부 기록을 주간 체험 요약 후보로 확인합니다.",
+          title: "월간 운영기록",
+          description:
+            "작업 전 확인·서명, 익명 의견, 사진 첨부 기록을 월간 운영기록 화면에서 확인합니다.",
           href: "/monthly-report/risk-share",
-          cta: "요약 화면 열기",
+          cta: "월간 운영기록 보기",
         },
         {
           title: "근로자 전자확인 화면",
-          description: "리치코리아 근로자 QR 전자확인 화면을 새 창으로 열어 운영 흐름을 확인합니다.",
+          description:
+            "리치코리아 근로자 QR 전자확인 화면을 새 창으로 열어 운영 흐름을 확인합니다.",
           href: `/field/participation?company=${encodeURIComponent(company.code)}`,
           cta: "근로자 화면 열기",
         },
@@ -566,14 +627,20 @@ export default async function RiskSharePackManagerHomePage() {
         <section className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-cyan-300">{isRichiFullOperation ? "SafeMetrica Operation Manager" : "SafeMetrica 운영 관리자"}</p>
+              <p className="text-sm font-semibold text-cyan-300">
+                {isRichiFullOperation
+                  ? "SafeMetrica Operation Manager"
+                  : "SafeMetrica 운영 관리자"}
+              </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
-                {isRichiFullOperation ? "(주)리치코리아 SafeMetrica 운영 관리자 홈" : "SafeMetrica 운영 관리자 홈"}
+                {isRichiFullOperation
+                  ? "(주)리치코리아 SafeMetrica 운영 관리자 홈"
+                  : "SafeMetrica 운영 관리자 홈"}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-                위험성평가 공유 이후의 확인, 의견 제출, 근로자대표 참여확인,
-                관리자 검토, 월간 요약, 고객 전달 자료 흐름을 확인하는 전용 홈입니다.
-                TBM은 현장관리자의 기본 운영 기능이며, 이 화면에서는 작업 전 확인·서명, 익명 의견, 제보·관리자 검토 흐름을 중심으로 표시합니다.
+                {isRichiFullOperation
+                  ? "작업 전 확인·서명, 익명 의견, 관리자 검토, TBM 운영기록, 근로자대표 확인, 월간 운영기록과 고객 전달자료 준비 상태를 확인하는 관리자 홈입니다."
+                  : "위험성평가 공유 이후의 확인, 의견 제출, 근로자대표 참여확인, 관리자 검토, 월간 요약, 고객 전달 자료 흐름을 확인하는 전용 홈입니다. TBM은 현장관리자의 기본 운영 기능이며, 이 화면에서는 작업 전 확인·서명, 익명 의견, 제보·관리자 검토 흐름을 중심으로 표시합니다."}
               </p>
             </div>
 
@@ -590,14 +657,16 @@ export default async function RiskSharePackManagerHomePage() {
               현재 업체: {companyName}
             </span>
             <span className="rounded-full border border-slate-700 bg-slate-950/70 px-4 py-2 text-sm font-bold text-slate-300">
-              업체 코드: {company.code}
+              {isRichiFullOperation
+                ? "운영 구분: Full SafeMetrica"
+                : `업체 코드: ${company.code}`}
             </span>
           </div>
 
           <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
-            이 화면은 운영기록 확인을 위한 관리자 화면입니다. 법적 판단이나 조치완료
-            확정을 대신하지 않습니다. 최종 검토와 조치 판단은 관리자와 사업주가
-            수행합니다.
+            이 화면은 운영기록 확인을 위한 관리자 화면입니다. 법적 판단이나
+            조치완료 확정을 대신하지 않습니다. 최종 검토와 조치 판단은 관리자와
+            사업주가 수행합니다.
           </div>
         </section>
 
@@ -607,15 +676,16 @@ export default async function RiskSharePackManagerHomePage() {
               key={card.label}
               className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-xl shadow-slate-950/30"
             >
-              <p className="text-sm font-semibold text-slate-400">{card.label}</p>
+              <p className="text-sm font-semibold text-slate-400">
+                {card.label}
+              </p>
               <p className="mt-3 text-2xl font-bold text-white">{card.value}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">{card.description}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">
+                {card.description}
+              </p>
             </article>
           ))}
         </section>
-
-
-
 
         <section className="rounded-3xl border border-emerald-400/25 bg-emerald-400/10 p-5 shadow-xl shadow-slate-950/30">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -625,8 +695,9 @@ export default async function RiskSharePackManagerHomePage() {
                 이번 달 운영기록 파일 준비
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                공유확인, 위험제보, 근로자대표 참여확인, 증빙목록을 월별 파일로 정리해
-                감독관, 구청, 발주처, 대표 보고 시 확인자료로 활용할 수 있게 준비합니다.
+                {isRichiFullOperation
+                  ? "작업 전 확인·서명, 익명 의견, TBM 운영기록, 근로자대표 확인 자료를 월별 파일로 정리해 감독관, 구청, 발주처, 대표 보고 시 확인자료로 활용할 수 있게 준비합니다."
+                  : "공유확인, 위험제보, 근로자대표 참여확인, 증빙목록을 월별 파일로 정리해 감독관, 구청, 발주처, 대표 보고 시 확인자료로 활용할 수 있게 준비합니다."}
               </p>
             </div>
 
@@ -641,7 +712,9 @@ export default async function RiskSharePackManagerHomePage() {
                 href="#risk-share-export-panel"
                 className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/50 px-4 py-3 text-sm font-black text-emerald-100 hover:border-emerald-200 hover:text-emerald-50"
               >
-                고객 전달용 CSV 준비
+                {isRichiFullOperation
+                  ? "고객 전달자료 준비"
+                  : "고객 전달용 CSV 준비"}
               </Link>
             </div>
           </div>
@@ -649,7 +722,9 @@ export default async function RiskSharePackManagerHomePage() {
           <div className="mt-5 grid gap-3 lg:grid-cols-3">
             {[
               {
-                label: "확정 공유 항목",
+                label: isRichiFullOperation
+                  ? "위험성평가 확인 항목"
+                  : "확정 공유 항목",
                 status:
                   versionLockSummary.status !== "ok"
                     ? isRichiFullOperation
@@ -659,24 +734,34 @@ export default async function RiskSharePackManagerHomePage() {
                 description:
                   versionLockSummary.status !== "ok"
                     ? isRichiFullOperation
-                      ? "리치 Full 운영에서는 위험성평가 확인·월별보관을 선택 흐름으로 표시합니다. 현재는 작업 전 확인·서명과 익명 의견 흐름을 우선 확인합니다."
-                      : "최종 공유본 원장 조회 실패 상태입니다. Supabase migration 적용 여부를 확인하세요."
+                      ? "현재는 작업 전 확인·서명, 익명 의견, 관리자 검토 흐름을 우선 확인합니다."
+                      : "최종 공유본 원장 조회 실패 상태입니다. 운영 원장 설정 상태를 확인하세요."
                     : `이번 달 확정 공유본 ${versionLockSummary.lockCount}회, 근로자 QR 노출 항목 ${versionLockSummary.workerVisibleCount}건입니다.`,
               },
               {
                 label: "월간 운영보고서 PDF",
                 status: "연결됨",
-                description: "공유팩 월간요약 화면에서 인쇄 또는 PDF 저장 흐름으로 확인합니다.",
+                description: isRichiFullOperation
+                  ? "월간 운영기록 화면에서 인쇄 또는 PDF 저장 흐름으로 확인합니다."
+                  : "공유팩 월간요약 화면에서 인쇄 또는 PDF 저장 흐름으로 확인합니다.",
               },
               {
-                label: "공유확인·위험제보 CSV",
+                label: isRichiFullOperation
+                  ? "확인·의견 제출자료"
+                  : "공유확인·위험제보 CSV",
                 status: "CSV 제공 중",
-                description: "내부 운영자가 고객 전달 가능한 컬럼만 정리해 다운로드합니다.",
+                description: isRichiFullOperation
+                  ? "내부 운영자가 고객 전달 가능한 항목만 정리해 준비합니다."
+                  : "내부 운영자가 고객 전달 가능한 컬럼만 정리해 다운로드합니다.",
               },
               {
-                label: "증빙목록·사진 ZIP",
+                label: isRichiFullOperation
+                  ? "증빙목록·첨부사진"
+                  : "증빙목록·사진 ZIP",
                 status: "준비 중",
-                description: "첨부사진과 증빙목록은 Manifest와 ZIP 패키지 기준을 분리해 후속 설계합니다.",
+                description: isRichiFullOperation
+                  ? "첨부사진과 증빙목록은 월별 전달자료 기준에 맞춰 후속 정리합니다."
+                  : "첨부사진과 증빙목록은 Manifest와 ZIP 패키지 기준을 분리해 후속 설계합니다.",
               },
             ].map((item) => (
               <article
@@ -684,20 +769,25 @@ export default async function RiskSharePackManagerHomePage() {
                 className="rounded-2xl border border-emerald-300/20 bg-slate-950/50 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-base font-black text-white">{item.label}</h3>
+                  <h3 className="text-base font-black text-white">
+                    {item.label}
+                  </h3>
                   <span className="shrink-0 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-100">
                     {item.status}
                   </span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-300">
+                  {item.description}
+                </p>
               </article>
             ))}
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-500">
-            월별 보관함은 운영기록을 고객이 확인 가능한 파일 단위로 정리하는 UX입니다.
-            최종 공유본 확정 전 초안, 고객 확인 전 항목, Owner 내부 메모, raw_payload, 토큰·환경변수 유사 문자열은 고객 전달 자료에 포함하지 않습니다.
-            법적 판단, 면책, 조치완료 확정을 대신하지 않습니다.
+            월별 보관함은 운영기록을 고객이 확인 가능한 파일 단위로 정리하는
+            UX입니다. 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보는 고객
+            전달자료에 포함하지 않습니다. 법적 판단, 면책, 조치완료 확정을
+            대신하지 않습니다.
           </p>
         </section>
 
@@ -718,7 +808,9 @@ export default async function RiskSharePackManagerHomePage() {
           reviewNeededCount={fieldLoadFailed ? 0 : totalReviewNeededCount}
           representativeConfirmationCount={representativeRecords.length}
           objectionCount={objectionCount}
-          exportReadyStatus={hasMonthlySummaryWarning ? "확인 필요" : "준비 가능"}
+          exportReadyStatus={
+            hasMonthlySummaryWarning ? "확인 필요" : "준비 가능"
+          }
           hasLoadWarning={hasMonthlySummaryWarning}
         />
 
@@ -732,7 +824,9 @@ export default async function RiskSharePackManagerHomePage() {
             >
               <div>
                 <h2 className="text-lg font-bold text-white">{card.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{card.description}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-300">
+                  {card.description}
+                </p>
               </div>
 
               <Link
