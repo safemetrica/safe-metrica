@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { buildParticipationReviewLabels, type ParticipationReviewLabel } from "@/lib/participationReviewLabels";
 import { riskShareLinkCopy } from "@/lib/risk-share-link/copy";
+import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   TenantRequiredError,
   UnknownCompanyError,
@@ -37,6 +38,28 @@ type NotionPage = {
   properties?: Record<string, NotionProperty>;
 };
 
+type FieldParticipationInboxRow = {
+  id?: unknown;
+  title?: unknown;
+  submission_type?: unknown;
+  legacy_type?: unknown;
+  status?: unknown;
+  reported_date?: unknown;
+  created_at?: unknown;
+  location?: unknown;
+  submitter?: unknown;
+  anonymous?: unknown;
+  content?: unknown;
+};
+
+type SummaryPeriod = {
+  startDate: string;
+  endDate: string;
+  dayAfterEnd: string;
+};
+
+type FieldVoiceDataSource = "notion" | "richi";
+
 type FieldVoiceRow = {
   id: string;
   notionUrl?: string;
@@ -61,7 +84,51 @@ type FieldVoiceRow = {
   confirmationStatus?: string;
   entryIntent?: string;
   rawPayload?: Record<string, unknown>;
+  createdAt?: string;
 };
+
+
+function readText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readBoolean(value: unknown) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim().toLowerCase() === "true";
+  return false;
+}
+
+function getKstDateString(date: Date) {
+  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kstDate.toISOString().slice(0, 10);
+}
+
+function getDayAfter(dateValue: string) {
+  const date = new Date(`${dateValue}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function getCurrentKstMonthPeriod(): SummaryPeriod {
+  const today = getKstDateString(new Date());
+
+  return {
+    startDate: `${today.slice(0, 8)}01`,
+    endDate: today,
+    dayAfterEnd: getDayAfter(today),
+  };
+}
+
+function buildPeriodFilter(
+  createdAtColumn: string,
+  eventDateColumn: string,
+  period: SummaryPeriod,
+) {
+  return `(${[
+    `and(${createdAtColumn}.gte.${period.startDate}T00:00:00.000Z,${createdAtColumn}.lt.${period.dayAfterEnd}T00:00:00.000Z)`,
+    `and(${eventDateColumn}.gte.${period.startDate},${eventDateColumn}.lte.${period.endDate})`,
+  ].join(",")})`;
+}
 
 function normalizeNotionId(rawId: string) {
   return rawId.trim().replace(/^collection:\/\//, "").replace(/-/g, "");
@@ -129,6 +196,11 @@ function normalizeVoiceStatus(value: string) {
 function isAcknowledgementRow(row: FieldVoiceRow) {
   const type = normalizeVoiceType(row.type);
   return type === "공유확인" || type === "위생·안전 확인";
+}
+
+function isCompletedOrArchivedRow(row: FieldVoiceRow) {
+  const status = normalizeVoiceStatus(row.status);
+  return status === "조치완료" || status === "반려";
 }
 
 function isActionNeededRow(row: FieldVoiceRow) {
@@ -318,10 +390,6 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
   const anonymousProp = getProp(properties, ["익명", "익명 제출"]);
   const contentProp = getProp(properties, ["내용", "제보 내용", "상세 내용", "상세내용", "의견 내용"]);
   const memoProp = getProp(properties, ["조치 메모", "처리 메모", "관리자 메모", "검토 메모", "조치내용", "조치 내용"]);
-  const actionHistoryProp = getProp(properties, ["조치 이력", "처리 이력", "관리자 조치 이력", "검토 이력"]);
-  const actionAuthorProp = getProp(properties, ["조치 메모 작성자", "조치메모 작성자", "처리자", "검토자", "관리자"]);
-  const actionCreatedAtProp = getProp(properties, ["조치 메모 작성일시", "조치메모 작성일시", "처리일시", "검토일시"]);
-  const actionUpdatedAtProp = getProp(properties, ["최종 조치 변경일시", "최종조치변경일시", "처리상태 변경일시", "최종 처리일시"]);
   const fileProp = getProp(properties, ["사진/파일", "사진/첨부", "첨부", "첨부파일", "파일", "사진"]);
   const confirmationTypeProp = getProp(properties, ["confirmationType", "confirmation_type", "확인 유형", "확인유형"]);
   const confirmationStatusProp = getProp(properties, ["confirmationStatus", "confirmation_status", "확인 상태", "확인상태"]);
@@ -353,6 +421,47 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
     entryIntent: getPropertyText(entryIntentProp) || getInlineMetadata(content, "진입 의도"),
     rawPayload,
   };
+}
+
+
+function toRichiFieldVoiceRow(row: FieldParticipationInboxRow): FieldVoiceRow {
+  const submissionType = normalizeVoiceType(readText(row.submission_type) || readText(row.legacy_type));
+  const createdAt = readText(row.created_at);
+  const reportedDate = readText(row.reported_date) || createdAt;
+  const anonymous = readBoolean(row.anonymous);
+  const submitter = anonymous ? "익명" : readText(row.submitter) || "제출자 미입력";
+  const title = readText(row.title) || `${submissionType} 접수`;
+
+  return {
+    id: readText(row.id) || `${title}-${reportedDate}-${createdAt}`,
+    title,
+    type: submissionType,
+    status: normalizeVoiceStatus(readText(row.status) || "접수"),
+    reportedDate,
+    location: readText(row.location) || "위치 미입력",
+    submitter,
+    anonymous,
+    content: readText(row.content) || "내용 없음",
+    createdAt,
+    files: [],
+  };
+}
+
+async function queryRichiFieldVoiceRows(period: SummaryPeriod): Promise<FieldVoiceRow[]> {
+  const query = new URLSearchParams({
+    select: "id,title,submission_type,legacy_type,status,reported_date,created_at,location,submitter,anonymous,content",
+    tenant_code: "eq.richi",
+    or: buildPeriodFilter("created_at", "reported_date", period),
+    order: "reported_date.desc.nullslast,created_at.desc.nullslast",
+    limit: "500",
+  });
+
+  const rows = await selectSupabaseExportRows<FieldParticipationInboxRow>(
+    "field_participation_submissions",
+    query,
+  );
+
+  return rows.map(toRichiFieldVoiceRow);
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -441,18 +550,23 @@ function EmptyState() {
   );
 }
 
-function ErrorState() {
+function ErrorState({ isRichi = false }: { isRichi?: boolean }) {
   return (
     <section className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm">
-      <p className="text-lg font-black text-red-900">현장 의견을 불러오지 못했습니다.</p>
-      <p className="mt-2 text-sm leading-6 text-red-800">
-        Notion 현장 의견 DB 설정, API 권한, 데이터소스 연결 상태를 확인해 주세요.
+      <p className="text-lg font-black text-red-900">
+        {isRichi ? "현장 의견 현황을 불러오지 못했습니다. 잠시 후 다시 확인하거나 관리자에게 문의해 주세요." : "현장 의견을 불러오지 못했습니다."}
       </p>
+      {!isRichi ? (
+        <p className="mt-2 text-sm leading-6 text-red-800">
+          Notion 현장 의견 DB 설정, API 권한, 데이터소스 연결 상태를 확인해 주세요.
+        </p>
+      ) : null}
     </section>
   );
 }
 
-function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
+function FieldVoiceCard({ row, dataSource = "notion" }: { row: FieldVoiceRow; dataSource?: FieldVoiceDataSource }) {
+  const isRichi = dataSource === "richi";
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -469,13 +583,13 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
             ) : null}
           </div>
 
-          <ParticipationReviewBadges row={row} />
+          {!isRichi ? <ParticipationReviewBadges row={row} /> : null}
           <h2 className="mt-3 text-xl font-black text-slate-950">{row.title}</h2>
         </div>
 
         <div className="text-left text-xs font-bold text-slate-500 sm:text-right">
           <p>{formatDateLabel(row.reportedDate)}</p>
-          {row.notionUrl ? (
+          {!isRichi && row.notionUrl ? (
             <a
               href={row.notionUrl}
               target="_blank"
@@ -512,7 +626,7 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
         </p>
       </div>
 
-      {row.actionMemo ? (
+      {!isRichi && row.actionMemo ? (
         <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-3">
           <p className="text-xs font-black text-blue-700">관리자 조치 메모</p>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-blue-950">
@@ -521,12 +635,19 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <CheckPill label="위험요인 확인" value={row.riskCheck} />
-        <CheckPill label="위험성평가 공유 확인" value={row.riskAssessmentCheck} />
-        <CheckPill label="안전조치 확인" value={row.safetyMeasureCheck} />
-      </div>
+      {!isRichi ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <CheckPill label="위험요인 확인" value={row.riskCheck} />
+          <CheckPill label="위험성평가 공유 확인" value={row.riskAssessmentCheck} />
+          <CheckPill label="안전조치 확인" value={row.safetyMeasureCheck} />
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50 p-3 text-sm font-bold leading-6 text-teal-900">
+          관리자 확인과 후속 조치 내용은 운영 담당자가 검토 후 별도 기록합니다.
+        </div>
+      )}
 
+      {!isRichi ? (
       <form
         action="/api/field/voice/status"
         method="post"
@@ -564,6 +685,7 @@ function FieldVoiceCard({ row }: { row: FieldVoiceRow }) {
           ))}
         </div>
       </form>
+      ) : null}
 
       {row.files.length > 0 ? (
         <div className="mt-4 rounded-2xl border border-purple-100 bg-purple-50 p-3">
@@ -593,12 +715,14 @@ function VoiceSection({
   rows,
   emptyText,
   badgeClassName,
+  dataSource = "notion",
 }: {
   title: string;
   description: string;
   rows: FieldVoiceRow[];
   emptyText: string;
   badgeClassName: string;
+  dataSource?: FieldVoiceDataSource;
 }) {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -618,7 +742,7 @@ function VoiceSection({
             {emptyText}
           </div>
         ) : (
-          rows.map((row) => <FieldVoiceCard key={row.id} row={row} />)
+          rows.map((row) => <FieldVoiceCard key={row.id} row={row} dataSource={dataSource} />)
         )}
       </div>
     </section>
@@ -697,7 +821,16 @@ export default async function FieldVoiceReviewPage({
   let rows: FieldVoiceRow[] = [];
   let hasError = false;
 
-  if (company.fieldVoiceDbId) {
+  const isRichi = company.code === "richi";
+  const dataSource: FieldVoiceDataSource = isRichi ? "richi" : "notion";
+
+  if (isRichi) {
+    try {
+      rows = await queryRichiFieldVoiceRows(getCurrentKstMonthPeriod());
+    } catch {
+      hasError = true;
+    }
+  } else if (company.fieldVoiceDbId) {
     try {
       const notionRows = await queryNotionRows({
         notionApiKey: company.notionApiKey,
@@ -717,6 +850,12 @@ export default async function FieldVoiceReviewPage({
     (row) => !isAcknowledgementRow(row) && !isActionNeededRow(row)
   );
 
+  const completedOrArchivedRows = rows.filter(isCompletedOrArchivedRow);
+  const richiPendingRows = rows.filter(
+    (row) => !isAcknowledgementRow(row) && !isCompletedOrArchivedRow(row),
+  );
+  const richiOpinionRows = rows.filter((row) => !isAcknowledgementRow(row));
+
   const uncheckedCount = rows.filter(
     (row) =>
       row.riskCheck === false ||
@@ -734,9 +873,13 @@ export default async function FieldVoiceReviewPage({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-black text-blue-700">SafeMetrica 현장참여</p>
-              <h1 className="mt-2 text-2xl font-black text-slate-950">현장참여 접수함</h1>
+              <h1 className="mt-2 text-2xl font-black text-slate-950">
+                {isRichi ? "(주)리치코리아 현장 의견 접수함" : "현장참여 접수함"}
+              </h1>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                {riskShareLinkCopy.manager.guide} 공유확인은 조치완료 KPI와 분리해 확인합니다.
+                {isRichi
+                  ? "작업 전 확인·서명과 익명 의견·불편사항 중 관리자가 확인할 항목을 정리해 보여줍니다."
+                  : `${riskShareLinkCopy.manager.guide} 공유확인은 조치완료 KPI와 분리해 확인합니다.`}
               </p>
             </div>
 
@@ -747,6 +890,8 @@ export default async function FieldVoiceReviewPage({
           </div>
         </section>
 
+        {!isRichi ? (
+          <>
         <section className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
           <p className="text-sm font-black text-blue-900">Risk Share Link 운영 기준</p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -838,37 +983,99 @@ export default async function FieldVoiceReviewPage({
           </p>
         </section>
 
+          </>
+        ) : (
+          <section className="mt-4 grid gap-3 sm:grid-cols-4">
+            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+              <p className="text-xs font-black text-amber-700">검토 대기</p>
+              <p className="mt-2 text-2xl font-black text-amber-950">{richiPendingRows.length}</p>
+            </div>
+            <div className="rounded-3xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+              <p className="text-xs font-black text-blue-700">익명 의견·불편사항</p>
+              <p className="mt-2 text-2xl font-black text-blue-950">{richiOpinionRows.length}</p>
+            </div>
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+              <p className="text-xs font-black text-emerald-700">작업 전 확인기록</p>
+              <p className="mt-2 text-2xl font-black text-emerald-950">{acknowledgementRows.length}</p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-black text-slate-500">처리 완료 또는 보관</p>
+              <p className="mt-2 text-2xl font-black text-slate-950">{completedOrArchivedRows.length}</p>
+            </div>
+          </section>
+        )}
+
         <div className="mt-5 space-y-5">
           {hasError ? (
-            <ErrorState />
+            <ErrorState isRichi={isRichi} />
           ) : rows.length === 0 ? (
             <EmptyState />
           ) : (
-            <>
-              <VoiceSection
-                title="공유확인 기록"
-                description="의견 없이 위험요인·위험성평가·안전조치 확인만 완료한 주지확인 기록입니다. 조치완료 KPI에는 포함하지 않습니다."
-                rows={acknowledgementRows}
-                emptyText="공유확인 기록이 아직 없습니다."
-                badgeClassName="bg-emerald-100 text-emerald-800"
-              />
+            isRichi ? (
+              <>
+                <VoiceSection
+                  title="검토 대기"
+                  description="관리자가 확인할 의견·불편사항입니다."
+                  rows={richiPendingRows}
+                  emptyText="검토 대기 항목이 없습니다."
+                  badgeClassName="bg-amber-100 text-amber-900"
+                  dataSource={dataSource}
+                />
 
-              <VoiceSection
-                title="검토 필요 접수"
-                description="위험제보·아차사고·개선제안 중 관리자 확인이 필요한 항목입니다. 현장 확인 후 처리상태와 조치 메모를 남겨 주세요."
-                rows={reviewRequiredRows}
-                emptyText="검토할 현장 제보가 없습니다."
-                badgeClassName="bg-blue-100 text-blue-800"
-              />
+                <VoiceSection
+                  title="익명 의견·불편사항"
+                  description="작업자가 제출한 의견과 불편사항입니다."
+                  rows={richiOpinionRows}
+                  emptyText="접수된 의견·불편사항이 없습니다."
+                  badgeClassName="bg-blue-100 text-blue-800"
+                  dataSource={dataSource}
+                />
 
-              <VoiceSection
-                title="조치 필요 / 미조치"
-                description="위험제보·아차사고·개선제안 중 현장 조치 또는 추가 확인이 필요한 항목입니다."
-                rows={actionNeededRows}
-                emptyText="현재 조치 필요로 분류된 현장 제보가 없습니다."
-                badgeClassName="bg-amber-100 text-amber-900"
-              />
-            </>
+                <VoiceSection
+                  title="작업 전 확인기록"
+                  description="작업 전 확인·서명 제출 기록입니다."
+                  rows={acknowledgementRows}
+                  emptyText="작업 전 확인기록이 없습니다."
+                  badgeClassName="bg-emerald-100 text-emerald-800"
+                  dataSource={dataSource}
+                />
+
+                <VoiceSection
+                  title="처리 완료 또는 보관"
+                  description="처리 완료되었거나 보관된 항목입니다."
+                  rows={completedOrArchivedRows}
+                  emptyText="처리 완료 또는 보관 항목이 없습니다."
+                  badgeClassName="bg-slate-100 text-slate-700"
+                  dataSource={dataSource}
+                />
+              </>
+            ) : (
+              <>
+                <VoiceSection
+                  title="공유확인 기록"
+                  description="의견 없이 위험요인·위험성평가·안전조치 확인만 완료한 주지확인 기록입니다. 조치완료 KPI에는 포함하지 않습니다."
+                  rows={acknowledgementRows}
+                  emptyText="공유확인 기록이 아직 없습니다."
+                  badgeClassName="bg-emerald-100 text-emerald-800"
+                />
+
+                <VoiceSection
+                  title="검토 필요 접수"
+                  description="위험제보·아차사고·개선제안 중 관리자 확인이 필요한 항목입니다. 현장 확인 후 처리상태와 조치 메모를 남겨 주세요."
+                  rows={reviewRequiredRows}
+                  emptyText="검토할 현장 제보가 없습니다."
+                  badgeClassName="bg-blue-100 text-blue-800"
+                />
+
+                <VoiceSection
+                  title="조치 필요 / 미조치"
+                  description="위험제보·아차사고·개선제안 중 현장 조치 또는 추가 확인이 필요한 항목입니다."
+                  rows={actionNeededRows}
+                  emptyText="현재 조치 필요로 분류된 현장 제보가 없습니다."
+                  badgeClassName="bg-amber-100 text-amber-900"
+                />
+              </>
+            )
           )}
         </div>
       </div>
