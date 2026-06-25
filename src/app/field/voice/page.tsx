@@ -318,8 +318,11 @@ function parseRichiWorkerFacingPayloadText(content: string) {
 
 function sanitizeRichiDisplayContent(content: string, type: string) {
   const trimmedContent = content.trim();
+  const internalSectionHeaderPattern = /^\s*(?:[-*•]\s*)?\[(?:제출 정보|공유확인 메타|처리 기준|기본 정보|운영 메타|메타|시스템|내부)\]\s*$/m;
+  const koreanMetadataKeyPattern = /^(?:[-*•]\s*)?(?:식별\s*모드|제출자|익명\s*제출|확인\s*유형|확인\s*상태|제출\s*출처|진입\s*의도|제출구분|처리상태|서비스\s*모드|서명|확인번호|사번|휴대폰|원장|내부|메타)\s*[:=：]/i;
   const metadataKeyPattern = /^(?:[-*•]\s*)?(?:identity[_ ]?mode|identified|anonymous\s*mode|entry[_ ]?intent|source|form[_ ]?submit|pending|default\s*route|raw[_ ]?payload|payload|schema|snapshot|signature|service[_ ]?mode|internal|operation|status|tenant|company|submitter|created[_ ]?at|updated[_ ]?at|token|db|api|notion|supabase)\b\s*[:=]/i;
-  const metadataWordPattern = /(?:identity[_ ]?mode|entry[_ ]?intent|form[_ ]?submit|raw[_ ]?payload|service[_ ]?mode|default\s*route|schema|snapshot|signature|token|supabase|notion|api|db)/i;
+  const metadataWordPattern = /(?:identity[_ ]?mode|entry[_ ]?intent|form[_ ]?submit|raw[_ ]?payload|service[_ ]?mode|default\s*route|schema|snapshot|signature|token|supabase|notion|api|db|identified|worker_report|pending|form_submit|anonymous=false)/i;
+  const internalValuePattern = /^(?:[-*•]\s*)?(?:identified|worker_report|pending|form_submit|default|service_mode|identity|anonymous=false)\s*$/i;
   const payloadText = parseRichiWorkerFacingPayloadText(trimmedContent);
 
   const withoutJsonBlocks = trimmedContent
@@ -333,10 +336,21 @@ function sanitizeRichiDisplayContent(content: string, type: string) {
       }
     });
 
-  const workerFacingLines = withoutJsonBlocks
+  const firstInternalSectionHeader = withoutJsonBlocks.match(internalSectionHeaderPattern);
+  const workerFacingContent = firstInternalSectionHeader?.index === undefined
+    ? withoutJsonBlocks
+    : withoutJsonBlocks.slice(0, firstInternalSectionHeader.index);
+
+  const workerFacingLines = workerFacingContent
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line && !metadataKeyPattern.test(line) && !metadataWordPattern.test(line));
+    .filter((line) => (
+      line &&
+      !metadataKeyPattern.test(line) &&
+      !koreanMetadataKeyPattern.test(line) &&
+      !metadataWordPattern.test(line) &&
+      !internalValuePattern.test(line)
+    ));
 
   const sanitized = workerFacingLines.join("\n").trim();
 
