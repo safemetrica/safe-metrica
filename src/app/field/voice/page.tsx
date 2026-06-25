@@ -193,6 +193,164 @@ function normalizeVoiceStatus(value: string) {
   return value || "상태 미지정";
 }
 
+function normalizeRichiSubmissionType(value: unknown) {
+  const text = readText(value).toLowerCase();
+  const compactText = text.replace(/[\s_-]+/g, "");
+
+  if (
+    compactText.includes("위생안전확인") ||
+    compactText.includes("위생안전") ||
+    text.includes("hygiene") ||
+    text.includes("food")
+  ) {
+    return "위생·안전 확인";
+  }
+
+  if (
+    compactText.includes("불편사항") ||
+    compactText.includes("불편") ||
+    text.includes("discomfort")
+  ) {
+    return "불편사항";
+  }
+
+  if (compactText.includes("개선의견")) {
+    return "개선의견";
+  }
+
+  if (text.includes("공유확인") || text.includes("share")) {
+    return "공유확인";
+  }
+
+  if (
+    text.includes("위험제보") ||
+    text.includes("위험") ||
+    text.includes("risk")
+  ) {
+    return "위험제보";
+  }
+
+  if (text.includes("아차사고") || text.includes("near")) {
+    return "아차사고";
+  }
+
+  if (
+    text.includes("개선제안") ||
+    text.includes("개선 제안") ||
+    text.includes("improvement")
+  ) {
+    return "개선제안";
+  }
+
+  return text ? "기타" : "확인 필요";
+}
+
+function normalizeRichiFieldStatus(value: unknown) {
+  const text = readText(value).toLowerCase();
+
+  if (
+    text.includes("조치완료") ||
+    text.includes("완료") ||
+    text.includes("done") ||
+    text.includes("completed")
+  ) {
+    return "조치완료";
+  }
+
+  if (text.includes("반려") || text.includes("reject")) {
+    return "반려";
+  }
+
+  if (
+    text.includes("조치필요") ||
+    text.includes("필요") ||
+    text.includes("action_required")
+  ) {
+    return "조치필요";
+  }
+
+  if (text.includes("검토") || text.includes("review")) {
+    return "검토중";
+  }
+
+  if (text.includes("접수") || text.includes("received")) {
+    return "접수";
+  }
+
+  return text ? "확인 필요" : "확인 필요";
+}
+
+function isRichiAcknowledgementType(type: string) {
+  return type === "공유확인" || type === "위생·안전 확인";
+}
+
+function readRichiWorkerFacingPayloadText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return "";
+
+  const payload = value as Record<string, unknown>;
+  const candidateKeys = [
+    "opinionText",
+    "opinion",
+    "discomfortText",
+    "feedbackText",
+    "workerOpinion",
+    "message",
+    "content",
+    "note",
+  ];
+
+  for (const key of candidateKeys) {
+    const candidate = readRichiWorkerFacingPayloadText(payload[key]);
+    if (candidate) return candidate;
+  }
+
+  return "";
+}
+
+function parseRichiWorkerFacingPayloadText(content: string) {
+  try {
+    return readRichiWorkerFacingPayloadText(JSON.parse(content));
+  } catch {
+    return "";
+  }
+}
+
+function sanitizeRichiDisplayContent(content: string, type: string) {
+  const trimmedContent = content.trim();
+  const metadataKeyPattern = /^(?:[-*•]\s*)?(?:identity[_ ]?mode|identified|anonymous\s*mode|entry[_ ]?intent|source|form[_ ]?submit|pending|default\s*route|raw[_ ]?payload|payload|schema|snapshot|signature|service[_ ]?mode|internal|operation|status|tenant|company|submitter|created[_ ]?at|updated[_ ]?at|token|db|api|notion|supabase)\b\s*[:=]/i;
+  const metadataWordPattern = /(?:identity[_ ]?mode|entry[_ ]?intent|form[_ ]?submit|raw[_ ]?payload|service[_ ]?mode|default\s*route|schema|snapshot|signature|token|supabase|notion|api|db)/i;
+  const payloadText = parseRichiWorkerFacingPayloadText(trimmedContent);
+
+  const withoutJsonBlocks = trimmedContent
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/^\s*[{\[]?[\s\S]*[}\]]\s*$/g, (value) => {
+      try {
+        JSON.parse(value);
+        return payloadText;
+      } catch {
+        return value;
+      }
+    });
+
+  const workerFacingLines = withoutJsonBlocks
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !metadataKeyPattern.test(line) && !metadataWordPattern.test(line));
+
+  const sanitized = workerFacingLines.join("\n").trim();
+
+  if (isRichiAcknowledgementType(type)) {
+    return "작업 전 확인·서명이 제출되었습니다.";
+  }
+
+  if (sanitized) {
+    return sanitized;
+  }
+
+  return "운영 확인 기록입니다.";
+}
+
 function isAcknowledgementRow(row: FieldVoiceRow) {
   const type = normalizeVoiceType(row.type);
   return type === "공유확인" || type === "위생·안전 확인";
@@ -425,23 +583,24 @@ function toFieldVoiceRow(page: NotionPage): FieldVoiceRow {
 
 
 function toRichiFieldVoiceRow(row: FieldParticipationInboxRow): FieldVoiceRow {
-  const submissionType = normalizeVoiceType(readText(row.submission_type) || readText(row.legacy_type));
+  const submissionType = normalizeRichiSubmissionType(readText(row.submission_type) || readText(row.legacy_type));
   const createdAt = readText(row.created_at);
   const reportedDate = readText(row.reported_date) || createdAt;
   const anonymous = readBoolean(row.anonymous);
   const submitter = anonymous ? "익명" : readText(row.submitter) || "제출자 미입력";
   const title = readText(row.title) || `${submissionType} 접수`;
+  const content = sanitizeRichiDisplayContent(readText(row.content), submissionType);
 
   return {
     id: readText(row.id) || `${title}-${reportedDate}-${createdAt}`,
     title,
     type: submissionType,
-    status: normalizeVoiceStatus(readText(row.status) || "접수"),
+    status: normalizeRichiFieldStatus(row.status),
     reportedDate,
     location: readText(row.location) || "위치 미입력",
     submitter,
     anonymous,
-    content: readText(row.content) || "내용 없음",
+    content,
     createdAt,
     files: [],
   };
@@ -1019,15 +1178,6 @@ export default async function FieldVoiceReviewPage({
                   rows={richiPendingRows}
                   emptyText="검토 대기 항목이 없습니다."
                   badgeClassName="bg-amber-100 text-amber-900"
-                  dataSource={dataSource}
-                />
-
-                <VoiceSection
-                  title="익명 의견·불편사항"
-                  description="작업자가 제출한 의견과 불편사항입니다."
-                  rows={richiOpinionRows}
-                  emptyText="접수된 의견·불편사항이 없습니다."
-                  badgeClassName="bg-blue-100 text-blue-800"
                   dataSource={dataSource}
                 />
 
