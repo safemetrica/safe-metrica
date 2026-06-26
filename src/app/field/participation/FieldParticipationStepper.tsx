@@ -1192,7 +1192,7 @@ export default function FieldParticipationStepper({
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <p className="text-sm font-black text-emerald-800">
-                      의견 없음
+                      {isDailyPreworkSafetyCheck ? "특이사항 없음" : "의견 없음"}
                     </p>
                     <p className="mt-2 text-sm font-bold leading-6 text-emerald-900">
                       {isRichiPreworkConfirmationFlow
@@ -1343,7 +1343,9 @@ export default function FieldParticipationStepper({
                         : "의견이 없으면 확인자 정보와 자필서명으로 저장합니다."
                       : hasOpinion
                         ? "위험제보·아차사고·개선제안은 익명으로 제출할 수 있습니다. 아래의 익명 제출을 선택하면 이름과 연락처 입력 없이 제출됩니다."
-                        : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
+                        : isDailyPreworkSafetyCheck
+                          ? "특이사항이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 작업 전 확인만 하는 경우에는 최소 확인정보가 필요합니다."
+                          : "의견이나 사진을 남기면 익명 제출을 선택할 수 있습니다. 공유확인만 하는 경우에는 최소 확인정보가 필요합니다."}
                   </p>
                   <label
                     className={[
@@ -1381,7 +1383,9 @@ export default function FieldParticipationStepper({
                         : "제보 제출자 정보"
                       : isRichiPreworkConfirmationFlow
                         ? "전자확인 최소 확인정보"
-                        : "공유확인 최소 확인정보"}
+                        : isDailyPreworkSafetyCheck
+                          ? "작업 전 확인 최소 확인정보"
+                          : "공유확인 최소 확인정보"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-emerald-900">
                     {isRichiPreworkConfirmationFlow
@@ -1390,7 +1394,9 @@ export default function FieldParticipationStepper({
                         : "전자확인만 제출할 때는 이름, 소속, 확인번호가 필요합니다."
                       : hasOpinion
                         ? "위험제보·아차사고·개선제안은 익명 제출을 선택할 수 있습니다."
-                        : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
+                        : isDailyPreworkSafetyCheck
+                          ? "작업 전 확인과 특이사항 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."
+                          : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
                   </p>
 
                   <div className="mt-4 grid gap-3">
@@ -1501,7 +1507,9 @@ export default function FieldParticipationStepper({
                       <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
                         {isRichiPreworkConfirmationFlow
                           ? "전자확인은 이름, 소속, 확인번호가 필요합니다."
-                          : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
+                          : isDailyPreworkSafetyCheck
+                            ? "작업 전 확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."
+                            : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
                       </p>
                     ) : null}
                   </div>
@@ -1617,8 +1625,8 @@ export default function FieldParticipationStepper({
                 }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300"
               >
-                {isRichiPreworkConfirmationFlow
-                  ? "확인 기록 남기기 →"
+                {isDailyPreworkSafetyCheck
+                  ? "작업 전 확인 계속 →"
                   : "공유 내용 확인 →"}
               </button>
             ) : null}
