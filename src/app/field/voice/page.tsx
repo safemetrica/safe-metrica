@@ -740,8 +740,10 @@ function ErrorState({ isRichi = false }: { isRichi?: boolean }) {
 
 function FieldVoiceCard({ row, dataSource = "notion" }: { row: FieldVoiceRow; dataSource?: FieldVoiceDataSource }) {
   const isRichi = dataSource === "richi";
+  const contentPreview = truncateText(row.content, isRichi ? 120 : 260);
+
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className={`rounded-3xl border border-slate-200 bg-white shadow-sm ${isRichi ? "p-4" : "p-5"}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -757,7 +759,7 @@ function FieldVoiceCard({ row, dataSource = "notion" }: { row: FieldVoiceRow; da
           </div>
 
           {!isRichi ? <ParticipationReviewBadges row={row} /> : null}
-          <h2 className="mt-3 text-xl font-black text-slate-950">{row.title}</h2>
+          <h2 className={`${isRichi ? "mt-2 text-lg" : "mt-3 text-xl"} font-black text-slate-950`}>{row.title}</h2>
         </div>
 
         <div className="text-left text-xs font-bold text-slate-500 sm:text-right">
@@ -775,7 +777,7 @@ function FieldVoiceCard({ row, dataSource = "notion" }: { row: FieldVoiceRow; da
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className={`grid gap-3 sm:grid-cols-3 ${isRichi ? "mt-3" : "mt-4"}`}>
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
           <p className="text-xs font-black text-slate-500">위치/구역</p>
           <p className="mt-1 text-sm font-bold text-slate-900">{row.location}</p>
@@ -794,8 +796,8 @@ function FieldVoiceCard({ row, dataSource = "notion" }: { row: FieldVoiceRow; da
 
       <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-3">
         <p className="text-xs font-black text-slate-500">내용</p>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">
-          {truncateText(row.content, 260)}
+        <p className={`mt-2 whitespace-pre-wrap text-sm text-slate-800 ${isRichi ? "line-clamp-3 leading-5" : "leading-6"}`}>
+          {contentPreview}
         </p>
       </div>
 
@@ -889,6 +891,8 @@ function VoiceSection({
   emptyText,
   badgeClassName,
   dataSource = "notion",
+  defaultOpen = true,
+  initialLimit,
 }: {
   title: string;
   description: string;
@@ -896,7 +900,46 @@ function VoiceSection({
   emptyText: string;
   badgeClassName: string;
   dataSource?: FieldVoiceDataSource;
+  defaultOpen?: boolean;
+  initialLimit?: number;
 }) {
+  const isRichi = dataSource === "richi";
+  const visibleRows = initialLimit ? rows.slice(0, initialLimit) : rows;
+  const hasLimitedRows = Boolean(initialLimit && rows.length > initialLimit);
+  const sectionBody = (
+    <div className={`mt-4 ${isRichi ? "space-y-3" : "space-y-4"}`}>
+      {hasLimitedRows ? (
+        <p className="text-xs font-black text-slate-500">최근 {initialLimit}건 우선 표시</p>
+      ) : null}
+      {rows.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
+          {emptyText}
+        </div>
+      ) : (
+        visibleRows.map((row) => <FieldVoiceCard key={row.id} row={row} dataSource={dataSource} />)
+      )}
+    </div>
+  );
+
+  if (isRichi) {
+    return (
+      <details className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" open={defaultOpen}>
+        <summary className="cursor-pointer list-none marker:hidden">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-950">{title}</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+            </div>
+            <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-black ${badgeClassName}`}>
+              {rows.length}건
+            </span>
+          </div>
+        </summary>
+        {sectionBody}
+      </details>
+    );
+  }
+
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -908,16 +951,7 @@ function VoiceSection({
           {rows.length}건
         </span>
       </div>
-
-      <div className="mt-4 space-y-4">
-        {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
-            {emptyText}
-          </div>
-        ) : (
-          rows.map((row) => <FieldVoiceCard key={row.id} row={row} dataSource={dataSource} />)
-        )}
-      </div>
+      {sectionBody}
     </section>
   );
 }
@@ -1193,6 +1227,8 @@ export default async function FieldVoiceReviewPage({
                   emptyText="검토 대기 항목이 없습니다."
                   badgeClassName="bg-amber-100 text-amber-900"
                   dataSource={dataSource}
+                  defaultOpen
+                  initialLimit={10}
                 />
 
                 <VoiceSection
@@ -1202,6 +1238,8 @@ export default async function FieldVoiceReviewPage({
                   emptyText="작업 전 확인기록이 없습니다."
                   badgeClassName="bg-emerald-100 text-emerald-800"
                   dataSource={dataSource}
+                  defaultOpen={false}
+                  initialLimit={10}
                 />
 
                 <VoiceSection
@@ -1211,6 +1249,8 @@ export default async function FieldVoiceReviewPage({
                   emptyText="처리 완료 또는 보관 항목이 없습니다."
                   badgeClassName="bg-slate-100 text-slate-700"
                   dataSource={dataSource}
+                  defaultOpen={false}
+                  initialLimit={10}
                 />
               </>
             ) : (
