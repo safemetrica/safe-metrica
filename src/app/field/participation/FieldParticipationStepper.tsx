@@ -9,6 +9,8 @@ import RichiWorkerConfirmationFlow from "./RichiWorkerConfirmationFlow";
 import RichiWorkerEntryChoice from "./RichiWorkerEntryChoice";
 
 const RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY = "safemetrica:richi:worker-confirmation-info:v1";
+const BUBBLEMON_MONTHLY_RISK_SUMMARY_VIEWED_STORAGE_KEY =
+  "safemetrica:bubblemon:monthlyRiskSummaryViewed";
 
 type WorkerCopy = {
   code?: string;
@@ -362,6 +364,22 @@ export default function FieldParticipationStepper({
   const confirmationType = hasOpinion ? "worker_report" : "risk_share_confirm";
   const confirmationStatus = canGoNextFromStep2 ? "confirmed" : "pending";
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Hydrates the session-only Bubblemon monthly risk summary gate from sessionStorage after mount/mode changes. */
+  useEffect(() => {
+    if (!isBubblemonMonthlyRiskShareConfirmation || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      if (window.sessionStorage.getItem(BUBBLEMON_MONTHLY_RISK_SUMMARY_VIEWED_STORAGE_KEY) === "true") {
+        setSharedRiskSummaryViewed(true);
+      }
+    } catch {
+      // Keep the in-memory gate when sessionStorage is unavailable.
+    }
+  }, [isBubblemonMonthlyRiskShareConfirmation]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const ttsText = useMemo(
     () =>
       buildFieldParticipationTtsText({
@@ -433,6 +451,35 @@ export default function FieldParticipationStepper({
     }
 
     setIsSpeaking(false);
+  }
+
+  function persistBubblemonMonthlyRiskSummaryViewed() {
+    setSharedRiskSummaryViewed(true);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(BUBBLEMON_MONTHLY_RISK_SUMMARY_VIEWED_STORAGE_KEY, "true");
+    } catch {
+      // The React state gate still unlocks progress when sessionStorage is unavailable.
+    }
+  }
+
+  function handleOpenRiskSummary() {
+    persistBubblemonMonthlyRiskSummaryViewed();
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const riskSummaryUrl = `/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`;
+    const openedWindow = window.open(riskSummaryUrl, "_blank", "noopener,noreferrer");
+
+    if (openedWindow) {
+      openedWindow.opener = null;
+    }
   }
 
   function handleBubblemonModeSelect(intent: BubblemonWorkerQrEntryIntent, cadence: BubblemonWorkerQrCadence) {
@@ -749,15 +796,24 @@ export default function FieldParticipationStepper({
                 )}
 
                 {canOpenRiskSummary ? (
-                  <a
-                    href={`/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setSharedRiskSummaryViewed(true)}
-                    className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"
-                  >
-                    공유 위험요인 보기
-                  </a>
+                  isBubblemonMonthlyRiskShareConfirmation ? (
+                    <button
+                      type="button"
+                      onClick={handleOpenRiskSummary}
+                      className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"
+                    >
+                      공유 위험요인 보기
+                    </button>
+                  ) : (
+                    <a
+                      href={`/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"
+                    >
+                      공유 위험요인 보기
+                    </a>
+                  )
                 ) : null}
               </div>
             ) : null}
