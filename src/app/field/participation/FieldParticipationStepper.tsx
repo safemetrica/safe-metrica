@@ -181,6 +181,7 @@ export default function FieldParticipationStepper({
     "monthly_risk_share_confirmation"
   );
   const [bubblemonCadence, setBubblemonCadence] = useState<BubblemonWorkerQrCadence>("monthly");
+  const [sharedRiskSummaryViewed, setSharedRiskSummaryViewed] = useState(false);
   const isRichiPreworkConfirmationFlow = workerCopy?.code === "richi";
 
   const formStep = isRichiPreworkConfirmationFlow ? 2 : 3;
@@ -235,6 +236,13 @@ export default function FieldParticipationStepper({
   const isBubblemonWorkerQr = normalizedCompanyCode === "bubblemon";
   const isBubblemonDailyPreworkSafetyCheck =
     isBubblemonWorkerQr && bubblemonEntryIntent === "daily_prework_safety_check";
+  const isBubblemonMonthlyRiskShareConfirmation =
+    isBubblemonWorkerQr && bubblemonEntryIntent === "monthly_risk_share_confirmation";
+  const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
+  const mustViewSharedRiskSummaryBeforeStep2 =
+    isBubblemonMonthlyRiskShareConfirmation && !sharedRiskSummaryViewed;
+  const canGoNextFromStep1 =
+    (!isRichiPreworkConfirmationFlow || canGoNextFromStep2) && !mustViewSharedRiskSummaryBeforeStep2;
   const bubblemonEntryIntentLabel =
     bubblemonEntryIntent === "daily_prework_safety_check"
       ? "오늘 작업 전 안전확인"
@@ -249,7 +257,6 @@ export default function FieldParticipationStepper({
     "greenkorea",
     "bubblemon",
   ].includes(normalizedCompanyCode);
-  const canGoNextFromStep2 = riskCheck && riskAssessmentCheck && safetyMeasureCheck;
   const hasOpinion =
     reportTitle.trim().length > 0 ||
     content.trim().length > 0 ||
@@ -744,6 +751,9 @@ export default function FieldParticipationStepper({
                 {canOpenRiskSummary ? (
                   <a
                     href={`/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setSharedRiskSummaryViewed(true)}
                     className="mt-4 block w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-center text-sm font-black text-blue-700"
                   >
                     공유 위험요인 보기
@@ -1091,21 +1101,30 @@ export default function FieldParticipationStepper({
 
           <div className="sticky bottom-0 -mx-4 mt-4 border-t border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur">
             {step === 1 ? (
-              <button
-                type="button"
-                disabled={isRichiPreworkConfirmationFlow && !canGoNextFromStep2}
-                onClick={() => {
-                  setCompletedSteps((current) => new Set(current).add(1));
-                  setStep(isRichiPreworkConfirmationFlow ? formStep : 2);
-                }}
-                className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300 disabled:text-slate-100"
-              >
-                {isRichiPreworkConfirmationFlow
-                  ? "체크 후 의견·서명으로 →"
-                  : isBubblemonWorkerQr
-                    ? `${bubblemonModeCopy.buttonLabel} →`
-                    : "핵심 위험 확인 완료 →"}
-              </button>
+              <>
+                {mustViewSharedRiskSummaryBeforeStep2 ? (
+                  <p className="mb-2 rounded-xl bg-white px-3 py-2 text-center text-xs font-black text-blue-700">
+                    공유 위험요인 보기를 먼저 확인해야 다음 단계로 진행할 수 있습니다.
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={!canGoNextFromStep1}
+                  onClick={() => {
+                    if (!canGoNextFromStep1) return;
+
+                    setCompletedSteps((current) => new Set(current).add(1));
+                    setStep(isRichiPreworkConfirmationFlow ? formStep : 2);
+                  }}
+                  className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300 disabled:text-slate-100"
+                >
+                  {isRichiPreworkConfirmationFlow
+                    ? "체크 후 의견·서명으로 →"
+                    : isBubblemonWorkerQr
+                      ? `${bubblemonModeCopy.buttonLabel} →`
+                      : "핵심 위험 확인 완료 →"}
+                </button>
+              </>
             ) : null}
 
             {!isRichiPreworkConfirmationFlow && step === 2 ? (
