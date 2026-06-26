@@ -57,6 +57,13 @@ function isProtectedApiPath(pathname: string) {
   );
 }
 
+function isRichiOperationalQueryPath(req: NextRequest) {
+  const { pathname, searchParams } = req.nextUrl;
+  if (searchParams.get("company") !== "richi") return false;
+
+  return pathname === "/tbm" || pathname === "/field/voice";
+}
+
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -68,6 +75,10 @@ export function proxy(req: NextRequest) {
   const isProtectedApi = isProtectedApiPath(pathname);
 
   if (!isProtectedPage && !isProtectedApi) {
+    return NextResponse.next();
+  }
+
+  if (isRichiOperationalQueryPath(req)) {
     return NextResponse.next();
   }
 
