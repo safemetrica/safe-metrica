@@ -364,21 +364,45 @@ export default function FieldParticipationStepper({
   const confirmationType = hasOpinion ? "worker_report" : "risk_share_confirm";
   const confirmationStatus = canGoNextFromStep2 ? "confirmed" : "pending";
 
-  /* eslint-disable react-hooks/set-state-in-effect -- Hydrates the session-only Bubblemon monthly risk summary gate from sessionStorage after mount/mode changes. */
   useEffect(() => {
     if (!isBubblemonMonthlyRiskShareConfirmation || typeof window === "undefined") {
       return;
     }
 
-    try {
-      if (window.sessionStorage.getItem(BUBBLEMON_MONTHLY_RISK_SUMMARY_VIEWED_STORAGE_KEY) === "true") {
-        setSharedRiskSummaryViewed(true);
+    function hydrateBubblemonMonthlyRiskSummaryViewed() {
+      const riskSummaryViewedFromReturnUrl =
+        new URLSearchParams(window.location.search).get("riskSummaryViewed") === "1";
+
+      try {
+        if (riskSummaryViewedFromReturnUrl) {
+          window.sessionStorage.setItem(BUBBLEMON_MONTHLY_RISK_SUMMARY_VIEWED_STORAGE_KEY, "true");
+        }
+
+        if (
+          riskSummaryViewedFromReturnUrl ||
+          window.sessionStorage.getItem(BUBBLEMON_MONTHLY_RISK_SUMMARY_VIEWED_STORAGE_KEY) === "true"
+        ) {
+          setSharedRiskSummaryViewed(true);
+        }
+      } catch {
+        if (riskSummaryViewedFromReturnUrl) {
+          setSharedRiskSummaryViewed(true);
+        }
       }
-    } catch {
-      // Keep the in-memory gate when sessionStorage is unavailable.
     }
+
+    hydrateBubblemonMonthlyRiskSummaryViewed();
+
+    window.addEventListener("pageshow", hydrateBubblemonMonthlyRiskSummaryViewed);
+    window.addEventListener("focus", hydrateBubblemonMonthlyRiskSummaryViewed);
+    document.addEventListener("visibilitychange", hydrateBubblemonMonthlyRiskSummaryViewed);
+
+    return () => {
+      window.removeEventListener("pageshow", hydrateBubblemonMonthlyRiskSummaryViewed);
+      window.removeEventListener("focus", hydrateBubblemonMonthlyRiskSummaryViewed);
+      document.removeEventListener("visibilitychange", hydrateBubblemonMonthlyRiskSummaryViewed);
+    };
   }, [isBubblemonMonthlyRiskShareConfirmation]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const ttsText = useMemo(
     () =>
@@ -474,12 +498,11 @@ export default function FieldParticipationStepper({
       return;
     }
 
-    const riskSummaryUrl = `/field/participation/risk-summary?company=${encodeURIComponent(companyCode)}`;
-    const openedWindow = window.open(riskSummaryUrl, "_blank", "noopener,noreferrer");
+    const returnTo = "/field/participation?company=bubblemon&riskSummaryViewed=1";
+    const riskSummaryUrl =
+      `/field/participation/risk-summary?company=bubblemon&returnTo=${encodeURIComponent(returnTo)}`;
 
-    if (openedWindow) {
-      openedWindow.opener = null;
-    }
+    window.location.assign(riskSummaryUrl);
   }
 
   function handleBubblemonModeSelect(intent: BubblemonWorkerQrEntryIntent, cadence: BubblemonWorkerQrCadence) {
