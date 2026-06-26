@@ -747,11 +747,6 @@ export default async function RiskSharePackMonthlyReportPage({
                   ))}
                 </div>
               ) : null}
-
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800 print:border-amber-300 print:bg-amber-50 print:text-amber-900">
-                이 브리핑은 운영 확인을 돕는 요약이며, 법적 판단이나
-                조치완료 확정을 대신하지 않습니다.
-              </div>
             </div>
           </section>
         ) : null}

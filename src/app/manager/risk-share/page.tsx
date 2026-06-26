@@ -657,7 +657,7 @@ export default async function RiskSharePackManagerHomePage({
                 }
               >
                 {isRichiFullOperation
-                  ? "SafeMetrica Operation Manager"
+                  ? "SafeMetrica 운영 관리자"
                   : "SafeMetrica 운영 관리자"}
               </p>
               <h1
@@ -668,7 +668,7 @@ export default async function RiskSharePackManagerHomePage({
                 }
               >
                 {isRichiFullOperation
-                  ? "(주)리치코리아 SafeMetrica 운영 관리자 홈"
+                  ? "(주)리치코리아 운영 관리자 홈"
                   : "SafeMetrica 운영 관리자 홈"}
               </h1>
               <p
@@ -712,7 +712,7 @@ export default async function RiskSharePackManagerHomePage({
               }
             >
               {isRichiFullOperation
-                ? "운영 구분: Full SafeMetrica"
+                ? "운영 구분: 전체 운영형"
                 : `업체 코드: ${company.code}`}
             </span>
           </div>

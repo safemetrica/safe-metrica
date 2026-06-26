@@ -128,7 +128,7 @@ function RichiTbmTopBar() {
         <Link href="/tbm?company=richi" className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-base font-black tracking-tight text-white">
-              SafeMetrica™ TBM
+              작업 전 TBM 운영
             </span>
             <span className="rounded-full border border-[#BDEFE0] bg-[#DDF8EE] px-2.5 py-1 text-xs font-black text-[#0B5F52]">
               리치코리아
@@ -462,7 +462,7 @@ export default async function TbmPage({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700">
-                    SafeMetrica TBM
+                    작업 전 TBM 운영
                   </p>
                   <span className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-0.5 text-[11px] font-black text-teal-700 sm:px-3 sm:py-1 sm:text-xs">
                     리치코리아
@@ -537,12 +537,12 @@ export default async function TbmPage({
                 >
                   {todayRichiRows.length > 0
                     ? "오늘 TBM 저장됨"
-                    : "오늘 TBM 작성 전이에요"}
+                    : "오늘 작성된 TBM이 없습니다"}
                 </p>
                 <p className="mt-1.5 text-lg font-black tracking-tight text-[#102033] sm:mt-3 sm:text-3xl">
                   {todayRichiRows.length > 0
                     ? `오늘 ${todayRichiRows.length}건의 TBM 운영기록이 저장됐어요`
-                    : "아래에서 음성이나 텍스트로 간편하게 남겨주세요"}
+                    : "아래에서 TBM 내용을 말하거나 입력해 기록하세요"}
                 </p>
                 <p className="mt-1.5 text-xs leading-5 text-slate-500 sm:mt-3 sm:text-sm sm:leading-relaxed">
                   날짜별 운영기록은 최근 작성 순서로 정리됩니다.
