@@ -327,11 +327,17 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
       return;
     }
 
-    const nextSourceRoute = window.location.pathname + window.location.search;
-    const nextUserAgent = window.navigator.userAgent || "";
+    const frame = window.requestAnimationFrame(() => {
+      const nextSourceRoute = window.location.pathname + window.location.search;
+      const nextUserAgent = window.navigator.userAgent || "";
 
-    setSourceRoute(nextSourceRoute);
-    setClientUserAgent(nextUserAgent);
+      setSourceRoute(nextSourceRoute);
+      setClientUserAgent(nextUserAgent);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
   }, [enabled]);
 
   useEffect(() => {
@@ -341,9 +347,9 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
     }
 
     lockBodyScroll();
-    syncOrientationState();
 
     const frame = window.requestAnimationFrame(() => {
+      syncOrientationState();
       prepareCanvas();
     });
 
@@ -639,7 +645,7 @@ export default function HandwrittenSignaturePad({ enabled = false }: Handwritten
               </p>
             ) : (
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                본인인증 API나 외부 인증서 기능이 아닌, QR 기반 내부 확인기록입니다.
+                외부 인증서 기능이 아닌, QR 기반 확인기록입니다.
               </p>
             )}
 
