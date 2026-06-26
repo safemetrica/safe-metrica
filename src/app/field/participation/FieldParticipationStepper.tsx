@@ -284,9 +284,15 @@ export default function FieldParticipationStepper({
     riskCheck && riskAssessmentCheck && safetyMeasureCheck;
   const mustViewSharedRiskSummaryBeforeStep2 =
     isBubblemonMonthlyRiskShareConfirmation && !sharedRiskSummaryViewed;
+  const hasBubblemonMonthlyVisibleRiskItems =
+    isBubblemonMonthlyRiskShareConfirmation &&
+    sharedRiskSummaryViewed &&
+    riskItems.length > 0;
   const canGoNextFromStep1 =
     (!isRichiPreworkConfirmationFlow || canGoNextFromStep2) &&
-    !mustViewSharedRiskSummaryBeforeStep2;
+    !mustViewSharedRiskSummaryBeforeStep2 &&
+    (!isBubblemonMonthlyRiskShareConfirmation ||
+      hasBubblemonMonthlyVisibleRiskItems);
   const bubblemonEntryIntentLabel =
     bubblemonEntryIntent === "daily_prework_safety_check"
       ? "오늘 작업 전 안전확인"
@@ -998,10 +1004,9 @@ export default function FieldParticipationStepper({
                               ))}
                             </div>
                           ) : (
-                            <p className="mt-3 rounded-xl bg-white px-3 py-2 text-sm font-bold leading-6 text-slate-700">
-                              현재 화면에서 요약 항목을 불러오지 못했습니다.
-                              현장관리자에게 공유본 상태를 확인해 주세요.
-                            </p>
+                            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-sm font-bold leading-6 text-rose-800">
+                              공유 위험요인 항목을 불러오지 못해 월간 공유확인을 진행할 수 없습니다. 현장관리자에게 공유본 상태를 확인해 주세요.
+                            </div>
                           )}
                         </div>
                       ) : null}

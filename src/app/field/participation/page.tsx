@@ -2,7 +2,7 @@ import { riskShareLinkCopy, riskShareLinkSubmissionTypeLabels } from "@/lib/risk
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import FieldParticipationStepper from "./FieldParticipationStepper";
 import { getOperatingFieldWorkerCopy } from "./operatingFieldWorkerCopy";
-import type { FieldWorkerRiskSummary } from "./fieldWorkerRiskSummary";
+import { getFieldWorkerRiskSummary } from "./fieldWorkerRiskSummary";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -199,12 +199,7 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   const intent = getParticipationIntent(params.intent);
   const initialStep = intent ? intentInitialSteps[intent] : 1;
   const workerCopy = getOperatingFieldWorkerCopy(companyCode);
-  const riskSummary: FieldWorkerRiskSummary = {
-    hasDb: false,
-    total: 0,
-    items: [],
-    memo: "",
-  };
+  const riskSummary = await getFieldWorkerRiskSummary(companyCode);
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
   const weatherNotice = await getFieldWeatherNotice(params.weatherTest);
