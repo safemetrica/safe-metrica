@@ -1,7 +1,8 @@
-import type { FieldQrWorkerIdentity } from "./fieldQrCoreTypes";
+import type { FieldQrMode, FieldQrWorkerIdentity } from "./fieldQrCoreTypes";
 import { normalizeFieldQrTenantCode } from "./fieldQrTenantConfig";
 
 const FIELD_QR_REMEMBER_INFO_KEY_SUFFIX = "worker-confirmation-info:v1";
+const FIELD_QR_IDENTITY_KEY_SUFFIX = "identity:v1";
 
 function truncateText(value: string | undefined, maxLength: number): string {
   return (value ?? "").trim().slice(0, maxLength);
@@ -15,38 +16,53 @@ function getFieldQrRememberInfoTenantKey(tenantCode: string): string {
   }
 
   return (
-    tenantCode.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-") || "unknown"
+    tenantCode
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-") || "unknown"
   );
 }
 
 export function getFieldQrRememberInfoStorageKey(tenantCode: string): string {
   return `safemetrica:${getFieldQrRememberInfoTenantKey(
-    tenantCode
+    tenantCode,
   )}:${FIELD_QR_REMEMBER_INFO_KEY_SUFFIX}`;
 }
 
+export function getFieldQrIdentityStorageKey(
+  tenantCode: string,
+  mode: FieldQrMode,
+): string {
+  return `safemetrica:field-qr:${getFieldQrRememberInfoTenantKey(
+    tenantCode,
+  )}:${mode}:${FIELD_QR_IDENTITY_KEY_SUFFIX}`;
+}
+
 export function sanitizeFieldQrWorkerIdentity(
-  input: Partial<FieldQrWorkerIdentity>
+  input: Partial<FieldQrWorkerIdentity>,
 ): FieldQrWorkerIdentity {
   return {
     workerName: truncateText(input.workerName, 60),
     workerTeam: truncateText(input.workerTeam, 80),
     workerPhoneLast4: truncateText(
       input.workerPhoneLast4?.replace(/\D/g, ""),
-      4
+      4,
     ),
     workerEmployeeNo: truncateText(input.workerEmployeeNo, 40),
   };
 }
 
 export function readFieldQrRememberedIdentity(
-  tenantCode: string
+  tenantCode: string,
+  mode?: FieldQrMode,
 ): FieldQrWorkerIdentity | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const storageKey = getFieldQrRememberInfoStorageKey(tenantCode);
+  const storageKey = mode
+    ? getFieldQrIdentityStorageKey(tenantCode, mode)
+    : getFieldQrRememberInfoStorageKey(tenantCode);
   let rawValue: string | null;
 
   try {
@@ -76,7 +92,8 @@ export function readFieldQrRememberedIdentity(
 
 export function writeFieldQrRememberedIdentity(
   tenantCode: string,
-  identity: FieldQrWorkerIdentity
+  identity: FieldQrWorkerIdentity,
+  mode?: FieldQrMode,
 ): void {
   if (typeof window === "undefined") {
     return;
@@ -84,21 +101,30 @@ export function writeFieldQrRememberedIdentity(
 
   try {
     window.localStorage.setItem(
-      getFieldQrRememberInfoStorageKey(tenantCode),
-      JSON.stringify(sanitizeFieldQrWorkerIdentity(identity))
+      mode
+        ? getFieldQrIdentityStorageKey(tenantCode, mode)
+        : getFieldQrRememberInfoStorageKey(tenantCode),
+      JSON.stringify(sanitizeFieldQrWorkerIdentity(identity)),
     );
   } catch {
     // Remember-info is optional; storage failures should not affect participation.
   }
 }
 
-export function clearFieldQrRememberedIdentity(tenantCode: string): void {
+export function clearFieldQrRememberedIdentity(
+  tenantCode: string,
+  mode?: FieldQrMode,
+): void {
   if (typeof window === "undefined") {
     return;
   }
 
   try {
-    window.localStorage.removeItem(getFieldQrRememberInfoStorageKey(tenantCode));
+    window.localStorage.removeItem(
+      mode
+        ? getFieldQrIdentityStorageKey(tenantCode, mode)
+        : getFieldQrRememberInfoStorageKey(tenantCode),
+    );
   } catch {
     // Remember-info cleanup is best-effort.
   }

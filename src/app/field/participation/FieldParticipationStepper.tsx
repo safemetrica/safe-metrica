@@ -8,6 +8,11 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import {
+  clearFieldQrRememberedIdentity,
+  readFieldQrRememberedIdentity,
+  writeFieldQrRememberedIdentity,
+} from "./fieldQrRememberInfo";
+import {
   FieldQrSpecialNoteCard,
   type FieldQrSpecialNoteMode,
   type FieldQrSpecialNoteValue,
@@ -258,6 +263,7 @@ export default function FieldParticipationStepper({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientSubmissionId] = useState(createClientSubmissionId);
   const isSubmittingRef = useRef(false);
+  const hydratedBubblemonDailyIdentityScopeRef = useRef<string | null>(null);
 
   const bubblemonModeCopy = useMemo(() => {
     if (bubblemonEntryIntent === "daily_prework_safety_check") {
@@ -298,8 +304,7 @@ export default function FieldParticipationStepper({
   const canGoNextFromStep1 =
     (!isRichiPreworkConfirmationFlow || canGoNextFromStep2) &&
     !mustViewSharedRiskSummaryBeforeStep2 &&
-    (!isMonthlyRiskShareConfirmation ||
-      hasBubblemonMonthlyVisibleRiskItems);
+    (!isMonthlyRiskShareConfirmation || hasBubblemonMonthlyVisibleRiskItems);
   const bubblemonEntryIntentLabel =
     bubblemonEntryIntent === "daily_prework_safety_check"
       ? "오늘 작업 전 안전확인"
@@ -323,6 +328,9 @@ export default function FieldParticipationStepper({
   const normalizedWorkerPhoneLast4 = workerPhoneLast4.trim();
   const normalizedWorkerEmployeeNo = workerEmployeeNo.trim();
   const richiConfirmationCodeValue = workerEmployeeNo || workerPhoneLast4;
+  const canRememberBubblemonDailyIdentity = isDailyPreworkSafetyCheck;
+  const bubblemonDailyIdentityMode = "daily_prework_safety_check";
+  const bubblemonDailyIdentityScope = `${normalizedCompanyCode}:${bubblemonDailyIdentityMode}`;
   /* eslint-disable react-hooks/set-state-in-effect -- Hydrates optional saved worker confirmation info from localStorage after mount. */
   useEffect(() => {
     if (!isRichiPreworkConfirmationFlow || typeof window === "undefined") {
@@ -414,6 +422,85 @@ export default function FieldParticipationStepper({
     workerEmployeeNo,
   ]);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Hydrates optional saved Field QR identity from localStorage after mode selection. */
+  useEffect(() => {
+    if (!canRememberBubblemonDailyIdentity) {
+      hydratedBubblemonDailyIdentityScopeRef.current = null;
+      return;
+    }
+
+    if (
+      hydratedBubblemonDailyIdentityScopeRef.current ===
+      bubblemonDailyIdentityScope
+    ) {
+      return;
+    }
+
+    hydratedBubblemonDailyIdentityScopeRef.current =
+      bubblemonDailyIdentityScope;
+
+    const savedIdentity = readFieldQrRememberedIdentity(
+      companyCode,
+      bubblemonDailyIdentityMode,
+    );
+
+    if (!savedIdentity) {
+      return;
+    }
+
+    setSubmitter((current) =>
+      current.trim() ? current : savedIdentity.workerName,
+    );
+    setWorkerTeam((current) =>
+      current.trim() ? current : savedIdentity.workerTeam,
+    );
+    setWorkerPhoneLast4((current) =>
+      current.trim() ? current : savedIdentity.workerPhoneLast4,
+    );
+    setWorkerEmployeeNo((current) =>
+      current.trim() ? current : savedIdentity.workerEmployeeNo,
+    );
+    setRememberWorkerInfo(true);
+  }, [
+    bubblemonDailyIdentityMode,
+    bubblemonDailyIdentityScope,
+    canRememberBubblemonDailyIdentity,
+    companyCode,
+  ]);
+
+  useEffect(() => {
+    if (!canRememberBubblemonDailyIdentity) {
+      return;
+    }
+
+    if (!rememberWorkerInfo) {
+      clearFieldQrRememberedIdentity(companyCode, bubblemonDailyIdentityMode);
+      return;
+    }
+
+    writeFieldQrRememberedIdentity(
+      companyCode,
+      {
+        workerName,
+        workerTeam: normalizedWorkerTeam,
+        workerPhoneLast4: normalizedWorkerPhoneLast4,
+        workerEmployeeNo: normalizedWorkerEmployeeNo,
+      },
+      bubblemonDailyIdentityMode,
+    );
+  }, [
+    bubblemonDailyIdentityMode,
+    canRememberBubblemonDailyIdentity,
+    companyCode,
+    rememberWorkerInfo,
+    workerName,
+    normalizedWorkerTeam,
+    normalizedWorkerPhoneLast4,
+    normalizedWorkerEmployeeNo,
+  ]);
+
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   function handleRichiConfirmationCodeChange(value: string) {
     const nextValue = value.trim().slice(0, 60);
 
@@ -494,6 +581,19 @@ export default function FieldParticipationStepper({
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (canRememberBubblemonDailyIdentity && rememberWorkerInfo) {
+      writeFieldQrRememberedIdentity(
+        companyCode,
+        {
+          workerName,
+          workerTeam: normalizedWorkerTeam,
+          workerPhoneLast4: normalizedWorkerPhoneLast4,
+          workerEmployeeNo: normalizedWorkerEmployeeNo,
+        },
+        bubblemonDailyIdentityMode,
+      );
+    }
+
     if (isSubmittingRef.current) {
       event.preventDefault();
       return;
@@ -853,9 +953,15 @@ export default function FieldParticipationStepper({
                       항목을 확인한 뒤 다음 단계에서 직접 체크해 주세요.
                     </p>
                     <ul className="mt-3 space-y-2 text-sm font-bold leading-6 text-slate-800">
-                      <li className="rounded-xl bg-white px-3 py-2">✓ 보호구 착용</li>
-                      <li className="rounded-xl bg-white px-3 py-2">✓ 통로·동선 확인</li>
-                      <li className="rounded-xl bg-white px-3 py-2">✓ 적재 상태 확인</li>
+                      <li className="rounded-xl bg-white px-3 py-2">
+                        ✓ 보호구 착용
+                      </li>
+                      <li className="rounded-xl bg-white px-3 py-2">
+                        ✓ 통로·동선 확인
+                      </li>
+                      <li className="rounded-xl bg-white px-3 py-2">
+                        ✓ 적재 상태 확인
+                      </li>
                       <li className="rounded-xl bg-white px-3 py-2">
                         ✓ 지게차·대차·상하차 주변 확인
                       </li>
@@ -1018,7 +1124,10 @@ export default function FieldParticipationStepper({
                     </summary>
                     <div className="mt-3 space-y-2">
                       {riskItems.map((item, index) => (
-                        <p key={item.id} className="rounded-xl bg-white px-3 py-2 font-bold">
+                        <p
+                          key={item.id}
+                          className="rounded-xl bg-white px-3 py-2 font-bold"
+                        >
                           {index + 1}. {item.taskName} — {item.hazard}
                         </p>
                       ))}
@@ -1075,7 +1184,9 @@ export default function FieldParticipationStepper({
                             </div>
                           ) : (
                             <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-sm font-bold leading-6 text-rose-800">
-                              공유 위험요인 항목을 불러오지 못해 월간 공유확인을 진행할 수 없습니다. 현장관리자에게 공유본 상태를 확인해 주세요.
+                              공유 위험요인 항목을 불러오지 못해 월간 공유확인을
+                              진행할 수 없습니다. 현장관리자에게 공유본 상태를
+                              확인해 주세요.
                             </div>
                           )}
                         </div>
@@ -1192,7 +1303,9 @@ export default function FieldParticipationStepper({
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <p className="text-sm font-black text-emerald-800">
-                      {isDailyPreworkSafetyCheck ? "특이사항 없음" : "의견 없음"}
+                      {isDailyPreworkSafetyCheck
+                        ? "특이사항 없음"
+                        : "의견 없음"}
                     </p>
                     <p className="mt-2 text-sm font-bold leading-6 text-emerald-900">
                       {isRichiPreworkConfirmationFlow
@@ -1505,6 +1618,36 @@ export default function FieldParticipationStepper({
                         </div>
                       </div>
                     )}
+                    {canRememberBubblemonDailyIdentity ? (
+                      <label className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-4 w-4 rounded border-slate-300"
+                          checked={rememberWorkerInfo}
+                          onChange={(event) => {
+                            const checked = event.target.checked;
+                            setRememberWorkerInfo(checked);
+
+                            if (!checked) {
+                              clearFieldQrRememberedIdentity(
+                                companyCode,
+                                bubblemonDailyIdentityMode,
+                              );
+                            }
+                          }}
+                        />
+                        <span>
+                          <span className="block text-slate-900">
+                            이 기기에서 제출자 정보 기억하기
+                          </span>
+                          <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">
+                            공용 휴대폰이면 체크하지 마세요. 이름, 소속/작업조,
+                            휴대폰 뒷4자리, 사번 또는 현장 식별번호만 이
+                            브라우저에 저장됩니다.
+                          </span>
+                        </span>
+                      </label>
+                    ) : null}
                     {!hasOpinion && !shareConfirmationIdentityReady ? (
                       <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
                         {isRichiPreworkConfirmationFlow
