@@ -47,6 +47,12 @@ type WeatherNotice = {
   ttsLine: string;
 } | null;
 
+type BubblemonWorkerQrEntryIntent =
+  | "monthly_risk_share_confirmation"
+  | "daily_prework_safety_check";
+
+type BubblemonWorkerQrCadence = "monthly" | "daily";
+
 type Props = {
   companyCode: string;
   flow?: string;
@@ -171,6 +177,10 @@ export default function FieldParticipationStepper({
   const [riskCheck, setRiskCheck] = useState(false);
   const [riskAssessmentCheck, setRiskAssessmentCheck] = useState(false);
   const [safetyMeasureCheck, setSafetyMeasureCheck] = useState(false);
+  const [bubblemonEntryIntent, setBubblemonEntryIntent] = useState<BubblemonWorkerQrEntryIntent>(
+    "monthly_risk_share_confirmation"
+  );
+  const [bubblemonCadence, setBubblemonCadence] = useState<BubblemonWorkerQrCadence>("monthly");
   const isRichiPreworkConfirmationFlow = workerCopy?.code === "richi";
 
   const formStep = isRichiPreworkConfirmationFlow ? 2 : 3;
@@ -207,6 +217,10 @@ export default function FieldParticipationStepper({
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const normalizedCompanyCode = companyCode.trim().toLowerCase();
   const isBubblemonWorkerQr = normalizedCompanyCode === "bubblemon";
+  const bubblemonEntryIntentLabel =
+    bubblemonEntryIntent === "daily_prework_safety_check"
+      ? "오늘 작업 전 안전확인"
+      : "월간 위험성평가 공유확인";
   const canOpenRiskSummary = [
     "daedo",
     "dongwoo",
@@ -424,6 +438,13 @@ export default function FieldParticipationStepper({
         <input type="hidden" name="confirmation_status" value={confirmationStatus} />
         <input type="hidden" name="source_step" value={String(step)} />
         <input type="hidden" name="entry_intent" value={entryIntent} />
+        {isBubblemonWorkerQr ? (
+          <>
+            <input type="hidden" name="entryIntent" value={bubblemonEntryIntent} />
+            <input type="hidden" name="cadence" value={bubblemonCadence} />
+            <input type="hidden" name="entryIntentLabel" value={bubblemonEntryIntentLabel} />
+          </>
+        ) : null}
         <input type="hidden" name="location" value={location} />
         <input type="hidden" name="submitter" value={workerName} />
         <input type="hidden" name="workerTeam" value={normalizedWorkerTeam} />
@@ -463,6 +484,8 @@ export default function FieldParticipationStepper({
                 <button
                   type="button"
                   onClick={() => {
+                    setBubblemonEntryIntent("monthly_risk_share_confirmation");
+                    setBubblemonCadence("monthly");
                     setCompletedSteps(new Set());
                     setStep(1);
                   }}
@@ -480,6 +503,8 @@ export default function FieldParticipationStepper({
                 <button
                   type="button"
                   onClick={() => {
+                    setBubblemonEntryIntent("daily_prework_safety_check");
+                    setBubblemonCadence("daily");
                     setCompletedSteps(new Set());
                     setStep(1);
                   }}
