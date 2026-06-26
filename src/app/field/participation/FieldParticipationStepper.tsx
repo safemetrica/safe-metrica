@@ -214,6 +214,22 @@ export default function FieldParticipationStepper({
   const [clientSubmissionId] = useState(createClientSubmissionId);
   const isSubmittingRef = useRef(false);
 
+  const bubblemonModeCopy = useMemo(() => {
+    if (bubblemonEntryIntent === "daily_prework_safety_check") {
+      return {
+        title: "오늘 작업 전 안전확인",
+        helper: "오늘 작업 전 주요 위험과 보호구·동선·적재 주의사항을 확인합니다.",
+        buttonLabel: "작업 전 확인 시작",
+      };
+    }
+
+    return {
+      title: "이번 달 위험성평가 공유확인",
+      helper: "이번 달 주요 위험요인을 확인하고 기록합니다.",
+      buttonLabel: "위험요인 확인 시작",
+    };
+  }, [bubblemonEntryIntent]);
+
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const normalizedCompanyCode = companyCode.trim().toLowerCase();
   const isBubblemonWorkerQr = normalizedCompanyCode === "bubblemon";
@@ -409,6 +425,23 @@ export default function FieldParticipationStepper({
 
     setIsSpeaking(false);
   }
+
+  function handleBubblemonModeSelect(intent: BubblemonWorkerQrEntryIntent, cadence: BubblemonWorkerQrCadence) {
+    setBubblemonEntryIntent(intent);
+    setBubblemonCadence(cadence);
+    setCompletedSteps(new Set());
+    setStep(1);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("bubblemon-participation-check-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
     if (normalizedCompanyCode === "richi" && flow !== "signed") {
       return <RichiWorkerEntryChoice companyCode={companyCode} />;
     }
@@ -483,39 +516,51 @@ export default function FieldParticipationStepper({
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setBubblemonEntryIntent("monthly_risk_share_confirmation");
-                    setBubblemonCadence("monthly");
-                    setCompletedSteps(new Set());
-                    setStep(1);
-                  }}
-                  className="rounded-2xl border border-blue-200 bg-white p-4 text-left shadow-sm transition active:scale-[0.99]"
+                  onClick={() => handleBubblemonModeSelect("monthly_risk_share_confirmation", "monthly")}
+                  aria-pressed={bubblemonEntryIntent === "monthly_risk_share_confirmation"}
+                  className={[
+                    "rounded-2xl border p-4 text-left shadow-sm transition active:scale-[0.99]",
+                    bubblemonEntryIntent === "monthly_risk_share_confirmation"
+                      ? "border-blue-600 bg-white ring-2 ring-blue-500 ring-offset-2"
+                      : "border-blue-200 bg-white",
+                  ].join(" ")}
                 >
                   <span className="block text-sm font-black text-blue-700">이번 달 위험성평가 공유확인</span>
                   <span className="mt-2 block text-sm font-bold leading-6 text-slate-700">
                     월 1회 또는 위험요인 변경 시 주요 위험요인을 확인하고 기록합니다.
                   </span>
+                  {bubblemonEntryIntent === "monthly_risk_share_confirmation" ? (
+                    <span className="mt-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-800">
+                      선택됨
+                    </span>
+                  ) : null}
                   <span className="mt-3 inline-flex rounded-full bg-blue-700 px-3 py-1 text-xs font-black text-white">
-                    기존 확인 흐름 계속
+                    위험요인 확인 시작
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setBubblemonEntryIntent("daily_prework_safety_check");
-                    setBubblemonCadence("daily");
-                    setCompletedSteps(new Set());
-                    setStep(1);
-                  }}
-                  className="rounded-2xl border border-emerald-200 bg-white p-4 text-left shadow-sm transition active:scale-[0.99]"
+                  onClick={() => handleBubblemonModeSelect("daily_prework_safety_check", "daily")}
+                  aria-pressed={bubblemonEntryIntent === "daily_prework_safety_check"}
+                  className={[
+                    "rounded-2xl border p-4 text-left shadow-sm transition active:scale-[0.99]",
+                    bubblemonEntryIntent === "daily_prework_safety_check"
+                      ? "border-emerald-600 bg-white ring-2 ring-emerald-500 ring-offset-2"
+                      : "border-emerald-200 bg-white",
+                  ].join(" ")}
                 >
                   <span className="block text-sm font-black text-emerald-700">오늘 작업 전 안전확인</span>
                   <span className="mt-2 block text-sm font-bold leading-6 text-slate-700">
                     오늘 작업 전 주요 위험과 보호구·동선·적재 주의사항을 짧게 확인합니다.
                   </span>
+                  {bubblemonEntryIntent === "daily_prework_safety_check" ? (
+                    <span className="mt-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800">
+                      선택됨
+                    </span>
+                  ) : null}
                   <span className="mt-3 inline-flex rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
-                    작업 전 확인으로 보기
+                    작업 전 확인 시작
                   </span>
                 </button>
 
@@ -553,17 +598,26 @@ export default function FieldParticipationStepper({
             <StepHeader step={step} completedSteps={completedSteps} labels={stepLabels} />
           </div>
 
-          <section className="mt-4 flex-1 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section
+            id={isBubblemonWorkerQr ? "bubblemon-participation-check-section" : undefined}
+            className="mt-4 scroll-mt-4 flex-1 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+          >
             {step === 1 ? (
               <div>
                 <p className="text-sm font-black text-slate-500">{isRichiPreworkConfirmationFlow ? "Step 1/3" : "Step 1/4"}</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">
-                    {isRichiPreworkConfirmationFlow ? "작업 전 위생·안전 확인" : "오늘 작업 전 핵심 위험 확인"}
+                    {isRichiPreworkConfirmationFlow
+                      ? "작업 전 위생·안전 확인"
+                      : isBubblemonWorkerQr
+                        ? bubblemonModeCopy.title
+                        : "오늘 작업 전 핵심 위험 확인"}
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isRichiPreworkConfirmationFlow
                       ? "작업 전 위생·안전 확인 내용입니다."
-                      : "오늘 작업과 관련된 핵심 위험요인입니다. 아래 내용을 확인해 주세요."}
+                      : isBubblemonWorkerQr
+                        ? bubblemonModeCopy.helper
+                        : "오늘 작업과 관련된 핵심 위험요인입니다. 아래 내용을 확인해 주세요."}
                 </p>
 
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900">
@@ -1026,7 +1080,11 @@ export default function FieldParticipationStepper({
                 }}
                 className="w-full rounded-2xl bg-blue-700 px-4 py-4 text-base font-black text-white disabled:bg-slate-300 disabled:text-slate-100"
               >
-                {isRichiPreworkConfirmationFlow ? "체크 후 의견·서명으로 →" : "핵심 위험 확인 완료 →"}
+                {isRichiPreworkConfirmationFlow
+                  ? "체크 후 의견·서명으로 →"
+                  : isBubblemonWorkerQr
+                    ? `${bubblemonModeCopy.buttonLabel} →`
+                    : "핵심 위험 확인 완료 →"}
               </button>
             ) : null}
 

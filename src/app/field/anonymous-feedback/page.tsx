@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
 };
 
-const ALLOWED_ANONYMOUS_FEEDBACK_COMPANY_CODES = new Set(["richi"]);
+const ALLOWED_ANONYMOUS_FEEDBACK_COMPANY_CODES = new Set(["richi", "bubblemon"]);
 
 
 type PageProps = {
@@ -35,6 +35,7 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
   const isRichi = companyCode === "richi";
+  const isBubblemon = companyCode === "bubblemon";
   const isAllowedCompany = ALLOWED_ANONYMOUS_FEEDBACK_COMPANY_CODES.has(companyCode);
 
   if (!isAllowedCompany) {
@@ -89,7 +90,7 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
           </div>
 
           <h1 className="mt-4 text-[22px] font-black tracking-[-0.04em] text-[#0B2742]">
-            {isRichi ? "㈜리치코리아 익명 의견" : "익명 현장 의견"}
+            {isRichi ? "㈜리치코리아 익명 의견" : isBubblemon ? "㈜버블몬코리아 익명 의견" : "익명 현장 의견"}
           </h1>
           <p className="mt-2 text-[15px] leading-7 text-[#64748B]">
             개인 식별정보와 확인서명을 입력하지 않는 익명 접수 화면입니다. 현장에서 불편하거나 개선이 필요한 내용을 남겨주세요.
@@ -126,7 +127,13 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
             위치/구역
             <input
               name="location"
-              placeholder={isRichi ? "예: 포장실 입구 / 세척실 바닥" : "예: 작업장 입구 / 통로"}
+              placeholder={
+                isRichi
+                  ? "예: 포장실 입구 / 세척실 바닥"
+                  : isBubblemon
+                    ? "예: 창고 통로 / 입고장 / 포장구역"
+                    : "예: 작업장 입구 / 통로"
+              }
               className="mt-2 w-full rounded-2xl border border-[#E3E7EC] px-4 py-3 text-base text-[#0B2742] outline-none focus:border-[#16A085]"
             />
           </label>
