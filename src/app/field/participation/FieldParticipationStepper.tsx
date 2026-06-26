@@ -1365,7 +1365,9 @@ export default function FieldParticipationStepper({
                     <span>
                       {isRichiPreworkConfirmationFlow
                         ? "익명으로 의견 제출"
-                        : "익명으로 제보 제출"}
+                        : isDailyPreworkSafetyCheck
+                          ? "익명으로 특이사항 제출"
+                          : "익명으로 제보 제출"}
                     </span>
                   </label>
 
