@@ -206,6 +206,7 @@ export default function FieldParticipationStepper({
 
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const normalizedCompanyCode = companyCode.trim().toLowerCase();
+  const isBubblemonWorkerQr = normalizedCompanyCode === "bubblemon";
   const canOpenRiskSummary = [
     "daedo",
     "dongwoo",
@@ -226,6 +227,7 @@ export default function FieldParticipationStepper({
   const normalizedWorkerPhoneLast4 = workerPhoneLast4.trim();
   const normalizedWorkerEmployeeNo = workerEmployeeNo.trim();
   const richiConfirmationCodeValue = workerEmployeeNo || workerPhoneLast4;
+  /* eslint-disable react-hooks/set-state-in-effect -- Hydrates optional saved worker confirmation info from localStorage after mount. */
   useEffect(() => {
     if (!isRichiPreworkConfirmationFlow || typeof window === "undefined") {
       return;
@@ -271,6 +273,7 @@ export default function FieldParticipationStepper({
       window.localStorage.removeItem(RICHI_WORKER_CONFIRMATION_INFO_STORAGE_KEY);
     }
   }, [isRichiPreworkConfirmationFlow, workerName, workerTeam, workerPhoneLast4, workerEmployeeNo]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!isRichiPreworkConfirmationFlow || !rememberWorkerInfo || typeof window === "undefined") {
@@ -446,6 +449,80 @@ export default function FieldParticipationStepper({
                   : "현장 작업 전 핵심 위험을 확인하고, 필요한 의견을 남겨 주세요."}
             </p>
           </section>
+
+          {isBubblemonWorkerQr ? (
+            <section className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+              <p className="text-xs font-black text-blue-700">Bubblemon 근로자 QR</p>
+              <h2 className="mt-1 text-xl font-black text-slate-950">오늘 필요한 확인을 선택해 주세요.</h2>
+              <p className="mt-2 text-sm leading-6 text-blue-900">
+                아래 항목은 운영기록과 관리자 검토를 위한 입구입니다. 위험성평가 공유확인과 작업 전 안전확인은
+                현재 참여 흐름에서 이어서 확인합니다.
+              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompletedSteps(new Set());
+                    setStep(1);
+                  }}
+                  className="rounded-2xl border border-blue-200 bg-white p-4 text-left shadow-sm transition active:scale-[0.99]"
+                >
+                  <span className="block text-sm font-black text-blue-700">이번 달 위험성평가 공유확인</span>
+                  <span className="mt-2 block text-sm font-bold leading-6 text-slate-700">
+                    월 1회 또는 위험요인 변경 시 주요 위험요인을 확인하고 기록합니다.
+                  </span>
+                  <span className="mt-3 inline-flex rounded-full bg-blue-700 px-3 py-1 text-xs font-black text-white">
+                    기존 확인 흐름 계속
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompletedSteps(new Set());
+                    setStep(1);
+                  }}
+                  className="rounded-2xl border border-emerald-200 bg-white p-4 text-left shadow-sm transition active:scale-[0.99]"
+                >
+                  <span className="block text-sm font-black text-emerald-700">오늘 작업 전 안전확인</span>
+                  <span className="mt-2 block text-sm font-bold leading-6 text-slate-700">
+                    오늘 작업 전 주요 위험과 보호구·동선·적재 주의사항을 짧게 확인합니다.
+                  </span>
+                  <span className="mt-3 inline-flex rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
+                    작업 전 확인으로 보기
+                  </span>
+                </button>
+
+                <a
+                  href="/field/anonymous-feedback?company=bubblemon"
+                  className="rounded-2xl border border-amber-200 bg-white p-4 text-left shadow-sm transition active:scale-[0.99]"
+                >
+                  <span className="block text-sm font-black text-amber-700">익명 의견·아차사고·개선제안</span>
+                  <span className="mt-2 block text-sm font-bold leading-6 text-slate-700">
+                    이름과 서명 없이 불편사항, 아차사고, 개선의견을 제출합니다.
+                  </span>
+                  <span className="mt-3 inline-flex rounded-full bg-amber-600 px-3 py-1 text-xs font-black text-white">
+                    익명 제출 열기
+                  </span>
+                </a>
+
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 p-4 text-left opacity-85 shadow-sm"
+                >
+                  <span className="block text-sm font-black text-slate-600">외부인 출입 안전확인</span>
+                  <span className="mt-2 block text-sm font-bold leading-6 text-slate-600">
+                    방문자·납품기사·협력업체 출입 시 안전수칙 확인을 기록합니다.
+                  </span>
+                  <span className="mt-3 inline-flex rounded-full bg-slate-500 px-3 py-1 text-xs font-black text-white">
+                    준비 중
+                  </span>
+                </button>
+              </div>
+            </section>
+          ) : null}
 
           <div className="mt-4">
             <StepHeader step={step} completedSteps={completedSteps} labels={stepLabels} />
