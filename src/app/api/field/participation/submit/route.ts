@@ -178,6 +178,24 @@ function normalizeEntryIntent(rawIntent: string) {
   return ["risk", "share", "report"].includes(rawIntent) ? rawIntent : "default";
 }
 
+const BUBBLEMON_ENTRY_INTENT_LABELS = {
+  monthly_risk_share_confirmation: "월간 위험성평가 공유확인",
+  daily_prework_safety_check: "오늘 작업 전 안전확인",
+} as const;
+
+type BubblemonEntryIntent = keyof typeof BUBBLEMON_ENTRY_INTENT_LABELS;
+type BubblemonCadence = "monthly" | "daily";
+
+function normalizeBubblemonEntryIntent(rawIntent: string): BubblemonEntryIntent {
+  return rawIntent === "daily_prework_safety_check"
+    ? "daily_prework_safety_check"
+    : "monthly_risk_share_confirmation";
+}
+
+function normalizeBubblemonCadence(entryIntent: BubblemonEntryIntent): BubblemonCadence {
+  return entryIntent === "daily_prework_safety_check" ? "daily" : "monthly";
+}
+
 function isFile(value: FormDataEntryValue): value is File {
   return value instanceof File && value.size > 0;
 }
@@ -477,10 +495,16 @@ function buildContentWithConfirmation(params: {
   riskCheck: boolean;
   riskAssessmentCheck: boolean;
   safetyMeasureCheck: boolean;
+  entryIntentLabel?: string | null;
 }) {
   const lines: string[] = [];
 
   lines.push(params.content);
+
+  if (params.entryIntentLabel) {
+    lines.push("");
+    lines.push(`참여 목적: ${params.entryIntentLabel}`);
+  }
 
   if (params.sharedRiskSummary) {
     lines.push("");
@@ -516,6 +540,7 @@ function buildSupabaseFirstFieldParticipationContent(params: {
   entryIntent: string;
   submissionType: string;
   processingStatus: string;
+  entryIntentLabel?: string | null;
 }) {
   let finalContent = buildContentWithConfirmation({
     content: params.content,
@@ -523,6 +548,7 @@ function buildSupabaseFirstFieldParticipationContent(params: {
     riskCheck: params.riskCheck,
     riskAssessmentCheck: params.riskAssessmentCheck,
     safetyMeasureCheck: params.safetyMeasureCheck,
+    entryIntentLabel: params.entryIntentLabel,
   });
 
   const inlineMetaLines: string[] = [
@@ -559,7 +585,9 @@ function buildSupabaseFirstFieldParticipationContent(params: {
     `- 확인 유형: ${params.confirmationType}`,
     `- 확인 상태: ${params.confirmationStatus}`,
     `- 제출 출처: ${params.sourceStep}`,
-    `- 진입 의도: ${params.entryIntent}`,
+    ...(params.entryIntentLabel
+      ? [`- 참여 목적: ${params.entryIntentLabel}`]
+      : [`- 진입 의도: ${params.entryIntent}`]),
     "",
     "[처리 기준]",
     `- 제출구분: ${params.submissionType}`,
@@ -644,7 +672,14 @@ export async function POST(req: NextRequest) {
     allChecksConfirmed
   );
   const sourceStep = normalizeSourceStep(getFormText(formData, "source_step"));
-  const entryIntent = normalizeEntryIntent(getFormText(formData, "entry_intent"));
+  const legacyEntryIntent = normalizeEntryIntent(getFormText(formData, "entry_intent"));
+  const isBubblemonSubmission = company.code.trim().toLowerCase() === "bubblemon";
+  const bubblemonEntryIntent = normalizeBubblemonEntryIntent(getFormText(formData, "entryIntent"));
+  const bubblemonCadence = normalizeBubblemonCadence(bubblemonEntryIntent);
+  const bubblemonEntryIntentLabel = BUBBLEMON_ENTRY_INTENT_LABELS[bubblemonEntryIntent];
+  const entryIntent = isBubblemonSubmission ? bubblemonEntryIntent : legacyEntryIntent;
+  const cadence = isBubblemonSubmission ? bubblemonCadence : null;
+  const entryIntentLabel = isBubblemonSubmission ? bubblemonEntryIntentLabel : null;
   const isAcknowledgementOnly =
     submissionType === "공유확인" &&
     riskCheck &&
@@ -796,6 +831,8 @@ export async function POST(req: NextRequest) {
     confirmation_status: confirmationStatus,
     source_step: sourceStep,
     entry_intent: entryIntent,
+    cadence,
+    entry_intent_label: entryIntentLabel,
     identity_mode: rawIdentityMode || null,
     worker_name: anonymous ? "" : submitterInput,
     worker_team: anonymous ? "" : workerTeam,
@@ -898,6 +935,7 @@ export async function POST(req: NextRequest) {
         entryIntent,
         submissionType,
         processingStatus,
+        entryIntentLabel,
       });
 
       const supabaseResult = await insertFieldParticipationSubmissionShadowRecord({
@@ -934,6 +972,8 @@ export async function POST(req: NextRequest) {
           confirmationStatus,
           sourceStep,
           entryIntent,
+          cadence,
+          entryIntentLabel,
           isAcknowledgementOnly,
           richiSignedConfirmationSubmission: isRichiSignedConfirmationSubmission,
           richiSignedIdentityReady,
@@ -992,6 +1032,8 @@ export async function POST(req: NextRequest) {
               reportedDate,
               sourceStep,
               entryIntent,
+              cadence,
+              entryIntentLabel,
               confirmationType,
               confirmationStatus,
               fileName: file.name,
@@ -1037,6 +1079,7 @@ export async function POST(req: NextRequest) {
     riskCheck,
     riskAssessmentCheck,
     safetyMeasureCheck,
+    entryIntentLabel,
   });
 
   const inlineMetaLines: string[] = [
@@ -1081,7 +1124,9 @@ export async function POST(req: NextRequest) {
     `- 확인 유형: ${confirmationType}`,
     `- 확인 상태: ${confirmationStatus}`,
     `- 제출 출처: ${sourceStep}`,
-    `- 진입 의도: ${entryIntent}`,
+    ...(entryIntentLabel
+      ? [`- 참여 목적: ${entryIntentLabel}`]
+      : [`- 진입 의도: ${entryIntent}`]),
     "",
     "[처리 기준]",
     `- 제출구분: ${submissionType}`,
@@ -1313,6 +1358,8 @@ export async function POST(req: NextRequest) {
               reportedDate,
               sourceStep,
               entryIntent,
+              cadence,
+              entryIntentLabel,
               confirmationType,
               confirmationStatus,
               fileName: file.name,
