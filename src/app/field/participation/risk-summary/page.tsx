@@ -9,6 +9,7 @@ export const revalidate = 0;
 type PageProps = {
   searchParams: Promise<{
     company?: string;
+    returnTo?: string;
   }>;
 };
 
@@ -44,6 +45,13 @@ function getRiskBadgeClass(level: string) {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
+function sanitizeParticipationReturnTo(returnTo?: string) {
+  if (!returnTo) return null;
+  if (!returnTo.startsWith("/field/participation")) return null;
+  if (returnTo.startsWith("//")) return null;
+  return returnTo;
+}
+
 export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const companyCode = normalizeCompanyCode(params.company);
@@ -51,9 +59,17 @@ export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageP
   const companyName = getCompanyLabel(companyCode, workerCopy?.companyName);
   const riskSummary = await getFieldWorkerRiskSummary(companyCode);
 
-  const backHref = companyCode
-    ? `/field/participation?company=${encodeURIComponent(companyCode)}`
-    : "/field/participation";
+  const sanitizedReturnTo = sanitizeParticipationReturnTo(params.returnTo);
+  const backHref =
+    companyCode === "bubblemon" && params.returnTo
+      ? sanitizedReturnTo ?? "/field/participation?company=bubblemon"
+      : companyCode
+        ? `/field/participation?company=${encodeURIComponent(companyCode)}`
+        : "/field/participation";
+  const backLabel =
+    companyCode === "bubblemon" && params.returnTo
+      ? "확인하고 현장참여로 돌아가기"
+      : "현장참여로 돌아가기";
 
   if (!companyCode) {
     return (
@@ -96,7 +112,7 @@ export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageP
             href={backHref}
             className="mt-5 block rounded-2xl bg-slate-900 px-4 py-3 text-center text-sm font-black text-white"
           >
-            현장참여로 돌아가기
+            {backLabel}
           </Link>
         </section>
       </main>
@@ -151,7 +167,7 @@ export default async function FieldWorkerRiskSummaryPage({ searchParams }: PageP
           href={backHref}
           className="mt-5 block rounded-2xl bg-blue-700 px-4 py-3 text-center text-sm font-black text-white"
         >
-          확인 후 현장참여로 돌아가기
+          {backLabel}
         </Link>
       </section>
     </main>
