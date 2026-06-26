@@ -7,6 +7,10 @@ import {
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
+import {
+  FieldQrSpecialNoteCard,
+  type FieldQrSpecialNoteValue,
+} from "./FieldQrSpecialNoteCard";
 import HandwrittenSignaturePad from "./HandwrittenSignaturePad";
 import RichiWorkerConfirmationFlow from "./RichiWorkerConfirmationFlow";
 import RichiWorkerEntryChoice from "./RichiWorkerEntryChoice";
@@ -514,6 +518,18 @@ export default function FieldParticipationStepper({
 
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
+  }
+
+  function handleSpecialNoteChange(value: FieldQrSpecialNoteValue) {
+    if (value.mode === "none") {
+      setReportTitle("");
+      setContent("");
+      return;
+    }
+
+    setFeedbackType(normalizeParticipationType(value.noteType));
+    setLocation(value.location);
+    setContent(value.content);
   }
 
   function handleStopTts() {
@@ -1198,90 +1214,117 @@ export default function FieldParticipationStepper({
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">
-                    {isRichiPreworkConfirmationFlow ? "의견 제목" : "제보 제목"}
-                  </label>
-                  <input
-                    value={reportTitle}
-                    onChange={(event) =>
-                      setReportTitle(event.target.value.slice(0, 80))
-                    }
-                    placeholder={
-                      isRichiPreworkConfirmationFlow
-                        ? "예: 포장실 동선이 불편합니다"
-                        : "예: 재활용장 바닥 깨진 병 조각 발견"
-                    }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <p className="mt-1 text-right text-xs font-bold text-slate-500">
-                    {reportTitle.length}/80
-                  </p>
-                </div>
+                {isDailyPreworkSafetyCheck ? (
+                  <div className="mt-4">
+                    <FieldQrSpecialNoteCard
+                      value={{
+                        mode: hasOpinion ? "has_note" : "none",
+                        noteType: feedbackType,
+                        location,
+                        content,
+                      }}
+                      onChange={handleSpecialNoteChange}
+                      noteTypeOptions={feedbackTypeOptions.map((type) => ({
+                        value: type,
+                        label: type,
+                      }))}
+                      title="특이사항 입력"
+                      helperText="특이사항이 없으면 그대로 제출하고, 이상이나 불편사항이 있으면 내용을 남겨 주세요."
+                      evidenceSlot={<FieldParticipationFileInput />}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4">
+                      <label className="text-sm font-bold text-slate-700">
+                        {isRichiPreworkConfirmationFlow
+                          ? "의견 제목"
+                          : "제보 제목"}
+                      </label>
+                      <input
+                        value={reportTitle}
+                        onChange={(event) =>
+                          setReportTitle(event.target.value.slice(0, 80))
+                        }
+                        placeholder={
+                          isRichiPreworkConfirmationFlow
+                            ? "예: 포장실 동선이 불편합니다"
+                            : "예: 재활용장 바닥 깨진 병 조각 발견"
+                        }
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      />
+                      <p className="mt-1 text-right text-xs font-bold text-slate-500">
+                        {reportTitle.length}/80
+                      </p>
+                    </div>
 
-                <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">
-                    {isRichiPreworkConfirmationFlow ? "의견 유형" : "제보 유형"}
-                  </label>
-                  <select
-                    value={feedbackType}
-                    onChange={(event) =>
-                      setFeedbackType(
-                        normalizeParticipationType(event.target.value),
-                      )
-                    }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  >
-                    {feedbackTypeOptions.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div className="mt-4">
+                      <label className="text-sm font-bold text-slate-700">
+                        {isRichiPreworkConfirmationFlow
+                          ? "의견 유형"
+                          : "제보 유형"}
+                      </label>
+                      <select
+                        value={feedbackType}
+                        onChange={(event) =>
+                          setFeedbackType(
+                            normalizeParticipationType(event.target.value),
+                          )
+                        }
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      >
+                        {feedbackTypeOptions.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">
-                    위치/구역
-                  </label>
-                  <input
-                    value={location}
-                    onChange={(event) => setLocation(event.target.value)}
-                    placeholder={
-                      isRichiPreworkConfirmationFlow
-                        ? "예: 포장실, 세척구역, 원료보관실"
-                        : "예: 상차장, 분리수거장, A구역"
-                    }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
-                    {isRichiPreworkConfirmationFlow
-                      ? "위치/구역은 어느 공간의 의견인지 확인하기 위한 보조항목입니다."
-                      : "위치/구역은 기록 보조항목입니다. 제목, 내용 또는 사진이 있을 때만 관리자 검토대상으로 분류됩니다."}
-                  </p>
-                </div>
+                    <div className="mt-4">
+                      <label className="text-sm font-bold text-slate-700">
+                        위치/구역
+                      </label>
+                      <input
+                        value={location}
+                        onChange={(event) => setLocation(event.target.value)}
+                        placeholder={
+                          isRichiPreworkConfirmationFlow
+                            ? "예: 포장실, 세척구역, 원료보관실"
+                            : "예: 상차장, 분리수거장, A구역"
+                        }
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      />
+                      <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+                        {isRichiPreworkConfirmationFlow
+                          ? "위치/구역은 어느 공간의 의견인지 확인하기 위한 보조항목입니다."
+                          : "위치/구역은 기록 보조항목입니다. 제목, 내용 또는 사진이 있을 때만 관리자 검토대상으로 분류됩니다."}
+                      </p>
+                    </div>
 
-                <div className="mt-4">
-                  <label className="text-sm font-bold text-slate-700">
-                    내용 입력
-                  </label>
-                  <textarea
-                    value={content}
-                    onChange={(event) =>
-                      setContent(event.target.value.slice(0, 500))
-                    }
-                    rows={isRichiPreworkConfirmationFlow ? 3 : 4}
-                    placeholder={
-                      isRichiPreworkConfirmationFlow
-                        ? "예: 손 세척 동선이 불편합니다 / 작업대 위치 조정이 필요합니다"
-                        : "예: 통로 바닥이 미끄럽습니다 / 적치 위치 조정이 필요합니다"
-                    }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base leading-6 text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                  <p className="mt-1 text-right text-xs font-bold text-slate-500">
-                    {content.length}/500
-                  </p>
-                </div>
+                    <div className="mt-4">
+                      <label className="text-sm font-bold text-slate-700">
+                        내용 입력
+                      </label>
+                      <textarea
+                        value={content}
+                        onChange={(event) =>
+                          setContent(event.target.value.slice(0, 500))
+                        }
+                        rows={isRichiPreworkConfirmationFlow ? 3 : 4}
+                        placeholder={
+                          isRichiPreworkConfirmationFlow
+                            ? "예: 손 세척 동선이 불편합니다 / 작업대 위치 조정이 필요합니다"
+                            : "예: 통로 바닥이 미끄럽습니다 / 적치 위치 조정이 필요합니다"
+                        }
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base leading-6 text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      />
+                      <p className="mt-1 text-right text-xs font-bold text-slate-500">
+                        {content.length}/500
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
                   <h3 className="text-sm font-black text-blue-900">
@@ -1507,9 +1550,11 @@ export default function FieldParticipationStepper({
                   </div>
                 ) : null}
 
-                <div className="mt-4">
-                  <FieldParticipationFileInput />
-                </div>
+                {!isDailyPreworkSafetyCheck ? (
+                  <div className="mt-4">
+                    <FieldParticipationFileInput />
+                  </div>
+                ) : null}
 
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                   <h3 className="text-sm font-black text-amber-800">
