@@ -218,21 +218,23 @@ export default function FieldParticipationStepper({
     if (bubblemonEntryIntent === "daily_prework_safety_check") {
       return {
         title: "오늘 작업 전 안전확인",
-        helper: "오늘 작업 전 주요 위험과 보호구·동선·적재 주의사항을 확인합니다.",
+        helper: "오늘 작업 전 보호구·동선·적재·상하차 주의사항을 확인합니다.",
         buttonLabel: "작업 전 확인 시작",
       };
     }
 
     return {
-      title: "이번 달 위험성평가 공유확인",
-      helper: "이번 달 주요 위험요인을 확인하고 기록합니다.",
-      buttonLabel: "위험요인 확인 시작",
+      title: "이번 달 공유 위험요인 확인",
+      helper: "이번 달 주요 위험요인과 필요한 주의사항을 확인합니다.",
+      buttonLabel: "공유 위험요인 확인 완료",
     };
   }, [bubblemonEntryIntent]);
 
   const riskItems = useMemo(() => riskSummary.items.slice(0, 3), [riskSummary.items]);
   const normalizedCompanyCode = companyCode.trim().toLowerCase();
   const isBubblemonWorkerQr = normalizedCompanyCode === "bubblemon";
+  const isBubblemonDailyPreworkSafetyCheck =
+    isBubblemonWorkerQr && bubblemonEntryIntent === "daily_prework_safety_check";
   const bubblemonEntryIntentLabel =
     bubblemonEntryIntent === "daily_prework_safety_check"
       ? "오늘 작업 전 안전확인"
@@ -535,7 +537,7 @@ export default function FieldParticipationStepper({
                     </span>
                   ) : null}
                   <span className="mt-3 inline-flex rounded-full bg-blue-700 px-3 py-1 text-xs font-black text-white">
-                    위험요인 확인 시작
+                    월간 공유확인 시작
                   </span>
                 </button>
 
@@ -754,24 +756,24 @@ export default function FieldParticipationStepper({
               <div>
                 <p className="text-sm font-black text-slate-500">Step 2/4</p>
                 <h2 className="mt-1 text-xl font-black text-slate-950">
-                    {isRichiPreworkConfirmationFlow ? "위생·안전 확인 / 의견제출" : riskShareLinkCopy.worker.title}
+                    {isBubblemonDailyPreworkSafetyCheck ? "작업 전 확인 항목" : riskShareLinkCopy.worker.title}
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {isRichiPreworkConfirmationFlow
-                      ? "필요한 의견만 짧게 남겨 주세요."
+                    {isBubblemonDailyPreworkSafetyCheck
+                      ? "오늘 작업 전 확인 항목을 직접 체크해야 기록됩니다."
                       : "위험요인 확인 후 공유·주지 확인을 남겨주세요. 아래 항목을 직접 확인해야 기록됩니다."}
                   </p>
 
-                <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                {!isBubblemonDailyPreworkSafetyCheck ? (
+                  <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
                     <h3 className="text-base font-black text-slate-950">
-                      {isRichiPreworkConfirmationFlow ? "작업 전 위생·안전 안내" : "산업안전보건법 제36조"}
+                      산업안전보건법 제36조
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-slate-700">
-                      {isRichiPreworkConfirmationFlow
-                        ? "불편사항이나 개선의견이 있으면 아래에 남겨 주세요."
-                        : "사업주는 위험성평가 결과와 조치사항을 해당 작업에 종사하는 근로자에게 알려야 합니다."}
+                      사업주는 위험성평가 결과와 조치사항을 해당 작업에 종사하는 근로자에게 알려야 합니다.
                     </p>
                   </div>
+                ) : null}
 
                 <div className="mt-4 space-y-3">
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
@@ -781,7 +783,11 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setRiskCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{isRichiPreworkConfirmationFlow ? "오늘 확인 요약을 읽었습니다." : "오늘 작업의 주요 위험요인을 확인했습니다."}</span>
+                    <span>
+                      {isBubblemonDailyPreworkSafetyCheck
+                        ? "보호구 착용 상태를 확인했습니다."
+                        : "오늘 작업의 주요 위험요인을 확인했습니다."}
+                    </span>
                   </label>
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
                     <input
@@ -790,7 +796,11 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setRiskAssessmentCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{isRichiPreworkConfirmationFlow ? "작업 전 위생·안전 주의사항을 확인했습니다." : riskShareLinkCopy.worker.checks.riskAssessment}</span>
+                    <span>
+                      {isBubblemonDailyPreworkSafetyCheck
+                        ? "통로·동선과 적재 상태를 확인했습니다."
+                        : riskShareLinkCopy.worker.checks.riskAssessment}
+                    </span>
                   </label>
                   <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
                     <input
@@ -799,7 +809,11 @@ export default function FieldParticipationStepper({
                       onChange={(event) => setSafetyMeasureCheck(event.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-slate-300"
                     />
-                    <span>{isRichiPreworkConfirmationFlow ? "불편사항이 있으면 의견으로 남기겠습니다." : riskShareLinkCopy.worker.checks.safetyMeasure}</span>
+                    <span>
+                      {isBubblemonDailyPreworkSafetyCheck
+                        ? "지게차·대차·상하차 이동 주의사항을 확인했습니다."
+                        : riskShareLinkCopy.worker.checks.safetyMeasure}
+                    </span>
                   </label>
                 </div>
               </div>
@@ -809,12 +823,18 @@ export default function FieldParticipationStepper({
               <div>
                 <p className="text-sm font-black text-slate-500">{isRichiPreworkConfirmationFlow ? "Step 2/3" : "Step 3/4"}</p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">
-                    {isRichiPreworkConfirmationFlow ? "의견 제출" : "의견 / 아차사고 제출"}
+                    {isRichiPreworkConfirmationFlow
+                      ? "의견 제출"
+                      : isBubblemonDailyPreworkSafetyCheck
+                        ? "특이사항 입력"
+                        : "의견 / 아차사고 제출"}
                   </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                     {isRichiPreworkConfirmationFlow
                       ? "작업 전 확인 후 불편사항이나 개선의견이 있으면 짧게 남겨 주세요."
-                      : riskShareLinkCopy.worker.intro}
+                      : isBubblemonDailyPreworkSafetyCheck
+                        ? "특이사항이 없으면 ‘의견 없음’을 선택하고, 이상이나 불편사항이 있으면 내용을 남겨 주세요."
+                        : riskShareLinkCopy.worker.intro}
                 </p>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -1116,7 +1136,9 @@ export default function FieldParticipationStepper({
               >
                 {isSubmitting
                   ? riskShareLinkCopy.worker.buttons.submitting
-                  : hasOpinion
+                  : isBubblemonDailyPreworkSafetyCheck
+                    ? "작업 전 확인 제출"
+                    : hasOpinion
                       ? isRichiPreworkConfirmationFlow ? "전자확인·의견 제출 →" : "위험 또는 개선의견 제출 →"
                     : isRichiPreworkConfirmationFlow ? "의견 없음, 전자확인 제출 →" : riskShareLinkCopy.worker.buttons.confirmOnly}
               </button>
