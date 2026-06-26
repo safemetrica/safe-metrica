@@ -8,6 +8,10 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import {
+  FieldQrIdentityCard,
+  type FieldQrIdentityCardProps,
+} from "./FieldQrIdentityCard";
+import {
   clearFieldQrRememberedIdentity,
   readFieldQrRememberedIdentity,
   writeFieldQrRememberedIdentity,
@@ -331,6 +335,27 @@ export default function FieldParticipationStepper({
   const canRememberBubblemonDailyIdentity = isDailyPreworkSafetyCheck;
   const bubblemonDailyIdentityMode = "daily_prework_safety_check";
   const bubblemonDailyIdentityScope = `${normalizedCompanyCode}:${bubblemonDailyIdentityMode}`;
+  const bubblemonDailyIdentity = useMemo(
+    () => ({
+      workerName,
+      workerTeam: normalizedWorkerTeam,
+      workerPhoneLast4: normalizedWorkerPhoneLast4,
+      workerEmployeeNo: normalizedWorkerEmployeeNo,
+    }),
+    [
+      workerName,
+      normalizedWorkerTeam,
+      normalizedWorkerPhoneLast4,
+      normalizedWorkerEmployeeNo,
+    ],
+  );
+  const handleBubblemonDailyIdentityChange: FieldQrIdentityCardProps["onIdentityChange"] =
+    (identity) => {
+      setSubmitter(identity.workerName);
+      setWorkerTeam(identity.workerTeam);
+      setWorkerPhoneLast4(identity.workerPhoneLast4);
+      setWorkerEmployeeNo(identity.workerEmployeeNo);
+    };
   /* eslint-disable react-hooks/set-state-in-effect -- Hydrates optional saved worker confirmation info from localStorage after mount. */
   useEffect(() => {
     if (!isRichiPreworkConfirmationFlow || typeof window === "undefined") {
@@ -1514,150 +1539,168 @@ export default function FieldParticipationStepper({
                           : "공유확인과 의견 없음 제출은 기록 구분을 위해 최소 확인정보가 필요합니다."}
                   </p>
 
-                  <div className="mt-4 grid gap-3">
-                    <div>
-                      <label className="text-sm font-bold text-slate-700">
-                        {hasOpinion ? "이름 또는 별칭" : "이름 또는 별칭 *"}
-                      </label>
-                      <input
-                        value={submitter}
-                        onChange={(event) =>
-                          setSubmitter(event.target.value.slice(0, 80))
-                        }
+                  {isDailyPreworkSafetyCheck ? (
+                    <div className="mt-4">
+                      <FieldQrIdentityCard
+                        tenantCode={companyCode}
+                        identity={bubblemonDailyIdentity}
+                        onIdentityChange={handleBubblemonDailyIdentityChange}
+                        rememberInfo={rememberWorkerInfo}
+                        onRememberInfoChange={setRememberWorkerInfo}
+                        rememberMode={bubblemonDailyIdentityMode}
+                        required={!hasOpinion}
                         disabled={hasOpinion && anonymous}
-                        placeholder={
-                          hasOpinion && anonymous
-                            ? "익명 제출 시 입력하지 않습니다"
-                            : "예: 홍길동 / 작업자A"
-                        }
-                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                        title="작업 전 확인 최소 확인정보"
                       />
                     </div>
-
-                    <div>
-                      <label className="text-sm font-bold text-slate-700">
-                        {hasOpinion ? "소속 또는 작업조" : "소속 또는 작업조 *"}
-                      </label>
-                      <input
-                        value={workerTeam}
-                        onChange={(event) =>
-                          setWorkerTeam(event.target.value.slice(0, 100))
-                        }
-                        disabled={hasOpinion && anonymous}
-                        placeholder={
-                          hasOpinion && anonymous
-                            ? "익명 제출 시 입력하지 않습니다"
-                            : "예: 생산1팀 / 주간조"
-                        }
-                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
-                      />
-                    </div>
-
-                    {isRichiPreworkConfirmationFlow ? (
+                  ) : (
+                    <div className="mt-4 grid gap-3">
                       <div>
                         <label className="text-sm font-bold text-slate-700">
-                          확인번호 *
+                          {hasOpinion ? "이름 또는 별칭" : "이름 또는 별칭 *"}
                         </label>
                         <input
-                          value={richiConfirmationCodeValue}
+                          value={submitter}
                           onChange={(event) =>
-                            handleRichiConfirmationCodeChange(
-                              event.target.value,
-                            )
+                            setSubmitter(event.target.value.slice(0, 80))
                           }
                           disabled={hasOpinion && anonymous}
                           placeholder={
                             hasOpinion && anonymous
                               ? "익명 제출 시 입력하지 않습니다"
-                              : "예: 1234 / A-102"
+                              : "예: 홍길동 / 작업자A"
                           }
                           className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
                         />
-                        <p className="mt-1 text-xs font-bold text-slate-500">
-                          휴대폰 뒷4자리 또는 사번 중 하나를 입력하세요.
-                        </p>
                       </div>
-                    ) : (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="text-sm font-bold text-slate-700">
-                            휴대폰 뒷4자리
-                          </label>
-                          <input
-                            value={workerPhoneLast4}
-                            onChange={(event) =>
-                              setWorkerPhoneLast4(
-                                event.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 4),
-                              )
-                            }
-                            disabled={hasOpinion && anonymous}
-                            inputMode="numeric"
-                            maxLength={4}
-                            placeholder="예: 1234"
-                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
-                          />
-                        </div>
 
-                        <div>
-                          <label className="text-sm font-bold text-slate-700">
-                            사번 또는 현장 식별번호
-                          </label>
-                          <input
-                            value={workerEmployeeNo}
-                            onChange={(event) =>
-                              setWorkerEmployeeNo(
-                                event.target.value.slice(0, 60),
-                              )
-                            }
-                            disabled={hasOpinion && anonymous}
-                            placeholder="예: A-102"
-                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {canRememberBubblemonDailyIdentity ? (
-                      <label className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-slate-700">
+                      <div>
+                        <label className="text-sm font-bold text-slate-700">
+                          {hasOpinion
+                            ? "소속 또는 작업조"
+                            : "소속 또는 작업조 *"}
+                        </label>
                         <input
-                          type="checkbox"
-                          className="mt-1 h-4 w-4 rounded border-slate-300"
-                          checked={rememberWorkerInfo}
-                          onChange={(event) => {
-                            const checked = event.target.checked;
-                            setRememberWorkerInfo(checked);
-
-                            if (!checked) {
-                              clearFieldQrRememberedIdentity(
-                                companyCode,
-                                bubblemonDailyIdentityMode,
-                              );
-                            }
-                          }}
+                          value={workerTeam}
+                          onChange={(event) =>
+                            setWorkerTeam(event.target.value.slice(0, 100))
+                          }
+                          disabled={hasOpinion && anonymous}
+                          placeholder={
+                            hasOpinion && anonymous
+                              ? "익명 제출 시 입력하지 않습니다"
+                              : "예: 생산1팀 / 주간조"
+                          }
+                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
                         />
-                        <span>
-                          <span className="block text-slate-900">
-                            이 기기에서 제출자 정보 기억하기
+                      </div>
+
+                      {isRichiPreworkConfirmationFlow ? (
+                        <div>
+                          <label className="text-sm font-bold text-slate-700">
+                            확인번호 *
+                          </label>
+                          <input
+                            value={richiConfirmationCodeValue}
+                            onChange={(event) =>
+                              handleRichiConfirmationCodeChange(
+                                event.target.value,
+                              )
+                            }
+                            disabled={hasOpinion && anonymous}
+                            placeholder={
+                              hasOpinion && anonymous
+                                ? "익명 제출 시 입력하지 않습니다"
+                                : "예: 1234 / A-102"
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                          />
+                          <p className="mt-1 text-xs font-bold text-slate-500">
+                            휴대폰 뒷4자리 또는 사번 중 하나를 입력하세요.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="text-sm font-bold text-slate-700">
+                              휴대폰 뒷4자리
+                            </label>
+                            <input
+                              value={workerPhoneLast4}
+                              onChange={(event) =>
+                                setWorkerPhoneLast4(
+                                  event.target.value
+                                    .replace(/\D/g, "")
+                                    .slice(0, 4),
+                                )
+                              }
+                              disabled={hasOpinion && anonymous}
+                              inputMode="numeric"
+                              maxLength={4}
+                              placeholder="예: 1234"
+                              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-bold text-slate-700">
+                              사번 또는 현장 식별번호
+                            </label>
+                            <input
+                              value={workerEmployeeNo}
+                              onChange={(event) =>
+                                setWorkerEmployeeNo(
+                                  event.target.value.slice(0, 60),
+                                )
+                              }
+                              disabled={hasOpinion && anonymous}
+                              placeholder="예: A-102"
+                              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-950 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100 disabled:text-slate-400"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {canRememberBubblemonDailyIdentity ? (
+                        <label className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-slate-700">
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 rounded border-slate-300"
+                            checked={rememberWorkerInfo}
+                            onChange={(event) => {
+                              const checked = event.target.checked;
+                              setRememberWorkerInfo(checked);
+
+                              if (!checked) {
+                                clearFieldQrRememberedIdentity(
+                                  companyCode,
+                                  bubblemonDailyIdentityMode,
+                                );
+                              }
+                            }}
+                          />
+                          <span>
+                            <span className="block text-slate-900">
+                              이 기기에서 제출자 정보 기억하기
+                            </span>
+                            <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">
+                              공용 휴대폰이면 체크하지 마세요. 이름,
+                              소속/작업조, 휴대폰 뒷4자리, 사번 또는 현장
+                              식별번호만 이 브라우저에 저장됩니다.
+                            </span>
                           </span>
-                          <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">
-                            공용 휴대폰이면 체크하지 마세요. 이름, 소속/작업조,
-                            휴대폰 뒷4자리, 사번 또는 현장 식별번호만 이
-                            브라우저에 저장됩니다.
-                          </span>
-                        </span>
-                      </label>
-                    ) : null}
-                    {!hasOpinion && !shareConfirmationIdentityReady ? (
-                      <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                        {isRichiPreworkConfirmationFlow
-                          ? "전자확인은 이름, 소속, 확인번호가 필요합니다."
-                          : isDailyPreworkSafetyCheck
-                            ? "작업 전 확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."
-                            : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
-                      </p>
-                    ) : null}
-                  </div>
+                        </label>
+                      ) : null}
+                      {!hasOpinion && !shareConfirmationIdentityReady ? (
+                        <p className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-rose-700">
+                          {isRichiPreworkConfirmationFlow
+                            ? "전자확인은 이름, 소속, 확인번호가 필요합니다."
+                            : isDailyPreworkSafetyCheck
+                              ? "작업 전 확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."
+                              : "공유확인은 이름 또는 별칭, 소속 또는 작업조, 그리고 휴대폰 뒷4자리 또는 사번/식별번호 중 하나가 필요합니다."}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
 
                 {hasOpinion && !isRichiPreworkConfirmationFlow ? (

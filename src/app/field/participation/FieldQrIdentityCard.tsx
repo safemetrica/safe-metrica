@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import type { FieldQrWorkerIdentity } from "./fieldQrCoreTypes";
+import type { FieldQrMode, FieldQrWorkerIdentity } from "./fieldQrCoreTypes";
 import {
   clearFieldQrRememberedIdentity,
   readFieldQrRememberedIdentity,
@@ -16,6 +16,7 @@ export type FieldQrIdentityCardProps = {
   onIdentityChange: (identity: FieldQrWorkerIdentity) => void;
   rememberInfo: boolean;
   onRememberInfoChange: (remember: boolean) => void;
+  rememberMode?: FieldQrMode;
   required?: boolean;
   disabled?: boolean;
   title?: string;
@@ -28,7 +29,7 @@ const DEFAULT_REMEMBER_HELPER =
 function updateIdentityField(
   identity: FieldQrWorkerIdentity,
   field: keyof FieldQrWorkerIdentity,
-  value: string
+  value: string,
 ): FieldQrWorkerIdentity {
   return sanitizeFieldQrWorkerIdentity({
     ...identity,
@@ -37,7 +38,7 @@ function updateIdentityField(
 }
 
 export function isFieldQrIdentityReady(
-  identity: FieldQrWorkerIdentity
+  identity: FieldQrWorkerIdentity,
 ): boolean {
   const sanitizedIdentity = sanitizeFieldQrWorkerIdentity(identity);
 
@@ -55,6 +56,7 @@ export function FieldQrIdentityCard({
   onIdentityChange,
   rememberInfo,
   onRememberInfoChange,
+  rememberMode,
   required = false,
   disabled = false,
   title = "확인자 정보",
@@ -73,25 +75,28 @@ export function FieldQrIdentityCard({
 
     hydratedRememberedIdentityRef.current = true;
 
-    const rememberedIdentity = readFieldQrRememberedIdentity(tenantCode);
+    const rememberedIdentity = readFieldQrRememberedIdentity(
+      tenantCode,
+      rememberMode,
+    );
 
     if (rememberedIdentity) {
       onIdentityChange(rememberedIdentity);
       onRememberInfoChange(true);
     }
-  }, [onIdentityChange, onRememberInfoChange, tenantCode]);
+  }, [onIdentityChange, onRememberInfoChange, rememberMode, tenantCode]);
 
   useEffect(() => {
     if (!rememberInfo) {
       return;
     }
 
-    writeFieldQrRememberedIdentity(tenantCode, identity);
-  }, [identity, rememberInfo, tenantCode]);
+    writeFieldQrRememberedIdentity(tenantCode, identity, rememberMode);
+  }, [identity, rememberInfo, rememberMode, tenantCode]);
 
   const handleIdentityChange = (
     field: keyof FieldQrWorkerIdentity,
-    value: string
+    value: string,
   ) => {
     onIdentityChange(updateIdentityField(identity, field, value));
   };
@@ -100,11 +105,11 @@ export function FieldQrIdentityCard({
     onRememberInfoChange(checked);
 
     if (checked) {
-      writeFieldQrRememberedIdentity(tenantCode, identity);
+      writeFieldQrRememberedIdentity(tenantCode, identity, rememberMode);
       return;
     }
 
-    clearFieldQrRememberedIdentity(tenantCode);
+    clearFieldQrRememberedIdentity(tenantCode, rememberMode);
   };
 
   return (
