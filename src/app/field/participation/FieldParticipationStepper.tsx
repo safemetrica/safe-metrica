@@ -9,6 +9,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import {
   FieldQrSpecialNoteCard,
+  type FieldQrSpecialNoteMode,
   type FieldQrSpecialNoteValue,
 } from "./FieldQrSpecialNoteCard";
 import HandwrittenSignaturePad from "./HandwrittenSignaturePad";
@@ -250,6 +251,8 @@ export default function FieldParticipationStepper({
   const [rememberWorkerInfo, setRememberWorkerInfo] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
   const [content, setContent] = useState("");
+  const [dailySpecialNoteMode, setDailySpecialNoteMode] =
+    useState<FieldQrSpecialNoteMode>("none");
   const [hasEvidenceFiles, setHasEvidenceFiles] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -521,9 +524,12 @@ export default function FieldParticipationStepper({
   }
 
   function handleSpecialNoteChange(value: FieldQrSpecialNoteValue) {
+    setDailySpecialNoteMode(value.mode);
+
     if (value.mode === "none") {
       setReportTitle("");
       setContent("");
+      setLocation("");
       return;
     }
 
@@ -1218,7 +1224,7 @@ export default function FieldParticipationStepper({
                   <div className="mt-4">
                     <FieldQrSpecialNoteCard
                       value={{
-                        mode: hasOpinion ? "has_note" : "none",
+                        mode: dailySpecialNoteMode,
                         noteType: feedbackType,
                         location,
                         content,
