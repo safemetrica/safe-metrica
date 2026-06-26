@@ -85,6 +85,43 @@ Avoid guarantee expressions such as:
 
 ## 8. Rollout Policy
 
+## 8.1 Company-wide Rollout Matrix
+
+Field Touch Note Core is not a Hyundai Hoist-only feature. It is a SafeMetrica common operating feature for all customers.
+
+| Customer / Tenant | Rollout Position | First Use Case | Route / Login Policy |
+| --- | --- | --- | --- |
+| daedo | Existing customer additive module | 수거 현장 위험, 차량·장비·동선 메모 | Existing route preserved. No forced login transition. |
+| bubblemon | Existing customer additive module | 물류, 적재, 지게차, 상하차, 창고 동선 메모 | Existing route preserved. No forced login transition. |
+| dongwoo | Existing customer additive module | 생활폐기물 수거, 침출수, 후진, 야간작업 메모 | Existing route preserved. No forced login transition. |
+| hankookgreen | Existing customer additive module | 현장 위험, 장비, 작업 전 확인, 조치 후보 메모 | Existing route preserved. No forced login transition. |
+| richi | Current/new operating customer module | 식품공장 위생·미끄럼·포장실·세척구역 메모 | Existing Richi worker confirmation and anonymous opinion routes preserved. |
+| hyundai-hoist | Strong first application candidate | 호이스트·크레인·설치·AS·정비·전후사진 메모 | New tenant module candidate. Tenant-scoped setup allowed. |
+| future tenants | Default common module candidate | 업종별 현장 메모와 월간보고서 후보 | Tenant-scoped setup allowed from onboarding. |
+
+### Existing Customer Rule
+
+Existing customers must not be forced into a new login, route, or storage flow when Field Touch Note is introduced.
+
+Field Touch Note should be added as an optional operating module or targeted feature while preserving existing customer routes and current operating records.
+
+### New Tenant Rule
+
+New tenants can adopt Field Touch Note as a default SafeMetrica module from onboarding.
+
+For new tenants, Field Touch Note can connect to tenant-scoped manager inbox, owner signal, monthly report candidates, evidence book candidates, and risk assessment candidates.
+
+### Rollout Priority
+
+1. Lock product spec and rollout matrix.
+2. Add mobile touch-note prototype without changing existing customer routes.
+3. Connect manager inbox candidate list.
+4. Connect owner/CEO signal candidate.
+5. Connect monthly report candidate section.
+6. Connect risk assessment candidate mapping.
+
+
+
 ### Existing Customers
 
 Existing customers such as daedo, bubblemon, dongwoo, and hankookgreen must not be forced into new login, route, or storage flows.
