@@ -36,7 +36,8 @@ export default async function LoginPage({
     <main className="min-h-screen bg-[#F3F7FA] text-slate-950">
       <section className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-8 px-5 py-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="rounded-[2rem] bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-7 text-white shadow-2xl sm:p-10">
-          <div className="inline-flex rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-black tracking-tight text-white/90">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-black tracking-tight text-white/90">
+            <img src="/brand/safemetrica-logo-mark.svg" alt="" className="h-5 w-5" />
             SafeMetrica 산업안전플랫폼
           </div>
 
@@ -72,8 +73,12 @@ export default async function LoginPage({
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
           <div className="text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0B5EA8] text-2xl text-white">
-              🛡️
+            <div className="mx-auto flex h-20 w-20 items-center justify-center">
+              <img
+                src="/brand/safemetrica-logo-mark.svg"
+                alt="SafeMetrica 로고"
+                className="h-20 w-20 drop-shadow-sm"
+              />
             </div>
             <h2 className="mt-5 text-3xl font-black tracking-tight">
               SafeMetrica 로그인
