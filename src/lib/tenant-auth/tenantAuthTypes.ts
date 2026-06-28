@@ -12,15 +12,17 @@ export type TenantAuthTenantCode =
   | "unknown";
 
 export type TenantMembership = {
-  userId: string;
+  userId: string | null;
+  userEmail: string;
   tenantId: string;
   tenantCode: string;
   role: TenantRole;
-  displayName?: string;
+  displayName?: string | null;
 };
 
 export type TenantAuthContext = {
-  userId: string;
+  userId: string | null;
+  userEmail: string;
   selectedTenantId: string;
   selectedTenantCode: string;
   role: TenantRole;
