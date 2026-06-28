@@ -4,7 +4,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Owner Tenant Draft Input | SafeMetrica",
+  title: "신규업체 기본정보 입력 준비 | SafeMetrica",
   robots: {
     index: false,
     follow: false,
@@ -28,7 +28,7 @@ const basicFields = [
     label: "기본 현장명",
     name: "default_site_name",
     value: "본사 / 1공장",
-    help: "초기 Field QR과 관리자 화면의 기본 현장명입니다.",
+    help: "초기 현장 QR과 관리자 화면의 기본 현장명입니다.",
   },
   {
     label: "담당자 표시명",
@@ -42,38 +42,38 @@ const selectFields = [
   {
     label: "서비스 모드",
     name: "service_mode",
-    options: ["full", "risk_share", "trial"],
+    options: ["전체 운영형", "공유확인팩", "시범 운영"],
     help: "Full 운영형, 공유팩, 시범 운영 중 하나로 정리합니다.",
   },
   {
     label: "과금 구분",
     name: "plan_type",
-    options: ["trial", "paid", "internal"],
+    options: ["시범 운영", "유료 운영", "내부 테스트"],
     help: "시범 운영, 유료 운영, 내부 테스트를 구분합니다.",
   },
   {
     label: "상태",
     name: "status",
-    options: ["draft", "trial", "active", "suspended"],
-    help: "현재 화면은 draft 상태 후보만 정리합니다.",
+    options: ["작성 중", "시범 운영", "운영 중", "중지"],
+    help: "현재 화면은 작성 중 상태 후보만 정리합니다.",
   },
 ];
 
 const moduleOptions = [
-  "worker_qr",
-  "quick_feedback",
-  "manager_inbox",
-  "monthly_report",
-  "owner_export",
+  "근로자 QR",
+  "빠른 의견",
+  "관리자 접수함",
+  "월간보고서",
+  "내부 전달자료",
   "representative_confirmation",
 ];
 
-const previewRows = [
-  ["company_code", "hyundai-hoist"],
-  ["company_name", "(주)현대호이스트"],
-  ["status", "draft"],
-  ["service_mode", "trial"],
-  ["enabled_modules", "worker_qr, quick_feedback, manager_inbox"],
+const 미리보기Rows = [
+  ["고객사 코드", "hyundai-hoist"],
+  ["고객사명", "(주)현대호이스트"],
+  ["상태", "작성 중"],
+  ["서비스 범위", "trial"],
+  ["사용 모듈", "근로자 QR, 빠른 의견, 관리자 접수함"],
 ];
 
 export default function OwnerTenantRegistryDraftPage() {
@@ -81,21 +81,21 @@ export default function OwnerTenantRegistryDraftPage() {
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
       <section className="mx-auto max-w-6xl">
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
-          이 화면은 Owner 내부 입력 후보 shell입니다. 입력값은 저장되지 않으며,
+          이 화면은 내부 운영자 입력 준비화면입니다. 입력값은 저장되지 않는 미리보기이며,
           실제 고객자료·인증정보·비밀번호·토큰은 입력하지 않습니다.
         </div>
 
         <div className="mt-5 flex flex-col gap-5 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-300">
-              Owner Preview · Tenant Registry Draft
+              내부 운영 · 고객사 기본정보
             </p>
             <h1 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">
               신규업체 기본정보 입력 준비
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              신규 tenant 개설 전에 Owner가 확인할 기본값을 정리하는 preview 화면입니다.
-              실제 tenant 생성, DB 쓰기, 인증 연결은 후속 단계에서 진행합니다.
+              신규 고객사 개설 전에 Owner가 확인할 기본값을 정리하는 미리보기 화면입니다.
+              실제 고객사 생성, 저장 기능, 인증 연결은 후속 단계에서 진행합니다.
             </p>
           </div>
 
@@ -192,7 +192,7 @@ export default function OwnerTenantRegistryDraftPage() {
             </label>
 
             <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-              현재 화면은 preview입니다. 입력값은 저장되지 않고, tenant_registry에 쓰지 않습니다.
+              현재 화면은 저장되지 않는 미리보기입니다. 입력값은 저장되지 않고, 고객사 기본정보에 저장하지 않습니다.
             </div>
           </section>
 
@@ -200,7 +200,7 @@ export default function OwnerTenantRegistryDraftPage() {
             <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
               <h2 className="text-lg font-black">미리보기 요약</h2>
               <div className="mt-4 overflow-hidden rounded-2xl border border-slate-800">
-                {previewRows.map(([key, value]) => (
+                {미리보기Rows.map(([key, value]) => (
                   <div
                     key={key}
                     className="grid grid-cols-[0.85fr_1.15fr] border-b border-slate-800 last:border-b-0"
@@ -238,7 +238,7 @@ export default function OwnerTenantRegistryDraftPage() {
         </div>
 
         <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-900 p-5 text-xs leading-6 text-slate-400">
-          이 화면은 Owner 내부 운영용 입력 후보 shell입니다. 실제 고객자료, 토큰, 인증키, 비밀번호, 근로자 개인정보를 입력하지 않습니다.
+          이 화면은 내부 운영자 입력 준비화면입니다. 실제 고객자료, 토큰, 인증키, 비밀번호, 근로자 개인정보를 입력하지 않습니다.
         </div>
       </section>
     </main>
