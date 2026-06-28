@@ -36,7 +36,7 @@ const setupSteps = [
 
 const guardrails = [
   "기존 고객 route와 현장 QR 링크를 강제로 바꾸지 않습니다.",
-  "신규업체 사용은 Owner 승인 후 고객사 단위로 엽니다.",
+  "신규업체 사용은 내부 운영자 승인 후 고객사 단위로 엽니다.",
   "근로자·외부인 QR flow에는 로그인을 강제하지 않습니다.",
   "토큰, 비밀번호, 실제 인증키, 고객 민감정보는 입력하지 않습니다.",
   "법적 판단이나 조치 확정을 대신하는 화면으로 설명하지 않습니다.",
@@ -45,10 +45,10 @@ const guardrails = [
 const nextCandidates = [
   {
     title: "신규업체 기본정보 입력 준비",
-    description: "Owner가 신규업체 후보값을 검토하는 내부 입력 준비화면",
+    description: "내부 운영자가 신규업체 후보값을 검토하는 내부 입력 준비화면",
   },
   {
-    title: "사용자 역할 연결 구조 후보",
+    title: "사용자 역할 연결 기준 후보",
     description: "사용자와 고객사 역할을 연결하기 위한 구조 후보 문서화",
   },
   {
@@ -75,7 +75,7 @@ export default function OwnerTenantOnboardingPage() {
               신규업체 개설 준비화면
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              Owner 승인형 신규업체 개설을 위한 내부 확인 화면입니다. 현재 화면은
+              내부 운영자 승인형 신규업체 개설을 위한 내부 확인 화면입니다. 현재 화면은
               개설 전 체크리스트이며, 실제 인증·저장 기능·가입 자동화는 연결하지 않습니다.
             </p>
           </div>
@@ -91,7 +91,7 @@ export default function OwnerTenantOnboardingPage() {
               href="/owner"
               className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
             >
-              Owner 홈으로
+              내부 운영 홈으로
             </Link>
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function OwnerTenantOnboardingPage() {
           <section className="rounded-3xl border border-slate-800 bg-white p-6 text-slate-950">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-black">Owner 확인 단계</h2>
+                <h2 className="text-xl font-black">내부 운영자 확인 단계</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   신규업체를 고객사로 개설하기 전에 아래 순서로 확인합니다.
                 </p>
