@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +59,20 @@ const nextCandidates = [
   },
 ];
 
-export default function OwnerTenantOnboardingPage() {
+
+function isOwnerTokenValid(ownerToken?: string) {
+  const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
+  return Boolean(expectedToken && ownerToken === expectedToken);
+}
+
+export default async function OwnerTenantOnboardingPage() {
+  const c = await cookies();
+  const ownerToken = c.get("sm_owner_token")?.value;
+
+  if (!isOwnerTokenValid(ownerToken)) {
+    redirect("/login?error=owner_required");
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
       <section className="mx-auto max-w-6xl">
@@ -82,7 +97,7 @@ export default function OwnerTenantOnboardingPage() {
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/owner/고객사-onboarding/draft"
+              href="/owner/tenant-onboarding/draft"
               className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
             >
               기본정보 입력 준비로
@@ -132,7 +147,7 @@ export default function OwnerTenantOnboardingPage() {
               </p>
             </div>
             <Link
-              href="/owner/고객사-onboarding/draft"
+              href="/owner/tenant-onboarding/draft"
               className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 hover:bg-slate-100"
             >
               신규업체 기본정보 입력 준비
@@ -198,7 +213,7 @@ export default function OwnerTenantOnboardingPage() {
                     <p className="mt-1 text-xs leading-5 text-slate-400">{candidate.description}</p>
                     {candidate.title === "신규업체 기본정보 입력 준비" ? (
                       <Link
-                        href="/owner/고객사-onboarding/draft"
+                        href="/owner/tenant-onboarding/draft"
                         className="mt-3 inline-flex text-xs font-black text-emerald-300 hover:text-emerald-200"
                       >
                         입력 준비화면 열기 →

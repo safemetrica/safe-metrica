@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +78,20 @@ const 미리보기Rows = [
   ["사용 모듈", "근로자 QR, 빠른 의견, 관리자 접수함"],
 ];
 
-export default function OwnerTenantRegistryDraftPage() {
+
+function isOwnerTokenValid(ownerToken?: string) {
+  const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
+  return Boolean(expectedToken && ownerToken === expectedToken);
+}
+
+export default async function OwnerTenantRegistryDraftPage() {
+  const c = await cookies();
+  const ownerToken = c.get("sm_owner_token")?.value;
+
+  if (!isOwnerTokenValid(ownerToken)) {
+    redirect("/login?error=owner_required");
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
       <section className="mx-auto max-w-6xl">
@@ -101,7 +116,7 @@ export default function OwnerTenantRegistryDraftPage() {
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/owner/고객사-onboarding"
+              href="/owner/tenant-onboarding"
               className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
             >
               체크리스트로
