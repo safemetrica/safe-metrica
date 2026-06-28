@@ -80,12 +80,20 @@ export default function OwnerTenantOnboardingPage() {
             </p>
           </div>
 
-          <Link
-            href="/owner"
-            className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
-          >
-            Owner 홈으로
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/owner/tenant-onboarding/draft"
+              className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
+            >
+              기본정보 입력 준비로
+            </Link>
+            <Link
+              href="/owner"
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
+            >
+              Owner 홈으로
+            </Link>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -109,6 +117,26 @@ export default function OwnerTenantOnboardingPage() {
             <p className="mt-2 text-sm leading-6 text-amber-100/75">
               기존 route, 저장 흐름, QR 링크는 필요한 범위에서만 수정합니다.
             </p>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-900 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+                Owner Setup Flow
+              </p>
+              <h2 className="mt-2 text-xl font-black">체크리스트 확인 후 기본정보 입력 준비로 이동합니다.</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                현재 단계는 저장 없는 preview입니다. 실제 tenant 생성과 DB 쓰기는 후속 작업에서 별도 검증 후 연결합니다.
+              </p>
+            </div>
+            <Link
+              href="/owner/tenant-onboarding/draft"
+              className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 hover:bg-slate-100"
+            >
+              신규업체 기본정보 입력 준비
+            </Link>
           </div>
         </div>
 
@@ -168,6 +196,14 @@ export default function OwnerTenantOnboardingPage() {
                   <div key={candidate.title} className="rounded-2xl bg-slate-800/70 p-4">
                     <p className="text-sm font-black text-white">{candidate.title}</p>
                     <p className="mt-1 text-xs leading-5 text-slate-400">{candidate.description}</p>
+                    {candidate.title === "신규업체 기본정보 입력 준비" ? (
+                      <Link
+                        href="/owner/tenant-onboarding/draft"
+                        className="mt-3 inline-flex text-xs font-black text-emerald-300 hover:text-emerald-200"
+                      >
+                        입력 준비화면 열기 →
+                      </Link>
+                    ) : null}
                   </div>
                 ))}
               </div>
