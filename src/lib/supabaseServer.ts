@@ -161,7 +161,8 @@ type SupabaseExportTable =
   | "risk_share_candidate_review_events"
   | "risk_share_items"
   | "risk_share_version_locks"
-  | "tenant_registry"\n  | "tenant_membership";
+  | "tenant_registry"
+  | "tenant_membership";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -1152,4 +1153,3 @@ export async function getActiveTenantMembershipByEmailAndCode(params: {
     rawPayload: normalizeTenantMembershipRawPayload(row.raw_payload),
   } satisfies TenantMembershipConfig;
 }
-
