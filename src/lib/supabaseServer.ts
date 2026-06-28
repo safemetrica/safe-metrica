@@ -1061,6 +1061,16 @@ function normalizeTenantMembershipEmail(value: string) {
   return value.trim().toLowerCase().slice(0, 320);
 }
 
+function normalizeTenantMembershipCode(value: string) {
+  const code = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 64);
+
+  return /^[a-z0-9][a-z0-9-]{0,63}$/.test(code) ? code : "";
+}
+
 function normalizeTenantMembershipRole(value: unknown): TenantMembershipRole | null {
   const role = readTenantRegistryString(value);
 
@@ -1099,7 +1109,7 @@ export async function getActiveTenantMembershipByEmailAndCode(params: {
   tenantCode: string;
 }): Promise<TenantMembershipConfig | null> {
   const userEmail = normalizeTenantMembershipEmail(params.userEmail);
-  const tenantCode = normalizeCompanyCode(params.tenantCode);
+  const tenantCode = normalizeTenantMembershipCode(params.tenantCode);
 
   if (!userEmail || !tenantCode) {
     return null;
