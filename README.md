@@ -1,6 +1,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 - Owner-approved tenant onboarding foundation: `docs/ops/SAFEMETRICA_OWNER_APPROVED_TENANT_ONBOARDING_FOUNDATION_V1.md`
+- Tenant membership schema candidate: `docs/ops/SAFEMETRICA_TENANT_MEMBERSHIP_SCHEMA_CANDIDATE_V1.md`
 
 ## Getting Started
 
