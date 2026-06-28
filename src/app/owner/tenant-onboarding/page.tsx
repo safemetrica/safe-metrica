@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: "Owner Tenant Setup Checklist | SafeMetrica",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
 const setupSteps = [
   {
     title: "1. 신규업체 기본정보 확인",
-    description: "회사명, tenant code, 기본 현장, 담당자 표시명, 서비스 모드를 확인합니다.",
+    description: "회사명, 고객사 코드, 기본 현장, 담당자 표시명, 서비스 범위를 확인합니다.",
     items: ["company_code", "company_name", "default_site_name", "contact_label", "service_mode"],
   },
   {
@@ -27,7 +36,7 @@ const setupSteps = [
 
 const guardrails = [
   "기존 고객 route와 Field QR 링크를 강제로 바꾸지 않습니다.",
-  "신규업체 사용은 Owner 승인 후 tenant 단위로 엽니다.",
+  "신규업체 사용은 Owner 승인 후 고객사 단위로 엽니다.",
   "근로자·외부인 QR flow에는 로그인을 강제하지 않습니다.",
   "토큰, 비밀번호, 실제 인증키, 고객 민감정보는 입력하지 않습니다.",
   "법적 판단이나 조치 확정을 대신하는 화면으로 설명하지 않습니다.",
@@ -35,12 +44,12 @@ const guardrails = [
 
 const nextCandidates = [
   {
-    title: "tenant_registry 입력 shell",
-    description: "Owner가 신규 tenant 후보값을 검토하는 내부 입력 shell",
+    title: "신규업체 기본정보 입력 준비",
+    description: "Owner가 신규업체 후보값을 검토하는 내부 입력 준비화면",
   },
   {
-    title: "tenant_membership schema 후보",
-    description: "사용자와 tenant role을 연결하기 위한 별도 schema 후보 문서화",
+    title: "사용자 역할 연결 구조 후보",
+    description: "사용자와 고객사 역할을 연결하기 위한 구조 후보 문서화",
   },
   {
     title: "신규 tenant pilot",
@@ -52,17 +61,22 @@ export default function OwnerTenantOnboardingPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
       <section className="mx-auto max-w-6xl">
-        <div className="flex flex-col gap-5 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl md:flex-row md:items-end md:justify-between">
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
+          이 화면은 SafeMetrica Owner 내부 확인용 preview입니다. 검색 노출을 막기 위한
+          noindex 기준을 적용했으며, 실제 고객자료·인증정보·비밀번호·토큰은 입력하지 않습니다.
+        </div>
+
+        <div className="mt-5 flex flex-col gap-5 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-300">
-              Owner Console · Tenant Setup
+              Owner Preview · Tenant Setup
             </p>
             <h1 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">
-              신규업체 개설 체크리스트
+              신규업체 개설 준비화면
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              Owner 승인형 tenant onboarding을 위한 내부 확인 shell입니다. 현재 화면은
-              신규업체 개설 전 확인용이며, 실제 인증·DB 쓰기·가입 자동화는 연결하지 않습니다.
+              Owner 승인형 신규업체 개설을 위한 내부 확인 화면입니다. 현재 화면은
+              개설 전 체크리스트이며, 실제 인증·DB 쓰기·가입 자동화는 연결하지 않습니다.
             </p>
           </div>
 
@@ -77,23 +91,23 @@ export default function OwnerTenantOnboardingPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-blue-500/20 bg-blue-500/10 p-5">
             <p className="text-xs font-black text-blue-200">현재 단계</p>
-            <p className="mt-2 text-2xl font-black">Setup Shell</p>
+            <p className="mt-2 text-2xl font-black">개설 준비</p>
             <p className="mt-2 text-sm leading-6 text-blue-100/75">
-              내부 확인용 화면입니다. 실제 tenant 생성은 후속 작업입니다.
+              내부 확인용 화면입니다. 실제 고객사 생성은 후속 작업입니다.
             </p>
           </div>
           <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5">
             <p className="text-xs font-black text-emerald-200">QR 원칙</p>
             <p className="mt-2 text-2xl font-black">무로그인 유지</p>
             <p className="mt-2 text-sm leading-6 text-emerald-100/75">
-              근로자·외부인 확인 flow는 tenant context 기반으로 분리합니다.
+              근로자·외부인 확인 flow는 고객사 기준 정보로 분리합니다.
             </p>
           </div>
           <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-5">
             <p className="text-xs font-black text-amber-200">기존 고객</p>
             <p className="mt-2 text-2xl font-black">강제 전환 금지</p>
             <p className="mt-2 text-sm leading-6 text-amber-100/75">
-              기존 route, 저장 흐름, QR 링크는 targeted fix로만 다룹니다.
+              기존 route, 저장 흐름, QR 링크는 필요한 범위에서만 수정합니다.
             </p>
           </div>
         </div>
@@ -104,11 +118,11 @@ export default function OwnerTenantOnboardingPage() {
               <div>
                 <h2 className="text-xl font-black">Owner 확인 단계</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  신규업체를 tenant로 열기 전에 아래 순서로 확인합니다.
+                  신규업체를 고객사 단위로 열기 전에 아래 순서로 확인합니다.
                 </p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                v1 shell
+                1차 확인
               </span>
             </div>
 
@@ -137,7 +151,10 @@ export default function OwnerTenantOnboardingPage() {
               <h2 className="text-lg font-black">운영 가드레일</h2>
               <div className="mt-4 space-y-3">
                 {guardrails.map((item) => (
-                  <div key={item} className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-300">
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-300"
+                  >
                     {item}
                   </div>
                 ))}
@@ -159,7 +176,7 @@ export default function OwnerTenantOnboardingPage() {
         </div>
 
         <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-900 p-5 text-xs leading-6 text-slate-400">
-          이 화면은 Owner 내부 운영용 shell입니다. 실제 고객자료, 토큰, 인증키, 비밀번호, 근로자 개인정보를 입력하지 않습니다.
+          이 화면은 Owner 내부 운영용 preview입니다. 실제 고객자료, 토큰, 인증키, 비밀번호, 근로자 개인정보를 입력하지 않습니다.
         </div>
       </section>
     </main>
