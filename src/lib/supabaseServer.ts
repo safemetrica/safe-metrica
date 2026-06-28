@@ -161,7 +161,7 @@ type SupabaseExportTable =
   | "risk_share_candidate_review_events"
   | "risk_share_items"
   | "risk_share_version_locks"
-  | "tenant_registry";
+  | "tenant_registry"\n  | "tenant_membership";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -1008,3 +1008,148 @@ export async function getTenantRegistryConfigByCode(rawCompanyCode: string) {
     rawPayload: normalizeTenantRegistryRawPayload(row.raw_payload),
   } satisfies TenantRegistryConfig;
 }
+
+export type TenantMembershipRole =
+  | "owner_internal"
+  | "tenant_admin"
+  | "tenant_manager"
+  | "tenant_representative"
+  | "tenant_viewer";
+
+export type TenantMembershipStatus =
+  | "invited"
+  | "active"
+  | "suspended"
+  | "revoked";
+
+export type TenantMembershipRow = {
+  id?: unknown;
+  tenant_id?: unknown;
+  tenant_code?: unknown;
+  user_id?: unknown;
+  user_email?: unknown;
+  display_name?: unknown;
+  role?: unknown;
+  status?: unknown;
+  invited_by?: unknown;
+  accepted_at?: unknown;
+  revoked_at?: unknown;
+  last_seen_at?: unknown;
+  raw_payload?: unknown;
+  created_at?: unknown;
+  updated_at?: unknown;
+};
+
+export type TenantMembershipConfig = {
+  id: string | null;
+  tenantId: string;
+  tenantCode: string;
+  userId: string | null;
+  userEmail: string;
+  displayName: string | null;
+  role: TenantMembershipRole;
+  status: TenantMembershipStatus;
+  invitedBy: string | null;
+  acceptedAt: string | null;
+  revokedAt: string | null;
+  lastSeenAt: string | null;
+  rawPayload: Record<string, unknown>;
+};
+
+function normalizeTenantMembershipEmail(value: string) {
+  return value.trim().toLowerCase().slice(0, 320);
+}
+
+function normalizeTenantMembershipRole(value: unknown): TenantMembershipRole | null {
+  const role = readTenantRegistryString(value);
+
+  switch (role) {
+    case "owner_internal":
+    case "tenant_admin":
+    case "tenant_manager":
+    case "tenant_representative":
+    case "tenant_viewer":
+      return role;
+    default:
+      return null;
+  }
+}
+
+function normalizeTenantMembershipStatus(value: unknown): TenantMembershipStatus | null {
+  const status = readTenantRegistryString(value);
+
+  switch (status) {
+    case "invited":
+    case "active":
+    case "suspended":
+    case "revoked":
+      return status;
+    default:
+      return null;
+  }
+}
+
+function normalizeTenantMembershipRawPayload(value: unknown): Record<string, unknown> {
+  return normalizeTenantRegistryRawPayload(value);
+}
+
+export async function getActiveTenantMembershipByEmailAndCode(params: {
+  userEmail: string;
+  tenantCode: string;
+}): Promise<TenantMembershipConfig | null> {
+  const userEmail = normalizeTenantMembershipEmail(params.userEmail);
+  const tenantCode = normalizeCompanyCode(params.tenantCode);
+
+  if (!userEmail || !tenantCode) {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    select:
+      "id,tenant_id,tenant_code,user_id,user_email,display_name,role,status,invited_by,accepted_at,revoked_at,last_seen_at,raw_payload,created_at,updated_at",
+    tenant_code: `eq.${tenantCode}`,
+    user_email: `ilike.${userEmail}`,
+    status: "eq.active",
+    limit: "1",
+  });
+
+  const rows = await selectSupabaseExportRows<TenantMembershipRow>("tenant_membership", query);
+  const row = rows[0];
+
+  if (!row) {
+    return null;
+  }
+
+  const rowTenantId = readTenantRegistryString(row.tenant_id);
+  const rowTenantCode = readTenantRegistryString(row.tenant_code);
+  const rowUserEmail = normalizeTenantMembershipEmail(readTenantRegistryString(row.user_email));
+  const role = normalizeTenantMembershipRole(row.role);
+  const status = normalizeTenantMembershipStatus(row.status);
+
+  if (
+    !rowTenantId ||
+    rowTenantCode !== tenantCode ||
+    rowUserEmail !== userEmail ||
+    !role ||
+    status !== "active"
+  ) {
+    return null;
+  }
+
+  return {
+    id: readTenantRegistryString(row.id),
+    tenantId: rowTenantId,
+    tenantCode: rowTenantCode,
+    userId: readTenantRegistryString(row.user_id) || null,
+    userEmail: rowUserEmail,
+    displayName: readTenantRegistryString(row.display_name) || null,
+    role,
+    status,
+    invitedBy: readTenantRegistryString(row.invited_by) || null,
+    acceptedAt: readTenantRegistryString(row.accepted_at) || null,
+    revokedAt: readTenantRegistryString(row.revoked_at) || null,
+    lastSeenAt: readTenantRegistryString(row.last_seen_at) || null,
+    rawPayload: normalizeTenantMembershipRawPayload(row.raw_payload),
+  } satisfies TenantMembershipConfig;
+}
+
