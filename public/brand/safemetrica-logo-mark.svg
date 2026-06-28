@@ -1,0 +1,36 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SafeMetrica logo mark</title>
+  <desc id="desc">A friendly shield and check mark logo for SafeMetrica.</desc>
+  <defs>
+    <linearGradient id="safemetricaGradient" x1="53" y1="30" x2="203" y2="226" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#30C45D"/>
+      <stop offset="0.48" stop-color="#08A9B4"/>
+      <stop offset="1" stop-color="#064F95"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M128 22C154 49 184 50 213 54C214 86 211 123 199 153C184 191 154 216 128 226C102 216 72 191 57 153C45 123 42 86 43 54C72 50 102 49 128 22Z"
+    fill="url(#safemetricaGradient)"
+  />
+  <path
+    d="M73 80C92 75 112 67 128 50C144 67 164 75 183 80C183 106 180 132 170 154C160 178 143 196 128 205C113 196 96 178 86 154C76 132 73 106 73 80Z"
+    fill="white"
+    fill-opacity="0.94"
+  />
+  <path
+    d="M76 151L113 188C117 192 123 192 127 188L205 104"
+    stroke="url(#safemetricaGradient)"
+    stroke-width="20"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="101" cy="114" r="8" fill="#08A9B4"/>
+  <circle cx="147" cy="114" r="8" fill="#08A9B4"/>
+  <path
+    d="M104 142C111 151 119 155 128 155C137 155 145 151 152 142"
+    stroke="#08A9B4"
+    stroke-width="9"
+    stroke-linecap="round"
+  />
+  <circle cx="128" cy="42" r="13" fill="url(#safemetricaGradient)"/>
+</svg>
