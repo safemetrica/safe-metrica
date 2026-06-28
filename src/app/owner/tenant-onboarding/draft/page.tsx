@@ -65,7 +65,7 @@ const moduleOptions = [
   "관리자 접수함",
   "월간보고서",
   "내부 전달자료",
-  "representative_confirmation",
+  "대표 확인",
 ];
 
 const 미리보기Rows = [
@@ -94,14 +94,14 @@ export default function OwnerTenantRegistryDraftPage() {
               신규업체 기본정보 입력 준비
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
-              신규 고객사 개설 전에 Owner가 확인할 기본값을 정리하는 미리보기 화면입니다.
+              신규 고객사 개설 전에 내부 운영자가 확인할 기본값을 정리하는 미리보기 화면입니다.
               실제 고객사 생성, 저장 기능, 인증 연결은 후속 단계에서 진행합니다.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/owner/tenant-onboarding"
+              href="/owner/고객사-onboarding"
               className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
             >
               체크리스트로
@@ -110,7 +110,7 @@ export default function OwnerTenantRegistryDraftPage() {
               href="/owner"
               className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
             >
-              Owner 홈으로
+              내부 운영 홈으로
             </Link>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function OwnerTenantRegistryDraftPage() {
             </div>
 
             <label className="mt-6 block">
-              <span className="text-sm font-black text-slate-800">Owner 내부 메모</span>
+              <span className="text-sm font-black text-slate-800">내부 운영자 내부 메모</span>
               <textarea
                 name="owner_notes"
                 defaultValue="신규업체 개설 전 내부 검토 메모입니다. 고객 민감정보나 인증정보는 입력하지 않습니다."
@@ -220,7 +220,7 @@ export default function OwnerTenantRegistryDraftPage() {
               <h2 className="text-lg font-black">저장 전 확인</h2>
               <div className="mt-4 space-y-3">
                 {[
-                  "Owner 승인 후에만 고객사 단위로 개설합니다.",
+                  "내부 운영자 승인 후에만 고객사 단위로 개설합니다.",
                   "근로자·외부인 QR에는 로그인을 강제하지 않습니다.",
                   "기존 고객 route와 저장 흐름은 강제 변경하지 않습니다.",
                   "실제 저장 기능은 별도 PR에서 검증 후 연결합니다.",
