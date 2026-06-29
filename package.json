@@ -28,7 +28,8 @@
     "verify:risk-approval-required-fields": "node scripts/verify-risk-approval-required-fields.mjs",
     "verify:risk-approval-read-id-normalization": "node scripts/verify-risk-approval-read-id-normalization.mjs",
     "verify:dashboard-notion-query-soft-fail": "node scripts/verify-dashboard-notion-query-soft-fail.mjs",
-    "verify:dashboard-hide-raw-notion-error": "node scripts/verify-dashboard-hide-raw-notion-error.mjs"
+    "verify:dashboard-hide-raw-notion-error": "node scripts/verify-dashboard-hide-raw-notion-error.mjs",
+    "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
