@@ -391,8 +391,8 @@ function getSingleSearchParam(value: string | string[] | undefined) {
 async function getTbmCompany(searchParams?: TbmPageSearchParams) {
   const rawCompanyQuery = getSingleSearchParam(searchParams?.company);
 
-  if (rawCompanyQuery === "richi") {
-    return getCompanyConfigByCode("richi");
+  if (rawCompanyQuery === "richi" || rawCompanyQuery === "daedo") {
+    return getCompanyConfigByCode(rawCompanyQuery);
   }
 
   return getCompanyConfig();
