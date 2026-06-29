@@ -406,7 +406,16 @@ export default async function TbmPage({
   const params = (await searchParams) ?? {};
   const company = await getTbmCompany(params);
   const isRichi = company.code === "richi";
-  const rows = isRichi ? [] : await getTbmRows(company);
+  const rows = isRichi
+    ? []
+    : await getTbmRows(company).catch((error) => {
+        console.error("TBM_ROWS_LOAD_FAILED", {
+          companyCode: company.code,
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+
+        return [];
+      });
   const richiRows = isRichi
     ? await selectTbmVoiceSubmissionListRows(company.code)
     : [];
