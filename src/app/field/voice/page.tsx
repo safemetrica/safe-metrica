@@ -1086,7 +1086,9 @@ export default async function FieldVoiceReviewPage({
               <p className="mt-3 text-sm leading-6 text-slate-600">
                 {isRichi
                   ? "작업 전 확인·서명과 익명 의견·불편사항 중 관리자가 확인할 항목을 정리해 보여줍니다."
-                  : `${riskShareLinkCopy.manager.guide} 공유확인은 조치완료 KPI와 분리해 확인합니다.`}
+                  : isRichi
+                    ? "작업 전 확인·서명과 익명 의견·불편사항 중 관리자가 확인할 항목을 정리해 보여줍니다."
+                    : `${riskShareLinkCopy.manager.guide} 공유확인은 조치완료 KPI와 분리해 확인합니다.`}
               </p>
             </div>
 
@@ -1100,10 +1102,14 @@ export default async function FieldVoiceReviewPage({
         {!isRichi ? (
           <>
         <section className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
-          <p className="text-sm font-black text-blue-900">Risk Share Link 운영 기준</p>
+          <p className="text-sm font-black text-blue-900">
+            {isRichi ? "현장 의견 접수 기준" : "Risk Share Link 운영 기준"}
+          </p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl bg-white p-3">
-              <p className="text-xs font-black text-emerald-700">공유확인</p>
+              <p className="text-xs font-black text-emerald-700">
+                {isRichi ? "작업 전 확인·서명" : "공유확인"}
+              </p>
               <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
                 위험성평가와 안전조치 내용을 확인한 기록입니다. 조치완료 KPI에는 포함하지 않습니다.
               </p>
@@ -1131,7 +1137,9 @@ export default async function FieldVoiceReviewPage({
                 {company.name} 근로자 안전참여 링크
               </h2>
               <p className="mt-2 text-sm leading-6 text-emerald-900">
-                이 링크는 근로자가 위험성평가 공유확인, 위험제보, 아차사고, 개선제안을 제출하는
+                {isRichi
+                  ? "이 링크는 근로자가 작업 전 확인·서명과 익명 의견·불편사항을 제출하는"
+                  : "이 링크는 근로자가 위험성평가 공유확인, 위험제보, 아차사고, 개선제안을 제출하는"}
                 공개 QR용 링크입니다. 관리자 접수함과 원본 DB 관리 화면은 분리해 사용하세요.
               </p>
             </div>
@@ -1156,7 +1164,9 @@ export default async function FieldVoiceReviewPage({
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-            <p className="text-xs font-black text-emerald-700">공유확인 기록 · KPI 제외</p>
+            <p className="text-xs font-black text-emerald-700">
+              {isRichi ? "작업 전 확인기록" : "공유확인 기록 · KPI 제외"}
+            </p>
             <p className="mt-2 text-2xl font-black text-emerald-950">{acknowledgementRows.length}</p>
           </div>
           <div className="rounded-3xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
@@ -1185,7 +1195,9 @@ export default async function FieldVoiceReviewPage({
         <section className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
           <p className="text-sm font-black text-amber-900">관리자 검토 / 조치 메모 v1</p>
           <p className="mt-2 text-sm leading-6 text-amber-900">
-            현재는 접수함 분류와 처리상태 변경, 조치 메모 저장까지 처리합니다. 공유확인은 조치완료 성과와
+            {isRichi
+              ? "현재는 접수함 분류와 관리자 검토 흐름을 확인합니다. 작업 전 확인기록은 의견·불편사항 검토 항목과"
+              : "현재는 접수함 분류와 처리상태 변경, 조치 메모 저장까지 처리합니다. 공유확인은 조치완료 성과와"}
             분리하고, 담당자 지정·완료사진·위험성평가 반영 후보 연결은 후속 단계에서 분리 구현합니다.
           </p>
         </section>
@@ -1256,10 +1268,10 @@ export default async function FieldVoiceReviewPage({
             ) : (
               <>
                 <VoiceSection
-                  title="공유확인 기록"
+                  title={isRichi ? "작업 전 확인기록" : "공유확인 기록"}
                   description="의견 없이 위험요인·위험성평가·안전조치 확인만 완료한 주지확인 기록입니다. 조치완료 KPI에는 포함하지 않습니다."
                   rows={acknowledgementRows}
-                  emptyText="공유확인 기록이 아직 없습니다."
+                  emptyText={isRichi ? "작업 전 확인기록이 아직 없습니다." : "공유확인 기록이 아직 없습니다."}
                   badgeClassName="bg-emerald-100 text-emerald-800"
                 />
 
