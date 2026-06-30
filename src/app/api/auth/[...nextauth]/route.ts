@@ -25,6 +25,11 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       session.user = session.user ?? {};
+
+      if (!session.user.email && typeof token.email === "string") {
+        session.user.email = token.email;
+      }
+
       return session;
     },
   },
