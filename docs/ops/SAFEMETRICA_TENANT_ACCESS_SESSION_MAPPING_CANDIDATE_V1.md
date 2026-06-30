@@ -131,3 +131,27 @@
 지금은 `/tenant/[tenantCode]/manager`에 실제 access guard를 연결하지 않는다.
 
 먼저 session mapping 기준을 잠그고, helper return type과 fail-closed 정책을 정리한 뒤 제한적으로 연결한다.
+
+## 11. 2026-06-29 Delta — email-first session identifier policy
+
+현재 `authOptions`는 export foundation이 반영되었고, session callback에서 `session.user.email`이 비어 있을 때 `token.email`을 fallback으로 보존한다.
+
+현재 기준:
+
+- tenant access guard는 우선 `userEmail + tenantCode` 기준으로만 연결 후보를 검토한다.
+- `tenant_membership.user_email`은 active membership lookup의 1차 기준이다.
+- `userId`는 nullable 상태로 유지한다.
+- Kakao provider의 stable identifier, `token.sub`, `providerAccountId`를 고객사 접근권한의 확정 기준으로 쓰는 작업은 아직 하지 않는다.
+- provider별 identifier 정책은 별도 검토 후 type augmentation과 함께 분리 PR로 진행한다.
+
+route 연결 보류 기준:
+
+- `/tenant/[tenantCode]/manager`에는 아직 `getServerSession(authOptions)`를 연결하지 않는다.
+- tenant data query, RLS policy, user invite/email flow는 연결하지 않는다.
+- 기존 고객 route와 legacy direct link는 변경하지 않는다.
+- tenant/auth/proxy/middleware/shared route 변경 시에는 `npm run smoke:legacy-routes`를 반드시 실행한다.
+
+현재 결론:
+
+- 다음 구현 후보는 `getServerSession(authOptions)`를 직접 route에 붙이기 전에, session email을 읽어 fail-closed로 반환하는 작은 server-only helper 후보를 검토하는 것이다.
+- 기존 고객 route smoke가 통과하지 않으면 SaaS auth 작업을 진행하지 않는다.
