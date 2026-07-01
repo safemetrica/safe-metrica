@@ -1,4 +1,24 @@
-import { requireTenantAccessPlaceholder } from "@/lib/tenant-auth/tenantAuthGuards";
+import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
+import type { TenantAccessDeniedReason } from "@/lib/tenant-auth/tenantAuthTypes";
+
+type TenantManagerPlaceholderPageProps = {
+  params: Promise<{
+    tenantCode?: string;
+  }>;
+};
+
+function createTenantManagerGuardMessage(reason: TenantAccessDeniedReason) {
+  switch (reason) {
+    case "unauthenticated":
+      return "로그인 확인 전에는 접근할 수 없습니다.";
+    case "tenant_not_found":
+      return "요청한 운영공간을 확인할 수 없습니다.";
+    case "membership_required":
+      return "이 운영공간에 연결된 사용자 확인이 필요합니다.";
+    case "forbidden":
+      return "이 운영공간 화면에 접근할 권한이 없습니다.";
+  }
+}
 
 const PLACEHOLDER_SECTIONS = [
   {
@@ -19,11 +39,16 @@ const PLACEHOLDER_SECTIONS = [
   },
 ];
 
-export default async function TenantManagerPlaceholderPage() {
-  const accessResult = await requireTenantAccessPlaceholder();
+export default async function TenantManagerPlaceholderPage({
+  params,
+}: TenantManagerPlaceholderPageProps) {
+  const { tenantCode } = await params;
+  const accessResult = await requireTenantManagerAccessForCurrentSession({
+    tenantCode,
+  });
   const guardMessage = accessResult.ok
     ? "운영공간 접근 확인이 완료되었습니다."
-    : "로그인 확인 전에는 접근할 수 없습니다.";
+    : createTenantManagerGuardMessage(accessResult.reason);
 
   return (
     <div className="space-y-6">
