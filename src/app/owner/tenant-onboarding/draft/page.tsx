@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import {
+  getOwnerTenantOnboardingValidationMessages,
+  validateOwnerTenantOnboardingDraft,
+} from "@/lib/tenant-onboarding/ownerTenantOnboardingValidation";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +82,26 @@ const 미리보기Rows = [
   ["사용 모듈", "근로자 QR, 빠른 의견, 관리자 접수함"],
 ];
 
+
+const ownerDraftValidationPreview = validateOwnerTenantOnboardingDraft({
+  companyCode: "future",
+  displayName: "(주)샘플제조",
+  serviceMode: "full_safemetrica",
+  enabledModules: [
+    "worker_qr_e_confirmation",
+    "quick_feedback",
+    "manager_inbox",
+  ],
+  managerEmail: "manager@example.com",
+  role: "tenant_manager",
+  status: "invited",
+  rawPayload: {
+    source: "owner_draft_preview",
+  },
+});
+
+const ownerDraftValidationMessages =
+  getOwnerTenantOnboardingValidationMessages(ownerDraftValidationPreview.errors);
 
 function isOwnerTokenValid(ownerToken?: string) {
   const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
@@ -256,6 +280,39 @@ export default async function OwnerTenantRegistryDraftPage() {
           이 화면은 내부 운영자 입력 준비화면입니다. 실제 고객자료, 토큰, 인증키, 비밀번호, 근로자 개인정보를 입력하지 않습니다.
         </div>
       </section>
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+        <p className="text-sm font-black text-emerald-700">저장 전 검토 기준</p>
+        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+          신규 고객사 개설 전 확인할 항목입니다
+        </h2>
+        <p className="mt-3 text-sm font-semibold leading-6 text-slate-700">
+          이 카드는 Owner가 신규 고객사 정보를 저장하기 전에 확인해야 할 기준을 미리 보여주는 안내입니다.
+          아직 고객사 저장, 사용자 초대, 운영자료 연결은 실행하지 않습니다.
+        </p>
+
+        <div className="mt-4 rounded-2xl border border-white/80 bg-white p-4">
+          <p className="text-sm font-black text-slate-800">
+            샘플 검토 상태
+          </p>
+          {ownerDraftValidationPreview.ok ? (
+            <p className="mt-2 text-sm font-bold leading-6 text-emerald-800">
+              현재 샘플 기준으로 고객사 코드, 표시명, 서비스 모드, 사용 모듈, 관리자 이메일, 역할, 상태 값이 저장 전 검토 기준을 통과했습니다.
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-2 text-sm font-bold leading-6 text-rose-800">
+              {ownerDraftValidationMessages.map((message) => (
+                <li key={message}>- {message}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <p className="mt-4 text-xs font-bold leading-5 text-slate-500">
+          실제 저장 API, 데이터베이스 입력, 멤버십 생성, 사용자 초대 기능은 아직 연결하지 않았습니다.
+        </p>
+      </section>
+
+
     </main>
   );
 }
