@@ -237,3 +237,32 @@ export function validateOwnerTenantOnboardingDraft(
     errors,
   };
 }
+
+export function getOwnerTenantOnboardingValidationMessage(errorCode: string) {
+  switch (errorCode) {
+    case "company_code_required":
+      return "고객사 코드를 입력해야 합니다.";
+    case "legacy_customer_code_not_allowed":
+      return "기존 운영 고객 코드는 신규 고객사 개설 흐름으로 사용할 수 없습니다.";
+    case "display_name_required":
+      return "고객사 표시명을 입력해야 합니다.";
+    case "service_mode_invalid":
+      return "서비스 모드를 허용된 값으로 선택해야 합니다.";
+    case "enabled_modules_required":
+      return "사용 모듈을 1개 이상 선택해야 합니다.";
+    case "manager_email_invalid":
+      return "관리자 이메일 형식을 확인해야 합니다.";
+    case "membership_role_invalid":
+      return "사용자 역할을 허용된 값으로 선택해야 합니다.";
+    case "membership_status_invalid":
+      return "멤버십 상태를 허용된 값으로 선택해야 합니다.";
+    case "raw_payload_forbidden_keys":
+      return "민감정보 또는 내부 인증값으로 보이는 항목은 저장 후보에서 제외해야 합니다.";
+    default:
+      return "입력값을 다시 확인해야 합니다.";
+  }
+}
+
+export function getOwnerTenantOnboardingValidationMessages(errorCodes: string[]) {
+  return errorCodes.map(getOwnerTenantOnboardingValidationMessage);
+}
