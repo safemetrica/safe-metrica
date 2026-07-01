@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-
-import { getCompanyConfig, getCompanyConfigByCode } from "@/lib/company";
-import PrintButton from "./PrintButton";
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import {
+  redirect } from "next/navigation";  import { getCompanyConfig,
+  getCompanyConfigByCode } from "@/lib/company"; import PrintButton from "./PrintButton"; import { selectSupabaseExportRows,
+  getTenantRegistryConfigByCode,
+} from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationRecords,
   type WorkerRepresentativeConfirmationRecord,
@@ -73,6 +73,18 @@ async function getRiskShareMonthlyCompany(searchParams?: SearchParams) {
 
   if (rawCompanyQuery === "richi") {
     return getCompanyConfigByCode("richi").catch(() => null);
+  }
+
+  if (rawCompanyQuery) {
+    const tenant = await getTenantRegistryConfigByCode(rawCompanyQuery).catch(
+      () => null,
+    );
+
+    if (!tenant) {
+      return null;
+    }
+
+    return getCompanyConfigByCode(tenant.code).catch(() => null);
   }
 
   return getCompanyConfig().catch(() => null);
