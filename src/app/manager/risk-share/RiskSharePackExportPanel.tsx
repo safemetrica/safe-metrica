@@ -114,7 +114,7 @@ export default function RiskSharePackExportPanel({
           >
             {isRichiFullOperation
               ? "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 확인 후 이번 달 전달 파일 구성을 안내합니다."
-              : "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 Owner Export Center에서 확인·생성 후 고객에게 전달할 파일 구성을 안내합니다."}
+              : "이 영역은 고객사 관리자에게 다운로드 버튼을 직접 제공하지 않고, 내부 운영자가 확인·생성 후 고객에게 전달할 파일 구성을 안내합니다."}
           </p>
         </div>
 
@@ -200,7 +200,7 @@ export default function RiskSharePackExportPanel({
         >
           {isRichiFullOperation
             ? "고객 전달자료에는 고객 확인 전 항목, 내부 운영 메모, 보안 민감정보를 포함하지 않습니다."
-            : "실제 CSV 다운로드는 Owner Export Center에서 내부 운영자가 수행합니다. 고객에게는 이 관리자 화면이나 내부 운영 링크를 공유하지 않습니다. locked_share_items CSV도 Owner가 검토 후 전달합니다."}
+            : "실제 CSV 다운로드는 내부 운영자가 확인 후 수행합니다. 고객에게는 내부 운영 링크를 공유하지 않습니다. 최종 공유본 자료도 내부 검토 후 전달합니다."}
         </div>
       </div>
 

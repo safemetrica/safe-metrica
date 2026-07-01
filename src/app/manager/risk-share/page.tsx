@@ -440,7 +440,7 @@ function buildSummaryCards(params: {
         ? "확인 필요"
         : `${fieldSummary.shareConfirmationCount}건`,
       description: fieldLoadFailed
-        ? "현장참여 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
+        ? "현장참여 기록 조회가 실패했습니다. 접수함에서 다시 확인하세요."
         : "공유확인 제출 건수입니다. 조치 KPI에는 섞지 않습니다.",
     },
     {
@@ -449,14 +449,14 @@ function buildSummaryCards(params: {
         ? "확인 필요"
         : `${fieldSummary.workerReportCount}건`,
       description: fieldLoadFailed
-        ? "현장참여 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
+        ? "현장참여 기록 조회가 실패했습니다. 접수함에서 다시 확인하세요."
         : "위험제보, 아차사고, 개선제안 등 관리자 검토대상 제출 건수입니다.",
     },
     {
       label: "관리자 검토 필요",
       value: fieldLoadFailed ? "확인 필요" : `${totalReviewNeededCount}건`,
       description: fieldLoadFailed
-        ? "현장참여 원장 조회가 실패해 검토 필요 건수를 확정하지 않았습니다."
+        ? "현장참여 기록 조회가 실패해 검토 필요 건수를 확정하지 않았습니다."
         : "공유확인을 제외한 현장 의견과 근로자대표 보완 의견 중 검토가 필요한 기록입니다.",
     },
     {
@@ -474,7 +474,7 @@ function buildSummaryCards(params: {
       label: "사용 가능 링크",
       value: linkLoadFailed ? "확인 필요" : `${activeLinkCount}개`,
       description: linkLoadFailed
-        ? "근로자대표 확인 링크 원장 조회가 실패했습니다. 접수함에서 다시 확인하세요."
+        ? "근로자대표 확인 링크 조회가 실패했습니다. 접수함에서 다시 확인하세요."
         : "폐기 또는 만료되지 않은 근로자대표 확인 링크 수입니다.",
     },
     {
@@ -485,7 +485,7 @@ function buildSummaryCards(params: {
           : `${versionLockSummary.lockCount}회 / ${versionLockSummary.lockedItemCount}건`,
       description:
         versionLockSummary.status !== "ok"
-          ? "최종 공유본 원장 조회가 실패했습니다. 운영 원장 설정 상태를 확인하세요."
+          ? "최종 공유본 조회가 실패했습니다. 운영기록 설정 상태를 확인하세요."
           : "이번 달 월별 보관함에 반영할 확정 공유 항목 기준입니다.",
     },
   ];
