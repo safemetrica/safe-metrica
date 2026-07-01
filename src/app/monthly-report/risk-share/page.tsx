@@ -856,9 +856,8 @@ export default async function RiskSharePackMonthlyReportPage({
                   표현 제한
                 </p>
                 <p className="mt-2 text-sm leading-6 text-amber-50 print:text-amber-900">
-                  이 분류는 도급관계, 근로자성, 원청 책임 범위를 판단하지
-                  않습니다. 외부 인력 안전관리 완료나 법적 책임 면제 표현도
-                  사용하지 않습니다.
+                  이 분류는 계약관계나 책임 범위를 판단하지 않으며,
+                  현장 위험요인 공유·확인 기록을 운영상 분류로 정리합니다.
                 </p>
               </article>
             </div>
