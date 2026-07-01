@@ -74,6 +74,34 @@ const moduleOptions = [
   "대표 확인",
 ];
 
+type PageSearchParams = Record<string, string | string[] | undefined>;
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function buildRiskShareLinkPack(companyCode: string) {
+  const encodedCode = encodeURIComponent(companyCode);
+
+  return [
+    {
+      label: "관리자 홈",
+      href: `/manager/risk-share?company=${encodedCode}`,
+      description: "관리자가 공유확인, 의견, 검토 대기, 월간 결과물을 확인합니다.",
+    },
+    {
+      label: "월간 결과물",
+      href: `/monthly-report/risk-share?company=${encodedCode}`,
+      description: "월간 안전운영 결과물과 고객 전달자료를 확인합니다.",
+    },
+    {
+      label: "근로자 QR",
+      href: `/field/participation?company=${encodedCode}`,
+      description: "근로자가 작업 전 확인, 공유확인, 의견 제출을 진행합니다.",
+    },
+  ];
+}
+
 const 미리보기Rows = [
   ["고객사 코드", "hyundai-hoist"],
   ["고객사명", "(주)현대호이스트"],
@@ -108,7 +136,19 @@ function isOwnerTokenValid(ownerToken?: string) {
   return Boolean(expectedToken && ownerToken === expectedToken);
 }
 
-export default async function OwnerTenantRegistryDraftPage() {
+export default async function OwnerTenantRegistryDraftPage({
+  searchParams,
+}: {
+  searchParams?: Promise<PageSearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
+  const createdStatus = getSingleSearchParam(params.created);
+  const createdCompanyCode = getSingleSearchParam(params.companyCode) ?? "";
+  const errorCode = getSingleSearchParam(params.error) ?? "";
+  const createdLinkPack = createdCompanyCode
+    ? buildRiskShareLinkPack(createdCompanyCode)
+    : [];
+
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
 
@@ -134,7 +174,7 @@ export default async function OwnerTenantRegistryDraftPage() {
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
               신규 고객사 개설 전에 내부 운영자가 확인할 기본값을 정리하는 미리보기 화면입니다.
-              실제 고객사 생성, 저장 기능, 인증 연결은 후속 단계에서 진행합니다.
+              고객사 코드를 생성한 뒤 관리자 홈, 월간 결과물, 근로자 QR 링크팩을 발급합니다.
             </p>
           </div>
 
@@ -154,17 +194,60 @@ export default async function OwnerTenantRegistryDraftPage() {
           </div>
         </div>
 
+        {createdStatus || errorCode ? (
+          <section className={[
+            "mt-6 rounded-3xl border p-5",
+            errorCode
+              ? "border-rose-500/40 bg-rose-500/10 text-rose-100"
+              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
+          ].join(" ")}>
+            <p className="text-sm font-black">
+              {errorCode
+                ? "고객사 코드 생성 확인 필요"
+                : createdStatus === "already_exists"
+                  ? "이미 등록된 고객사 코드입니다"
+                  : "고객사 코드가 생성되었습니다"}
+            </p>
+            <h2 className="mt-2 text-2xl font-black">
+              {createdCompanyCode || "입력값을 다시 확인하세요"}
+            </h2>
+            {errorCode ? (
+              <p className="mt-3 text-sm font-bold leading-6">
+                오류 코드: {errorCode}. 고객사 코드, 고객사명, 기존 고객 코드 사용 여부를 확인하세요.
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                {createdLinkPack.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50 hover:border-emerald-200"
+                  >
+                    <span className="block text-base font-black">{link.label}</span>
+                    <span className="mt-2 block text-xs leading-5 text-emerald-100/80">
+                      {link.href}
+                    </span>
+                    <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
+                      {link.description}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
+
         <div className="mt-6 grid gap-5 lg:grid-cols-[1.35fr_0.9fr]">
-          <section className="rounded-3xl border border-slate-800 bg-white p-6 text-slate-950">
+          <form action="/api/owner/tenant-onboarding/create" method="post" className="rounded-3xl border border-slate-800 bg-white p-6 text-slate-950">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-black">기본정보 후보</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  아래 값은 신규업체 개설 전 검토용 예시입니다. 저장 버튼은 아직 연결하지 않습니다.
+                  아래 값으로 신규 위공팩 고객사 코드를 생성하고 운영 링크팩을 발급합니다.
                 </p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                저장 안 됨
+Owner 생성
               </span>
             </div>
 
@@ -231,9 +314,16 @@ export default async function OwnerTenantRegistryDraftPage() {
             </label>
 
             <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-              현재 화면은 저장되지 않는 미리보기입니다. 입력값은 저장되지 않고, 고객사 기본정보에 저장하지 않습니다.
+              저장 시 tenant_registry에 위공팩 운영지원형 고객사 코드가 생성됩니다. 실제 고객 민감정보, 인증정보, 비밀번호, 토큰은 입력하지 않습니다.
             </div>
-          </section>
+
+            <button
+              type="submit"
+              className="mt-5 w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-slate-950 hover:bg-emerald-300"
+            >
+              위공팩 고객사 코드 생성 및 링크팩 발급
+            </button>
+          </form>
 
           <aside className="space-y-5">
             <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
@@ -262,7 +352,7 @@ export default async function OwnerTenantRegistryDraftPage() {
                   "내부 운영자 승인 후에만 고객사 단위로 개설합니다.",
                   "근로자·외부인 QR에는 로그인을 강제하지 않습니다.",
                   "기존 고객 route와 저장 흐름은 강제 변경하지 않습니다.",
-                  "실제 저장 기능은 별도 PR에서 검증 후 연결합니다.",
+                  "고객사 코드는 Owner 승인 후 tenant_registry에 저장합니다.",
                 ].map((item) => (
                   <div
                     key={item}
@@ -287,7 +377,7 @@ export default async function OwnerTenantRegistryDraftPage() {
         </h2>
         <p className="mt-3 text-sm font-semibold leading-6 text-slate-700">
           이 카드는 Owner가 신규 고객사 정보를 저장하기 전에 확인해야 할 기준을 미리 보여주는 안내입니다.
-          아직 고객사 저장, 사용자 초대, 운영자료 연결은 실행하지 않습니다.
+          저장 후 고객사 코드 기준 운영 링크팩을 발급합니다. 메일 발송 자동화나 사용자 자동 가입은 연결하지 않습니다.
         </p>
 
         <div className="mt-4 rounded-2xl border border-white/80 bg-white p-4">
@@ -308,7 +398,7 @@ export default async function OwnerTenantRegistryDraftPage() {
         </div>
 
         <p className="mt-4 text-xs font-bold leading-5 text-slate-500">
-          실제 저장 API, 데이터베이스 입력, 멤버십 생성, 사용자 초대 기능은 아직 연결하지 않았습니다.
+          이 단계는 고객사 코드와 운영 링크팩 생성까지만 수행합니다. 로그인 계정 자동 생성이나 이메일 발송 자동화는 연결하지 않습니다.
         </p>
       </section>
 
