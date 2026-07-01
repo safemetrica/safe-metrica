@@ -718,6 +718,40 @@ export default async function RiskSharePackManagerHomePage({
           </div>
 
           {!isRichiFullOperation ? (
+            <div className="mt-5 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 p-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-black text-emerald-200">
+                    이번 달 결과물
+                  </p>
+                  <h2 className="mt-2 text-xl font-black text-white">
+                    월간 안전운영 결과물과 고객 전달자료를 확인하세요
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                    공유확인, 위험제보, 근로자대표 참여확인, 관리자 검토 흐름을 월간 운영기록 후보로 정리합니다.
+                    고객 전달 전 내부 운영자가 확인한 뒤 필요한 자료만 준비합니다.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                  <Link
+                    href="/monthly-report/risk-share"
+                    className="inline-flex items-center justify-center rounded-2xl bg-emerald-300 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-200"
+                  >
+                    월간 결과물 보기
+                  </Link>
+                  <Link
+                    href="#risk-share-export-panel"
+                    className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/50 px-4 py-3 text-sm font-black text-emerald-100 hover:border-emerald-200 hover:text-emerald-50"
+                  >
+                    고객 전달자료 준비
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {!isRichiFullOperation ? (
             <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
               이 화면은 운영기록 확인을 위한 관리자 화면입니다. 법적 판단이나
               조치완료 확정을 대신하지 않습니다. 최종 검토와 조치 판단은
