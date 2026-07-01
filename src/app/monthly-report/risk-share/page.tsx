@@ -786,6 +786,85 @@ export default async function RiskSharePackMonthlyReportPage({
           </section>
         ) : null}
 
+        {!isRichiFullOperation ? (
+          <section className={shellClassName}>
+            <div className="flex flex-col gap-2">
+              <p className={eyebrowClassName}>외부 인력 확인 현황 샘플</p>
+              <h2 className={headingClassName}>
+                운영상 분류별 위험요인 공유확인 기록
+              </h2>
+              <p className={`mt-2 ${bodyClassName}`}>
+                외부 인력 확인은 법적 지위 판단이 아니라, 현장에서 어떤
+                외부 인력이 어떤 위험요인을 공유받고 확인했는지 월간 운영기록
+                후보로 정리하기 위한 흐름입니다.
+              </p>
+            </div>
+
+            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-700 print:border-slate-300">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="bg-slate-950/80 text-slate-300 print:bg-slate-100 print:text-slate-800">
+                  <tr>
+                    <th className="px-4 py-3 font-black">운영상 분류</th>
+                    <th className="px-4 py-3 font-black">확인 건수</th>
+                    <th className="px-4 py-3 font-black">주요 작업</th>
+                    <th className="px-4 py-3 font-black">확인 포인트</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 text-slate-200 print:divide-slate-200 print:text-slate-800">
+                  <tr>
+                    <td className="px-4 py-3 font-bold">납품</td>
+                    <td className="px-4 py-3">8건</td>
+                    <td className="px-4 py-3">원자재 입고</td>
+                    <td className="px-4 py-3">입고 동선·하역 위치 확인</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 font-bold">상하차</td>
+                    <td className="px-4 py-3">6건</td>
+                    <td className="px-4 py-3">제품 출고</td>
+                    <td className="px-4 py-3">지게차 동선·보행자 접근 확인</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 font-bold">정비업체</td>
+                    <td className="px-4 py-3">2건</td>
+                    <td className="px-4 py-3">설비 점검</td>
+                    <td className="px-4 py-3">작업구역 출입 전 위험요인 확인</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 font-bold">방문자</td>
+                    <td className="px-4 py-3">3건</td>
+                    <td className="px-4 py-3">현장 방문</td>
+                    <td className="px-4 py-3">안내자 동행·출입 동선 확인</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              <article className="rounded-2xl border border-cyan-500/25 bg-cyan-500/10 p-4 print:border-cyan-300 print:bg-cyan-50">
+                <p className="text-sm font-black text-cyan-200 print:text-cyan-900">
+                  월간 결과물 반영 기준
+                </p>
+                <p className="mt-2 text-sm leading-6 text-cyan-50 print:text-cyan-900">
+                  외부 인력 확인기록은 근로자 확인 현황과 구분해 표시합니다.
+                  반복 방문, 상하차, 정비 작업처럼 위험요인 공유가 필요한
+                  흐름은 다음 달 추적 필요 후보로 연결할 수 있습니다.
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 print:border-amber-300 print:bg-amber-50">
+                <p className="text-sm font-black text-amber-200 print:text-amber-900">
+                  표현 제한
+                </p>
+                <p className="mt-2 text-sm leading-6 text-amber-50 print:text-amber-900">
+                  이 분류는 도급관계, 근로자성, 원청 책임 범위를 판단하지
+                  않습니다. 외부 인력 안전관리 완료나 법적 책임 면제 표현도
+                  사용하지 않습니다.
+                </p>
+              </article>
+            </div>
+          </section>
+        ) : null}
+
         {isRichiFullOperation ? (
           <section className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm print:border-slate-300 print:bg-white">
             <div className="flex flex-col gap-4">
