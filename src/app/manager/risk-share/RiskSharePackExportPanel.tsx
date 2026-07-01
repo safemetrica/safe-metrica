@@ -189,7 +189,7 @@ export default function RiskSharePackExportPanel({
         >
           {isRichiFullOperation
             ? "월간 운영기록 확인"
-            : "공유팩 월간보고서 확인"}
+            : "공유팩 월간 결과물 확인"}
         </Link>
         <div
           className={

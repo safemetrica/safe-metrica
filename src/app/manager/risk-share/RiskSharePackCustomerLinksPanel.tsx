@@ -11,12 +11,12 @@ const INTERNAL_MANAGER_LINKS = [
     title: "공유팩 관리자 홈",
     path: "/manager/risk-share",
     description:
-      "공유확인, 현장 의견, 근로자대표 참여확인, Export, 월간요약을 확인합니다.",
+      "공유확인, 현장 의견, 근로자대표 참여확인, Export, 월간 안전운영 결과물을 확인합니다.",
   },
   {
-    title: "공유팩 월간 운영요약",
+    title: "공유팩 월간 안전운영 결과물",
     path: "/monthly-report/risk-share",
-    description: "공유팩 전용 월간요약 및 인쇄/PDF 저장 화면입니다.",
+    description: "공유팩 전용 월간 안전운영 결과물 및 인쇄/PDF 저장 화면입니다.",
   },
   {
     title: "근로자대표 참여확인 관리",

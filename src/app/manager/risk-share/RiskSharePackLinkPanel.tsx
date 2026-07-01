@@ -58,11 +58,11 @@ export default function RiskSharePackLinkPanel({
           cta: "대표확인 링크 관리",
         },
         {
-          title: "공유팩 월간 운영요약",
+          title: "공유팩 월간 안전운영 결과물",
           description:
-            "공유확인, 현장 의견, 근로자대표 참여확인 중심의 공유팩 전용 월간요약입니다.",
+            "공유확인, 현장 의견, 근로자대표 참여확인, 관리자 검토 흐름을 정리한 월간 안전운영 결과물입니다.",
           href: "/monthly-report/risk-share",
-          cta: "월간요약 보기",
+          cta: "월간 결과물 보기",
         },
       ];
 
@@ -105,7 +105,7 @@ export default function RiskSharePackLinkPanel({
           >
             {isRichiFullOperation
               ? `${companyName} 기준으로 근로자 현장 확인·의견, 근로자대표 참여확인, 월간 운영기록 진입 흐름을 관리합니다.`
-              : `${companyName} 기준으로 근로자 공유확인, 현장 의견, 근로자대표 참여확인, 월간요약 진입 흐름을 관리합니다.`}
+              : `${companyName} 기준으로 근로자 공유확인, 현장 의견, 근로자대표 참여확인, 월간 안전운영 결과물 진입 흐름을 관리합니다.`}
           </p>
         </div>
 
