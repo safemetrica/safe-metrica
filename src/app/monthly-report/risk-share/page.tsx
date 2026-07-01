@@ -700,7 +700,7 @@ export default async function RiskSharePackMonthlyReportPage({
             hint={
               isRichiFullOperation
                 ? "월간 운영 확인을 위해 모인 사진·파일 증빙 수입니다. 조치완료를 자동 확정하지 않습니다."
-                : "evidence_items 원장 기준 사진·파일 증빙 수입니다. 조치완료를 자동 확정하지 않습니다."
+                : "사진·파일 증빙 기준으로 정리한 수입니다. 조치완료를 자동 확정하지 않습니다."
             }
             isRichiFullOperation={isRichiFullOperation}
           />
@@ -907,7 +907,7 @@ export default async function RiskSharePackMonthlyReportPage({
               <p className={`mt-2 ${bodyClassName}`}>
                 {isRichiFullOperation
                   ? "월간 운영 확인을 위한 사진·파일 증빙 집계입니다."
-                  : "evidence_items 원장 기준의 월간 사진·파일 증빙 집계입니다."}
+                  : "월간 사진·파일 증빙 집계입니다."}
               </p>
             </div>
             <p className="text-sm font-bold text-cyan-200 print:text-cyan-800">
