@@ -30,7 +30,7 @@ function buildDefaultContent(feedbackMode: FeedbackMode, opinionContent: string)
     return opinionContent.trim();
   }
 
-  return "오늘 작업 전 확인사항사항을 읽고 확인했습니다. 별도 특이사항 없음.";
+  return "오늘 작업 전 확인사항을 읽고 확인했습니다. 별도 특이사항 없음.";
 }
 
 export default function RichiWorkerConfirmationFlow({ companyCode }: RichiWorkerConfirmationFlowProps) {
