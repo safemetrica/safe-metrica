@@ -3,6 +3,7 @@ import FieldParticipationFileInput from "./FieldParticipationFileInput";
 import FieldParticipationStepper from "./FieldParticipationStepper";
 import { getOperatingFieldWorkerCopy } from "./operatingFieldWorkerCopy";
 import { getFieldWorkerRiskSummary } from "./fieldWorkerRiskSummary";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -203,6 +204,12 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
   const siteValue = params.site ?? "";
   const sourceValue = params.source ?? "web";
   const weatherNotice = await getFieldWeatherNotice(params.weatherTest);
+  const tenantRegistry = companyCode
+    ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
+    : null;
+  const commercialRiskShareEntryEnabled =
+    tenantRegistry?.serviceMode === "risk_share_pack";
+  const commercialCompanyName = tenantRegistry?.name || undefined;
 
   if (!companyCode) {
     return (
@@ -244,6 +251,8 @@ export default async function FieldParticipationPage({ searchParams }: PageProps
         riskSummary={riskSummary}
         feedbackTypes={workerCopy?.feedbackTypes ?? feedbackTypes}
         weatherNotice={weatherNotice}
+        commercialRiskShareEntryEnabled={commercialRiskShareEntryEnabled}
+        commercialCompanyName={commercialCompanyName}
       />
     );
   }
