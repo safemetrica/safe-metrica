@@ -12,6 +12,8 @@ export const OWNER_TENANT_SERVICE_MODES = [
   "full_safemetrica",
   "food_factory_e_confirmation_trial",
   "hoist_work_order_trial",
+  "partner_demo",
+  "internal_test",
 ] as const;
 
 export const OWNER_TENANT_MEMBERSHIP_ROLES = [
