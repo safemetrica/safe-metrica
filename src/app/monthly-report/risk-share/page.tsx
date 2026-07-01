@@ -716,6 +716,76 @@ export default async function RiskSharePackMonthlyReportPage({
           />
         </section>
 
+        {!isRichiFullOperation ? (
+          <section className={shellClassName}>
+            <div className="flex flex-col gap-2">
+              <p className={eyebrowClassName}>월간 안전운영 브리핑 후보</p>
+              <h2 className={headingClassName}>
+                공유·확인·의견·검토 흐름 요약
+              </h2>
+              <p className={`mt-2 ${bodyClassName}`}>
+                이번 달 공유확인{" "}
+                {fieldSummary.status === "ok"
+                  ? `${fieldSummary.shareConfirmationCount}건`
+                  : "확인 필요"}
+                , 현장 의견·위험제보{" "}
+                {fieldSummary.status === "ok"
+                  ? `${fieldSummary.workerReportCount}건`
+                  : "확인 필요"}
+                , 근로자대표 참여확인 {representativeRecords.length}건이 월간
+                운영기록 후보로 정리되었습니다. 관리자 검토가 필요한 항목은{" "}
+                {fieldSummary.status === "ok" ? `${totalReviewNeeded}건` : "확인 필요"}
+                이며, 사진·파일 증빙은{" "}
+                {evidenceSummary.status === "ok"
+                  ? `${evidenceSummary.totalCount}건`
+                  : "확인 필요"}
+                연결되어 있습니다.
+              </p>
+            </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-3">
+              <article className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 print:border-emerald-300 print:bg-emerald-50">
+                <p className="text-sm font-black text-emerald-200 print:text-emerald-900">
+                  공유·확인
+                </p>
+                <p className="mt-2 text-sm leading-6 text-emerald-50 print:text-emerald-900">
+                  위험요인 공유본과 근로자 확인기록을 월간 단위로 구분합니다.
+                  외부 인력 확인은 운영상 분류가 적용된 경우 별도 확인자료
+                  후보로 정리합니다.
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-blue-500/25 bg-blue-500/10 p-4 print:border-blue-300 print:bg-blue-50">
+                <p className="text-sm font-black text-blue-200 print:text-blue-900">
+                  의견·제보
+                </p>
+                <p className="mt-2 text-sm leading-6 text-blue-50 print:text-blue-900">
+                  위험제보, 아차사고, 개선제안은 공유확인과 분리해 관리자
+                  검토대상으로 정리합니다. 접수만으로 조치 완료로 보지
+                  않습니다.
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 print:border-amber-300 print:bg-amber-50">
+                <p className="text-sm font-black text-amber-200 print:text-amber-900">
+                  관리자 검토·추적 필요
+                </p>
+                <p className="mt-2 text-sm leading-6 text-amber-50 print:text-amber-900">
+                  검토 필요 항목은 조치메모, 후속 확인, 다음 달 추적 필요
+                  후보로 분리합니다. 최종 판단과 조치 확정은 관리자 또는
+                  사업주가 수행합니다.
+                </p>
+              </article>
+            </div>
+
+            <p className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-xs leading-5 text-slate-400 print:border-slate-300 print:bg-slate-50 print:text-slate-700">
+              본 브리핑은 월간 운영기록을 이해하기 위한 요약 후보입니다.
+              법적 판단, 위험성평가 완료, 조치완료 또는 과태료 관련 결과를
+              확정하지 않습니다.
+            </p>
+          </section>
+        ) : null}
+
         {isRichiFullOperation ? (
           <section className="rounded-3xl border border-[#D6EDE6] bg-white p-5 shadow-sm print:border-slate-300 print:bg-white">
             <div className="flex flex-col gap-4">
