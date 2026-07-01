@@ -6,7 +6,10 @@ import RiskSharePackExportPanel from "./RiskSharePackExportPanel";
 import RiskSharePackMonthlySummary from "./RiskSharePackMonthlySummary";
 import RiskSharePackLinkPanel from "./RiskSharePackLinkPanel";
 import RiskSharePackCustomerLinksPanel from "./RiskSharePackCustomerLinksPanel";
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import {
+  selectSupabaseExportRows,
+  getTenantRegistryConfigByCode,
+} from "@/lib/supabaseServer";
 import {
   fetchWorkerRepresentativeConfirmationLinks,
   type WorkerRepresentativeConfirmationLink,
@@ -504,6 +507,18 @@ async function getRiskShareCompany(searchParams?: PageSearchParams) {
 
   if (rawCompanyQuery === "richi") {
     return getCompanyConfigByCode("richi").catch(() => null);
+  }
+
+  if (rawCompanyQuery) {
+    const tenant = await getTenantRegistryConfigByCode(rawCompanyQuery).catch(
+      () => null,
+    );
+
+    if (!tenant) {
+      return null;
+    }
+
+    return getCompanyConfigByCode(tenant.code).catch(() => null);
   }
 
   return getCompanyConfig().catch(() => null);
