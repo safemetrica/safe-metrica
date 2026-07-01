@@ -30,123 +30,155 @@ export default async function RiskSharePublicFieldEntryPage({
   const tenant = companyCode
     ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
     : null;
-  const companyLabel = tenant?.name || companyCode || "고객사";
+  const companyLabel = tenant?.name || companyCode || "현장";
   const isRiskShareCustomer =
     tenant?.serviceMode === "risk_share_pack" ||
     tenant?.serviceMode === "full_safemetrica";
 
   const cards = [
     {
-      title: "이번 달 위험성평가 공유확인",
+      title: "위험성평가 공유확인",
       description:
-        "공유된 위험요인과 안전조치를 확인하고 전자확인 기록을 남깁니다.",
+        "이번 달 공유된 위험요인과 안전조치를 확인하고 전자확인 기록을 남깁니다.",
       href: buildHref("/field/participation", companyCode),
       badge: "근로자 확인",
-      tone: "border-blue-200 bg-blue-50 text-blue-950",
-      cta: "공유확인 시작",
-      disabled: !companyCode || !isRiskShareCustomer,
+      accent: "bg-blue-600",
+      surface: "border-blue-100 bg-blue-50/80",
+      text: "text-blue-950",
+      cta: "확인 시작",
+      enabled: Boolean(companyCode && isRiskShareCustomer),
     },
     {
-      title: "오늘 작업 전 안전확인",
+      title: "작업 전 안전확인",
       description:
-        "작업 전 보호구, 동선, 적재, 설비 주변 주의사항을 확인합니다.",
+        "작업 전 보호구, 이동 동선, 적재·하역, 설비 주변 주의사항을 확인합니다.",
       href: buildHref("/field/participation", companyCode),
       badge: "작업 전 확인",
-      tone: "border-emerald-200 bg-emerald-50 text-emerald-950",
+      accent: "bg-emerald-600",
+      surface: "border-emerald-100 bg-emerald-50/80",
+      text: "text-emerald-950",
       cta: "작업 전 확인",
-      disabled: !companyCode || !isRiskShareCustomer,
+      enabled: Boolean(companyCode && isRiskShareCustomer),
     },
     {
       title: "익명 의견 · 아차사고 · 개선제안",
       description:
-        "이름과 서명 없이 불편사항, 아차사고, 개선의견을 제출합니다.",
+        "이름과 서명 없이 현장 의견, 아차사고, 개선제안을 제출합니다.",
       href: buildHref("/field/anonymous-feedback", companyCode),
-      badge: "무기명 제출",
-      tone: "border-amber-200 bg-amber-50 text-amber-950",
-      cta: "익명 제출",
-      disabled: !companyCode || !isRiskShareCustomer,
-    },
-    {
-      title: "외부인 출입 안전확인",
-      description:
-        "방문자, 납품, 협력업체 출입 전 안전수칙 확인을 위한 입구입니다.",
-      href: buildHref("/risk-share/visitor", companyCode),
-      badge: "외부인 QR",
-      tone: "border-slate-200 bg-slate-50 text-slate-800",
-      cta: "외부인 확인",
-      disabled: true,
+      badge: "익명 제출",
+      accent: "bg-amber-500",
+      surface: "border-amber-100 bg-amber-50/90",
+      text: "text-amber-950",
+      cta: "의견 제출",
+      enabled: Boolean(companyCode && isRiskShareCustomer),
     },
   ];
 
   return (
-    <main className="min-h-screen bg-[#F3F7FA] px-4 py-6 text-slate-950">
-      <section className="mx-auto max-w-2xl">
-        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">
-            SafeMetrica Risk Share Pack
-          </p>
-          <h1 className="mt-3 text-3xl font-black tracking-tight">
-            위공팩 현장 QR
-          </h1>
-          <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
-            {companyCode
-              ? `${companyLabel} 현장 구성원이 확인·의견 제출을 진행하는 무로그인 QR 입구입니다.`
-              : "회사코드가 포함된 QR 링크가 필요합니다."}
-          </p>
-        </div>
-
-        {!companyCode ? (
-          <div className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm font-bold leading-7 text-amber-950">
-            QR 링크는 /risk-share/field?company=고객코드 형식으로 발급해야 합니다.
+    <main className="min-h-screen bg-[#EEF4F8] px-4 py-5 text-slate-950">
+      <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
+        <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl">
+          <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-6 text-white">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-black tracking-tight text-white/90">
+              SafeMetrica 현장 QR
+            </div>
+            <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight">
+              위험성평가
+              <br />
+              공유확인 QR
+            </h1>
+            <p className="mt-4 text-sm font-semibold leading-7 text-white/85">
+              {companyCode
+                ? `${companyLabel} 구성원이 오늘 필요한 확인과 의견 제출을 진행합니다.`
+                : "전달받은 현장 QR 링크로 접속해 주세요."}
+            </p>
           </div>
-        ) : !isRiskShareCustomer ? (
-          <div className="mt-4 rounded-3xl border border-rose-200 bg-rose-50 p-5 text-sm font-bold leading-7 text-rose-950">
-            위공팩 또는 Full SafeMetrica 고객코드로 등록된 경우에만 이 QR 입구를 사용할 수 있습니다.
-            Owner가 고객코드와 서비스 모드를 확인해 주세요.
-          </div>
-        ) : null}
 
-        <div className="mt-4 grid gap-3">
-          {cards.map((card) => {
-            const className = `block rounded-3xl border p-5 shadow-sm transition ${card.tone} ${
-              card.disabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-0.5 hover:shadow-md"
-            }`;
+          {!companyCode ? (
+            <div className="border-b border-amber-100 bg-amber-50 px-5 py-4 text-sm font-bold leading-6 text-amber-950">
+              회사코드가 포함된 QR 링크가 필요합니다. 현장 담당자에게 새 QR 링크를 요청해 주세요.
+            </div>
+          ) : !isRiskShareCustomer ? (
+            <div className="border-b border-rose-100 bg-rose-50 px-5 py-4 text-sm font-bold leading-6 text-rose-950">
+              이 QR 링크는 아직 사용할 수 없습니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.
+            </div>
+          ) : null}
 
-            const content = (
-              <>
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-black">{card.title}</h2>
-                    <p className="mt-2 text-sm font-semibold leading-6 opacity-80">
-                      {card.description}
-                    </p>
+          <div className="space-y-3 p-4">
+            {cards.map((card) => {
+              const content = (
+                <>
+                  <div className="flex items-start gap-4">
+                    <span className={`mt-1 h-10 w-1.5 rounded-full ${card.accent}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className={`text-lg font-black leading-6 ${card.text}`}>
+                          {card.title}
+                        </h2>
+                        <span className="shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-[0.68rem] font-black text-slate-600">
+                          {card.badge}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                        {card.description}
+                      </p>
+                    </div>
                   </div>
-                  <span className="shrink-0 rounded-full bg-white/75 px-3 py-1 text-xs font-black">
-                    {card.badge}
-                  </span>
+                  <div className="mt-4 flex justify-end">
+                    <span
+                      className={`inline-flex min-h-10 items-center justify-center rounded-2xl px-4 text-sm font-black ${
+                        card.enabled
+                          ? "bg-slate-950 text-white"
+                          : "bg-slate-200 text-slate-500"
+                      }`}
+                    >
+                      {card.enabled ? card.cta : "QR 확인 필요"}
+                    </span>
+                  </div>
+                </>
+              );
+
+              const className = `block rounded-3xl border p-4 shadow-sm ${card.surface} ${
+                card.enabled
+                  ? "transition hover:-translate-y-0.5 hover:shadow-md"
+                  : "opacity-70"
+              }`;
+
+              return card.enabled ? (
+                <Link key={card.title} href={card.href} className={className}>
+                  {content}
+                </Link>
+              ) : (
+                <div key={card.title} className={className} aria-disabled="true">
+                  {content}
                 </div>
-                <span className="mt-4 inline-flex rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white">
-                  {card.disabled ? "준비 또는 설정 확인 필요" : card.cta}
-                </span>
-              </>
-            );
+              );
+            })}
 
-            return card.disabled ? (
-              <div key={card.title} className={className} aria-disabled="true">
-                {content}
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start gap-4">
+                <span className="mt-1 h-10 w-1.5 rounded-full bg-slate-400" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-lg font-black leading-6 text-slate-800">
+                      외부인 출입 안전확인
+                    </h2>
+                    <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[0.68rem] font-black text-slate-500">
+                      별도 QR
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                    방문자, 납품, 협력업체 확인은 고객사 운영 방식에 맞춰 별도 QR로 안내합니다.
+                  </p>
+                </div>
               </div>
-            ) : (
-              <Link key={card.title} href={card.href} className={className}>
-                {content}
-              </Link>
-            );
-          })}
+            </div>
+          </div>
         </div>
 
-        <div className="mt-5 rounded-3xl border border-slate-200 bg-white p-5 text-xs font-bold leading-6 text-slate-500">
-          근로자와 외부인은 로그인 없이 QR로 참여합니다. 관리자와 대표 화면은 고객사 계정 기반으로 분리합니다.
-          이 화면은 위험성평가 작성 대행이나 법적 적합성 보장을 의미하지 않습니다.
-        </div>
+        <p className="mt-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
+          근로자와 외부인은 로그인 없이 QR로 참여합니다. 이 화면은 위험성평가 작성 대행이나 법적 적합성 보장을 의미하지 않습니다.
+        </p>
       </section>
     </main>
   );
