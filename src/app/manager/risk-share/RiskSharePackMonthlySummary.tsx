@@ -52,7 +52,7 @@ export default function RiskSharePackMonthlySummary({
       value: exportReadyStatus,
       description: isRichiFullOperation
         ? "내부 운영자가 확인 후 이번 달 운영기록 또는 전달자료로 정리할 수 있는 상태입니다."
-        : "내부 운영자가 확인 후 월간 요약 또는 CSV 전달자료로 정리할 수 있는 상태입니다.",
+        : "내부 운영자가 확인 후 월간 안전운영 결과물 또는 CSV 전달자료로 정리할 수 있는 상태입니다.",
     },
   ];
 
@@ -73,7 +73,7 @@ export default function RiskSharePackMonthlySummary({
                 : "text-sm font-bold text-indigo-300"
             }
           >
-            {isRichiFullOperation ? "월간 운영기록" : "월간 요약 후보"}
+            {isRichiFullOperation ? "월간 운영기록" : "월간 결과물 후보"}
           </p>
           <h2
             className={
@@ -84,7 +84,7 @@ export default function RiskSharePackMonthlySummary({
           >
             {isRichiFullOperation
               ? "이번 달 운영기록"
-              : "Risk Share Pack 월간 운영요약"}
+              : "Risk Share Pack 월간 안전운영 결과물"}
           </h2>
           <p
             className={
@@ -166,7 +166,7 @@ export default function RiskSharePackMonthlySummary({
       </div>
 
       <p className="mt-4 text-xs leading-5 text-slate-500">
-        월간 요약은 입력된 운영기록을 정리하는 화면입니다. 법적 판단이나 조치
+        월간 결과물은 입력된 운영기록을 정리하는 화면입니다. 법적 판단이나 조치
         판단을 대신하지 않습니다.
       </p>
     </section>
