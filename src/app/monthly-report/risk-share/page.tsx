@@ -629,7 +629,7 @@ export default async function RiskSharePackMonthlyReportPage({
           >
             {isRichiFullOperation
               ? "일부 운영기록 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 관리자 화면의 접수 내용을 다시 확인하세요."
-              : "일부 원장 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 접수함과 Export를 다시 확인하세요."}
+              : "일부 운영기록 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 접수함과 전달자료 구성을 다시 확인하세요."}
           </section>
         ) : null}
 
@@ -1084,7 +1084,7 @@ export default async function RiskSharePackMonthlyReportPage({
               >
                 {isRichiFullOperation
                   ? "월간 운영기록은 내부 운영자가 확인한 뒤 고객 전달자료로 정리합니다."
-                  : "월간 요약은 내부 운영자가 확인한 뒤 고객 전달자료 또는 CSV Export와 함께 정리합니다."}
+                  : "월간 요약은 내부 운영자가 확인한 뒤 고객 전달자료 또는 CSV 파일로 정리합니다."}
               </p>
             </div>
           </div>

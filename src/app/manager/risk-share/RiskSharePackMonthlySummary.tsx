@@ -120,7 +120,7 @@ export default function RiskSharePackMonthlySummary({
         >
           {isRichiFullOperation
             ? "일부 기록 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 접수함과 전달자료 준비 상태를 다시 확인하세요."
-            : "일부 원장 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 접수함과 Export를 다시 확인하세요."}
+            : "일부 운영기록 조회가 실패했거나 설정 확인이 필요합니다. 고객 전달 전 접수함과 전달자료 구성을 다시 확인하세요."}
         </div>
       ) : null}
 
