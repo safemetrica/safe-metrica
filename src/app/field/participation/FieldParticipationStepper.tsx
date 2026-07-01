@@ -83,6 +83,8 @@ type Props = {
   riskSummary: RiskSummary;
   feedbackTypes: string[];
   weatherNotice?: WeatherNotice;
+  commercialRiskShareEntryEnabled?: boolean;
+  commercialCompanyName?: string;
 };
 
 const defaultStepLabels = ["위험 확인", "주지 확인", "의견 제출", "완료"];
@@ -216,6 +218,8 @@ export default function FieldParticipationStepper({
   riskSummary,
   feedbackTypes,
   weatherNotice,
+  commercialRiskShareEntryEnabled = false,
+  commercialCompanyName,
 }: Props) {
   const [step, setStep] = useState(initialStep);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(
@@ -291,11 +295,23 @@ export default function FieldParticipationStepper({
   );
   const normalizedCompanyCode = companyCode.trim().toLowerCase();
   const isBubblemonWorkerQr = normalizedCompanyCode === "bubblemon";
+  const legacyFieldQrCodes = new Set([
+    "richi",
+    "bubblemon",
+    "daedo",
+    "dongwoo",
+    "hankookgreen",
+  ]);
+  const isCommercialRiskShareTenant =
+    commercialRiskShareEntryEnabled &&
+    !legacyFieldQrCodes.has(normalizedCompanyCode);
+  const isFieldQrModeEntryTenant =
+    isBubblemonWorkerQr || isCommercialRiskShareTenant;
   const isDailyPreworkSafetyCheck =
-    isBubblemonWorkerQr &&
+    isFieldQrModeEntryTenant &&
     bubblemonEntryIntent === "daily_prework_safety_check";
   const isMonthlyRiskShareConfirmation =
-    isBubblemonWorkerQr &&
+    isFieldQrModeEntryTenant &&
     bubblemonEntryIntent === "monthly_risk_share_confirmation";
   const canGoNextFromStep2 =
     riskCheck && riskAssessmentCheck && safetyMeasureCheck;
@@ -313,16 +329,18 @@ export default function FieldParticipationStepper({
     bubblemonEntryIntent === "daily_prework_safety_check"
       ? "오늘 작업 전 안전확인"
       : "월간 위험성평가 공유확인";
-  const canOpenRiskSummary = [
-    "daedo",
-    "dongwoo",
-    "hankookgreen",
-    "korea-green",
-    "korea_green",
-    "koreagreen",
-    "greenkorea",
-    "bubblemon",
-  ].includes(normalizedCompanyCode);
+  const canOpenRiskSummary =
+    isCommercialRiskShareTenant ||
+    [
+      "daedo",
+      "dongwoo",
+      "hankookgreen",
+      "korea-green",
+      "korea_green",
+      "koreagreen",
+      "greenkorea",
+      "bubblemon",
+    ].includes(normalizedCompanyCode);
   const hasOpinion =
     reportTitle.trim().length > 0 ||
     content.trim().length > 0 ||
@@ -741,7 +759,7 @@ export default function FieldParticipationStepper({
         />
         <input type="hidden" name="source_step" value={String(step)} />
         <input type="hidden" name="entry_intent" value={entryIntent} />
-        {isBubblemonWorkerQr ? (
+        {isFieldQrModeEntryTenant ? (
           <>
             <input
               type="hidden"
@@ -798,10 +816,12 @@ export default function FieldParticipationStepper({
             </p>
           </section>
 
-          {isBubblemonWorkerQr ? (
+          {isFieldQrModeEntryTenant ? (
             <section className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
               <p className="text-xs font-black text-blue-700">
-                Bubblemon 근로자 QR
+                {isCommercialRiskShareTenant
+                  ? `${commercialCompanyName ?? "현장"} 안전운영 QR`
+                  : "Bubblemon 근로자 QR"}
               </p>
               <h2 className="mt-1 text-xl font-black text-slate-950">
                 오늘 필요한 확인을 선택해 주세요.
@@ -885,7 +905,7 @@ export default function FieldParticipationStepper({
                 </button>
 
                 <a
-                  href="/field/anonymous-feedback?company=bubblemon"
+                  href={`/field/anonymous-feedback?company=${encodeURIComponent(companyCode)}`}
                   className="rounded-2xl border border-amber-200 bg-white p-4 text-left shadow-sm transition active:scale-[0.99]"
                 >
                   <span className="block text-sm font-black text-amber-700">
@@ -928,7 +948,7 @@ export default function FieldParticipationStepper({
 
           <section
             id={
-              isBubblemonWorkerQr
+              isFieldQrModeEntryTenant
                 ? "bubblemon-participation-check-section"
                 : undefined
             }
@@ -942,14 +962,14 @@ export default function FieldParticipationStepper({
                 <h2 className="mt-1 text-xl font-black text-slate-950">
                   {isRichiPreworkConfirmationFlow
                     ? "작업 전 위생·안전 확인"
-                    : isBubblemonWorkerQr
+                    : isFieldQrModeEntryTenant
                       ? bubblemonModeCopy.title
                       : "오늘 작업 전 핵심 위험 확인"}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {isRichiPreworkConfirmationFlow
                     ? "작업 전 위생·안전 확인 내용입니다."
-                    : isBubblemonWorkerQr
+                    : isFieldQrModeEntryTenant
                       ? bubblemonModeCopy.helper
                       : "오늘 작업과 관련된 핵심 위험요인입니다. 아래 내용을 확인해 주세요."}
                 </p>
