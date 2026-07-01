@@ -31,7 +31,7 @@ function getStatusCopy(status?: string, workerCopyCode?: string): StatusCopy {
       title: isRichiPreworkConfirmationFlow ? "전자확인 저장 완료" : "현장참여 저장 완료",
       message: isRichiPreworkConfirmationFlow
         ? "입력한 내용이 작업 전 확인기록으로 저장되었습니다."
-        : "입력한 내용이 현장 의견 DB에 저장되었습니다.",
+        : "입력한 내용이 현장참여 기록으로 접수되었습니다.",
       tone: "emerald",
       badge: isRichiPreworkConfirmationFlow ? "㈜리치코리아 현장 전자확인" : undefined,
       completionMessage: isRichiPreworkConfirmationFlow
@@ -57,7 +57,7 @@ function getStatusCopy(status?: string, workerCopyCode?: string): StatusCopy {
   if (status === "supabase_error") {
     return {
       title: "저장 확인 필요",
-      message: "PostgreSQL 원장 저장 중 오류가 발생했습니다. 관리자 확인이 필요합니다.",
+      message: "저장 처리 중 오류가 발생했습니다. 관리자 확인이 필요합니다.",
       tone: "red",
     };
   }
@@ -65,7 +65,7 @@ function getStatusCopy(status?: string, workerCopyCode?: string): StatusCopy {
   if (status === "notion_error") {
     return {
       title: "저장 확인 필요",
-      message: "현장 의견 DB 저장 중 오류가 발생했습니다. 관리자 확인이 필요합니다.",
+      message: "현장참여 기록 저장 중 오류가 발생했습니다. 관리자 확인이 필요합니다.",
       tone: "red",
     };
   }
@@ -80,8 +80,8 @@ function getStatusCopy(status?: string, workerCopyCode?: string): StatusCopy {
 
   if (status === "missing_field_voice_db") {
     return {
-      title: "현장 의견 DB 연결 필요",
-      message: "해당 회사의 fieldVoiceDbId 설정을 확인해 주세요.",
+      title: "현장참여 연결 확인 필요",
+      message: "현장참여 기록 연결 상태를 확인해 주세요.",
       tone: "amber",
     };
   }
@@ -140,7 +140,7 @@ export default async function FieldParticipationSubmittedPage({ searchParams }: 
             </p>
             {params.message ? (
               <p className="mt-2 text-xs leading-5">
-                오류: {params.message} {params.detail ?? ""}
+                관리자 확인이 필요한 저장 상태입니다. 이 화면을 현장관리자에게 전달해 주세요.
               </p>
             ) : null}
           </div>
