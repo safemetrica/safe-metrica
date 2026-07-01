@@ -28,10 +28,10 @@ export function TenantShellPlaceholder({
               SafeMetrica 운영공간
             </p>
             <h1 className="mt-3 text-2xl font-black leading-tight">
-              운영공간 전용 로그인 화면
+              운영공간 전용 화면
             </h1>
             <p className="mt-3 text-sm font-semibold leading-6 text-slate-200">
-              신규 고객 로그인 화면을 준비 중입니다.
+              고객사별 운영공간을 안전하게 분리해 준비합니다.
             </p>
           </div>
 
