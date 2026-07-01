@@ -53,17 +53,17 @@ export default async function TenantManagerPlaceholderPage({
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-        <p className="text-sm font-black text-cyan-700">관리자 준비 화면</p>
+        <p className="text-sm font-black text-cyan-700">운영공간 접근 안내</p>
         <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-          신규 고객 로그인 구조 준비 화면
+          고객사 운영공간 준비 화면
         </h2>
         <p className="mt-3 text-base font-semibold leading-7 text-slate-700">
-          이 화면은 신규 고객 로그인 구조 준비용 화면이며 실제 고객 데이터는 연결하지 않았습니다.
+          접근 권한이 확인되면 이곳에서 오늘 확인 항목, 현장 QR, 접수함, 월간 운영기록을 순차적으로 사용할 수 있습니다.
         </p>
       </section>
 
       <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm font-bold leading-6 text-rose-900">
-        {guardMessage} 현재 화면은 실제 고객 데이터와 연결하지 않은 준비 화면입니다.
+        {guardMessage} 아직 운영자료는 표시하지 않습니다.
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
