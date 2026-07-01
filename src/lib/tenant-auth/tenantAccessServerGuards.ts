@@ -9,6 +9,7 @@ import {
   canAccessTenantManager,
   normalizeTenantLoginCode,
 } from "./tenantAuthGuards";
+import { requireCurrentTenantSessionEmail } from "./tenantSessionServer";
 
 import type {
   TenantAccessResult,
@@ -18,6 +19,11 @@ import type {
 
 type RequireTenantAccessByEmailAndCodeParams = {
   userEmail?: string | null;
+  tenantCode?: string | null;
+  allowedRoles?: TenantRole[];
+};
+
+type RequireTenantAccessForCurrentSessionParams = {
   tenantCode?: string | null;
   allowedRoles?: TenantRole[];
 };
@@ -97,4 +103,36 @@ export async function requireTenantManagerAccessByEmailAndCode(params: {
   }
 
   return accessResult;
+}
+
+
+export async function requireTenantAccessForCurrentSession(
+  params: RequireTenantAccessForCurrentSessionParams,
+): Promise<TenantAccessResult> {
+  const sessionEmailResult = await requireCurrentTenantSessionEmail();
+
+  if (!sessionEmailResult.ok) {
+    return { ok: false, reason: "unauthenticated" };
+  }
+
+  return requireTenantAccessByEmailAndCode({
+    userEmail: sessionEmailResult.userEmail,
+    tenantCode: params.tenantCode,
+    allowedRoles: params.allowedRoles,
+  });
+}
+
+export async function requireTenantManagerAccessForCurrentSession(params: {
+  tenantCode?: string | null;
+}): Promise<TenantAccessResult> {
+  const sessionEmailResult = await requireCurrentTenantSessionEmail();
+
+  if (!sessionEmailResult.ok) {
+    return { ok: false, reason: "unauthenticated" };
+  }
+
+  return requireTenantManagerAccessByEmailAndCode({
+    userEmail: sessionEmailResult.userEmail,
+    tenantCode: params.tenantCode,
+  });
 }
