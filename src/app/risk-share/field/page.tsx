@@ -24,12 +24,10 @@ function buildHref(path: string, companyCode: string) {
 
 function FieldQrShell({
   children,
-  companyCode,
-  companyLabel,
+  description,
 }: {
   children: React.ReactNode;
-  companyCode: string;
-  companyLabel: string;
+  description: string;
 }) {
   return (
     <main className="min-h-screen bg-[#EEF4F8] px-4 py-5 text-slate-950">
@@ -45,9 +43,7 @@ function FieldQrShell({
               공유확인 QR
             </h1>
             <p className="mt-4 text-sm font-semibold leading-7 text-white/85">
-              {companyCode
-                ? `${companyLabel} 구성원이 오늘 필요한 확인과 의견 제출을 진행합니다.`
-                : "전달받은 현장 QR 링크로 접속해 주세요."}
+              {description}
             </p>
           </div>
 
@@ -87,7 +83,7 @@ export default async function RiskSharePublicFieldEntryPage({
 
   if (!companyCode) {
     return (
-      <FieldQrShell companyCode="" companyLabel="현장">
+      <FieldQrShell description="전달받은 현장 QR 링크로 접속해 주세요.">
         <InvalidQrNotice>
           회사코드가 포함된 QR 링크가 필요합니다. 현장 담당자에게 새 QR 링크를 요청해 주세요.
         </InvalidQrNotice>
@@ -97,7 +93,7 @@ export default async function RiskSharePublicFieldEntryPage({
 
   if (!isRiskShareCustomer) {
     return (
-      <FieldQrShell companyCode={companyCode} companyLabel={companyLabel}>
+      <FieldQrShell description="전달받은 QR 링크를 확인할 수 없습니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.">
         <InvalidQrNotice>
           이 QR 링크는 아직 사용할 수 없습니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.
         </InvalidQrNotice>
@@ -142,7 +138,7 @@ export default async function RiskSharePublicFieldEntryPage({
   ];
 
   return (
-    <FieldQrShell companyCode={companyCode} companyLabel={companyLabel}>
+    <FieldQrShell description={`${companyLabel} 구성원이 오늘 필요한 확인과 의견 제출을 진행합니다.`}>
       <div className="space-y-3 p-4">
         {cards.map((card) => {
           const className = `block rounded-3xl border p-4 shadow-sm ${card.surface} transition hover:-translate-y-0.5 hover:shadow-md`;
