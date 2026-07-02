@@ -128,7 +128,7 @@ export default async function RiskSharePublicFieldEntryPage({
       title: "익명 의견·아차사고·개선제안",
       description:
         "이름과 확인서명 없이 현장 불편, 아차사고, 개선제안을 남깁니다.",
-      href: buildHref("/field/anonymous-feedback", companyCode),
+      href: buildHref("/risk-share/anonymous", companyCode),
       badge: "익명 제출",
       accent: "bg-amber-500",
       surface: "border-amber-100 bg-amber-50/90",
