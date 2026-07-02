@@ -344,7 +344,10 @@ export default async function RiskSharePublicFieldEntryPage({
             확인이 어려우면 현장 담당자에게 문의해 주세요.
           </p>
 
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3">
+          <Link
+            href={buildHref("/risk-share/visitor", companyCode)}
+            className="block rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:shadow-sm"
+          >
             <div className="flex items-start justify-between gap-2">
               <h2 className="text-xs font-black leading-5 text-slate-700">
                 외부인 출입 전 안전 안내
@@ -354,10 +357,9 @@ export default async function RiskSharePublicFieldEntryPage({
               </span>
             </div>
             <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-slate-600">
-              방문·납품·협력업체 확인은 출입구의 별도 QR로 준비 중입니다. 지금은 현장 담당자에게
-              안내를 요청해 주세요.
+              방문·납품·협력업체는 출입 전 안전 안내를 확인합니다. 제출 접수는 준비 중입니다.
             </p>
-          </div>
+          </Link>
         </div>
       </div>
 
