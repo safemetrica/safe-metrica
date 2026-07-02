@@ -25,22 +25,31 @@ function buildHref(path: string, companyCode: string) {
 function FieldQrShell({
   children,
   description,
+  companyLabel,
 }: {
   children: React.ReactNode;
   description: string;
+  companyLabel?: string;
 }) {
   return (
     <main className="min-h-screen bg-[#EEF4F8] px-4 py-5 text-slate-950">
       <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
         <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl">
           <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-6 text-white">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-black tracking-tight text-white/90">
-              SafeMetrica 위공팩 현장 QR
+            <div className="flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-black tracking-tight text-white/90">
+                SafeMetrica 위공팩
+              </div>
+              {companyLabel ? (
+                <div className="inline-flex items-center rounded-full bg-white/15 px-3 py-1.5 text-[0.68rem] font-black tracking-tight text-white/90">
+                  {companyLabel}
+                </div>
+              ) : null}
             </div>
             <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight">
-              위험성평가
+              현장 안전운영
               <br />
-              공유확인 운영팩
+              확인 · 의견 접수
             </h1>
             <p className="mt-4 text-sm font-semibold leading-7 text-white/85">
               {description}
@@ -51,7 +60,8 @@ function FieldQrShell({
         </div>
 
         <p className="mt-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
-          근로자와 외부인은 로그인 없이 QR로 참여합니다. 기록은 관리자 검토와 사업주 확인을 돕기 위한 안전운영 자료로 남습니다.
+          근로자와 외부인은 로그인 없이 QR로 참여합니다. 확인과 의견은 관리자 검토를 거쳐
+          월간 안전운영 기록으로 남습니다.
         </p>
       </section>
     </main>
@@ -64,6 +74,25 @@ function InvalidQrNotice({ children }: { children: React.ReactNode }) {
       <div className="rounded-3xl border border-amber-100 bg-amber-50 px-5 py-5 text-sm font-bold leading-7 text-amber-950">
         {children}
       </div>
+    </div>
+  );
+}
+
+function OperatingFlowStrip() {
+  const steps = ["확인·의견 제출", "관리자 검토", "월간 운영요약"];
+
+  return (
+    <div className="flex items-center gap-1.5 px-4 pt-4">
+      {steps.map((step, index) => (
+        <div key={step} className="flex flex-1 items-center gap-1.5">
+          <div className="flex min-h-9 flex-1 items-center justify-center rounded-xl bg-slate-100 px-2 py-2 text-center text-[0.68rem] font-black leading-4 text-slate-600">
+            {step}
+          </div>
+          {index < steps.length - 1 ? (
+            <span className="shrink-0 text-slate-300">→</span>
+          ) : null}
+        </div>
+      ))}
     </div>
   );
 }
@@ -106,6 +135,7 @@ export default async function RiskSharePublicFieldEntryPage({
       title: "이번 달 위험성평가 공유확인",
       description:
         "공유된 위험요인과 안전조치를 확인하고 근로자 확인 기록을 남깁니다.",
+      followUp: "제출 내용은 관리자 검토를 거쳐 다음 위험성평가 재검토 후보로 이어집니다.",
       href: buildHref("/field/participation", companyCode),
       badge: "공유확인",
       accent: "bg-blue-600",
@@ -117,6 +147,7 @@ export default async function RiskSharePublicFieldEntryPage({
       title: "작업 전 안전확인",
       description:
         "작업 전 보호구, 동선, 적재·하역, 설비 주변 주의사항을 짧게 확인합니다.",
+      followUp: "확인 기록은 관리자 검토를 거쳐 월간 운영요약에 반영됩니다.",
       href: buildHref("/field/participation", companyCode),
       badge: "작업 전 확인",
       accent: "bg-emerald-600",
@@ -128,6 +159,7 @@ export default async function RiskSharePublicFieldEntryPage({
       title: "익명 의견·아차사고·개선제안",
       description:
         "이름과 확인서명 없이 현장 불편, 아차사고, 개선제안을 남깁니다.",
+      followUp: "접수된 의견은 관리자 검토를 거쳐 안전운영 자료로 남습니다.",
       href: buildHref("/risk-share/anonymous", companyCode),
       badge: "익명 제출",
       accent: "bg-amber-500",
@@ -138,7 +170,12 @@ export default async function RiskSharePublicFieldEntryPage({
   ];
 
   return (
-    <FieldQrShell description={`${companyLabel} 구성원이 공유확인, 작업 전 확인, 익명 의견 제출을 진행합니다.`}>
+    <FieldQrShell
+      companyLabel={companyLabel}
+      description={`${companyLabel} 구성원이 공유확인, 작업 전 확인, 익명 의견 제출을 진행합니다.`}
+    >
+      <OperatingFlowStrip />
+
       <div className="space-y-3 p-4">
         {cards.map((card) => {
           const className = `block rounded-3xl border p-4 shadow-sm ${card.surface} transition hover:-translate-y-0.5 hover:shadow-md`;
@@ -159,10 +196,13 @@ export default async function RiskSharePublicFieldEntryPage({
                   <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
                     {card.description}
                   </p>
+                  <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+                    {card.followUp}
+                  </p>
                 </div>
               </div>
               <div className="mt-4 flex justify-end">
-                <span className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white">
+                <span className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white">
                   {card.cta}
                 </span>
               </div>
@@ -183,7 +223,7 @@ export default async function RiskSharePublicFieldEntryPage({
                 </span>
               </div>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-                방문자·납품·협력업체 확인은 고객사 운영 방식에 맞춰 별도 QR로 분리해 운영합니다.
+                방문자·납품·협력업체 확인은 고객사 운영 방식에 맞춰 별도 QR로 안내할 예정입니다.
               </p>
             </div>
           </div>
