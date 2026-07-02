@@ -38,10 +38,6 @@ const TODAY_PRIORITY_EXAMPLES = [
   { tag: "외부인", tone: "bg-purple-50 text-purple-700 ring-purple-100", text: "협력업체 출입 전 안전확인 대기" },
 ];
 
-const PENDING_STATUS_CARDS = [
-  { title: "외부인 확인 현황", accent: "border-purple-100 bg-purple-50/60" },
-];
-
 function getCurrentKstMonthRange() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -149,6 +145,48 @@ async function fetchRiskShareAnonymousFeedbackSummary(
   }
 }
 
+const VISITOR_CONFIRMATION_SOURCE = "risk_share_visitor_confirmation_v1";
+const VISITOR_CONFIRMATION_SUMMARY_LIMIT = 500;
+const VISITOR_CONFIRMATION_CARD = { title: "외부인 확인 현황", accent: "border-purple-100 bg-purple-50/60" };
+
+type VisitorConfirmationSummaryRow = {
+  raw_payload: unknown;
+};
+
+type VisitorConfirmationSummary = {
+  status: "ok" | "not_configured" | "failed";
+  count: number;
+};
+
+async function fetchRiskShareVisitorConfirmationSummary(
+  companyCode: string
+): Promise<VisitorConfirmationSummary> {
+  const monthRange = getCurrentKstMonthRange();
+  const query = new URLSearchParams();
+  query.set("select", "raw_payload");
+  query.set("tenant_code", `eq.${companyCode}`);
+  query.set("raw_payload->>source", `eq.${VISITOR_CONFIRMATION_SOURCE}`);
+  query.append("created_at", `gte.${monthRange.createdAtGte}`);
+  query.append("created_at", `lt.${monthRange.createdAtLt}`);
+  query.set("limit", String(VISITOR_CONFIRMATION_SUMMARY_LIMIT));
+
+  try {
+    const rows = await selectSupabaseExportRows<VisitorConfirmationSummaryRow>(
+      "field_participation_submissions",
+      query
+    );
+
+    return { status: "ok", count: rows.length };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      count: 0,
+    };
+  }
+}
+
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
@@ -177,6 +215,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
 
   const participationSummary = await fetchRiskShareParticipationSummary(companyCode);
   const anonymousFeedbackSummary = await fetchRiskShareAnonymousFeedbackSummary(companyCode);
+  const visitorConfirmationSummary = await fetchRiskShareVisitorConfirmationSummary(companyCode);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
@@ -257,19 +296,21 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             </p>
           </div>
 
-          {PENDING_STATUS_CARDS.map((card) => (
-            <div key={card.title} className={`rounded-3xl border p-4 shadow-sm ${card.accent}`}>
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-black text-slate-900">{card.title}</h2>
-                <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                  준비 중
-                </span>
-              </div>
-              <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-                집계 연결 전입니다. 현장 QR 접수가 쌓이면 이 카드에 현황이 표시됩니다.
-              </p>
+          <div className={`rounded-3xl border p-4 shadow-sm ${VISITOR_CONFIRMATION_CARD.accent}`}>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-black text-slate-900">{VISITOR_CONFIRMATION_CARD.title}</h2>
+              <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
+                {visitorConfirmationSummary.status === "ok" ? `${visitorConfirmationSummary.count}건` : "준비 중"}
+              </span>
             </div>
-          ))}
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+              {visitorConfirmationSummary.status === "ok"
+                ? visitorConfirmationSummary.count > 0
+                  ? `이번 달 접수된 외부인 확인 ${visitorConfirmationSummary.count}건입니다.`
+                  : "이번 달 접수된 외부인 확인이 없습니다."
+                : "집계 연결 전입니다. 현장 QR 접수가 쌓이면 이 카드에 현황이 표시됩니다."}
+            </p>
+          </div>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">

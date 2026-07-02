@@ -45,7 +45,6 @@ function getCurrentPeriodKst() {
 }
 
 const PENDING_STATUS_CARDS = [
-  { title: "외부인 출입 전 안전확인", accent: "border-purple-100 bg-purple-50/60" },
   { title: "관리자 검토 · 조치메모", accent: "border-slate-200 bg-slate-50" },
   { title: "다음 위험성평가 보완 후보", accent: "border-rose-100 bg-rose-50/60" },
 ];
@@ -144,6 +143,48 @@ async function fetchRiskShareMonthlyAnonymousFeedbackSummary(
   }
 }
 
+const VISITOR_CONFIRMATION_SOURCE = "risk_share_visitor_confirmation_v1";
+const VISITOR_CONFIRMATION_SUMMARY_LIMIT = 500;
+const VISITOR_CONFIRMATION_CARD = { title: "외부인 출입 전 안전확인", accent: "border-purple-100 bg-purple-50/60" };
+
+type VisitorConfirmationSummaryRow = {
+  raw_payload: unknown;
+};
+
+type VisitorConfirmationSummary = {
+  status: "ok" | "not_configured" | "failed";
+  count: number;
+};
+
+async function fetchRiskShareMonthlyVisitorConfirmationSummary(
+  companyCode: string,
+  period: { createdAtGte: string; createdAtLt: string }
+): Promise<VisitorConfirmationSummary> {
+  const query = new URLSearchParams();
+  query.set("select", "raw_payload");
+  query.set("tenant_code", `eq.${companyCode}`);
+  query.set("raw_payload->>source", `eq.${VISITOR_CONFIRMATION_SOURCE}`);
+  query.append("created_at", `gte.${period.createdAtGte}`);
+  query.append("created_at", `lt.${period.createdAtLt}`);
+  query.set("limit", String(VISITOR_CONFIRMATION_SUMMARY_LIMIT));
+
+  try {
+    const rows = await selectSupabaseExportRows<VisitorConfirmationSummaryRow>(
+      "field_participation_submissions",
+      query
+    );
+
+    return { status: "ok", count: rows.length };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      count: 0,
+    };
+  }
+}
+
 const DOC_ACTIONS = ["부록 · 원문 기록 보기", "부록 · 세부 기록 보기", "PDF로 저장"];
 
 export default async function RiskShareMonthlySummaryPage({ searchParams }: PageProps) {
@@ -174,6 +215,7 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
 
   const participationSummary = await fetchRiskShareMonthlyParticipationSummary(companyCode, period);
   const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(companyCode, period);
+  const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(companyCode, period);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
@@ -234,6 +276,22 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
                 ? anonymousFeedbackSummary.count > 0
                   ? `이번 달 접수된 익명 의견 ${anonymousFeedbackSummary.count}건입니다.`
                   : "이번 달 접수된 익명 의견이 없습니다."
+                : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
+            </p>
+          </div>
+
+          <div className={`rounded-3xl border p-4 shadow-sm ${VISITOR_CONFIRMATION_CARD.accent}`}>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-black text-slate-900">{VISITOR_CONFIRMATION_CARD.title}</h2>
+              <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
+                {visitorConfirmationSummary.status === "ok" ? `${visitorConfirmationSummary.count}건` : "준비 중"}
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+              {visitorConfirmationSummary.status === "ok"
+                ? visitorConfirmationSummary.count > 0
+                  ? `이번 달 접수된 외부인 확인 ${visitorConfirmationSummary.count}건입니다.`
+                  : "이번 달 접수된 외부인 확인이 없습니다."
                 : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
             </p>
           </div>
