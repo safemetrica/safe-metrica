@@ -6,6 +6,10 @@ import {
   getOwnerTenantOnboardingValidationMessages,
   validateOwnerTenantOnboardingDraft,
 } from "@/lib/tenant-onboarding/ownerTenantOnboardingValidation";
+import {
+  RISK_SHARE_LANGUAGE_OPTIONS,
+  buildRiskShareLangHref,
+} from "@/lib/risk-share/riskShareI18n";
 
 export const dynamic = "force-dynamic";
 
@@ -98,35 +102,53 @@ function buildOwnerOnlyLinks(companyCode: string) {
 }
 
 function buildRiskShareLinkPack(companyCode: string) {
-  const encodedCode = encodeURIComponent(companyCode);
-
-  return [
+  const entries: {
+    label: string;
+    path: string;
+    query: Record<string, string>;
+    description: string;
+  }[] = [
     {
       label: "현장 QR 입구",
-      href: `/risk-share/field?company=${encodedCode}`,
+      path: "/risk-share/field",
+      query: { company: companyCode },
       description: "근로자와 외부인이 공유확인, 작업 전 확인, 익명 의견 입구를 선택합니다.",
     },
     {
       label: "위험성평가 공유확인",
-      href: `/risk-share/participation?company=${encodedCode}&mode=monthly`,
+      path: "/risk-share/participation",
+      query: { company: companyCode, mode: "monthly" },
       description: "이번 달 공유된 위험요인과 안전조치를 확인합니다.",
     },
     {
       label: "작업 전 안전확인",
-      href: `/risk-share/participation?company=${encodedCode}&mode=prework`,
+      path: "/risk-share/participation",
+      query: { company: companyCode, mode: "prework" },
       description: "작업 전 보호구, 동선, 적재·하역, 설비 주변 주의사항을 확인합니다.",
     },
     {
       label: "익명 의견함",
-      href: `/risk-share/anonymous?company=${encodedCode}`,
+      path: "/risk-share/anonymous",
+      query: { company: companyCode },
       description: "이름 없이 의견, 아차사고, 개선제안을 남깁니다.",
     },
     {
       label: "외부인 출입 전 안전 안내",
-      href: `/risk-share/visitor?company=${encodedCode}`,
+      path: "/risk-share/visitor",
+      query: { company: companyCode },
       description: "방문·납품·협력업체가 출입 전 안전 안내를 확인합니다.",
     },
   ];
+
+  return entries.map((entry) => ({
+    label: entry.label,
+    description: entry.description,
+    languageLinks: RISK_SHARE_LANGUAGE_OPTIONS.map((language) => ({
+      code: language.code,
+      label: language.code === "ko" ? `기본 · ${language.label}` : language.label,
+      href: buildRiskShareLangHref(entry.path, entry.query, language.code),
+    })),
+  }));
 }
 
 const 미리보기Rows = [
@@ -276,19 +298,31 @@ export default async function OwnerTenantRegistryDraftPage({
                   </p>
                   <div className="mt-2 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                     {createdLinkPack.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50 hover:border-emerald-200"
+                      <div
+                        key={link.label}
+                        className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50"
                       >
                         <span className="block text-base font-black">{link.label}</span>
-                        <span className="mt-2 block text-xs leading-5 text-emerald-100/80">
-                          {link.href}
-                        </span>
                         <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
                           {link.description}
                         </span>
-                      </Link>
+                        <div className="mt-3 space-y-1.5">
+                          {link.languageLinks.map((languageLink) => (
+                            <Link
+                              key={languageLink.code}
+                              href={languageLink.href}
+                              className="flex items-center gap-2 rounded-xl border border-emerald-300/30 bg-slate-950/30 px-3 py-2 hover:border-emerald-200"
+                            >
+                              <span className="shrink-0 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[0.62rem] font-black text-emerald-200">
+                                {languageLink.label}
+                              </span>
+                              <span className="truncate text-[0.7rem] font-bold text-emerald-100/80">
+                                {languageLink.href}
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
