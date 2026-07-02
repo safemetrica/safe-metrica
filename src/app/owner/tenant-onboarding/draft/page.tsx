@@ -80,7 +80,7 @@ function getSingleSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function buildRiskShareLinkPack(companyCode: string) {
+function buildOwnerOnlyLinks(companyCode: string) {
   const encodedCode = encodeURIComponent(companyCode);
 
   return [
@@ -94,10 +94,37 @@ function buildRiskShareLinkPack(companyCode: string) {
       href: `/monthly-report/risk-share?company=${encodedCode}`,
       description: "월간 안전운영 결과물과 고객 전달자료를 확인합니다.",
     },
+  ];
+}
+
+function buildRiskShareLinkPack(companyCode: string) {
+  const encodedCode = encodeURIComponent(companyCode);
+
+  return [
     {
-      label: "근로자 QR",
+      label: "현장 QR 입구",
       href: `/risk-share/field?company=${encodedCode}`,
-      description: "근로자가 공유확인, 작업 전 확인, 의견 제출 입구를 선택합니다.",
+      description: "근로자와 외부인이 공유확인, 작업 전 확인, 익명 의견 입구를 선택합니다.",
+    },
+    {
+      label: "위험성평가 공유확인",
+      href: `/risk-share/participation?company=${encodedCode}&mode=monthly`,
+      description: "이번 달 공유된 위험요인과 안전조치를 확인합니다.",
+    },
+    {
+      label: "작업 전 안전확인",
+      href: `/risk-share/participation?company=${encodedCode}&mode=prework`,
+      description: "작업 전 보호구, 동선, 적재·하역, 설비 주변 주의사항을 확인합니다.",
+    },
+    {
+      label: "익명 의견함",
+      href: `/risk-share/anonymous?company=${encodedCode}`,
+      description: "이름 없이 의견, 아차사고, 개선제안을 남깁니다.",
+    },
+    {
+      label: "외부인 출입 전 안전 안내",
+      href: `/risk-share/visitor?company=${encodedCode}`,
+      description: "방문·납품·협력업체가 출입 전 안전 안내를 확인합니다.",
     },
   ];
 }
@@ -145,6 +172,9 @@ export default async function OwnerTenantRegistryDraftPage({
   const createdStatus = getSingleSearchParam(params.created);
   const createdCompanyCode = getSingleSearchParam(params.companyCode) ?? "";
   const errorCode = getSingleSearchParam(params.error) ?? "";
+  const createdOwnerLinks = createdCompanyCode
+    ? buildOwnerOnlyLinks(createdCompanyCode)
+    : [];
   const createdLinkPack = createdCompanyCode
     ? buildRiskShareLinkPack(createdCompanyCode)
     : [];
@@ -216,23 +246,53 @@ export default async function OwnerTenantRegistryDraftPage({
                 오류 코드: {errorCode}. 고객사 코드, 고객사명, 기존 고객 코드 사용 여부를 확인하세요.
               </p>
             ) : (
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                {createdLinkPack.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50 hover:border-emerald-200"
-                  >
-                    <span className="block text-base font-black">{link.label}</span>
-                    <span className="mt-2 block text-xs leading-5 text-emerald-100/80">
-                      {link.href}
-                    </span>
-                    <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
-                      {link.description}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              <>
+                <div className="mt-4">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200/70">
+                    운영자 전용
+                  </p>
+                  <div className="mt-2 grid gap-3 md:grid-cols-2">
+                    {createdOwnerLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50 hover:border-emerald-200"
+                      >
+                        <span className="block text-base font-black">{link.label}</span>
+                        <span className="mt-2 block text-xs leading-5 text-emerald-100/80">
+                          {link.href}
+                        </span>
+                        <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
+                          {link.description}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200/70">
+                    고객 전달용 링크팩 · 위험성평가 공유확인 운영팩
+                  </p>
+                  <div className="mt-2 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {createdLinkPack.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50 hover:border-emerald-200"
+                      >
+                        <span className="block text-base font-black">{link.label}</span>
+                        <span className="mt-2 block text-xs leading-5 text-emerald-100/80">
+                          {link.href}
+                        </span>
+                        <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
+                          {link.description}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </section>
         ) : null}
