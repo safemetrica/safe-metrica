@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
+import {
+  RISK_SHARE_LANGUAGE_OPTIONS,
+  RISK_SHARE_LANGUAGES_SOON,
+  buildRiskShareLangHref,
+  getRiskShareCopy,
+  getRiskShareLocale,
+} from "@/lib/risk-share/riskShareI18n";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +22,7 @@ export const metadata: Metadata = {
 type PageProps = {
   searchParams?: Promise<{
     company?: string | string[];
+    lang?: string | string[];
   }>;
 };
 
@@ -33,23 +42,18 @@ function isRiskSharePackTenant(serviceMode?: string | null) {
   return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
 }
 
-const TYPE_CHOICES = [
-  { value: "위험제보", icon: "⚠️", label: "위험해 보여요" },
-  { value: "아차사고", icon: "😨", label: "아차사고 있었어요" },
-  { value: "개선제안", icon: "💡", label: "개선이 필요해요" },
-  { value: "불편사항", icon: "❓", label: "안내가 이해 안 돼요" },
-] as const;
-
 export default async function RiskShareAnonymousFeedbackPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
+  const locale = getRiskShareLocale(readSearchParam(params.lang));
+  const copy = getRiskShareCopy(locale).anonymous;
   const tenant = companyCode
     ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
     : null;
   const isAllowedCompany = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
   const companyLabel = tenant?.name || companyCode || "현장";
   const companyMark = companyLabel.trim().charAt(0) || "현";
-  const returnHref = `/risk-share/field?company=${encodeURIComponent(companyCode)}`;
+  const returnHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, locale);
 
   if (!isAllowedCompany) {
     return (
@@ -57,17 +61,17 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
         <section className="w-full max-w-[430px] rounded-[28px] bg-white p-6 shadow-[0_18px_50px_rgba(11,39,66,0.14)]">
           <p className="text-[13px] font-black text-[#16A085]">SafeMetrica</p>
           <h1 className="mt-3 text-[22px] font-black tracking-[-0.04em]">
-            익명 의견 접수 화면을 열 수 없습니다.
+            {copy.qrCheckingTitle}
           </h1>
           <p className="mt-3 text-sm leading-6 text-[#64748B]">
-            현재 이 익명 의견 경로는 지정된 현장 QR에서만 사용할 수 있습니다.
+            {copy.notAllowedBody}
           </p>
           {companyCode ? (
             <a
               href={returnHref}
               className="mt-5 block rounded-full bg-[#0B2742] px-5 py-3 text-center text-sm font-black text-white"
             >
-              현장 QR 입구로 돌아가기
+              {copy.returnToField}
             </a>
           ) : null}
         </section>
@@ -101,36 +105,47 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
 
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <span aria-hidden="true" className="text-sm">🌐</span>
-            <span className="rounded-full bg-[#0B2742] px-2.5 py-1 text-[0.65rem] font-black text-white">한국어</span>
-            <span className="rounded-full border border-[#E3E7EC] px-2.5 py-1 text-[0.65rem] font-black text-[#64748B]">English</span>
-            <span className="rounded-full border border-[#E3E7EC] px-2.5 py-1 text-[0.65rem] font-black text-[#64748B]">Tiếng Việt</span>
-            <span className="rounded-full border border-[#E3E7EC] px-2 py-1 text-[0.58rem] font-bold text-[#B7C0CA]">中文</span>
-            <span className="rounded-full border border-[#E3E7EC] px-2 py-1 text-[0.58rem] font-bold text-[#B7C0CA]">ไทย</span>
-            <span className="rounded-full border border-[#E3E7EC] px-2 py-1 text-[0.58rem] font-bold text-[#B7C0CA]">Bahasa</span>
-            <span className="rounded-full border border-[#E3E7EC] px-2 py-1 text-[0.58rem] font-bold text-[#B7C0CA]">Русский</span>
+            {RISK_SHARE_LANGUAGE_OPTIONS.map((language) => (
+              <Link
+                key={language.code}
+                href={buildRiskShareLangHref("/risk-share/anonymous", { company: companyCode }, language.code)}
+                className={`rounded-full px-2.5 py-1 text-[0.65rem] font-black ${
+                  language.code === locale
+                    ? "bg-[#0B2742] text-white"
+                    : "border border-[#E3E7EC] text-[#64748B]"
+                }`}
+              >
+                {language.label}
+              </Link>
+            ))}
+            {RISK_SHARE_LANGUAGES_SOON.map((language) => (
+              <span
+                key={language}
+                className="rounded-full border border-[#E3E7EC] px-2 py-1 text-[0.58rem] font-bold text-[#B7C0CA]"
+              >
+                {language}
+              </span>
+            ))}
           </div>
 
           <h1 className="mt-4 text-[22px] font-black tracking-[-0.04em] text-[#0B2742]">
-            익명 의견함
+            {copy.heroTitle}
           </h1>
           <p className="mt-2 text-[15px] leading-7 text-[#64748B]">
-            이름 없이 남길 수 있습니다. 관리자가 검토한 뒤 반영합니다.
+            {copy.heroSub}
           </p>
         </header>
 
         <section className="flex-1 overflow-y-auto px-5 pb-28 pt-5">
           <div className="flex items-start gap-3 rounded-[20px] border border-[#BCE3D6] bg-[#EAF8F3] p-4">
             <span aria-hidden="true" className="text-lg leading-none">🔒</span>
-            <p className="text-sm leading-6 text-[#1C3A57]">
-              <b>이 화면에는 이름·서명 칸이 없습니다.</b> 누가 썼는지 표시되지 않으며, 내용만
-              관리자에게 전달됩니다.
-            </p>
+            <p className="text-sm leading-6 text-[#1C3A57]">{copy.bannerBody}</p>
           </div>
 
           <fieldset className="mt-5">
-            <legend className="text-sm font-black text-[#0B2742]">어떤 내용인가요? *</legend>
+            <legend className="text-sm font-black text-[#0B2742]">{copy.typeLegend} *</legend>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {TYPE_CHOICES.map((choice, index) => (
+              {copy.typeChoices.map((choice, index) => (
                 <label
                   key={choice.value}
                   className="flex items-center gap-2 rounded-2xl border border-[#E3E7EC] px-3 py-3 text-sm font-bold text-[#0B2742] has-[:checked]:border-[#16A085] has-[:checked]:bg-[#EAF8F3]"
@@ -150,28 +165,28 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
           </fieldset>
 
           <label className="mt-4 block text-sm font-black text-[#0B2742]">
-            위치 · 작업구역
+            {copy.locationLabel}
             <input
               name="location"
-              placeholder="예: 작업장 입구 / 통로"
+              placeholder={copy.locationPlaceholder}
               className="mt-2 w-full rounded-2xl border border-[#E3E7EC] px-4 py-3 text-base text-[#0B2742] outline-none focus:border-[#16A085]"
             />
           </label>
 
           <label className="mt-4 block text-sm font-black text-[#0B2742]">
-            내용 *
+            {copy.contentLabel} *
             <textarea
               name="content"
               required
               minLength={2}
-              placeholder="어떤 상황이었는지 편하게 적어 주세요."
+              placeholder={copy.contentPlaceholder}
               rows={6}
               className="mt-2 w-full resize-none rounded-2xl border border-[#E3E7EC] px-4 py-3 text-base leading-7 text-[#0B2742] outline-none focus:border-[#16A085]"
             />
           </label>
 
           <label className="mt-4 block text-sm font-black text-[#0B2742]">
-            사진 첨부 <span className="font-bold text-[#94A3B8]">· 선택</span>
+            {copy.photoLabel} <span className="font-bold text-[#94A3B8]">· {copy.photoOptional}</span>
             <input
               name="evidenceFiles"
               type="file"
@@ -182,21 +197,15 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
           </label>
 
           <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm font-black text-amber-900">제출 전 확인</p>
-            <p className="mt-2 text-sm leading-6 text-amber-800">
-              이 화면은 익명 의견 접수용입니다. 작업 전 확인 기록은 별도 확인 화면에서 제출해야
-              합니다. 어떤 언어로 적어도 접수됩니다.
-            </p>
+            <p className="text-sm font-black text-amber-900">{copy.preSubmitTitle}</p>
+            <p className="mt-2 text-sm leading-6 text-amber-800">{copy.preSubmitBody}</p>
           </div>
 
           <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
             <p className="text-[0.65rem] font-black uppercase tracking-wide text-blue-700">
-              접수 이후
+              {copy.afterSubmitLabel}
             </p>
-            <p className="mt-1.5 text-sm font-bold leading-6 text-blue-950">
-              제출 내용은 관리자 검토 후보로 접수되어, 검토를 거쳐 월간 안전운영 요약에
-              반영됩니다.
-            </p>
+            <p className="mt-1.5 text-sm font-bold leading-6 text-blue-950">{copy.afterSubmitBody}</p>
           </div>
         </section>
 
@@ -205,13 +214,13 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
             type="submit"
             className="w-full rounded-full bg-[#0B2742] px-5 py-4 text-base font-black text-white"
           >
-            익명으로 제출하기 →
+            {copy.submitCta}
           </button>
           <a
             href={returnHref}
             className="mt-3 block w-full rounded-full px-5 py-3 text-center text-sm font-black text-[#64748B]"
           >
-            현장 QR 입구로 돌아가기
+            {copy.returnToField}
           </a>
         </footer>
       </form>

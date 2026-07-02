@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
+import {
+  RISK_SHARE_LANGUAGE_OPTIONS,
+  RISK_SHARE_LANGUAGES_SOON,
+  buildRiskShareLangHref,
+  getRiskShareCopy,
+  getRiskShareLocale,
+  type RiskShareLocale,
+} from "@/lib/risk-share/riskShareI18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -7,6 +15,7 @@ export const revalidate = 0;
 type PageProps = {
   searchParams?: Promise<{
     company?: string;
+    lang?: string;
   }>;
 };
 
@@ -18,8 +27,8 @@ function normalizeCompanyCode(value?: string | null) {
     .slice(0, 64);
 }
 
-function buildHref(path: string, companyCode: string) {
-  return `${path}?company=${encodeURIComponent(companyCode)}`;
+function buildHref(path: string, companyCode: string, lang: RiskShareLocale) {
+  return buildRiskShareLangHref(path, { company: companyCode }, lang);
 }
 
 function getCurrentMonthKst() {
@@ -38,16 +47,14 @@ function PageShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NoticeCard({ children }: { children: React.ReactNode }) {
+function NoticeCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl">
       <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-5 text-white">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[0.68rem] font-black tracking-tight text-white/90">
           SafeMetrica
         </div>
-        <h1 className="mt-4 text-xl font-black leading-tight tracking-tight">
-          현장 QR 확인 중
-        </h1>
+        <h1 className="mt-4 text-xl font-black leading-tight tracking-tight">{title}</h1>
       </div>
       <div className="p-3">
         <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-bold leading-6 text-amber-950">
@@ -84,26 +91,24 @@ function ActivityIcon({ kind }: { kind: "share" | "prework" | "anonymous" }) {
   );
 }
 
-function LangBar() {
-  const primaryLanguages = ["한국어", "English", "Tiếng Việt"];
-  const soonLanguages = ["中文", "ไทย", "Bahasa", "Русский"];
-
+function LangBar({ companyCode, activeLocale }: { companyCode: string; activeLocale: RiskShareLocale }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <span aria-hidden="true" className="text-sm">🌐</span>
-      {primaryLanguages.map((language, index) => (
-        <span
-          key={language}
+      {RISK_SHARE_LANGUAGE_OPTIONS.map((language) => (
+        <Link
+          key={language.code}
+          href={buildHref("/risk-share/field", companyCode, language.code)}
           className={`rounded-full px-2.5 py-1 text-[0.65rem] font-black ${
-            index === 0
+            language.code === activeLocale
               ? "bg-white text-[#0B5EA8]"
               : "border border-white/25 bg-white/5 text-white/70"
           }`}
         >
-          {language}
-        </span>
+          {language.label}
+        </Link>
       ))}
-      {soonLanguages.map((language) => (
+      {RISK_SHARE_LANGUAGES_SOON.map((language) => (
         <span
           key={language}
           className="rounded-full border border-white/10 px-2 py-1 text-[0.6rem] font-bold text-white/35"
@@ -115,24 +120,17 @@ function LangBar() {
   );
 }
 
-function Trail() {
-  const steps = [
-    { label: "공유", now: false },
-    { label: "확인 — 지금 단계", now: true },
-    { label: "관리자 검토", now: false },
-    { label: "월간 안전운영 요약", now: false },
-  ];
-
+function Trail({ steps }: { steps: string[] }) {
   return (
     <div aria-label="기록 흐름" className="flex items-stretch gap-1 px-3 pt-3">
-      {steps.map((step) => (
+      {steps.map((step, index) => (
         <span
-          key={step.label}
+          key={step}
           className={`flex flex-1 items-center justify-center rounded-lg px-1.5 py-1.5 text-center text-[0.62rem] font-black leading-4 ${
-            step.now ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-500"
+            index === 1 ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-500"
           }`}
         >
-          {step.label}
+          {step}
         </span>
       ))}
     </div>
@@ -144,6 +142,8 @@ export default async function RiskSharePublicFieldEntryPage({
 }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(params.company);
+  const locale = getRiskShareLocale(params.lang);
+  const copy = getRiskShareCopy(locale).field;
   const tenant = companyCode
     ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
     : null;
@@ -156,9 +156,7 @@ export default async function RiskSharePublicFieldEntryPage({
   if (!companyCode) {
     return (
       <PageShell>
-        <NoticeCard>
-          회사코드가 포함된 QR 링크가 필요합니다. 현장 담당자에게 새 QR 링크를 요청해 주세요.
-        </NoticeCard>
+        <NoticeCard title={copy.qrCheckingTitle}>{copy.noCodeBody}</NoticeCard>
       </PageShell>
     );
   }
@@ -166,9 +164,7 @@ export default async function RiskSharePublicFieldEntryPage({
   if (!isRiskShareCustomer) {
     return (
       <PageShell>
-        <NoticeCard>
-          이 QR 링크는 아직 사용할 수 없습니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.
-        </NoticeCard>
+        <NoticeCard title={copy.qrCheckingTitle}>{copy.notRegisteredBody}</NoticeCard>
       </PageShell>
     );
   }
@@ -178,34 +174,34 @@ export default async function RiskSharePublicFieldEntryPage({
   const activities = [
     {
       kind: "share" as const,
-      title: "위험성평가 공유확인",
-      badge: "공유확인",
-      description: "이번 달 공유된 위험요인을 확인합니다. 약 3분.",
-      followUp: "관리자 검토를 거쳐 다음 위험성평가 재검토 후보로 이어집니다.",
-      href: `${buildHref("/risk-share/participation", companyCode)}&mode=monthly`,
-      cta: "공유확인 시작",
+      title: copy.shareTitle,
+      badge: copy.shareBadge,
+      description: copy.shareDescription,
+      followUp: copy.shareFollowUp,
+      href: `${buildHref("/risk-share/participation", companyCode, locale)}&mode=monthly`,
+      cta: copy.shareCta,
       accent: "from-blue-600 to-blue-500",
       ring: "ring-blue-100",
     },
     {
       kind: "prework" as const,
-      title: "작업 전 안전확인",
-      badge: "작업 전 확인",
-      description: "작업 전 주의사항을 확인합니다. 매일 1회.",
-      followUp: "확인 기록은 관리자 검토를 거쳐 월간 안전운영 요약에 반영됩니다.",
-      href: `${buildHref("/risk-share/participation", companyCode)}&mode=prework`,
-      cta: "작업 전 확인 시작",
+      title: copy.preworkTitle,
+      badge: copy.preworkBadge,
+      description: copy.preworkDescription,
+      followUp: copy.preworkFollowUp,
+      href: `${buildHref("/risk-share/participation", companyCode, locale)}&mode=prework`,
+      cta: copy.preworkCta,
       accent: "from-emerald-600 to-emerald-500",
       ring: "ring-emerald-100",
     },
     {
       kind: "anonymous" as const,
-      title: "익명 의견 · 아차사고 · 개선제안",
-      badge: "이름 없이",
-      description: "이름 없이 의견이나 위험신호를 남깁니다.",
-      followUp: "접수된 의견은 관리자 검토를 거쳐 안전운영 자료로 남습니다.",
-      href: buildHref("/risk-share/anonymous", companyCode),
-      cta: "익명 의견함 열기",
+      title: copy.anonTitle,
+      badge: copy.anonBadge,
+      description: copy.anonDescription,
+      followUp: copy.anonFollowUp,
+      href: buildHref("/risk-share/anonymous", companyCode, locale),
+      cta: copy.anonCta,
       accent: "from-amber-500 to-amber-400",
       ring: "ring-amber-100",
     },
@@ -228,22 +224,22 @@ export default async function RiskSharePublicFieldEntryPage({
           </div>
 
           <h1 className="mt-3 text-2xl font-black leading-tight tracking-tight">
-            우리 작업장 안전 확인
+            {copy.heroTitle}
           </h1>
           <p className="mt-1.5 text-xs font-semibold leading-5 text-white/85">
-            QR로 들어오셨네요. 아래에서 할 일을 선택해 주세요.
+            {copy.heroSub}
           </p>
           <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[0.64rem] font-black text-white/90">
             <i className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-            {currentMonth}월 위험성평가 공유확인 진행 중
+            {copy.periodLabel(currentMonth)}
           </span>
 
           <div className="mt-3 border-t border-white/15 pt-3">
-            <LangBar />
+            <LangBar companyCode={companyCode} activeLocale={locale} />
           </div>
         </div>
 
-        <Trail />
+        <Trail steps={copy.trail} />
 
         <div className="space-y-2 p-3">
           <div className="relative space-y-2">
@@ -290,17 +286,16 @@ export default async function RiskSharePublicFieldEntryPage({
 
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3">
             <p className="text-[0.62rem] font-black uppercase tracking-wide text-blue-700">
-              기록
+              {copy.recordNoteLabel}
             </p>
             <p className="mt-1 text-xs font-bold leading-5 text-blue-950">
-              여기서 남긴 확인과 의견은 우리 회사의 안전운영기록으로 정리되고, 관리자가 검토한
-              뒤 월간 안전운영 요약에 반영됩니다.
+              {copy.recordNoteBody}
             </p>
           </div>
 
           <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <summary className="cursor-pointer text-xs font-black leading-5 text-slate-700 marker:content-none">
-              공유확인 화면 미리보기 — &ldquo;위험성평가 공유확인&rdquo;을 누르면
+              {copy.previewSummary}
             </summary>
             <div className="mt-2 space-y-2">
               <p className="text-[0.68rem] font-bold leading-4 text-slate-500">
@@ -341,31 +336,30 @@ export default async function RiskSharePublicFieldEntryPage({
           </details>
 
           <p className="text-center text-[0.68rem] font-bold leading-5 text-slate-500">
-            확인이 어려우면 현장 담당자에게 문의해 주세요.
+            {copy.helpline}
           </p>
 
           <Link
-            href={buildHref("/risk-share/visitor", companyCode)}
+            href={buildHref("/risk-share/visitor", companyCode, locale)}
             className="block rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:shadow-sm"
           >
             <div className="flex items-start justify-between gap-2">
               <h2 className="text-xs font-black leading-5 text-slate-700">
-                외부인 출입 전 안전 안내
+                {copy.visitorTitle}
               </h2>
               <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[0.62rem] font-black text-slate-500 ring-1 ring-slate-200">
-                준비 중
+                {copy.visitorBadge}
               </span>
             </div>
             <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-slate-600">
-              방문·납품·협력업체는 출입 전 안전 안내를 확인합니다. 제출 접수는 준비 중입니다.
+              {copy.visitorDescription}
             </p>
           </Link>
         </div>
       </div>
 
       <p className="mt-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[0.68rem] font-bold leading-4 text-slate-500 shadow-sm">
-        근로자와 외부인은 로그인 없이 QR로 참여합니다. 확인과 의견은 관리자 검토를 거쳐 월간
-        안전운영 요약으로 남습니다.
+        {copy.footerDisclaimer}
       </p>
     </PageShell>
   );
