@@ -1,4 +1,4 @@
-import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
+import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -38,12 +38,60 @@ const TODAY_PRIORITY_EXAMPLES = [
   { tag: "외부인", tone: "bg-purple-50 text-purple-700 ring-purple-100", text: "협력업체 출입 전 안전확인 대기" },
 ];
 
-const STATUS_CARDS = [
-  { title: "위험성평가 공유확인 현황", accent: "border-blue-100 bg-blue-50/60" },
-  { title: "작업 전 안전확인 현황", accent: "border-emerald-100 bg-emerald-50/60" },
+const PENDING_STATUS_CARDS = [
   { title: "익명 의견 접수함", accent: "border-amber-100 bg-amber-50/60" },
   { title: "외부인 확인 현황", accent: "border-purple-100 bg-purple-50/60" },
 ];
+
+const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
+const RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT = 500;
+
+const PARTICIPATION_SUMMARY_CARDS = [
+  { key: "monthly" as const, title: "위험성평가 공유확인 현황", accent: "border-blue-100 bg-blue-50/60" },
+  { key: "prework" as const, title: "작업 전 안전확인 현황", accent: "border-emerald-100 bg-emerald-50/60" },
+];
+
+type RiskShareParticipationSummaryRow = {
+  raw_payload: { mode?: string } | null;
+};
+
+type RiskShareParticipationSummary = {
+  status: "ok" | "not_configured" | "failed";
+  counts: { monthly: number; prework: number };
+};
+
+async function fetchRiskShareParticipationSummary(
+  companyCode: string
+): Promise<RiskShareParticipationSummary> {
+  const query = new URLSearchParams({
+    select: "raw_payload",
+    tenant_code: `eq.${companyCode}`,
+    "raw_payload->>source": `eq.${RISK_SHARE_PARTICIPATION_SOURCE}`,
+    limit: String(RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT),
+  });
+
+  try {
+    const rows = await selectSupabaseExportRows<RiskShareParticipationSummaryRow>(
+      "field_participation_submissions",
+      query
+    );
+
+    return {
+      status: "ok",
+      counts: {
+        monthly: rows.filter((row) => row.raw_payload?.mode === "monthly").length,
+        prework: rows.filter((row) => row.raw_payload?.mode === "prework").length,
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      counts: { monthly: 0, prework: 0 },
+    };
+  }
+}
 
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
@@ -70,6 +118,8 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       </main>
     );
   }
+
+  const participationSummary = await fetchRiskShareParticipationSummary(companyCode);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
@@ -116,7 +166,25 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
         </section>
 
         <section className="grid gap-3 md:grid-cols-2">
-          {STATUS_CARDS.map((card) => (
+          {PARTICIPATION_SUMMARY_CARDS.map((card) => (
+            <div key={card.title} className={`rounded-3xl border p-4 shadow-sm ${card.accent}`}>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-black text-slate-900">{card.title}</h2>
+                <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
+                  {participationSummary.status === "ok"
+                    ? `${participationSummary.counts[card.key]}건`
+                    : "준비 중"}
+                </span>
+              </div>
+              <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+                {participationSummary.status === "ok"
+                  ? `현장 QR로 접수된 확인 ${participationSummary.counts[card.key]}건입니다.`
+                  : "집계 연결 전입니다. 현장 QR 접수가 쌓이면 이 카드에 현황이 표시됩니다."}
+              </p>
+            </div>
+          ))}
+
+          {PENDING_STATUS_CARDS.map((card) => (
             <div key={card.title} className={`rounded-3xl border p-4 shadow-sm ${card.accent}`}>
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-black text-slate-900">{card.title}</h2>
