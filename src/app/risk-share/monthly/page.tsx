@@ -45,7 +45,6 @@ function getCurrentPeriodKst() {
 }
 
 const PENDING_STATUS_CARDS = [
-  { title: "익명 의견 · 아차사고 · 개선제안", accent: "border-amber-100 bg-amber-50/60" },
   { title: "외부인 출입 전 안전확인", accent: "border-purple-100 bg-purple-50/60" },
   { title: "관리자 검토 · 조치메모", accent: "border-slate-200 bg-slate-50" },
   { title: "다음 위험성평가 보완 후보", accent: "border-rose-100 bg-rose-50/60" },
@@ -103,6 +102,48 @@ async function fetchRiskShareMonthlyParticipationSummary(
   }
 }
 
+const ANONYMOUS_FEEDBACK_SOURCE = "anonymous_worker_feedback_v1";
+const ANONYMOUS_FEEDBACK_SUMMARY_LIMIT = 500;
+const ANONYMOUS_FEEDBACK_CARD = { title: "익명 의견 · 아차사고 · 개선제안", accent: "border-amber-100 bg-amber-50/60" };
+
+type AnonymousFeedbackSummaryRow = {
+  raw_payload: unknown;
+};
+
+type AnonymousFeedbackSummary = {
+  status: "ok" | "not_configured" | "failed";
+  count: number;
+};
+
+async function fetchRiskShareMonthlyAnonymousFeedbackSummary(
+  companyCode: string,
+  period: { createdAtGte: string; createdAtLt: string }
+): Promise<AnonymousFeedbackSummary> {
+  const query = new URLSearchParams();
+  query.set("select", "raw_payload");
+  query.set("tenant_code", `eq.${companyCode}`);
+  query.set("raw_payload->>source", `eq.${ANONYMOUS_FEEDBACK_SOURCE}`);
+  query.append("created_at", `gte.${period.createdAtGte}`);
+  query.append("created_at", `lt.${period.createdAtLt}`);
+  query.set("limit", String(ANONYMOUS_FEEDBACK_SUMMARY_LIMIT));
+
+  try {
+    const rows = await selectSupabaseExportRows<AnonymousFeedbackSummaryRow>(
+      "field_participation_submissions",
+      query
+    );
+
+    return { status: "ok", count: rows.length };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      count: 0,
+    };
+  }
+}
+
 const DOC_ACTIONS = ["부록 · 원문 기록 보기", "부록 · 세부 기록 보기", "PDF로 저장"];
 
 export default async function RiskShareMonthlySummaryPage({ searchParams }: PageProps) {
@@ -132,6 +173,7 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   }
 
   const participationSummary = await fetchRiskShareMonthlyParticipationSummary(companyCode, period);
+  const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(companyCode, period);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
@@ -179,6 +221,22 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
               </p>
             </div>
           ))}
+
+          <div className={`rounded-3xl border p-4 shadow-sm ${ANONYMOUS_FEEDBACK_CARD.accent}`}>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-black text-slate-900">{ANONYMOUS_FEEDBACK_CARD.title}</h2>
+              <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
+                {anonymousFeedbackSummary.status === "ok" ? `${anonymousFeedbackSummary.count}건` : "준비 중"}
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+              {anonymousFeedbackSummary.status === "ok"
+                ? anonymousFeedbackSummary.count > 0
+                  ? `이번 달 접수된 익명 의견 ${anonymousFeedbackSummary.count}건입니다.`
+                  : "이번 달 접수된 익명 의견이 없습니다."
+                : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
+            </p>
+          </div>
 
           {PENDING_STATUS_CARDS.map((card) => (
             <div key={card.title} className={`rounded-3xl border p-4 shadow-sm ${card.accent}`}>
