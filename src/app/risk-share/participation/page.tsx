@@ -18,6 +18,7 @@ type PageProps = {
     company?: string | string[];
     mode?: string | string[];
     lang?: string | string[];
+    submitted?: string | string[];
   }>;
 };
 
@@ -84,6 +85,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
   const mode = normalizeMode(readSearchParam(params.mode));
   const locale = getRiskShareLocale(readSearchParam(params.lang));
+  const submitted = readSearchParam(params.submitted);
   const copy = getRiskShareCopy(locale).participation;
   const modeCopy = copy[mode];
   const accent = MODE_ACCENT[mode];
@@ -175,44 +177,58 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
           </div>
 
           <div className="space-y-3 p-3">
-            <fieldset className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
-              <legend className="px-1 text-sm font-black text-slate-800">{copy.checklistLegend}</legend>
-              {modeCopy.checklist.map((item, index) => (
-                <label
-                  key={item}
-                  className="flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-sm font-bold leading-5 text-slate-700"
+            {submitted === "1" ? (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-950">
+                제출이 완료되었습니다. 확인해 주셔서 감사합니다.
+              </div>
+            ) : null}
+
+            {submitted === "error" ? (
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-950">
+                저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
+              </div>
+            ) : null}
+
+            <form action="/api/risk-share/participation/submit" method="post">
+              <input type="hidden" name="companyCode" value={companyCode} readOnly />
+              <input type="hidden" name="mode" value={mode} readOnly />
+              <input type="hidden" name="lang" value={locale} readOnly />
+
+              <fieldset className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+                <legend className="px-1 text-sm font-black text-slate-800">{copy.checklistLegend}</legend>
+                {modeCopy.checklist.map((item, index) => (
+                  <label
+                    key={item}
+                    className="flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-sm font-bold leading-5 text-slate-700"
+                  >
+                    <input
+                      type="checkbox"
+                      name={`checklist-${mode}-${index}`}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
+                    />
+                    {item}
+                  </label>
+                ))}
+              </fieldset>
+
+              <div className="mt-3 rounded-2xl bg-slate-950 p-4 text-white">
+                <p className="text-[0.62rem] font-black uppercase tracking-wide text-white/50">
+                  {copy.afterSubmitLabel}
+                </p>
+                <p className="mt-1.5 text-xs font-bold leading-5 text-white/90">
+                  {copy.afterSubmitBody}
+                </p>
+              </div>
+
+              <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <button
+                  type="submit"
+                  className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-base font-black text-white"
                 >
-                  <input
-                    type="checkbox"
-                    name={`checklist-${mode}-${index}`}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
-                  />
-                  {item}
-                </label>
-              ))}
-            </fieldset>
-
-            <div className="rounded-2xl bg-slate-950 p-4 text-white">
-              <p className="text-[0.62rem] font-black uppercase tracking-wide text-white/50">
-                {copy.afterSubmitLabel}
-              </p>
-              <p className="mt-1.5 text-xs font-bold leading-5 text-white/90">
-                {copy.afterSubmitBody}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <button
-                type="button"
-                disabled
-                className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-slate-300 px-5 text-base font-black text-slate-600"
-              >
-                {modeCopy.cta}
-              </button>
-              <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
-                {copy.submitPendingNote}
-              </p>
-            </div>
+                  {modeCopy.cta}
+                </button>
+              </div>
+            </form>
 
             <a
               href={returnHref}
