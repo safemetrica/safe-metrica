@@ -2,6 +2,21 @@ export type RiskShareLocale = "ko" | "en" | "vi";
 
 const SUPPORTED_LOCALES: readonly RiskShareLocale[] = ["ko", "en", "vi"];
 
+const EN_MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 export function getRiskShareLocale(value?: string | string[] | null): RiskShareLocale {
   const raw = Array.isArray(value) ? value[0] : value;
   const normalized = (raw ?? "").trim().toLowerCase();
@@ -267,7 +282,7 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
     field: {
       heroTitle: "Workplace Safety Check",
       heroSub: "You scanned the QR. Choose what to do below.",
-      periodLabel: () => "Risk-sharing check in progress this month",
+      periodLabel: (month) => `${EN_MONTH_NAMES[month - 1]} risk-sharing check in progress`,
       trail: ["Share", "Confirm — you are here", "Manager review", "Monthly summary"],
       shareTitle: "Risk-sharing check",
       shareDescription: "Review this month's shared hazards. About 3 min.",
