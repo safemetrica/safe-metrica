@@ -4,20 +4,20 @@ export const dynamic = "force-dynamic";
 
 const entryCards = [
   {
-    title: "관리자 · 대표 로그인",
-    description: "초대받은 운영관리자, 현장관리자, 대표 계정은 고객사 전용 링크로 접속합니다.",
-    badge: "로그인 필요",
-    tone: "border-blue-200 bg-blue-50 text-blue-950",
-  },
-  {
     title: "현장 QR 확인",
-    description: "근로자와 외부인은 로그인하지 않고 현장 QR을 통해 확인·의견 제출을 진행합니다.",
+    description: "근로자와 외부인은 로그인 없이 현장 QR로 참여합니다.",
     badge: "QR 무로그인",
     tone: "border-emerald-200 bg-emerald-50 text-emerald-950",
   },
   {
-    title: "도입 문의 · 가입 신청",
-    description: "신규업체 사용은 기본정보 확인 후 Owner 승인 방식으로 순차 개설합니다.",
+    title: "관리자 · 대표 로그인",
+    description: "관리자와 대표는 전용 보안 링크로 운영기록을 확인합니다.",
+    badge: "로그인 필요",
+    tone: "border-blue-200 bg-blue-50 text-blue-950",
+  },
+  {
+    title: "도입 문의 · 고객 개설",
+    description: "신규 고객은 기본정보 확인 후 Owner 승인 방식으로 개설됩니다.",
     badge: "Owner 승인",
     tone: "border-amber-200 bg-amber-50 text-amber-950",
   },
@@ -38,24 +38,24 @@ export default async function LoginPage({
         <div className="rounded-[2rem] bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-7 text-white shadow-2xl sm:p-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-black tracking-tight text-white/90">
             <img src="/brand/safemetrica-logo-mark.svg" alt="" className="h-5 w-5" />
-            SafeMetrica 산업안전플랫폼
+            SafeMetrica 산업안전 운영기록 플랫폼
           </div>
 
           <h1 className="mt-8 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
-            현장 확인부터
+            현장 확인부터 관리자 검토,
             <br />
-            대표 보고까지
+            월간 안전운영 요약까지
             <br />
-            하나의 운영기록으로.
+            하나의 운영기록으로 연결합니다.
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-8 text-white/85">
-            SafeMetrica는 근로자 확인, 현장관리자 조치, 대표 확인을 연결해
-            산업안전 운영기록을 남기는 플랫폼입니다.
+            근로자와 외부인은 로그인 없이 현장 QR로 참여합니다.
+            관리자와 대표는 전용 보안 링크로 운영기록을 확인합니다.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {["현장 확인", "관리자 조치", "월간 보고"].map((item) => (
+            {["현장 확인", "관리자 검토", "월간 안전운영 요약"].map((item) => (
               <div
                 key={item}
                 className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm font-black text-white shadow-sm"
@@ -66,8 +66,7 @@ export default async function LoginPage({
           </div>
 
           <p className="mt-8 text-xs leading-6 text-white/65">
-            관리자와 대표는 초대받은 계정 또는 고객사 전용 링크로 이용합니다.
-            근로자와 외부인은 현장 QR을 통해 별도 로그인 없이 참여합니다.
+            신규 고객은 기본정보 확인 후 Owner 승인 방식으로 개설됩니다.
           </p>
         </div>
 
@@ -84,7 +83,7 @@ export default async function LoginPage({
               SafeMetrica 로그인
             </h2>
             <p className="mt-2 text-sm font-semibold text-slate-500">
-              산업안전 운영기록 SaaS
+              산업안전 운영기록 플랫폼
             </p>
           </div>
 
@@ -133,7 +132,7 @@ export default async function LoginPage({
           </div>
 
           <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-500">
-            신규업체 사용은 가입 신청 후 Owner 승인으로 개설합니다. 현장 QR은 고객사별로
+            신규 고객은 기본정보 확인 후 Owner 승인 방식으로 개설됩니다. 현장 QR은 고객사별로
             발급되며, 실제 고객자료와 운영기록은 고객사 범위 안에서 관리됩니다.
           </div>
         </div>
