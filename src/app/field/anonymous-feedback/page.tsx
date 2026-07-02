@@ -63,7 +63,7 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
     : `/field/participation?company=${encodeURIComponent(companyCode)}`;
   const returnLabel = isRegisteredRiskShareTenant
     ? "현장 QR 입구로 돌아가기"
-    : "{returnLabel}";
+    : "작업 전 확인 화면으로 돌아가기";
 
   if (!isAllowedCompany) {
     return (
