@@ -39,9 +39,23 @@ const TODAY_PRIORITY_EXAMPLES = [
 ];
 
 const PENDING_STATUS_CARDS = [
-  { title: "익명 의견 접수함", accent: "border-amber-100 bg-amber-50/60" },
   { title: "외부인 확인 현황", accent: "border-purple-100 bg-purple-50/60" },
 ];
+
+function getCurrentKstMonthRange() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const year = kst.getUTCFullYear();
+  const month = kst.getUTCMonth() + 1;
+
+  const startOfMonthUtc = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0) - 9 * 60 * 60 * 1000);
+  const startOfNextMonthUtc = new Date(Date.UTC(year, month, 1, 0, 0, 0) - 9 * 60 * 60 * 1000);
+
+  return {
+    createdAtGte: startOfMonthUtc.toISOString(),
+    createdAtLt: startOfNextMonthUtc.toISOString(),
+  };
+}
 
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT = 500;
@@ -93,6 +107,48 @@ async function fetchRiskShareParticipationSummary(
   }
 }
 
+const ANONYMOUS_FEEDBACK_SOURCE = "anonymous_worker_feedback_v1";
+const ANONYMOUS_FEEDBACK_SUMMARY_LIMIT = 500;
+const ANONYMOUS_FEEDBACK_CARD = { title: "익명 의견 접수함", accent: "border-amber-100 bg-amber-50/60" };
+
+type AnonymousFeedbackSummaryRow = {
+  raw_payload: unknown;
+};
+
+type AnonymousFeedbackSummary = {
+  status: "ok" | "not_configured" | "failed";
+  count: number;
+};
+
+async function fetchRiskShareAnonymousFeedbackSummary(
+  companyCode: string
+): Promise<AnonymousFeedbackSummary> {
+  const monthRange = getCurrentKstMonthRange();
+  const query = new URLSearchParams();
+  query.set("select", "raw_payload");
+  query.set("tenant_code", `eq.${companyCode}`);
+  query.set("raw_payload->>source", `eq.${ANONYMOUS_FEEDBACK_SOURCE}`);
+  query.append("created_at", `gte.${monthRange.createdAtGte}`);
+  query.append("created_at", `lt.${monthRange.createdAtLt}`);
+  query.set("limit", String(ANONYMOUS_FEEDBACK_SUMMARY_LIMIT));
+
+  try {
+    const rows = await selectSupabaseExportRows<AnonymousFeedbackSummaryRow>(
+      "field_participation_submissions",
+      query
+    );
+
+    return { status: "ok", count: rows.length };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      count: 0,
+    };
+  }
+}
+
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
@@ -120,6 +176,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   }
 
   const participationSummary = await fetchRiskShareParticipationSummary(companyCode);
+  const anonymousFeedbackSummary = await fetchRiskShareAnonymousFeedbackSummary(companyCode);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
@@ -183,6 +240,22 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               </p>
             </div>
           ))}
+
+          <div className={`rounded-3xl border p-4 shadow-sm ${ANONYMOUS_FEEDBACK_CARD.accent}`}>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-black text-slate-900">{ANONYMOUS_FEEDBACK_CARD.title}</h2>
+              <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
+                {anonymousFeedbackSummary.status === "ok" ? `${anonymousFeedbackSummary.count}건` : "준비 중"}
+              </span>
+            </div>
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+              {anonymousFeedbackSummary.status === "ok"
+                ? anonymousFeedbackSummary.count > 0
+                  ? `이번 달 접수된 익명 의견 ${anonymousFeedbackSummary.count}건입니다.`
+                  : "이번 달 접수된 익명 의견이 없습니다."
+                : "집계 연결 전입니다. 현장 QR 접수가 쌓이면 이 카드에 현황이 표시됩니다."}
+            </p>
+          </div>
 
           {PENDING_STATUS_CARDS.map((card) => (
             <div key={card.title} className={`rounded-3xl border p-4 shadow-sm ${card.accent}`}>
