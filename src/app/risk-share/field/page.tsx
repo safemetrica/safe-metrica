@@ -35,12 +35,12 @@ function FieldQrShell({
         <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl">
           <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-6 text-white">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-black tracking-tight text-white/90">
-              SafeMetrica 현장 QR
+              SafeMetrica 위공팩 현장 QR
             </div>
             <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight">
               위험성평가
               <br />
-              공유확인 QR
+              공유확인 운영팩
             </h1>
             <p className="mt-4 text-sm font-semibold leading-7 text-white/85">
               {description}
@@ -51,7 +51,7 @@ function FieldQrShell({
         </div>
 
         <p className="mt-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
-          근로자와 외부인은 로그인 없이 QR로 참여합니다. 이 화면은 위험성평가 작성 대행이나 법적 적합성 보장을 의미하지 않습니다.
+          근로자와 외부인은 로그인 없이 QR로 참여합니다. 기록은 관리자 검토와 사업주 확인을 돕기 위한 안전운영 자료로 남습니다.
         </p>
       </section>
     </main>
@@ -103,42 +103,42 @@ export default async function RiskSharePublicFieldEntryPage({
 
   const cards = [
     {
-      title: "위험성평가 공유확인",
+      title: "이번 달 위험성평가 공유확인",
       description:
-        "이번 달 공유된 위험요인과 안전조치를 확인하고 전자확인 기록을 남깁니다.",
+        "공유된 위험요인과 안전조치를 확인하고 근로자 확인 기록을 남깁니다.",
       href: buildHref("/field/participation", companyCode),
-      badge: "근로자 확인",
+      badge: "공유확인",
       accent: "bg-blue-600",
       surface: "border-blue-100 bg-blue-50/80",
       text: "text-blue-950",
-      cta: "확인 시작",
+      cta: "공유확인 시작",
     },
     {
       title: "작업 전 안전확인",
       description:
-        "작업 전 보호구, 이동 동선, 적재·하역, 설비 주변 주의사항을 확인합니다.",
+        "작업 전 보호구, 동선, 적재·하역, 설비 주변 주의사항을 짧게 확인합니다.",
       href: buildHref("/field/participation", companyCode),
       badge: "작업 전 확인",
       accent: "bg-emerald-600",
       surface: "border-emerald-100 bg-emerald-50/80",
       text: "text-emerald-950",
-      cta: "작업 전 확인",
+      cta: "작업 전 확인 시작",
     },
     {
-      title: "익명 의견 · 아차사고 · 개선제안",
+      title: "익명 의견·아차사고·개선제안",
       description:
-        "이름과 서명 없이 현장 의견, 아차사고, 개선제안을 제출합니다.",
+        "이름과 확인서명 없이 현장 불편, 아차사고, 개선제안을 남깁니다.",
       href: buildHref("/field/anonymous-feedback", companyCode),
       badge: "익명 제출",
       accent: "bg-amber-500",
       surface: "border-amber-100 bg-amber-50/90",
       text: "text-amber-950",
-      cta: "의견 제출",
+      cta: "익명 의견 제출",
     },
   ];
 
   return (
-    <FieldQrShell description={`${companyLabel} 구성원이 오늘 필요한 확인과 의견 제출을 진행합니다.`}>
+    <FieldQrShell description={`${companyLabel} 구성원이 공유확인, 작업 전 확인, 익명 의견 제출을 진행합니다.`}>
       <div className="space-y-3 p-4">
         {cards.map((card) => {
           const className = `block rounded-3xl border p-4 shadow-sm ${card.surface} transition hover:-translate-y-0.5 hover:shadow-md`;
@@ -179,11 +179,11 @@ export default async function RiskSharePublicFieldEntryPage({
                   외부인 출입 안전확인
                 </h2>
                 <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[0.68rem] font-black text-slate-500">
-                  별도 QR
+                  준비 중
                 </span>
               </div>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-                방문자, 납품, 협력업체 확인은 고객사 운영 방식에 맞춰 별도 QR로 안내합니다.
+                방문자·납품·협력업체 확인은 고객사 운영 방식에 맞춰 별도 QR로 분리해 운영합니다.
               </p>
             </div>
           </div>
