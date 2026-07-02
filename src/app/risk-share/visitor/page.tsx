@@ -15,6 +15,7 @@ type PageProps = {
   searchParams?: Promise<{
     company?: string | string[];
     lang?: string | string[];
+    submitted?: string | string[];
   }>;
 };
 
@@ -38,6 +39,7 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
   const locale = getRiskShareLocale(readSearchParam(params.lang));
+  const submitted = readSearchParam(params.submitted);
   const copy = getRiskShareCopy(locale).visitor;
   const tenant = companyCode
     ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
@@ -130,75 +132,89 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
           </div>
 
           <div className="space-y-4 p-4">
-            <fieldset>
-              <legend className="text-sm font-black text-slate-800">{copy.purposeLegend}</legend>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {copy.purposes.map((purpose, index) => (
-                  <label
-                    key={purpose}
-                    className="flex items-center gap-2 rounded-2xl border border-slate-200 px-3 py-3 text-sm font-bold text-slate-800 has-[:checked]:border-blue-400 has-[:checked]:bg-blue-50"
-                  >
-                    <input
-                      type="radio"
-                      name="visitPurpose"
-                      defaultChecked={index === 1}
-                      className="h-4 w-4 shrink-0 border-slate-300 text-blue-600"
-                    />
-                    {purpose}
-                  </label>
-                ))}
+            {submitted === "1" ? (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-950">
+                확인이 접수되었습니다.
               </div>
-            </fieldset>
+            ) : null}
 
-            <label className="block text-sm font-black text-slate-800">
-              {copy.companyLabel}
-              <input
-                name="visitorCompany"
-                placeholder={copy.companyPlaceholder}
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
-              />
-            </label>
-
-            <label className="block text-sm font-black text-slate-800">
-              {copy.nameLabel}
-              <input
-                name="visitorName"
-                placeholder={copy.namePlaceholder}
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
-              />
-            </label>
-
-            <div>
-              <p className="text-sm font-black text-slate-800">{copy.noticesLegend}</p>
-              <div className="mt-2 space-y-2">
-                {copy.notices.map((notice) => (
-                  <div key={notice.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    <h4 className="text-sm font-black text-slate-900">
-                      {notice.icon} {notice.title}
-                    </h4>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{notice.body}</p>
-                  </div>
-                ))}
+            {submitted === "error" ? (
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-950">
+                저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
               </div>
-            </div>
+            ) : null}
 
-            <label className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-bold leading-5 text-slate-700">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300" />
-              {copy.confirmLabel}
-            </label>
+            <form action="/api/risk-share/visitor/submit" method="post" className="space-y-4">
+              <input type="hidden" name="companyCode" value={companyCode} readOnly />
+              <input type="hidden" name="lang" value={locale} readOnly />
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <button
-                type="button"
-                disabled
-                className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-slate-300 px-5 text-sm font-black text-slate-600"
-              >
-                {copy.submitCta}
-              </button>
-              <p className="mt-3 text-xs font-bold leading-5 text-slate-500">
-                {copy.submitPendingNote}
-              </p>
-            </div>
+              <fieldset>
+                <legend className="text-sm font-black text-slate-800">{copy.purposeLegend}</legend>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {copy.purposes.map((purpose, index) => (
+                    <label
+                      key={purpose}
+                      className="flex items-center gap-2 rounded-2xl border border-slate-200 px-3 py-3 text-sm font-bold text-slate-800 has-[:checked]:border-blue-400 has-[:checked]:bg-blue-50"
+                    >
+                      <input
+                        type="radio"
+                        name="visitPurpose"
+                        value={purpose}
+                        defaultChecked={index === 1}
+                        className="h-4 w-4 shrink-0 border-slate-300 text-blue-600"
+                      />
+                      {purpose}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <label className="block text-sm font-black text-slate-800">
+                {copy.companyLabel}
+                <input
+                  name="visitorCompany"
+                  placeholder={copy.companyPlaceholder}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
+                />
+              </label>
+
+              <label className="block text-sm font-black text-slate-800">
+                {copy.nameLabel}
+                <input
+                  name="visitorName"
+                  placeholder={copy.namePlaceholder}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
+                />
+              </label>
+
+              <div>
+                <p className="text-sm font-black text-slate-800">{copy.noticesLegend}</p>
+                <div className="mt-2 space-y-2">
+                  {copy.notices.map((notice) => (
+                    <div key={notice.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <h4 className="text-sm font-black text-slate-900">
+                        {notice.icon} {notice.title}
+                      </h4>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{notice.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-bold leading-5 text-slate-700">
+                <input type="checkbox" name="checkedSafetyGuide" className="mt-0.5 h-4 w-4 rounded border-slate-300" />
+                {copy.confirmLabel}
+              </label>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <button
+                  type="submit"
+                  className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white"
+                >
+                  {copy.submitCta}
+                </button>
+              </div>
+            </form>
 
             <p className="text-center text-xs font-bold leading-5 text-slate-500">
               {copy.smallprint}
