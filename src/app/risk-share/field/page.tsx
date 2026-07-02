@@ -30,8 +30,8 @@ function getCurrentMonthKst() {
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#EEF4F8] px-4 py-5 text-slate-950">
-      <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
+    <main className="min-h-screen bg-[#EEF4F8] px-2.5 py-3 text-slate-950">
+      <section className="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-md flex-col justify-center">
         {children}
       </section>
     </main>
@@ -40,17 +40,17 @@ function PageShell({ children }: { children: React.ReactNode }) {
 
 function NoticeCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl">
-      <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-6 text-white">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-black tracking-tight text-white/90">
+    <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl">
+      <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-5 text-white">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[0.68rem] font-black tracking-tight text-white/90">
           SafeMetrica
         </div>
-        <h1 className="mt-5 text-2xl font-black leading-tight tracking-tight">
+        <h1 className="mt-4 text-xl font-black leading-tight tracking-tight">
           현장 QR 확인 중
         </h1>
       </div>
-      <div className="p-4">
-        <div className="rounded-3xl border border-amber-100 bg-amber-50 px-5 py-5 text-sm font-bold leading-7 text-amber-950">
+      <div className="p-3">
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-bold leading-6 text-amber-950">
           {children}
         </div>
       </div>
@@ -124,11 +124,11 @@ function Trail() {
   ];
 
   return (
-    <div aria-label="기록 흐름" className="flex items-stretch gap-1.5 px-4 pt-4">
+    <div aria-label="기록 흐름" className="flex items-stretch gap-1 px-3 pt-3">
       {steps.map((step) => (
         <span
           key={step.label}
-          className={`flex flex-1 items-center justify-center rounded-xl px-2 py-2 text-center text-[0.65rem] font-black leading-4 ${
+          className={`flex flex-1 items-center justify-center rounded-lg px-1.5 py-1.5 text-center text-[0.62rem] font-black leading-4 ${
             step.now ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-500"
           }`}
         >
@@ -213,76 +213,74 @@ export default async function RiskSharePublicFieldEntryPage({
 
   return (
     <PageShell>
-      <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl">
-        <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-6 text-white">
+      <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl">
+        <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-4 text-white">
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[0.68rem] font-black tracking-tight text-white/90">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[0.66rem] font-black tracking-tight text-white/90">
               <span className="grid h-4 w-4 place-items-center rounded-full bg-white text-[0.6rem] font-black text-[#0B5EA8]">
                 {companyMark}
               </span>
               {companyLabel}
             </span>
-            <span className="text-[0.68rem] font-black tracking-tight text-white/70">
+            <span className="text-[0.66rem] font-black tracking-tight text-white/70">
               SafeMetrica
             </span>
           </div>
 
-          <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight">
-            우리 작업장
-            <br />
-            안전 확인
+          <h1 className="mt-3 text-2xl font-black leading-tight tracking-tight">
+            우리 작업장 안전 확인
           </h1>
-          <p className="mt-3 text-sm font-semibold leading-7 text-white/85">
+          <p className="mt-1.5 text-xs font-semibold leading-5 text-white/85">
             QR로 들어오셨네요. 아래에서 할 일을 선택해 주세요.
           </p>
-          <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[0.68rem] font-black text-white/90">
+          <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[0.64rem] font-black text-white/90">
             <i className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
             {currentMonth}월 위험성평가 공유확인 진행 중
           </span>
 
-          <div className="mt-5 border-t border-white/15 pt-4">
+          <div className="mt-3 border-t border-white/15 pt-3">
             <LangBar />
           </div>
         </div>
 
         <Trail />
 
-        <div className="space-y-3 p-4">
-          <div className="relative space-y-3">
+        <div className="space-y-2 p-3">
+          <div className="relative space-y-2">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-8 left-[2.15rem] w-px bg-slate-200"
+              className="pointer-events-none absolute inset-y-6 left-[1.65rem] w-px bg-slate-200"
             />
 
             {activities.map((activity) => (
               <Link
                 key={activity.title}
                 href={activity.href}
-                className="group relative flex gap-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="group relative flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
               >
                 <span
-                  className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-sm ${activity.accent}`}
+                  className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm ${activity.accent}`}
                 >
                   <ActivityIcon kind={activity.kind} />
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-base font-black leading-6 text-slate-950">
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="text-sm font-black leading-5 text-slate-950">
                       {activity.title}
                     </h2>
-                    <span className={`shrink-0 rounded-full bg-slate-50 px-2.5 py-1 text-[0.65rem] font-black text-slate-600 ring-1 ${activity.ring}`}>
+                    <span className={`shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-[0.62rem] font-black text-slate-600 ring-1 ${activity.ring}`}>
                       {activity.badge}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-sm font-semibold leading-6 text-slate-600">
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
                     {activity.description}
                   </p>
-                  <p className="mt-1.5 text-xs font-bold leading-5 text-slate-400">
+                  <p className="mt-0.5 text-[0.68rem] font-bold leading-4 text-slate-400">
                     {activity.followUp}
                   </p>
 
-                  <div className="mt-3 inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white transition group-hover:bg-slate-800">
+                  <div className="mt-2 inline-flex min-h-9 items-center justify-center rounded-xl bg-slate-950 px-3 text-xs font-black text-white transition group-hover:bg-slate-800">
                     {activity.cta}
                   </div>
                 </div>
@@ -290,72 +288,72 @@ export default async function RiskSharePublicFieldEntryPage({
             ))}
           </div>
 
-          <div className="rounded-3xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-[0.65rem] font-black uppercase tracking-wide text-blue-700">
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3">
+            <p className="text-[0.62rem] font-black uppercase tracking-wide text-blue-700">
               기록
             </p>
-            <p className="mt-1.5 text-sm font-bold leading-6 text-blue-950">
+            <p className="mt-1 text-xs font-bold leading-5 text-blue-950">
               여기서 남긴 확인과 의견은 우리 회사의 안전운영기록으로 정리되고, 관리자가 검토한
               뒤 월간 안전운영 요약에 반영됩니다.
             </p>
           </div>
 
-          <details className="group rounded-3xl border border-slate-200 bg-slate-50 p-4">
-            <summary className="cursor-pointer text-sm font-black leading-6 text-slate-700 marker:content-none">
+          <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <summary className="cursor-pointer text-xs font-black leading-5 text-slate-700 marker:content-none">
               공유확인 화면 미리보기 — &ldquo;위험성평가 공유확인&rdquo;을 누르면
             </summary>
-            <div className="mt-3 space-y-3">
-              <p className="text-xs font-bold leading-5 text-slate-500">
+            <div className="mt-2 space-y-2">
+              <p className="text-[0.68rem] font-bold leading-4 text-slate-500">
                 실제 위험요인 내용은 현장에 맞게 관리자가 등록한 항목으로 표시됩니다.
               </p>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                <span className="text-[0.65rem] font-black text-blue-700">프레스 2라인</span>
-                <h4 className="mt-1 text-sm font-black text-slate-950">금형 교체 중 끼임 위험</h4>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+              <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                <span className="text-[0.62rem] font-black text-blue-700">프레스 2라인</span>
+                <h4 className="mt-0.5 text-xs font-black text-slate-950">금형 교체 중 끼임 위험</h4>
+                <p className="mt-0.5 text-[0.68rem] font-semibold leading-4 text-slate-600">
                   금형 교체 작업 시 프레스 슬라이드 하강 구간에 손이 들어갈 수 있습니다.
                 </p>
-                <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold leading-5 text-emerald-900">
+                <p className="mt-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[0.68rem] font-bold leading-4 text-emerald-900">
                   안전수칙 · 전원 차단과 안전블록 설치 후 작업, 2인 1조 확인
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                <span className="text-[0.65rem] font-black text-blue-700">자재 창고</span>
-                <h4 className="mt-1 text-sm font-black text-slate-950">지게차·보행자 교차 구간</h4>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+              <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                <span className="text-[0.62rem] font-black text-blue-700">자재 창고</span>
+                <h4 className="mt-0.5 text-xs font-black text-slate-950">지게차·보행자 교차 구간</h4>
+                <p className="mt-0.5 text-[0.68rem] font-semibold leading-4 text-slate-600">
                   오전 입고 시간대 지게차 동선과 보행 통로가 겹칩니다.
                 </p>
-                <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold leading-5 text-emerald-900">
+                <p className="mt-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[0.68rem] font-bold leading-4 text-emerald-900">
                   안전수칙 · 보행 통로 준수, 지게차 접근 시 정지 후 눈맞춤 확인
                 </p>
               </div>
 
-              <label className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-xs font-bold leading-5 text-slate-700">
-                <input type="checkbox" checked readOnly className="mt-0.5 h-4 w-4 rounded border-slate-300" />
+              <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-[0.68rem] font-bold leading-4 text-slate-700">
+                <input type="checkbox" checked readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300" />
                 위 위험요인과 안전수칙을 확인했습니다. (확인기록이 남습니다)
               </label>
 
-              <div className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-slate-300 px-5 text-sm font-black text-slate-600">
+              <div className="flex min-h-9 w-full items-center justify-center rounded-xl bg-slate-300 px-4 text-xs font-black text-slate-600">
                 확인하고 서명하기
               </div>
             </div>
           </details>
 
-          <p className="text-center text-xs font-bold leading-6 text-slate-500">
+          <p className="text-center text-[0.68rem] font-bold leading-5 text-slate-500">
             확인이 어려우면 현장 담당자에게 문의해 주세요.
           </p>
 
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="text-sm font-black leading-6 text-slate-700">
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="text-xs font-black leading-5 text-slate-700">
                 외부인 출입 전 안전 안내
               </h2>
-              <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
+              <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[0.62rem] font-black text-slate-500 ring-1 ring-slate-200">
                 준비 중
               </span>
             </div>
-            <p className="mt-1.5 text-xs font-semibold leading-5 text-slate-600">
+            <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-slate-600">
               방문·납품·협력업체 확인은 출입구의 별도 QR로 준비 중입니다. 지금은 현장 담당자에게
               안내를 요청해 주세요.
             </p>
@@ -363,7 +361,7 @@ export default async function RiskSharePublicFieldEntryPage({
         </div>
       </div>
 
-      <p className="mt-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
+      <p className="mt-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[0.68rem] font-bold leading-4 text-slate-500 shadow-sm">
         근로자와 외부인은 로그인 없이 QR로 참여합니다. 확인과 의견은 관리자 검토를 거쳐 월간
         안전운영 요약으로 남습니다.
       </p>
