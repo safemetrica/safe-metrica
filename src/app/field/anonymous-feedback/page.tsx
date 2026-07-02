@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,38 @@ function normalizeCompanyCode(value: string) {
     .slice(0, 50);
 }
 
+function isRiskShareAnonymousFeedbackTenant(serviceMode?: string | null) {
+  return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
+}
+
 export default async function AnonymousFeedbackPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
   const isRichi = companyCode === "richi";
   const isBubblemon = companyCode === "bubblemon";
-  const isAllowedCompany = ALLOWED_ANONYMOUS_FEEDBACK_COMPANY_CODES.has(companyCode);
+  const tenant =
+    companyCode && !isRichi && !isBubblemon
+      ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
+      : null;
+  const isRegisteredRiskShareTenant = isRiskShareAnonymousFeedbackTenant(
+    tenant?.serviceMode,
+  );
+  const isAllowedCompany =
+    ALLOWED_ANONYMOUS_FEEDBACK_COMPANY_CODES.has(companyCode) ||
+    isRegisteredRiskShareTenant;
+  const feedbackTitle = isRichi
+    ? "㈜리치코리아 익명 의견"
+    : isBubblemon
+      ? "㈜버블몬코리아 익명 의견"
+      : tenant?.name
+        ? `${tenant.name} 익명 의견`
+        : "익명 현장 의견";
+  const returnHref = isRegisteredRiskShareTenant
+    ? `/risk-share/field?company=${encodeURIComponent(companyCode)}`
+    : `/field/participation?company=${encodeURIComponent(companyCode)}`;
+  const returnLabel = isRegisteredRiskShareTenant
+    ? "현장 QR 입구로 돌아가기"
+    : "{returnLabel}";
 
   if (!isAllowedCompany) {
     return (
@@ -51,10 +78,10 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
           </p>
           {companyCode ? (
             <a
-              href={`/field/participation?company=${encodeURIComponent(companyCode)}`}
+              href={returnHref}
               className="mt-5 block rounded-full bg-[#0B2742] px-5 py-3 text-center text-sm font-black text-white"
             >
-              작업 전 확인 화면으로 돌아가기
+              {returnLabel}
             </a>
           ) : null}
         </section>
@@ -90,7 +117,7 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
           </div>
 
           <h1 className="mt-4 text-[22px] font-black tracking-[-0.04em] text-[#0B2742]">
-            {isRichi ? "㈜리치코리아 익명 의견" : isBubblemon ? "㈜버블몬코리아 익명 의견" : "익명 현장 의견"}
+            {feedbackTitle}
           </h1>
           <p className="mt-2 text-[15px] leading-7 text-[#64748B]">
             개인 식별정보와 확인서명을 입력하지 않는 익명 접수 화면입니다. 현장에서 불편하거나 개선이 필요한 내용을 남겨주세요.
@@ -178,10 +205,10 @@ export default async function AnonymousFeedbackPage({ searchParams }: PageProps)
           </button>
           {companyCode ? (
             <a
-              href={`/field/participation?company=${encodeURIComponent(companyCode)}`}
+              href={returnHref}
               className="mt-3 block w-full rounded-full px-5 py-3 text-center text-sm font-black text-[#64748B]"
             >
-              작업 전 확인 화면으로 돌아가기
+              {returnLabel}
             </a>
           ) : null}
         </footer>
