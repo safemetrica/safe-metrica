@@ -145,7 +145,7 @@ export default async function RiskSharePublicFieldEntryPage({
       badge: "공유확인",
       description: "공유된 위험요인과 안전조치를 확인하고 근로자 확인 기록을 남깁니다.",
       followUp: "관리자 검토를 거쳐 다음 위험성평가 재검토 후보로 이어집니다.",
-      href: buildHref("/field/participation", companyCode),
+      href: `${buildHref("/risk-share/participation", companyCode)}&mode=monthly`,
       cta: "공유확인 시작",
       accent: "from-blue-600 to-blue-500",
       ring: "ring-blue-100",
@@ -156,7 +156,7 @@ export default async function RiskSharePublicFieldEntryPage({
       badge: "작업 전 확인",
       description: "보호구, 동선, 적재·하역, 설비 주변 주의사항을 짧게 확인합니다.",
       followUp: "확인 기록은 관리자 검토를 거쳐 월간 운영요약에 반영됩니다.",
-      href: buildHref("/field/participation", companyCode),
+      href: `${buildHref("/risk-share/participation", companyCode)}&mode=prework`,
       cta: "작업 전 확인 시작",
       accent: "from-emerald-600 to-emerald-500",
       ring: "ring-emerald-100",
@@ -197,46 +197,48 @@ export default async function RiskSharePublicFieldEntryPage({
           </div>
         </div>
 
-        <div className="relative space-y-3 p-4">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-24 left-[2.15rem] top-8 w-px bg-slate-200"
-          />
+        <div className="space-y-3 p-4">
+          <div className="relative space-y-3">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-8 left-[2.15rem] w-px bg-slate-200"
+            />
 
-          {activities.map((activity) => (
-            <Link
-              key={activity.title}
-              href={activity.href}
-              className="group relative flex gap-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <span
-                className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-sm ${activity.accent}`}
+            {activities.map((activity) => (
+              <Link
+                key={activity.title}
+                href={activity.href}
+                className="group relative flex gap-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
               >
-                <ActivityIcon kind={activity.kind} />
-              </span>
+                <span
+                  className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-sm ${activity.accent}`}
+                >
+                  <ActivityIcon kind={activity.kind} />
+                </span>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-base font-black leading-6 text-slate-950">
-                    {activity.title}
-                  </h2>
-                  <span className={`shrink-0 rounded-full bg-slate-50 px-2.5 py-1 text-[0.65rem] font-black text-slate-600 ring-1 ${activity.ring}`}>
-                    {activity.badge}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-sm font-semibold leading-6 text-slate-600">
-                  {activity.description}
-                </p>
-                <p className="mt-1.5 text-xs font-bold leading-5 text-slate-400">
-                  {activity.followUp}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-base font-black leading-6 text-slate-950">
+                      {activity.title}
+                    </h2>
+                    <span className={`shrink-0 rounded-full bg-slate-50 px-2.5 py-1 text-[0.65rem] font-black text-slate-600 ring-1 ${activity.ring}`}>
+                      {activity.badge}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-sm font-semibold leading-6 text-slate-600">
+                    {activity.description}
+                  </p>
+                  <p className="mt-1.5 text-xs font-bold leading-5 text-slate-400">
+                    {activity.followUp}
+                  </p>
 
-                <div className="mt-3 inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white transition group-hover:bg-slate-800">
-                  {activity.cta}
+                  <div className="mt-3 inline-flex min-h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-black text-white transition group-hover:bg-slate-800">
+                    {activity.cta}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
 
           <div className="relative flex gap-4 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-4">
             <span className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-200 text-slate-500">
