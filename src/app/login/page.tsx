@@ -17,8 +17,8 @@ const entryCards = [
   },
   {
     title: "도입 문의 · 고객 개설",
-    description: "신규 고객은 기본정보 확인 후 Owner 승인 방식으로 개설됩니다.",
-    badge: "Owner 승인",
+    description: "신규 고객은 기본정보 확인 후 내부 운영 확인을 거쳐 개설됩니다.",
+    badge: "운영자 확인",
     tone: "border-amber-200 bg-amber-50 text-amber-950",
   },
 ];
@@ -66,7 +66,7 @@ export default async function LoginPage({
           </div>
 
           <p className="mt-8 text-xs leading-6 text-white/65">
-            신규 고객은 기본정보 확인 후 Owner 승인 방식으로 개설됩니다.
+            신규 고객은 기본정보 확인 후 내부 운영 확인을 거쳐 개설됩니다.
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export default async function LoginPage({
           </div>
 
           <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-500">
-            신규 고객은 기본정보 확인 후 Owner 승인 방식으로 개설됩니다. 현장 QR은 고객사별로
+            신규 고객은 기본정보 확인 후 내부 운영 확인을 거쳐 개설됩니다. 현장 QR은 고객사별로
             발급되며, 실제 고객자료와 운영기록은 고객사 범위 안에서 관리됩니다.
           </div>
         </div>
