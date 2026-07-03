@@ -346,6 +346,23 @@ export default async function RiskSharePublicFieldEntryPage({
               {copy.visitorDescription}
             </p>
           </Link>
+
+          <Link
+            href={buildHref("/risk-share/representative", companyCode, locale)}
+            className="block rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="text-xs font-black leading-5 text-slate-700">
+                {copy.repTitle}
+              </h2>
+              <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[0.62rem] font-black text-slate-500 ring-1 ring-slate-200">
+                {copy.repBadge}
+              </span>
+            </div>
+            <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-slate-600">
+              {copy.repDescription}
+            </p>
+          </Link>
         </div>
       </div>
 
