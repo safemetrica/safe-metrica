@@ -79,6 +79,9 @@ type FieldCopy = {
   visitorTitle: string;
   visitorBadge: string;
   visitorDescription: string;
+  repTitle: string;
+  repBadge: string;
+  repDescription: string;
   footerDisclaimer: string;
   qrCheckingTitle: string;
   noCodeBody: string;
@@ -155,11 +158,29 @@ type VisitorCopy = {
   notAllowedBody: string;
 };
 
+type RepresentativeCopy = {
+  heroTitle: string;
+  heroSub: string;
+  nameLabel: string;
+  namePlaceholder: string;
+  affiliationLabel: string;
+  affiliationPlaceholder: string;
+  opinionLabel: string;
+  opinionPlaceholder: string;
+  confirmLabel: string;
+  submitCta: string;
+  smallprint: string;
+  returnToField: string;
+  qrCheckingTitle: string;
+  notAllowedBody: string;
+};
+
 type RiskShareCopy = {
   field: FieldCopy;
   participation: ParticipationCopy;
   anonymous: AnonymousCopy;
   visitor: VisitorCopy;
+  representative: RepresentativeCopy;
 };
 
 const COPY: Record<RiskShareLocale, RiskShareCopy> = {
@@ -211,6 +232,9 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       visitorTitle: "외부인 출입 전 안전 안내",
       visitorBadge: "출입 전 확인",
       visitorDescription: "방문·납품·협력업체는 출입 전 안전 안내를 확인하고 제출합니다.",
+      repTitle: "근로자대표 확인·의견 기록",
+      repBadge: "근로자대표",
+      repDescription: "근로자대표가 확인과 의견을 남깁니다. 약 2분.",
       footerDisclaimer:
         "근로자와 외부인은 로그인 없이 QR로 참여합니다. 확인과 의견은 관리자 검토를 거쳐 월간 안전운영 요약으로 남습니다.",
       qrCheckingTitle: "현장 QR 확인 중",
@@ -302,6 +326,22 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       qrCheckingTitle: "현장 QR 확인 중",
       notAllowedBody: "이 안내 화면은 지정된 현장 QR에서만 열립니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.",
     },
+    representative: {
+      heroTitle: "근로자대표 확인·의견 기록",
+      heroSub: "근로자대표가 이번 달 공유확인 내용을 확인하고 의견을 남깁니다. 약 2분.",
+      nameLabel: "근로자대표 이름",
+      namePlaceholder: "예: 김대표",
+      affiliationLabel: "소속(부서·현장)",
+      affiliationPlaceholder: "예: 생산1팀",
+      opinionLabel: "의견",
+      opinionPlaceholder: "확인하신 내용에 대한 의견이 있으면 남겨 주세요. 없으면 비워두어도 됩니다.",
+      confirmLabel: "이번 달 공유된 위험요인과 안전조치 내용을 확인했습니다.",
+      submitCta: "확인 내용 제출",
+      smallprint: "확인과 의견은 관리자 검토 및 월간 안전운영 요약의 참고자료로 정리됩니다. 확인이 어려우면 현장 담당자에게 문의해 주세요.",
+      returnToField: "현장 QR 입구로 돌아가기",
+      qrCheckingTitle: "현장 QR 확인 중",
+      notAllowedBody: "이 확인 화면은 지정된 현장 QR에서만 열립니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.",
+    },
   },
   en: {
     field: {
@@ -351,6 +391,9 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       visitorTitle: "Visitor safety notice before entry",
       visitorBadge: "Entry check",
       visitorDescription: "Visitors, deliveries and contractors review and submit safety notes before entry.",
+      repTitle: "Worker representative confirmation",
+      repBadge: "Representative",
+      repDescription: "The worker representative leaves a confirmation and comment. About 2 min.",
       footerDisclaimer:
         "Workers and visitors join with no login, using the QR. Confirmations and reports are reviewed by a manager and kept in the monthly safety summary.",
       qrCheckingTitle: "Checking field QR",
@@ -442,6 +485,22 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       qrCheckingTitle: "Checking field QR",
       notAllowedBody: "This notice screen only opens from the designated field QR. Ask the site manager for the latest QR link.",
     },
+    representative: {
+      heroTitle: "Worker representative confirmation",
+      heroSub: "The worker representative reviews this month's shared safety information and leaves a comment. About 2 min.",
+      nameLabel: "Representative's name",
+      namePlaceholder: "e.g. Kim",
+      affiliationLabel: "Affiliation (team / site)",
+      affiliationPlaceholder: "e.g. Production Team 1",
+      opinionLabel: "Comment",
+      opinionPlaceholder: "Leave a comment if you have one. You can leave this blank.",
+      confirmLabel: "I have reviewed this month's shared hazards and safety measures.",
+      submitCta: "Submit confirmation",
+      smallprint: "Your confirmation and comment are kept as reference material for manager review and the monthly safety summary. Ask the site manager if anything is unclear.",
+      returnToField: "Back to field QR entry",
+      qrCheckingTitle: "Checking field QR",
+      notAllowedBody: "This confirmation screen only opens from the designated field QR. Ask the site manager for the latest QR link.",
+    },
   },
   vi: {
     field: {
@@ -491,6 +550,9 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       visitorTitle: "Hướng dẫn an toàn cho khách trước khi vào",
       visitorBadge: "Xác nhận trước khi vào",
       visitorDescription: "Khách, giao hàng, nhà thầu xem và xác nhận hướng dẫn an toàn trước khi vào.",
+      repTitle: "Xác nhận của đại diện người lao động",
+      repBadge: "Đại diện NLĐ",
+      repDescription: "Đại diện người lao động xác nhận và để lại ý kiến. Khoảng 2 phút.",
       footerDisclaimer:
         "Người lao động và khách tham gia không cần đăng nhập, chỉ bằng mã QR. Xác nhận và ý kiến được quản lý xem xét và lưu vào báo cáo an toàn hàng tháng.",
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
@@ -581,6 +643,22 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "Quay lại cổng vào QR hiện trường",
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
       notAllowedBody: "Màn hình hướng dẫn này chỉ mở từ mã QR hiện trường được chỉ định. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới nhất.",
+    },
+    representative: {
+      heroTitle: "Xác nhận của đại diện người lao động",
+      heroSub: "Đại diện người lao động xem nội dung chia sẻ tháng này và để lại ý kiến. Khoảng 2 phút.",
+      nameLabel: "Tên đại diện người lao động",
+      namePlaceholder: "VD: Nguyen",
+      affiliationLabel: "Bộ phận · hiện trường",
+      affiliationPlaceholder: "VD: Tổ sản xuất 1",
+      opinionLabel: "Ý kiến",
+      opinionPlaceholder: "Để lại ý kiến nếu có. Có thể để trống.",
+      confirmLabel: "Tôi đã xem các mối nguy và biện pháp an toàn đã chia sẻ tháng này.",
+      submitCta: "Gửi xác nhận",
+      smallprint: "Xác nhận và ý kiến được lưu làm tài liệu tham khảo cho quản lý xem xét và báo cáo an toàn hàng tháng. Hỏi người phụ trách hiện trường nếu chưa rõ.",
+      returnToField: "Quay lại cổng vào QR hiện trường",
+      qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
+      notAllowedBody: "Màn hình xác nhận này chỉ mở từ mã QR hiện trường được chỉ định. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới nhất.",
     },
   },
 };
