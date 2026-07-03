@@ -69,6 +69,12 @@ type FieldCopy = {
   recordNoteLabel: string;
   recordNoteBody: string;
   previewSummary: string;
+  preview: {
+    note: string;
+    items: { location: string; title: string; body: string; rule: string }[];
+    confirmLabel: string;
+    signCta: string;
+  };
   helpline: string;
   visitorTitle: string;
   visitorBadge: string;
@@ -182,6 +188,25 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       recordNoteBody:
         "여기서 남긴 확인과 의견은 우리 회사의 안전운영기록으로 정리되고, 관리자가 검토한 뒤 월간 안전운영 요약에 반영됩니다.",
       previewSummary: "공유확인 화면 미리보기 — “위험성평가 공유확인”을 누르면",
+      preview: {
+        note: "실제 위험요인 내용은 현장에 맞게 관리자가 등록한 항목으로 표시됩니다.",
+        items: [
+          {
+            location: "프레스 2라인",
+            title: "금형 교체 중 끼임 위험",
+            body: "금형 교체 작업 시 프레스 슬라이드 하강 구간에 손이 들어갈 수 있습니다.",
+            rule: "안전수칙 · 전원 차단과 안전블록 설치 후 작업, 2인 1조 확인",
+          },
+          {
+            location: "자재 창고",
+            title: "지게차·보행자 교차 구간",
+            body: "오전 입고 시간대 지게차 동선과 보행 통로가 겹칩니다.",
+            rule: "안전수칙 · 보행 통로 준수, 지게차 접근 시 정지 후 눈맞춤 확인",
+          },
+        ],
+        confirmLabel: "위 위험요인과 안전수칙을 확인했습니다. (확인기록이 남습니다)",
+        signCta: "확인하고 서명하기",
+      },
       helpline: "확인이 어려우면 현장 담당자에게 문의해 주세요.",
       visitorTitle: "외부인 출입 전 안전 안내",
       visitorBadge: "출입 전 확인",
@@ -303,6 +328,25 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       recordNoteBody:
         "Your confirmations and reports become part of the company's safety operation record, reviewed by a manager and summarized monthly.",
       previewSummary: "Preview — after tapping “Risk-sharing check”",
+      preview: {
+        note: "Actual hazards are shown based on items your site manager has registered.",
+        items: [
+          {
+            location: "Press Line 2",
+            title: "Pinch-point risk during mold change",
+            body: "During mold changes, hands may enter the press slide's lowering zone.",
+            rule: "Safety rule · Cut power, install a safety block before work, work in pairs",
+          },
+          {
+            location: "Material warehouse",
+            title: "Forklift–pedestrian crossing",
+            body: "Forklift paths and walkways overlap during morning delivery hours.",
+            rule: "Safety rule · Stay on walkways; forklifts must stop and make eye contact before approaching",
+          },
+        ],
+        confirmLabel: "I have reviewed the hazards and safety rules above. (This confirmation is recorded.)",
+        signCta: "Confirm and sign",
+      },
       helpline: "If anything is unclear, ask the site manager.",
       visitorTitle: "Visitor safety notice before entry",
       visitorBadge: "Entry check",
@@ -424,6 +468,25 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       recordNoteBody:
         "Xác nhận và ý kiến của bạn được lưu vào hồ sơ vận hành an toàn của công ty, quản lý xem xét và tổng hợp hàng tháng.",
       previewSummary: "Xem trước — sau khi bấm “Xác nhận rủi ro”",
+      preview: {
+        note: "Các mối nguy thực tế được hiển thị theo nội dung quản lý hiện trường đã đăng ký.",
+        items: [
+          {
+            location: "Chuyền ép 2",
+            title: "Nguy cơ kẹp tay khi thay khuôn",
+            body: "Khi thay khuôn, tay có thể lọt vào vùng trượt xuống của máy ép.",
+            rule: "Quy tắc an toàn · Ngắt điện, lắp khối an toàn trước khi làm, làm việc theo cặp 2 người",
+          },
+          {
+            location: "Kho vật tư",
+            title: "Giao cắt xe nâng và người đi bộ",
+            body: "Vào giờ nhập hàng buổi sáng, lối xe nâng và lối đi bộ chồng lấn nhau.",
+            rule: "Quy tắc an toàn · Đi đúng lối đi bộ, xe nâng phải dừng và nhìn xác nhận trước khi đến gần",
+          },
+        ],
+        confirmLabel: "Tôi đã xem các mối nguy và quy tắc an toàn ở trên. (Xác nhận này được lưu lại.)",
+        signCta: "Xác nhận và ký",
+      },
       helpline: "Nếu có điều chưa rõ, hãy hỏi người phụ trách hiện trường.",
       visitorTitle: "Hướng dẫn an toàn cho khách trước khi vào",
       visitorBadge: "Xác nhận trước khi vào",

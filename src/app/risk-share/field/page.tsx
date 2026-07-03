@@ -299,38 +299,29 @@ export default async function RiskSharePublicFieldEntryPage({
             </summary>
             <div className="mt-2 space-y-2">
               <p className="text-[0.68rem] font-bold leading-4 text-slate-500">
-                실제 위험요인 내용은 현장에 맞게 관리자가 등록한 항목으로 표시됩니다.
+                {copy.preview.note}
               </p>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                <span className="text-[0.62rem] font-black text-blue-700">프레스 2라인</span>
-                <h4 className="mt-0.5 text-xs font-black text-slate-950">금형 교체 중 끼임 위험</h4>
-                <p className="mt-0.5 text-[0.68rem] font-semibold leading-4 text-slate-600">
-                  금형 교체 작업 시 프레스 슬라이드 하강 구간에 손이 들어갈 수 있습니다.
-                </p>
-                <p className="mt-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[0.68rem] font-bold leading-4 text-emerald-900">
-                  안전수칙 · 전원 차단과 안전블록 설치 후 작업, 2인 1조 확인
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                <span className="text-[0.62rem] font-black text-blue-700">자재 창고</span>
-                <h4 className="mt-0.5 text-xs font-black text-slate-950">지게차·보행자 교차 구간</h4>
-                <p className="mt-0.5 text-[0.68rem] font-semibold leading-4 text-slate-600">
-                  오전 입고 시간대 지게차 동선과 보행 통로가 겹칩니다.
-                </p>
-                <p className="mt-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[0.68rem] font-bold leading-4 text-emerald-900">
-                  안전수칙 · 보행 통로 준수, 지게차 접근 시 정지 후 눈맞춤 확인
-                </p>
-              </div>
+              {copy.preview.items.map((item) => (
+                <div key={item.title} className="rounded-xl border border-slate-200 bg-white p-2.5">
+                  <span className="text-[0.62rem] font-black text-blue-700">{item.location}</span>
+                  <h4 className="mt-0.5 text-xs font-black text-slate-950">{item.title}</h4>
+                  <p className="mt-0.5 text-[0.68rem] font-semibold leading-4 text-slate-600">
+                    {item.body}
+                  </p>
+                  <p className="mt-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[0.68rem] font-bold leading-4 text-emerald-900">
+                    {item.rule}
+                  </p>
+                </div>
+              ))}
 
               <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-[0.68rem] font-bold leading-4 text-slate-700">
                 <input type="checkbox" checked readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300" />
-                위 위험요인과 안전수칙을 확인했습니다. (확인기록이 남습니다)
+                {copy.preview.confirmLabel}
               </label>
 
               <div className="flex min-h-9 w-full items-center justify-center rounded-xl bg-slate-300 px-4 text-xs font-black text-slate-600">
-                확인하고 서명하기
+                {copy.preview.signCta}
               </div>
             </div>
           </details>
