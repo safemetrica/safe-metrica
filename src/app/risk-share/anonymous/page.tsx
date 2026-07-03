@@ -23,6 +23,8 @@ type PageProps = {
   searchParams?: Promise<{
     company?: string | string[];
     lang?: string | string[];
+    submitted?: string | string[];
+    error?: string | string[];
   }>;
 };
 
@@ -46,6 +48,8 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
   const locale = getRiskShareLocale(readSearchParam(params.lang));
+  const submitted = readSearchParam(params.submitted);
+  const submissionError = readSearchParam(params.error);
   const copy = getRiskShareCopy(locale).anonymous;
   const tenant = companyCode
     ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
@@ -82,15 +86,15 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
   return (
     <main className="min-h-[100dvh] bg-white px-0 py-0 text-[#0B2742] sm:bg-[#EEF1F4] sm:px-3 sm:py-5">
       <form
-        action="/api/field/anonymous-feedback/submit"
+        action="/api/risk-share/anonymous/submit"
         method="post"
         encType="multipart/form-data"
         className="mx-auto flex min-h-[100dvh] w-full max-w-none flex-col bg-white sm:min-h-[calc(100dvh-40px)] sm:max-w-[430px] sm:rounded-[28px] sm:shadow-[0_18px_50px_rgba(11,39,66,0.14)]"
       >
         <input type="hidden" name="companyCode" value={companyCode} readOnly />
+        <input type="hidden" name="lang" value={locale} readOnly />
         <input type="hidden" name="identityMode" value="anonymous" readOnly />
         <input type="hidden" name="anonymous" value="true" readOnly />
-        <input type="hidden" name="source" value="risk_share_anonymous_feedback_v1" readOnly />
 
         <header className="border-b border-[#E3E7EC] px-5 pb-4 pt-[max(18px,env(safe-area-inset-top))]">
           <div className="flex items-center justify-between gap-2">
@@ -137,6 +141,18 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
         </header>
 
         <section className="flex-1 overflow-y-auto px-5 pb-28 pt-5">
+          {submitted === "1" ? (
+            <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-950">
+              익명 의견이 접수되었습니다. 확인해 주셔서 감사합니다.
+            </div>
+          ) : null}
+
+          {submissionError === "1" ? (
+            <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-950">
+              저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
+            </div>
+          ) : null}
+
           <div className="flex items-start gap-3 rounded-[20px] border border-[#BCE3D6] bg-[#EAF8F3] p-4">
             <span aria-hidden="true" className="text-lg leading-none">🔒</span>
             <p className="text-sm leading-6 text-[#1C3A57]">{copy.bannerBody}</p>

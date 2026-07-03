@@ -103,7 +103,7 @@ async function fetchRiskShareMonthlyParticipationSummary(
   }
 }
 
-const ANONYMOUS_FEEDBACK_SOURCE = "anonymous_worker_feedback_v1";
+const ANONYMOUS_FEEDBACK_SOURCES = ["anonymous_worker_feedback_v1", "risk_share_anonymous_feedback_v1"] as const;
 const ANONYMOUS_FEEDBACK_SUMMARY_LIMIT = 500;
 const ANONYMOUS_FEEDBACK_CARD = { title: "익명 의견 · 아차사고 · 개선제안", accent: "border-amber-100 bg-amber-50/60" };
 
@@ -123,7 +123,7 @@ async function fetchRiskShareMonthlyAnonymousFeedbackSummary(
   const query = new URLSearchParams();
   query.set("select", "raw_payload");
   query.set("tenant_code", `eq.${companyCode}`);
-  query.set("raw_payload->>source", `eq.${ANONYMOUS_FEEDBACK_SOURCE}`);
+  query.set("raw_payload->>source", `in.(${ANONYMOUS_FEEDBACK_SOURCES.join(",")})`);
   query.append("created_at", `gte.${period.createdAtGte}`);
   query.append("created_at", `lt.${period.createdAtLt}`);
   query.set("limit", String(ANONYMOUS_FEEDBACK_SUMMARY_LIMIT));
