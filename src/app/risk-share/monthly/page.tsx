@@ -50,11 +50,6 @@ function getCurrentPeriodKst() {
   };
 }
 
-const PENDING_STATUS_CARDS = [
-  { title: "관리자 검토 · 조치메모", accent: "border-slate-200 bg-slate-50" },
-  { title: "다음 위험성평가 보완 후보", accent: "border-rose-100 bg-rose-50/60" },
-];
-
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_MONTHLY_SUMMARY_LIMIT = 500;
 
@@ -193,8 +188,6 @@ async function fetchRiskShareMonthlyVisitorConfirmationSummary(
 
 const REPRESENTATIVE_CONFIRMATION_CARD = { title: "근로자대표 확인·의견 기록", accent: "border-sky-100 bg-sky-50/60" };
 
-const DOC_ACTIONS = ["부록 · 원문 기록 보기", "부록 · 세부 기록 보기", "PDF로 저장"];
-
 export default async function RiskShareMonthlySummaryPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
@@ -259,16 +252,10 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
         </header>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-black text-slate-900">이번 달 한눈에 보기</h2>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[0.68rem] font-black text-slate-500">
-              준비 중
-            </span>
-          </div>
+          <h2 className="text-base font-black text-slate-900">이번 달 한눈에 보기</h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
-            공유확인, 작업 전 확인, 익명 의견, 외부인 확인, 근로자대표 확인 현황은 아래 확인자료
-            정리 카드에서 바로 확인할 수 있습니다. 관리자 검토 흐름이 정리되면 이 영역에 이번 달
-            요약 문장이 추가로 표시됩니다.
+            이번 달 접수된 공유확인, 작업 전 안전확인, 익명 의견, 외부인 확인, 근로자대표 확인
+            현황을 아래 카드에서 확인합니다.
           </p>
         </section>
 
@@ -345,36 +332,6 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
             ) : null}
           </div>
 
-          {PENDING_STATUS_CARDS.map((card) => (
-            <div key={card.title} className={`rounded-3xl border p-4 shadow-sm ${card.accent}`}>
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-black text-slate-900">{card.title}</h2>
-                <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                  준비 중
-                </span>
-              </div>
-              <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-                집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달
-                현황이 표시됩니다.
-              </p>
-            </div>
-          ))}
-        </section>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-black text-slate-900">문서 작업</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {DOC_ACTIONS.map((action) => (
-              <button
-                key={action}
-                type="button"
-                disabled
-                className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-black text-slate-500"
-              >
-                {action} · 준비 중
-              </button>
-            ))}
-          </div>
         </section>
 
         <p className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
