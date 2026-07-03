@@ -293,39 +293,6 @@ export default async function RiskSharePublicFieldEntryPage({
             </p>
           </div>
 
-          <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-3">
-            <summary className="cursor-pointer text-xs font-black leading-5 text-slate-700 marker:content-none">
-              {copy.previewSummary}
-            </summary>
-            <div className="mt-2 space-y-2">
-              <p className="text-[0.68rem] font-bold leading-4 text-slate-500">
-                {copy.preview.note}
-              </p>
-
-              {copy.preview.items.map((item) => (
-                <div key={item.title} className="rounded-xl border border-slate-200 bg-white p-2.5">
-                  <span className="text-[0.62rem] font-black text-blue-700">{item.location}</span>
-                  <h4 className="mt-0.5 text-xs font-black text-slate-950">{item.title}</h4>
-                  <p className="mt-0.5 text-[0.68rem] font-semibold leading-4 text-slate-600">
-                    {item.body}
-                  </p>
-                  <p className="mt-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[0.68rem] font-bold leading-4 text-emerald-900">
-                    {item.rule}
-                  </p>
-                </div>
-              ))}
-
-              <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-[0.68rem] font-bold leading-4 text-slate-700">
-                <input type="checkbox" checked readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300" />
-                {copy.preview.confirmLabel}
-              </label>
-
-              <div className="flex min-h-9 w-full items-center justify-center rounded-xl bg-slate-300 px-4 text-xs font-black text-slate-600">
-                {copy.preview.signCta}
-              </div>
-            </div>
-          </details>
-
           <p className="text-center text-[0.68rem] font-bold leading-5 text-slate-500">
             {copy.helpline}
           </p>
