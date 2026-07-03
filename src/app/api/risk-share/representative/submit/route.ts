@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 
 import {
   getTenantRegistryConfigByCode,
@@ -12,12 +13,40 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const MAX_SIGNATURE_FILE_SIZE_BYTES = 1.5 * 1024 * 1024;
+
 function getFormText(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
 function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
+}
+
+function isFile(value: FormDataEntryValue | null): value is File {
+  return value instanceof File && value.size > 0;
+}
+
+async function uploadRepresentativeSignature(
+  file: File,
+  companyCode: string,
+  reportedDate: string,
+): Promise<string | null> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN || file.size > MAX_SIGNATURE_FILE_SIZE_BYTES) {
+    return null;
+  }
+
+  try {
+    const blob = await put(
+      `risk-share-representative-signature/${companyCode}/${reportedDate}/${Date.now()}-signature.png`,
+      file,
+      { access: "public", addRandomSuffix: true },
+    );
+
+    return blob.url;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeCompanyCode(value: string) {
@@ -67,6 +96,13 @@ export async function POST(req: NextRequest) {
   const opinion = getFormText(formData, "opinion").slice(0, 1900);
   const confirmed = getFormChecked(formData, "confirmed");
   const submitterLabel = representativeName || "근로자대표";
+  const reportedDate = getTodayDateValue();
+
+  const signatureFileEntry = formData.get("signatureFile");
+  const signatureFile = isFile(signatureFileEntry) ? signatureFileEntry : null;
+  const signatureUrl = signatureFile
+    ? await uploadRepresentativeSignature(signatureFile, tenant.code, reportedDate)
+    : null;
 
   const result = await insertFieldParticipationSubmissionShadowRecord({
     tenant_code: tenant.code,
@@ -78,7 +114,7 @@ export async function POST(req: NextRequest) {
     location: "",
     submitter: submitterLabel,
     anonymous: false,
-    reported_date: getTodayDateValue(),
+    reported_date: reportedDate,
     status: "접수",
     notion_page_id: null,
     notion_url: null,
@@ -90,6 +126,8 @@ export async function POST(req: NextRequest) {
       opinion,
       confirmed,
       lang,
+      signature_present: Boolean(signatureUrl),
+      signature_url: signatureUrl,
     },
   });
 
