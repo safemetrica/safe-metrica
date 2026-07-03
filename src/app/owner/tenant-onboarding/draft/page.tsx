@@ -53,7 +53,7 @@ const selectFields = [
     label: "서비스 범위",
     name: "service_mode",
     options: ["위험성평가 공유확인 운영팩"],
-    help: "현재 생성은 위공팩 고객코드와 운영 링크팩 발급 기준으로 처리합니다.",
+    help: "현재 생성은 위험성평가 공유확인 운영팩 고객코드와 운영 링크팩 발급 기준으로 처리합니다.",
   },
   {
     label: "과금 구분",
@@ -89,25 +89,41 @@ function buildOwnerOnlyLinks(companyCode: string) {
 
   return [
     {
-      label: "관리자 홈",
+      label: "Full SafeMetrica 운영형 관리자 홈 (내부 참고)",
       href: `/manager/risk-share?company=${encodedCode}`,
-      description: "관리자가 공유확인, 의견, 검토 대기, 월간 결과물을 확인합니다.",
+      description:
+        "기존 Full SafeMetrica 운영형 참고 route입니다. 위험성평가 공유확인 운영팩 고객 링크팩에는 포함하지 않습니다.",
     },
     {
-      label: "월간 결과물",
+      label: "Full SafeMetrica 운영형 월간 결과물 (내부 참고)",
       href: `/monthly-report/risk-share?company=${encodedCode}`,
-      description: "월간 안전운영 결과물과 고객 전달자료를 확인합니다.",
+      description:
+        "기존 Full SafeMetrica 운영형 참고 route입니다. 위험성평가 공유확인 운영팩 고객 링크팩에는 포함하지 않습니다.",
     },
   ];
 }
 
-function buildRiskShareLinkPack(companyCode: string) {
-  const entries: {
-    label: string;
-    path: string;
-    query: Record<string, string>;
-    description: string;
-  }[] = [
+type RiskShareLinkPackEntry = {
+  label: string;
+  path: string;
+  query: Record<string, string>;
+  description: string;
+};
+
+function toRiskShareLinkPack(entries: RiskShareLinkPackEntry[]) {
+  return entries.map((entry) => ({
+    label: entry.label,
+    description: entry.description,
+    languageLinks: RISK_SHARE_LANGUAGE_OPTIONS.map((language) => ({
+      code: language.code,
+      label: language.code === "ko" ? `기본 · ${language.label}` : language.label,
+      href: buildRiskShareLangHref(entry.path, entry.query, language.code),
+    })),
+  }));
+}
+
+function buildRiskShareLinkPackGroups(companyCode: string) {
+  const fieldEntries: RiskShareLinkPackEntry[] = [
     {
       label: "현장 QR 입구",
       path: "/risk-share/field",
@@ -138,17 +154,33 @@ function buildRiskShareLinkPack(companyCode: string) {
       query: { company: companyCode },
       description: "방문·납품·협력업체가 출입 전 안전 안내를 확인합니다.",
     },
+    {
+      label: "근로자대표 확인·의견 기록",
+      path: "/risk-share/representative",
+      query: { company: companyCode },
+      description: "근로자대표가 확인과 의견을 남깁니다.",
+    },
   ];
 
-  return entries.map((entry) => ({
-    label: entry.label,
-    description: entry.description,
-    languageLinks: RISK_SHARE_LANGUAGE_OPTIONS.map((language) => ({
-      code: language.code,
-      label: language.code === "ko" ? `기본 · ${language.label}` : language.label,
-      href: buildRiskShareLangHref(entry.path, entry.query, language.code),
-    })),
-  }));
+  const managerEntries: RiskShareLinkPackEntry[] = [
+    {
+      label: "관리자 홈",
+      path: "/risk-share/manager",
+      query: { company: companyCode },
+      description: "공유확인, 익명 의견, 외부인 확인, 근로자대표 확인 현황을 확인합니다.",
+    },
+    {
+      label: "월간 안전운영 요약",
+      path: "/risk-share/monthly",
+      query: { company: companyCode },
+      description: "이번 달 확인·의견 현황을 요약으로 확인합니다.",
+    },
+  ];
+
+  return {
+    fieldLinkPack: toRiskShareLinkPack(fieldEntries),
+    managerLinkPack: toRiskShareLinkPack(managerEntries),
+  };
 }
 
 const 미리보기Rows = [
@@ -197,9 +229,9 @@ export default async function OwnerTenantRegistryDraftPage({
   const createdOwnerLinks = createdCompanyCode
     ? buildOwnerOnlyLinks(createdCompanyCode)
     : [];
-  const createdLinkPack = createdCompanyCode
-    ? buildRiskShareLinkPack(createdCompanyCode)
-    : [];
+  const createdLinkPackGroups = createdCompanyCode
+    ? buildRiskShareLinkPackGroups(createdCompanyCode)
+    : null;
 
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
@@ -271,7 +303,7 @@ export default async function OwnerTenantRegistryDraftPage({
               <>
                 <div className="mt-4">
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200/70">
-                    운영자 전용
+                    운영자 전용 · Full SafeMetrica 운영형 참고 (고객 전달 금지)
                   </p>
                   <div className="mt-2 grid gap-3 md:grid-cols-2">
                     {createdOwnerLinks.map((link) => (
@@ -292,40 +324,79 @@ export default async function OwnerTenantRegistryDraftPage({
                   </div>
                 </div>
 
-                <div className="mt-5">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200/70">
-                    고객 전달용 링크팩 · 위험성평가 공유확인 운영팩
-                  </p>
-                  <div className="mt-2 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {createdLinkPack.map((link) => (
-                      <div
-                        key={link.label}
-                        className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50"
-                      >
-                        <span className="block text-base font-black">{link.label}</span>
-                        <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
-                          {link.description}
-                        </span>
-                        <div className="mt-3 space-y-1.5">
-                          {link.languageLinks.map((languageLink) => (
-                            <Link
-                              key={languageLink.code}
-                              href={languageLink.href}
-                              className="flex items-center gap-2 rounded-xl border border-emerald-300/30 bg-slate-950/30 px-3 py-2 hover:border-emerald-200"
-                            >
-                              <span className="shrink-0 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[0.62rem] font-black text-emerald-200">
-                                {languageLink.label}
-                              </span>
-                              <span className="truncate text-[0.7rem] font-bold text-emerald-100/80">
-                                {languageLink.href}
-                              </span>
-                            </Link>
-                          ))}
-                        </div>
+                {createdLinkPackGroups ? (
+                  <>
+                    <div className="mt-5">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200/70">
+                        고객 전달용 링크팩 · 위험성평가 공유확인 운영팩 · 현장 QR 배포용
+                      </p>
+                      <div className="mt-2 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        {createdLinkPackGroups.fieldLinkPack.map((link) => (
+                          <div
+                            key={link.label}
+                            className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50"
+                          >
+                            <span className="block text-base font-black">{link.label}</span>
+                            <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
+                              {link.description}
+                            </span>
+                            <div className="mt-3 space-y-1.5">
+                              {link.languageLinks.map((languageLink) => (
+                                <Link
+                                  key={languageLink.code}
+                                  href={languageLink.href}
+                                  className="flex items-center gap-2 rounded-xl border border-emerald-300/30 bg-slate-950/30 px-3 py-2 hover:border-emerald-200"
+                                >
+                                  <span className="shrink-0 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[0.62rem] font-black text-emerald-200">
+                                    {languageLink.label}
+                                  </span>
+                                  <span className="truncate text-[0.7rem] font-bold text-emerald-100/80">
+                                    {languageLink.href}
+                                  </span>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+
+                    <div className="mt-5">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200/70">
+                        고객 전달용 링크팩 · 위험성평가 공유확인 운영팩 · 관리자 확인용
+                      </p>
+                      <div className="mt-2 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        {createdLinkPackGroups.managerLinkPack.map((link) => (
+                          <div
+                            key={link.label}
+                            className="rounded-2xl border border-emerald-300/40 bg-slate-950/40 p-4 text-sm font-bold text-emerald-50"
+                          >
+                            <span className="block text-base font-black">{link.label}</span>
+                            <span className="mt-2 block text-xs leading-5 text-emerald-100/70">
+                              {link.description}
+                            </span>
+                            <div className="mt-3 space-y-1.5">
+                              {link.languageLinks.map((languageLink) => (
+                                <Link
+                                  key={languageLink.code}
+                                  href={languageLink.href}
+                                  className="flex items-center gap-2 rounded-xl border border-emerald-300/30 bg-slate-950/30 px-3 py-2 hover:border-emerald-200"
+                                >
+                                  <span className="shrink-0 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[0.62rem] font-black text-emerald-200">
+                                    {languageLink.label}
+                                  </span>
+                                  <span className="truncate text-[0.7rem] font-bold text-emerald-100/80">
+                                    {languageLink.href}
+                                  </span>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
               </>
             )}
           </section>
@@ -337,7 +408,7 @@ export default async function OwnerTenantRegistryDraftPage({
               <div>
                 <h2 className="text-xl font-black">고객코드 생성 전 검토</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  아래 값을 확인한 뒤 신규 위공팩 고객사 코드와 운영 링크팩을 생성합니다.
+                  아래 값을 확인한 뒤 신규 위험성평가 공유확인 운영팩 고객사 코드와 운영 링크팩을 생성합니다.
                 </p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
@@ -408,14 +479,14 @@ export default async function OwnerTenantRegistryDraftPage({
             </label>
 
             <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-              생성 시 위공팩 고객사 코드와 운영 링크팩 기준정보가 저장됩니다. 실제 고객 민감정보, 인증정보, 비밀번호, 민감한 인증값은 입력하지 않습니다.
+              생성 시 위험성평가 공유확인 운영팩 고객사 코드와 운영 링크팩 기준정보가 저장됩니다. 실제 고객 민감정보, 인증정보, 비밀번호, 민감한 인증값은 입력하지 않습니다.
             </div>
 
             <button
               type="submit"
               className="mt-5 w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-slate-950 hover:bg-emerald-300"
             >
-              위공팩 고객사 코드 생성 및 링크팩 발급
+              위험성평가 공유확인 운영팩 고객사 코드 생성 및 링크팩 발급
             </button>
           </form>
 
