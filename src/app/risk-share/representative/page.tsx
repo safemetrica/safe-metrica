@@ -7,6 +7,7 @@ import {
   getRiskShareCopy,
   getRiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import RiskShareRepresentativeSignaturePad from "./RiskShareRepresentativeSignaturePad";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -146,7 +147,12 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
               </div>
             ) : null}
 
-            <form action="/api/risk-share/representative/submit" method="post" className="space-y-4">
+            <form
+              action="/api/risk-share/representative/submit"
+              method="post"
+              encType="multipart/form-data"
+              className="space-y-4"
+            >
               <input type="hidden" name="companyCode" value={companyCode} readOnly />
               <input type="hidden" name="lang" value={locale} readOnly />
 
@@ -182,6 +188,8 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
                 <input type="checkbox" name="confirmed" className="mt-0.5 h-4 w-4 rounded border-slate-300" />
                 {copy.confirmLabel}
               </label>
+
+              <RiskShareRepresentativeSignaturePad />
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <button
