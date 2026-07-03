@@ -8,6 +8,7 @@ import {
   fetchWorkerRepresentativeConfirmationRecords,
   type WorkerRepresentativeConfirmationRecord,
 } from "@/lib/workerRepresentativeConfirmationRecords";
+import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 
 export const dynamic = "force-dynamic";
 
@@ -490,6 +491,7 @@ export default async function RiskSharePackMonthlyReportPage({
     evidenceSummary,
     representativeStore,
     richiMonthlyTbmCount,
+    riskShareRepresentativeSubmissionSummary,
   ] = await Promise.all([
     fetchFieldParticipationSummary(company.code, period),
     fetchEvidenceSummary(company.code, period),
@@ -500,6 +502,7 @@ export default async function RiskSharePackMonthlyReportPage({
     isRichiFullOperation
       ? fetchRichiMonthlyTbmCount(period).catch(() => null)
       : Promise.resolve(null),
+    fetchRiskShareRepresentativeSubmissionSummary(company.code, period),
   ]);
 
   const representativeRecords = representativeStore.records.filter((record) =>
@@ -516,7 +519,9 @@ export default async function RiskSharePackMonthlyReportPage({
   const hasLoadWarning =
     fieldSummary.status !== "ok" ||
     evidenceSummary.status !== "ok" ||
-    representativeStore.status !== "ok";
+    representativeStore.status !== "ok" ||
+    (!isRichiFullOperation &&
+      riskShareRepresentativeSubmissionSummary.status !== "ok");
   const reportReadyStatus = hasLoadWarning ? "확인 필요" : "준비 가능";
   const mainClassName = isRichiFullOperation
     ? "min-h-screen bg-[#EAF6F1] px-4 py-6 text-[#102033] print:bg-white print:text-slate-950"
@@ -726,6 +731,40 @@ export default async function RiskSharePackMonthlyReportPage({
             }
             isRichiFullOperation={isRichiFullOperation}
           />
+          {!isRichiFullOperation ? (
+            <>
+              <StatCard
+                label="공유팩 근로자대표 확인"
+                value={
+                  riskShareRepresentativeSubmissionSummary.status === "ok"
+                    ? `${riskShareRepresentativeSubmissionSummary.totalCount}건`
+                    : "확인 필요"
+                }
+                hint="공유팩 근로자대표 확인 링크로 접수된 제출 건수입니다. 근로자대표 참여확인과는 별도로 집계합니다."
+                isRichiFullOperation={isRichiFullOperation}
+              />
+              <StatCard
+                label="서명 확인됨"
+                value={
+                  riskShareRepresentativeSubmissionSummary.status === "ok"
+                    ? `${riskShareRepresentativeSubmissionSummary.signatureConfirmedCount}건`
+                    : "확인 필요"
+                }
+                hint="공유팩 근로자대표 확인 제출 중 선택 서명이 포함된 건수입니다."
+                isRichiFullOperation={isRichiFullOperation}
+              />
+              <StatCard
+                label="선택 서명 미제출"
+                value={
+                  riskShareRepresentativeSubmissionSummary.status === "ok"
+                    ? `${riskShareRepresentativeSubmissionSummary.signatureNotSubmittedCount}건`
+                    : "확인 필요"
+                }
+                hint="공유팩 근로자대표 확인 제출 중 선택 서명 없이 접수된 건수입니다."
+                isRichiFullOperation={isRichiFullOperation}
+              />
+            </>
+          ) : null}
         </section>
 
         {!isRichiFullOperation ? (

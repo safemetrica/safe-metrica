@@ -18,6 +18,7 @@ import {
   fetchWorkerRepresentativeConfirmationRecords,
   type WorkerRepresentativeConfirmationRecord,
 } from "@/lib/workerRepresentativeConfirmationRecords";
+import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 
 export const dynamic = "force-dynamic";
 
@@ -542,19 +543,25 @@ export default async function RiskSharePackManagerHomePage({
 
   const currentPeriod = getCurrentKstMonthPeriod();
 
-  const [fieldSummary, versionLockSummary, recordResult, linkResult] =
-    await Promise.all([
-      fetchFieldParticipationSummary(company.code, currentPeriod),
-      fetchVersionLockMonthlySummary(company.code, currentPeriod),
-      fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
-        status: "failed" as const,
-        records: [] as WorkerRepresentativeConfirmationRecord[],
-      })),
-      fetchWorkerRepresentativeConfirmationLinks(company.code).catch(() => ({
-        status: "failed" as const,
-        links: [] as WorkerRepresentativeConfirmationLink[],
-      })),
-    ]);
+  const [
+    fieldSummary,
+    versionLockSummary,
+    recordResult,
+    linkResult,
+    riskShareRepresentativeSubmissionSummary,
+  ] = await Promise.all([
+    fetchFieldParticipationSummary(company.code, currentPeriod),
+    fetchVersionLockMonthlySummary(company.code, currentPeriod),
+    fetchWorkerRepresentativeConfirmationRecords(company.code).catch(() => ({
+      status: "failed" as const,
+      records: [] as WorkerRepresentativeConfirmationRecord[],
+    })),
+    fetchWorkerRepresentativeConfirmationLinks(company.code).catch(() => ({
+      status: "failed" as const,
+      links: [] as WorkerRepresentativeConfirmationLink[],
+    })),
+    fetchRiskShareRepresentativeSubmissionSummary(company.code, currentPeriod),
+  ]);
 
   const representativeRecords = recordResult.records.filter((record) =>
     isRepresentativeRecordInPeriod(record, currentPeriod),
@@ -846,6 +853,43 @@ export default async function RiskSharePackManagerHomePage({
             </article>
           ))}
         </section>
+
+        {!isRichiFullOperation ? (
+          <section className="rounded-3xl border border-sky-800/40 bg-sky-950/30 p-5 shadow-xl shadow-slate-950/30">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-black text-white">
+                공유팩 근로자대표 확인
+              </h2>
+              <span className="rounded-full border border-sky-700/50 bg-sky-900/40 px-3 py-1 text-xs font-black text-sky-200">
+                {riskShareRepresentativeSubmissionSummary.status === "ok"
+                  ? `${riskShareRepresentativeSubmissionSummary.totalCount}건`
+                  : "확인 필요"}
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              공유팩 근로자대표 확인 링크로 접수된 제출 건수입니다. 위{" "}
+              &ldquo;근로자대표 참여확인&rdquo; 집계와는 별도로 표시됩니다.
+            </p>
+            <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-sky-800/40 bg-slate-950/50 p-3">
+                <dt className="text-xs font-bold text-slate-400">서명 확인됨</dt>
+                <dd className="mt-1 text-lg font-black text-white">
+                  {riskShareRepresentativeSubmissionSummary.status === "ok"
+                    ? `${riskShareRepresentativeSubmissionSummary.signatureConfirmedCount}건`
+                    : "확인 필요"}
+                </dd>
+              </div>
+              <div className="rounded-2xl border border-sky-800/40 bg-slate-950/50 p-3">
+                <dt className="text-xs font-bold text-slate-400">선택 서명 미제출</dt>
+                <dd className="mt-1 text-lg font-black text-white">
+                  {riskShareRepresentativeSubmissionSummary.status === "ok"
+                    ? `${riskShareRepresentativeSubmissionSummary.signatureNotSubmittedCount}건`
+                    : "확인 필요"}
+                </dd>
+              </div>
+            </dl>
+          </section>
+        ) : null}
 
         {isRichiFullOperation ? (
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
