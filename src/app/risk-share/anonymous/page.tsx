@@ -201,17 +201,6 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
             />
           </label>
 
-          <label className="mt-4 block text-sm font-black text-[#0B2742]">
-            {copy.photoLabel} <span className="font-bold text-[#94A3B8]">· {copy.photoOptional}</span>
-            <input
-              name="evidenceFiles"
-              type="file"
-              accept="image/*"
-              multiple
-              className="mt-2 w-full rounded-2xl border border-dashed border-[#C7CFD8] bg-white px-4 py-3 text-sm text-[#64748B]"
-            />
-          </label>
-
           <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm font-black text-amber-900">{copy.preSubmitTitle}</p>
             <p className="mt-2 text-sm leading-6 text-amber-800">{copy.preSubmitBody}</p>
