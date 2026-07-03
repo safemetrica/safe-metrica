@@ -35,12 +35,6 @@ function getTodayLabelKst() {
   return `${kst.getUTCFullYear()}년 ${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일 (${weekday})`;
 }
 
-const TODAY_PRIORITY_EXAMPLES = [
-  { tag: "긴급 제보", tone: "bg-rose-50 text-rose-700 ring-rose-100", text: "프레스 2라인 뒤편 통로 — 바닥 미끄러움 제보" },
-  { tag: "미확인", tone: "bg-amber-50 text-amber-700 ring-amber-100", text: "이번 달 공유확인 미완료 인원 안내" },
-  { tag: "외부인", tone: "bg-purple-50 text-purple-700 ring-purple-100", text: "협력업체 출입 전 안전확인 대기" },
-];
-
 function getCurrentKstMonthRange() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -270,31 +264,6 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             </a>
           </div>
         </header>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-black text-slate-900">오늘 확인할 항목</h2>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[0.68rem] font-black text-slate-500">
-              예시 화면
-            </span>
-          </div>
-          <ul className="mt-3 space-y-2">
-            {TODAY_PRIORITY_EXAMPLES.map((item) => (
-              <li
-                key={item.text}
-                className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3"
-              >
-                <span className={`rounded-full px-2.5 py-1 text-[0.68rem] font-black ring-1 ${item.tone}`}>
-                  {item.tag}
-                </span>
-                <span className="text-sm font-bold text-slate-800">{item.text}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-xs font-bold leading-5 text-slate-400">
-            위 항목은 화면 구성을 보여주는 예시입니다. 실제 접수 집계는 아직 연결되지 않았습니다.
-          </p>
-        </section>
 
         <section className="grid gap-3 md:grid-cols-2">
           {PARTICIPATION_SUMMARY_CARDS.map((card) => (

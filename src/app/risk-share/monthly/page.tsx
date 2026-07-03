@@ -262,12 +262,13 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-black text-slate-900">이번 달 한눈에 보기</h2>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[0.68rem] font-black text-slate-500">
-              집계 연결 예정
+              준비 중
             </span>
           </div>
           <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
-            공유확인, 작업 전 확인, 익명 의견, 외부인 확인, 관리자 검토 흐름이 정리되면 이 영역에
-            이번 달 요약 문장이 표시됩니다. 실제 집계 연결 전까지는 화면 구성만 안내해 드립니다.
+            공유확인, 작업 전 확인, 익명 의견, 외부인 확인, 근로자대표 확인 현황은 아래 확인자료
+            정리 카드에서 바로 확인할 수 있습니다. 관리자 검토 흐름이 정리되면 이 영역에 이번 달
+            요약 문장이 추가로 표시됩니다.
           </p>
         </section>
 
