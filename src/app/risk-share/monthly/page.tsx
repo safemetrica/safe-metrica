@@ -1,5 +1,6 @@
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
+import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,6 +44,9 @@ function getCurrentPeriodKst() {
     rangeLabel: `${year}.${pad(month)}.01 – ${year}.${pad(month)}.${pad(lastDay)}`,
     createdAtGte: startOfMonthUtc.toISOString(),
     createdAtLt: startOfNextMonthUtc.toISOString(),
+    startDate: `${year}-${pad(month)}-01`,
+    endDate: `${year}-${pad(month)}-${pad(lastDay)}`,
+    dayAfterEnd: new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10),
   };
 }
 
@@ -187,47 +191,7 @@ async function fetchRiskShareMonthlyVisitorConfirmationSummary(
   }
 }
 
-const REPRESENTATIVE_CONFIRMATION_SOURCE = "risk_share_representative_confirmation_v1";
-const REPRESENTATIVE_CONFIRMATION_SUMMARY_LIMIT = 500;
 const REPRESENTATIVE_CONFIRMATION_CARD = { title: "근로자대표 확인·의견 기록", accent: "border-sky-100 bg-sky-50/60" };
-
-type RepresentativeConfirmationSummaryRow = {
-  raw_payload: unknown;
-};
-
-type RepresentativeConfirmationSummary = {
-  status: "ok" | "not_configured" | "failed";
-  count: number;
-};
-
-async function fetchRiskShareMonthlyRepresentativeConfirmationSummary(
-  companyCode: string,
-  period: { createdAtGte: string; createdAtLt: string }
-): Promise<RepresentativeConfirmationSummary> {
-  const query = new URLSearchParams();
-  query.set("select", "raw_payload");
-  query.set("tenant_code", `eq.${companyCode}`);
-  query.set("raw_payload->>source", `eq.${REPRESENTATIVE_CONFIRMATION_SOURCE}`);
-  query.append("created_at", `gte.${period.createdAtGte}`);
-  query.append("created_at", `lt.${period.createdAtLt}`);
-  query.set("limit", String(REPRESENTATIVE_CONFIRMATION_SUMMARY_LIMIT));
-
-  try {
-    const rows = await selectSupabaseExportRows<RepresentativeConfirmationSummaryRow>(
-      "field_participation_submissions",
-      query
-    );
-
-    return { status: "ok", count: rows.length };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-
-    return {
-      status: message.includes("configuration is missing") ? "not_configured" : "failed",
-      count: 0,
-    };
-  }
-}
 
 const DOC_ACTIONS = ["부록 · 원문 기록 보기", "부록 · 세부 기록 보기", "PDF로 저장"];
 
@@ -263,7 +227,7 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   const participationSummary = await fetchRiskShareMonthlyParticipationSummary(companyCode, period);
   const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(companyCode, period);
   const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(companyCode, period);
-  const representativeConfirmationSummary = await fetchRiskShareMonthlyRepresentativeConfirmationSummary(companyCode, period);
+  const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(companyCode, period);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
@@ -362,16 +326,22 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-black text-slate-900">{REPRESENTATIVE_CONFIRMATION_CARD.title}</h2>
               <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                {representativeConfirmationSummary.status === "ok" ? `${representativeConfirmationSummary.count}건` : "준비 중"}
+                {representativeSubmissionSummary.status === "ok" ? `${representativeSubmissionSummary.totalCount}건` : "준비 중"}
               </span>
             </div>
             <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {representativeConfirmationSummary.status === "ok"
-                ? representativeConfirmationSummary.count > 0
-                  ? `이번 달 접수된 근로자대표 확인·의견 ${representativeConfirmationSummary.count}건입니다.`
+              {representativeSubmissionSummary.status === "ok"
+                ? representativeSubmissionSummary.totalCount > 0
+                  ? `이번 달 접수된 근로자대표 확인·의견 ${representativeSubmissionSummary.totalCount}건입니다.`
                   : "이번 달 접수 없음"
                 : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
             </p>
+            {representativeSubmissionSummary.status === "ok" ? (
+              <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                서명 확인 {representativeSubmissionSummary.signatureConfirmedCount}건 · 선택 서명 미제출{" "}
+                {representativeSubmissionSummary.signatureNotSubmittedCount}건
+              </p>
+            ) : null}
           </div>
 
           {PENDING_STATUS_CARDS.map((card) => (
