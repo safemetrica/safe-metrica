@@ -1,4 +1,5 @@
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -6,6 +7,7 @@ export const revalidate = 0;
 type PageProps = {
   searchParams?: Promise<{
     company?: string | string[];
+    lang?: string | string[];
   }>;
 };
 
@@ -190,12 +192,15 @@ const DOC_ACTIONS = ["부록 · 원문 기록 보기", "부록 · 세부 기록 
 export default async function RiskShareMonthlySummaryPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
+  const lang = getRiskShareLocale(readSearchParam(params.lang));
   const tenant = companyCode
     ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
     : null;
   const companyLabel = tenant?.name || companyCode || "현장";
   const isAllowed = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
   const period = getCurrentPeriodKst();
+  const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
+  const fieldHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, lang);
 
   if (!isAllowed) {
     return (
@@ -230,6 +235,20 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
           <p className="mt-2 text-sm font-bold text-slate-500">
             {companyLabel} · 기간 {period.rangeLabel}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a
+              href={managerHref}
+              className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-xs font-black text-white"
+            >
+              관리자 홈으로 돌아가기
+            </a>
+            <a
+              href={fieldHref}
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-600"
+            >
+              현장 QR 입구로 이동
+            </a>
+          </div>
         </header>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">

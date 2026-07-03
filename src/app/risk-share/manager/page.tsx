@@ -1,4 +1,5 @@
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -6,6 +7,7 @@ export const revalidate = 0;
 type PageProps = {
   searchParams?: Promise<{
     company?: string | string[];
+    lang?: string | string[];
   }>;
 };
 
@@ -190,11 +192,14 @@ async function fetchRiskShareVisitorConfirmationSummary(
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
+  const lang = getRiskShareLocale(readSearchParam(params.lang));
   const tenant = companyCode
     ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
     : null;
   const companyLabel = tenant?.name || companyCode || "현장";
   const isAllowed = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
+  const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
+  const fieldHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, lang);
 
   if (!isAllowed) {
     return (
@@ -234,6 +239,14 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             현장 QR로 들어온 공유확인, 작업 전 확인, 익명 의견, 외부인 확인 흐름을 한 화면에서
             확인합니다.
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a
+              href={fieldHref}
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-600"
+            >
+              현장 QR 입구로 이동
+            </a>
+          </div>
         </header>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -318,13 +331,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
             이번 달 확인·의견·검토 기록을 한 장의 안전운영 요약으로 정리합니다.
           </p>
-          <button
-            type="button"
-            disabled
-            className="mt-4 flex min-h-11 w-full items-center justify-center rounded-2xl bg-slate-300 px-5 text-sm font-black text-slate-600 md:w-auto"
+          <a
+            href={monthlyHref}
+            className="mt-4 flex min-h-11 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white md:w-auto"
           >
-            월간 안전운영 요약 미리보기 · 준비 중
-          </button>
+            월간 안전운영 요약 보기
+          </a>
         </section>
 
         <p className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
