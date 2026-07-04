@@ -102,7 +102,6 @@ type ParticipationCopy = {
   checklistLegend: string;
   afterSubmitLabel: string;
   afterSubmitBody: string;
-  submitPendingNote: string;
   qrCheckingTitle: string;
   notAllowedBody: string;
   returnToField: string;
@@ -144,7 +143,6 @@ type VisitorCopy = {
   notices: { icon: string; title: string; body: string }[];
   confirmLabel: string;
   submitCta: string;
-  submitPendingNote: string;
   smallprint: string;
   returnToField: string;
   qrCheckingTitle: string;
@@ -243,7 +241,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       checklistLegend: "확인 항목",
       afterSubmitLabel: "제출 이후",
       afterSubmitBody: "확인 내용은 운영기록 후보로 남아 관리자 검토를 거쳐 월간 안전운영 요약에 반영됩니다.",
-      submitPendingNote: "제출 기능은 준비 중입니다. 곧 이 화면에서 바로 확인을 제출할 수 있습니다.",
       qrCheckingTitle: "현장 QR 확인 중",
       notAllowedBody: "이 확인 화면은 지정된 현장 QR에서만 열립니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.",
       returnToField: "현장 QR 입구로 돌아가기",
@@ -293,7 +290,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       ],
       confirmLabel: "위 안전 안내를 확인했습니다.",
       submitCta: "확인하고 출입하기",
-      submitPendingNote: "제출 기능은 준비 중입니다. 운영자 확인 후 이 화면에서 바로 연결될 예정입니다.",
       smallprint: "확인 내용은 출입 안전확인 기록으로 남습니다. 확인이 어려우면 현장 담당자에게 문의해 주세요.",
       returnToField: "현장 QR 입구로 돌아가기",
       qrCheckingTitle: "현장 QR 확인 중",
@@ -382,7 +378,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       checklistLegend: "Checklist",
       afterSubmitLabel: "After submission",
       afterSubmitBody: "Your confirmation stays as a record candidate, is reviewed by a manager, and is reflected in the monthly safety summary.",
-      submitPendingNote: "Submission is not yet connected. Soon you will be able to submit right from this screen.",
       qrCheckingTitle: "Checking field QR",
       notAllowedBody: "This confirmation screen only opens from the designated field QR. Ask the site manager for the latest QR link.",
       returnToField: "Back to field QR entry",
@@ -432,7 +427,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       ],
       confirmLabel: "I have read the safety notes above.",
       submitCta: "Confirm and enter",
-      submitPendingNote: "Submission is not yet connected. It will be linked here once an operator sets it up.",
       smallprint: "This is kept only as an entry safety-check record. Ask site staff if anything is unclear.",
       returnToField: "Back to field QR entry",
       qrCheckingTitle: "Checking field QR",
@@ -521,7 +515,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       checklistLegend: "Mục cần xác nhận",
       afterSubmitLabel: "Sau khi gửi",
       afterSubmitBody: "Nội dung xác nhận được lưu làm ứng viên hồ sơ vận hành, quản lý xem xét và tổng hợp vào báo cáo an toàn hàng tháng.",
-      submitPendingNote: "Chức năng gửi chưa được kết nối. Bạn sẽ sớm gửi xác nhận ngay tại màn hình này.",
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
       notAllowedBody: "Màn hình xác nhận này chỉ mở từ mã QR hiện trường được chỉ định. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới nhất.",
       returnToField: "Quay lại cổng vào QR hiện trường",
@@ -571,7 +564,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       ],
       confirmLabel: "Tôi đã xem các hướng dẫn an toàn trên.",
       submitCta: "Xác nhận và vào",
-      submitPendingNote: "Chức năng gửi chưa được kết nối. Sẽ được liên kết tại đây sau khi người vận hành thiết lập.",
       smallprint: "Nội dung xác nhận được lưu làm hồ sơ an toàn khi vào. Hỏi nhân viên hiện trường nếu chưa rõ.",
       returnToField: "Quay lại cổng vào QR hiện trường",
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
