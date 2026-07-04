@@ -69,8 +69,8 @@ const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT = 500;
 
 const PARTICIPATION_SUMMARY_CARDS = [
-  { key: "monthly" as const, title: "위험성평가 공유확인 현황", accent: "border-blue-100 bg-blue-50/60" },
-  { key: "prework" as const, title: "작업 전 안전확인 현황", accent: "border-emerald-100 bg-emerald-50/60" },
+  { key: "monthly" as const, title: "이번 달 위험성평가 공유확인", accent: "border-blue-100 bg-blue-50/60" },
+  { key: "prework" as const, title: "이번 달 작업 전 안전확인", accent: "border-emerald-100 bg-emerald-50/60" },
 ];
 
 type RiskShareParticipationSummaryRow = {
@@ -83,14 +83,16 @@ type RiskShareParticipationSummary = {
 };
 
 async function fetchRiskShareParticipationSummary(
-  companyCode: string
+  companyCode: string,
+  period: { createdAtGte: string; createdAtLt: string }
 ): Promise<RiskShareParticipationSummary> {
-  const query = new URLSearchParams({
-    select: "raw_payload",
-    tenant_code: `eq.${companyCode}`,
-    "raw_payload->>source": `eq.${RISK_SHARE_PARTICIPATION_SOURCE}`,
-    limit: String(RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT),
-  });
+  const query = new URLSearchParams();
+  query.set("select", "raw_payload");
+  query.set("tenant_code", `eq.${companyCode}`);
+  query.set("raw_payload->>source", `eq.${RISK_SHARE_PARTICIPATION_SOURCE}`);
+  query.append("created_at", `gte.${period.createdAtGte}`);
+  query.append("created_at", `lt.${period.createdAtLt}`);
+  query.set("limit", String(RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT));
 
   try {
     const rows = await selectSupabaseExportRows<RiskShareParticipationSummaryRow>(
@@ -230,7 +232,10 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     );
   }
 
-  const participationSummary = await fetchRiskShareParticipationSummary(companyCode);
+  const participationSummary = await fetchRiskShareParticipationSummary(
+    companyCode,
+    getCurrentKstMonthRange(),
+  );
   const anonymousFeedbackSummary = await fetchRiskShareAnonymousFeedbackSummary(companyCode);
   const visitorConfirmationSummary = await fetchRiskShareVisitorConfirmationSummary(companyCode);
   const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(
@@ -278,7 +283,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               </div>
               <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
                 {participationSummary.status === "ok"
-                  ? `현장 QR로 접수된 확인 ${participationSummary.counts[card.key]}건입니다.`
+                  ? `이번 달 현장 QR로 접수된 확인 ${participationSummary.counts[card.key]}건입니다.`
                   : "집계 연결 전입니다. 현장 QR 접수가 쌓이면 이 카드에 현황이 표시됩니다."}
               </p>
             </div>
