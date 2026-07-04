@@ -4,6 +4,7 @@ import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/s
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
+import KakaoSignInButton from "@/components/auth/KakaoSignInButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -413,12 +414,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             로그인 후 이용해 주세요. 접근 권한이 확인되지 않았습니다. 운영 담당자에게 문의해
             주세요.
           </p>
-          <a
-            href={`/api/auth/signin/kakao?callbackUrl=${encodeURIComponent(managerHref)}`}
+          <KakaoSignInButton
+            callbackUrl={managerHref}
             className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white"
           >
             카카오로 로그인
-          </a>
+          </KakaoSignInButton>
         </section>
       </main>
     );
