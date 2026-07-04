@@ -1,8 +1,7 @@
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
-import RiskShareOfficialHero from "@/components/risk-share/RiskShareOfficialHero";
-import RiskShareKpiCard from "@/components/risk-share/RiskShareKpiCard";
+import RiskShareMonthlyReportShell from "@/components/risk-share/RiskShareMonthlyReportShell";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -55,11 +54,6 @@ function getCurrentPeriodKst() {
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_MONTHLY_SUMMARY_LIMIT = 500;
 
-const PARTICIPATION_SUMMARY_CARDS = [
-  { key: "monthly" as const, title: "위험성평가 공유확인" },
-  { key: "prework" as const, title: "작업 전 안전확인" },
-];
-
 type RiskShareParticipationSummaryRow = {
   raw_payload: { mode?: string } | null;
 };
@@ -106,7 +100,6 @@ async function fetchRiskShareMonthlyParticipationSummary(
 
 const ANONYMOUS_FEEDBACK_SOURCES = ["anonymous_worker_feedback_v1", "risk_share_anonymous_feedback_v1"] as const;
 const ANONYMOUS_FEEDBACK_SUMMARY_LIMIT = 500;
-const ANONYMOUS_FEEDBACK_CARD = { title: "익명 의견 · 아차사고 · 개선제안" };
 
 type AnonymousFeedbackSummaryRow = {
   raw_payload: unknown;
@@ -148,7 +141,6 @@ async function fetchRiskShareMonthlyAnonymousFeedbackSummary(
 
 const VISITOR_CONFIRMATION_SOURCE = "risk_share_visitor_confirmation_v1";
 const VISITOR_CONFIRMATION_SUMMARY_LIMIT = 500;
-const VISITOR_CONFIRMATION_CARD = { title: "외부인 출입 전 안전확인" };
 
 type VisitorConfirmationSummaryRow = {
   raw_payload: unknown;
@@ -188,8 +180,6 @@ async function fetchRiskShareMonthlyVisitorConfirmationSummary(
   }
 }
 
-const REPRESENTATIVE_CONFIRMATION_CARD = { title: "근로자대표 확인·의견 기록" };
-
 export default async function RiskShareMonthlySummaryPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
@@ -225,74 +215,19 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(companyCode, period);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950">
-      <section className="mx-auto max-w-3xl space-y-5">
-        <RiskShareOfficialHero
-          eyebrow={companyLabel}
-          title="월간 안전운영 요약"
-          meta={`${period.label} · ${period.rangeLabel}`}
-          actions={[
-            { label: "관리자 홈", href: managerHref, variant: "primary" },
-            { label: "현장 QR 입구", href: fieldHref, variant: "secondary" },
-          ]}
-        />
-
-        <p className="text-sm font-semibold leading-6 text-slate-500">
-          이번 달 접수된 공유확인, 작업 전 안전확인, 익명 의견, 외부인 확인, 근로자대표 확인
-          현황을 아래 카드로 정리했습니다.
-        </p>
-
-        <section className="grid gap-4 sm:grid-cols-2">
-          {PARTICIPATION_SUMMARY_CARDS.map((card) => (
-            <RiskShareKpiCard
-              key={card.title}
-              label={card.title}
-              value={participationSummary.counts[card.key]}
-              description={
-                participationSummary.counts[card.key] > 0
-                  ? `이번 달 현장 QR로 접수된 확인 ${participationSummary.counts[card.key]}건입니다.`
-                  : "이번 달 접수된 확인이 없습니다."
-              }
-            />
-          ))}
-
-          <RiskShareKpiCard
-            label={ANONYMOUS_FEEDBACK_CARD.title}
-            value={anonymousFeedbackSummary.count}
-            description={
-              anonymousFeedbackSummary.count > 0
-                ? `이번 달 접수된 익명 의견 ${anonymousFeedbackSummary.count}건입니다.`
-                : "이번 달 접수된 익명 의견이 없습니다."
-            }
-          />
-
-          <RiskShareKpiCard
-            label={VISITOR_CONFIRMATION_CARD.title}
-            value={visitorConfirmationSummary.count}
-            description={
-              visitorConfirmationSummary.count > 0
-                ? `이번 달 접수된 외부인 확인 ${visitorConfirmationSummary.count}건입니다.`
-                : "이번 달 접수된 외부인 확인이 없습니다."
-            }
-          />
-
-          <RiskShareKpiCard
-            label={REPRESENTATIVE_CONFIRMATION_CARD.title}
-            value={representativeSubmissionSummary.totalCount}
-            description={
-              representativeSubmissionSummary.totalCount > 0
-                ? `이번 달 총 제출 ${representativeSubmissionSummary.totalCount}건입니다.`
-                : "이번 달 총 제출 내역이 없습니다."
-            }
-            footnote={`서명 확인 ${representativeSubmissionSummary.signatureConfirmedCount}건 · 선택 서명 미제출 ${representativeSubmissionSummary.signatureNotSubmittedCount}건`}
-          />
-        </section>
-
-        <p className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-          본 화면은 운영기록을 정리하는 요약 화면이며, 최종 판단과 조치는 관리자와 사업주가
-          검토합니다.
-        </p>
-      </section>
-    </main>
+    <RiskShareMonthlyReportShell
+      companyLabel={companyLabel}
+      periodLabel={period.label}
+      periodRangeLabel={period.rangeLabel}
+      managerHref={managerHref}
+      fieldHref={fieldHref}
+      monthlyCount={participationSummary.counts.monthly}
+      preworkCount={participationSummary.counts.prework}
+      anonymousCount={anonymousFeedbackSummary.count}
+      visitorCount={visitorConfirmationSummary.count}
+      representativeCount={representativeSubmissionSummary.totalCount}
+      signatureConfirmedCount={representativeSubmissionSummary.signatureConfirmedCount}
+      signatureNotSubmittedCount={representativeSubmissionSummary.signatureNotSubmittedCount}
+    />
   );
 }
