@@ -10,7 +10,6 @@ import {
   RISK_SHARE_LANGUAGE_OPTIONS,
   buildRiskShareLangHref,
 } from "@/lib/risk-share/riskShareI18n";
-import { createRiskShareManagerAccessToken } from "@/lib/risk-share/riskShareManagerAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +106,7 @@ function buildOwnerOnlyLinks(companyCode: string) {
 type RiskShareLinkPackEntry = {
   label: string;
   path: string;
-  query: Record<string, string | undefined>;
+  query: Record<string, string>;
   description: string;
 };
 
@@ -163,19 +162,17 @@ function buildRiskShareLinkPackGroups(companyCode: string) {
     },
   ];
 
-  const managerAccessToken = createRiskShareManagerAccessToken(companyCode) ?? undefined;
-
   const managerEntries: RiskShareLinkPackEntry[] = [
     {
       label: "관리자 홈",
       path: "/risk-share/manager",
-      query: { company: companyCode, access: managerAccessToken },
+      query: { company: companyCode },
       description: "공유확인, 익명 의견, 외부인 확인, 근로자대표 확인 현황을 확인합니다.",
     },
     {
       label: "월간 안전운영 요약",
       path: "/risk-share/monthly",
-      query: { company: companyCode, access: managerAccessToken },
+      query: { company: companyCode },
       description: "이번 달 확인·의견 현황을 요약으로 확인합니다.",
     },
   ];
