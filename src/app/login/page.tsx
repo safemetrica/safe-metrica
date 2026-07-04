@@ -11,7 +11,7 @@ const entryCards = [
   },
   {
     title: "관리자 · 대표 로그인",
-    description: "관리자와 대표는 전용 보안 링크로 운영기록을 확인합니다.",
+    description: "관리자와 대표는 로그인 후 운영기록을 확인합니다.",
     badge: "로그인 필요",
     tone: "border-blue-200 bg-blue-50 text-blue-950",
   },
@@ -51,7 +51,7 @@ export default async function LoginPage({
 
           <p className="mt-6 max-w-xl text-base leading-8 text-white/85">
             근로자와 외부인은 로그인 없이 현장 QR로 참여합니다.
-            관리자와 대표는 전용 보안 링크로 운영기록을 확인합니다.
+            관리자와 대표는 로그인 후 운영기록을 확인합니다.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -96,7 +96,8 @@ export default async function LoginPage({
 
           {hasOtherError ? (
             <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-950">
-              접근 권한을 확인할 수 없습니다. 고객사 전용 보안 링크로 다시 접속해 주세요.
+              접근 권한을 확인할 수 없습니다. 카카오 로그인 후 접근 권한을 확인합니다. 접근
+              권한이 확인되지 않으면 운영 담당자에게 문의해 주세요.
             </div>
           ) : null}
 
