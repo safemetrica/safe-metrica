@@ -68,14 +68,29 @@ function getMonthLabelFromPeriod(period: { startDate: string }) {
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT = 500;
 
+type RiskShareParticipationRawPayload = {
+  mode?: string;
+  signature_present?: boolean | string | null;
+  signature_url?: string | null;
+};
+
 type RiskShareParticipationSummaryRow = {
-  raw_payload: { mode?: string } | null;
+  raw_payload: RiskShareParticipationRawPayload | null;
 };
 
 type RiskShareParticipationSummary = {
   status: "ok" | "not_configured" | "failed";
-  counts: { monthly: number; prework: number };
+  counts: {
+    monthly: number;
+    prework: number;
+    monthlySignatureConfirmed: number;
+    preworkSignatureConfirmed: number;
+  };
 };
+
+function hasParticipationSignature(rawPayload: RiskShareParticipationRawPayload | null) {
+  return rawPayload?.signature_present === true || rawPayload?.signature_present === "true" || Boolean(rawPayload?.signature_url);
+}
 
 async function fetchRiskShareParticipationSummary(
   companyCode: string,
@@ -94,12 +109,16 @@ async function fetchRiskShareParticipationSummary(
       "field_participation_submissions",
       query
     );
+    const monthlyRows = rows.filter((row) => row.raw_payload?.mode === "monthly");
+    const preworkRows = rows.filter((row) => row.raw_payload?.mode === "prework");
 
     return {
       status: "ok",
       counts: {
-        monthly: rows.filter((row) => row.raw_payload?.mode === "monthly").length,
-        prework: rows.filter((row) => row.raw_payload?.mode === "prework").length,
+        monthly: monthlyRows.length,
+        prework: preworkRows.length,
+        monthlySignatureConfirmed: monthlyRows.filter((row) => hasParticipationSignature(row.raw_payload)).length,
+        preworkSignatureConfirmed: preworkRows.filter((row) => hasParticipationSignature(row.raw_payload)).length,
       },
     };
   } catch (error) {
@@ -107,7 +126,7 @@ async function fetchRiskShareParticipationSummary(
 
     return {
       status: message.includes("configuration is missing") ? "not_configured" : "failed",
-      counts: { monthly: 0, prework: 0 },
+      counts: { monthly: 0, prework: 0, monthlySignatureConfirmed: 0, preworkSignatureConfirmed: 0 },
     };
   }
 }
@@ -390,6 +409,9 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
 
   const monthlyConfirmationCount = participationSummary.counts.monthly;
   const preworkConfirmationCount = participationSummary.counts.prework;
+  const monthlyWorkerSignatureCount = participationSummary.counts.monthlySignatureConfirmed;
+  const preworkWorkerSignatureCount = participationSummary.counts.preworkSignatureConfirmed;
+  const workerSignatureConfirmedCount = monthlyWorkerSignatureCount + preworkWorkerSignatureCount;
   const anonymousFeedbackCount = anonymousFeedbackSummary.count;
   const visitorConfirmationCount = visitorConfirmationSummary.count;
   const representativeTotalCount = representativeSubmissionSummary.totalCount;
@@ -402,6 +424,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     visitorConfirmationCount +
     representativeTotalCount;
   const fieldConfirmationCount = monthlyConfirmationCount + preworkConfirmationCount;
+  const workerSignatureNotSubmittedCount = Math.max(0, fieldConfirmationCount - workerSignatureConfirmedCount);
 
   return (
     <main className="min-h-screen bg-[#F3F5F8] text-slate-950 lg:flex">
@@ -483,7 +506,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
               <MetricPill label="이번 달 총 접수" value={totalSubmissionCount} />
               <MetricPill label="현장 확인" value={fieldConfirmationCount} />
-              <MetricPill label="근로자대표 확인" value={representativeTotalCount} />
+              <MetricPill label="근로자 서명 포함" value={workerSignatureConfirmedCount} />
             </div>
           </section>
 
@@ -517,10 +540,14 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                       style={{ width: `${percent(fieldConfirmationCount, totalSubmissionCount)}%` }}
                     />
                   </div>
-                  <p className="mt-3 text-[11px] font-bold leading-5 text-slate-400">
-                    총 접수 {totalSubmissionCount}건 중 {fieldConfirmationCount}건 · 공유확인{" "}
-                    {monthlyConfirmationCount} + 작업 전 {preworkConfirmationCount}
-                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
+                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">
+                      근로자 서명 포함 {workerSignatureConfirmedCount}건
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">
+                      선택 서명 미제출 {workerSignatureNotSubmittedCount}건
+                    </span>
+                  </div>
                 </KpiCard>
 
                 <KpiCard label="근로자대표 확인" value={representativeTotalCount}>
@@ -561,13 +588,21 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     title="위험성평가 공유확인"
                     count={monthlyConfirmationCount}
                     total={totalSubmissionCount}
-                  />
+                  >
+                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700">
+                      근로자 서명 포함 {monthlyWorkerSignatureCount}건
+                    </span>
+                  </StatusRow>
                   <StatusRow
                     icon="작"
                     title="작업 전 안전확인"
                     count={preworkConfirmationCount}
                     total={totalSubmissionCount}
-                  />
+                  >
+                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700">
+                      근로자 서명 포함 {preworkWorkerSignatureCount}건
+                    </span>
+                  </StatusRow>
                   <StatusRow
                     icon="익"
                     title="익명 의견 · 아차사고 · 개선제안"
@@ -632,8 +667,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                   건, 근로자대표 확인 {representativeTotalCount}건이 접수되었습니다.
                 </p>
                 <p className="mt-2 text-sm font-semibold leading-6 text-white/90">
-                  서명 포함 확인은 {signatureConfirmedCount}건이며, 선택 서명 미제출{" "}
-                  {signatureNotSubmittedCount}건도 확인 기록으로 집계됩니다.
+                  근로자 확인 서명은 {workerSignatureConfirmedCount}건 포함되었고, 근로자대표 서명 포함 확인은 {signatureConfirmedCount}건입니다.
                 </p>
 
                 <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/15 pt-4">
@@ -642,8 +676,8 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <p className="text-[11px] font-semibold text-white/65">현장 확인</p>
                   </div>
                   <div>
-                    <p className="text-lg font-black">{anonymousFeedbackCount}건</p>
-                    <p className="text-[11px] font-semibold text-white/65">익명 의견</p>
+                    <p className="text-lg font-black">{workerSignatureConfirmedCount}건</p>
+                    <p className="text-[11px] font-semibold text-white/65">근로자 서명</p>
                   </div>
                   <div>
                     <p className="text-lg font-black">{representativeTotalCount}건</p>
@@ -651,7 +685,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                   </div>
                   <div>
                     <p className="text-lg font-black">{signatureConfirmedCount}건</p>
-                    <p className="text-[11px] font-semibold text-white/65">서명 포함</p>
+                    <p className="text-[11px] font-semibold text-white/65">대표 서명</p>
                   </div>
                 </div>
               </section>
