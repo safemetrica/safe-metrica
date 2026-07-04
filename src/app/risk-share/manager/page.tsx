@@ -1,6 +1,8 @@
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
+import RiskShareOfficialHero from "@/components/risk-share/RiskShareOfficialHero";
+import RiskShareKpiCard from "@/components/risk-share/RiskShareKpiCard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -69,8 +71,8 @@ const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT = 500;
 
 const PARTICIPATION_SUMMARY_CARDS = [
-  { key: "monthly" as const, title: "이번 달 위험성평가 공유확인", accent: "border-blue-100 bg-blue-50/60" },
-  { key: "prework" as const, title: "이번 달 작업 전 안전확인", accent: "border-emerald-100 bg-emerald-50/60" },
+  { key: "monthly" as const, title: "이번 달 위험성평가 공유확인" },
+  { key: "prework" as const, title: "이번 달 작업 전 안전확인" },
 ];
 
 type RiskShareParticipationSummaryRow = {
@@ -119,7 +121,7 @@ async function fetchRiskShareParticipationSummary(
 
 const ANONYMOUS_FEEDBACK_SOURCES = ["anonymous_worker_feedback_v1", "risk_share_anonymous_feedback_v1"] as const;
 const ANONYMOUS_FEEDBACK_SUMMARY_LIMIT = 500;
-const ANONYMOUS_FEEDBACK_CARD = { title: "익명 의견 · 아차사고 · 개선제안", accent: "border-amber-100 bg-amber-50/60" };
+const ANONYMOUS_FEEDBACK_CARD = { title: "익명 의견 · 아차사고 · 개선제안" };
 
 type AnonymousFeedbackSummaryRow = {
   raw_payload: unknown;
@@ -161,7 +163,7 @@ async function fetchRiskShareAnonymousFeedbackSummary(
 
 const VISITOR_CONFIRMATION_SOURCE = "risk_share_visitor_confirmation_v1";
 const VISITOR_CONFIRMATION_SUMMARY_LIMIT = 500;
-const VISITOR_CONFIRMATION_CARD = { title: "외부인 출입 전 안전확인", accent: "border-purple-100 bg-purple-50/60" };
+const VISITOR_CONFIRMATION_CARD = { title: "외부인 출입 전 안전확인" };
 
 type VisitorConfirmationSummaryRow = {
   raw_payload: unknown;
@@ -201,7 +203,7 @@ async function fetchRiskShareVisitorConfirmationSummary(
   }
 }
 
-const REPRESENTATIVE_CONFIRMATION_CARD = { title: "근로자대표 확인", accent: "border-sky-100 bg-sky-50/60" };
+const REPRESENTATIVE_CONFIRMATION_CARD = { title: "근로자대표 확인" };
 
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
@@ -244,103 +246,66 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
-      <section className="mx-auto max-w-5xl space-y-4">
-        <header className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-wide text-blue-700">
-            {companyLabel}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-black tracking-tight text-slate-950">
-              위험성평가 공유확인 운영팩 관리자 홈
-            </h1>
-            <span className="text-sm font-bold text-slate-500">{getTodayLabelKst()}</span>
-          </div>
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-            현장에서 접수된 위험성평가 공유확인과 작업 전 안전확인 현황을 한 화면에서
-            확인합니다.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <a
-              href={fieldHref}
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-600"
-            >
-              현장 QR 입구
-            </a>
-            <a
-              href={monthlyHref}
-              className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-xs font-black text-white"
-            >
-              월간 안전운영 요약
-            </a>
-          </div>
-        </header>
+    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950">
+      <section className="mx-auto max-w-5xl space-y-5">
+        <RiskShareOfficialHero
+          eyebrow={companyLabel}
+          title="위험성평가 공유확인 관리자 홈"
+          meta={getTodayLabelKst()}
+          description="현장에서 접수된 위험성평가 공유확인과 작업 전 안전확인 현황을 한 화면에서 확인합니다."
+          actions={[
+            { label: "현장 QR 입구", href: fieldHref, variant: "secondary" },
+            { label: "월간 안전운영 요약", href: monthlyHref, variant: "primary" },
+          ]}
+        />
 
-        <section className="grid gap-3 md:grid-cols-2">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PARTICIPATION_SUMMARY_CARDS.map((card) => (
-            <div key={card.title} className={`rounded-3xl border p-4 shadow-sm ${card.accent}`}>
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-black text-slate-900">{card.title}</h2>
-                <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                  {participationSummary.counts[card.key]}건
-                </span>
-              </div>
-              <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-                {participationSummary.counts[card.key] > 0
+            <RiskShareKpiCard
+              key={card.title}
+              label={card.title}
+              value={participationSummary.counts[card.key]}
+              description={
+                participationSummary.counts[card.key] > 0
                   ? `이번 달 현장 QR로 접수된 확인 ${participationSummary.counts[card.key]}건입니다.`
-                  : "이번 달 접수된 확인이 없습니다."}
-              </p>
-            </div>
+                  : "이번 달 접수된 확인이 없습니다."
+              }
+            />
           ))}
 
-          <div className={`rounded-3xl border p-4 shadow-sm ${ANONYMOUS_FEEDBACK_CARD.accent}`}>
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-black text-slate-900">{ANONYMOUS_FEEDBACK_CARD.title}</h2>
-              <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                {anonymousFeedbackSummary.count}건
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {anonymousFeedbackSummary.count > 0
+          <RiskShareKpiCard
+            label={ANONYMOUS_FEEDBACK_CARD.title}
+            value={anonymousFeedbackSummary.count}
+            description={
+              anonymousFeedbackSummary.count > 0
                 ? `이번 달 접수된 익명 의견 ${anonymousFeedbackSummary.count}건입니다.`
-                : "이번 달 접수된 익명 의견이 없습니다."}
-            </p>
-          </div>
+                : "이번 달 접수된 익명 의견이 없습니다."
+            }
+          />
 
-          <div className={`rounded-3xl border p-4 shadow-sm ${VISITOR_CONFIRMATION_CARD.accent}`}>
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-black text-slate-900">{VISITOR_CONFIRMATION_CARD.title}</h2>
-              <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                {visitorConfirmationSummary.count}건
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {visitorConfirmationSummary.count > 0
+          <RiskShareKpiCard
+            label={VISITOR_CONFIRMATION_CARD.title}
+            value={visitorConfirmationSummary.count}
+            description={
+              visitorConfirmationSummary.count > 0
                 ? `이번 달 접수된 외부인 확인 ${visitorConfirmationSummary.count}건입니다.`
-                : "이번 달 접수된 외부인 확인이 없습니다."}
-            </p>
-          </div>
+                : "이번 달 접수된 외부인 확인이 없습니다."
+            }
+          />
 
-          <div className={`rounded-3xl border p-4 shadow-sm ${REPRESENTATIVE_CONFIRMATION_CARD.accent}`}>
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-black text-slate-900">{REPRESENTATIVE_CONFIRMATION_CARD.title}</h2>
-              <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                {representativeSubmissionSummary.totalCount}건
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {representativeSubmissionSummary.totalCount > 0
+          <RiskShareKpiCard
+            label={REPRESENTATIVE_CONFIRMATION_CARD.title}
+            value={representativeSubmissionSummary.totalCount}
+            description={
+              representativeSubmissionSummary.totalCount > 0
                 ? `이번 달 총 제출 ${representativeSubmissionSummary.totalCount}건입니다.`
-                : "이번 달 총 제출 내역이 없습니다."}
-            </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-              서명 확인 {representativeSubmissionSummary.signatureConfirmedCount}건 · 선택 서명 미제출{" "}
-              {representativeSubmissionSummary.signatureNotSubmittedCount}건
-            </p>
-          </div>
+                : "이번 달 총 제출 내역이 없습니다."
+            }
+            footnote={`서명 확인 ${representativeSubmissionSummary.signatureConfirmedCount}건 · 선택 서명 미제출 ${representativeSubmissionSummary.signatureNotSubmittedCount}건`}
+          />
         </section>
 
-        <p className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
+        <p className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           접수된 내용은 관리자 검토 후 월간 안전운영 요약에 반영됩니다.
         </p>
       </section>
