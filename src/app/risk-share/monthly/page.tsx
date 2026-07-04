@@ -54,14 +54,29 @@ function getCurrentPeriodKst() {
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_MONTHLY_SUMMARY_LIMIT = 500;
 
+type RiskShareParticipationRawPayload = {
+  mode?: string;
+  signature_present?: boolean | string | null;
+  signature_url?: string | null;
+};
+
 type RiskShareParticipationSummaryRow = {
-  raw_payload: { mode?: string } | null;
+  raw_payload: RiskShareParticipationRawPayload | null;
 };
 
 type RiskShareParticipationSummary = {
   status: "ok" | "not_configured" | "failed";
-  counts: { monthly: number; prework: number };
+  counts: {
+    monthly: number;
+    prework: number;
+    monthlySignatureConfirmed: number;
+    preworkSignatureConfirmed: number;
+  };
 };
+
+function hasParticipationSignature(rawPayload: RiskShareParticipationRawPayload | null) {
+  return rawPayload?.signature_present === true || rawPayload?.signature_present === "true" || Boolean(rawPayload?.signature_url);
+}
 
 async function fetchRiskShareMonthlyParticipationSummary(
   companyCode: string,
@@ -80,12 +95,16 @@ async function fetchRiskShareMonthlyParticipationSummary(
       "field_participation_submissions",
       query
     );
+    const monthlyRows = rows.filter((row) => row.raw_payload?.mode === "monthly");
+    const preworkRows = rows.filter((row) => row.raw_payload?.mode === "prework");
 
     return {
       status: "ok",
       counts: {
-        monthly: rows.filter((row) => row.raw_payload?.mode === "monthly").length,
-        prework: rows.filter((row) => row.raw_payload?.mode === "prework").length,
+        monthly: monthlyRows.length,
+        prework: preworkRows.length,
+        monthlySignatureConfirmed: monthlyRows.filter((row) => hasParticipationSignature(row.raw_payload)).length,
+        preworkSignatureConfirmed: preworkRows.filter((row) => hasParticipationSignature(row.raw_payload)).length,
       },
     };
   } catch (error) {
@@ -93,7 +112,7 @@ async function fetchRiskShareMonthlyParticipationSummary(
 
     return {
       status: message.includes("configuration is missing") ? "not_configured" : "failed",
-      counts: { monthly: 0, prework: 0 },
+      counts: { monthly: 0, prework: 0, monthlySignatureConfirmed: 0, preworkSignatureConfirmed: 0 },
     };
   }
 }
@@ -223,6 +242,8 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
       fieldHref={fieldHref}
       monthlyCount={participationSummary.counts.monthly}
       preworkCount={participationSummary.counts.prework}
+      monthlyWorkerSignatureCount={participationSummary.counts.monthlySignatureConfirmed}
+      preworkWorkerSignatureCount={participationSummary.counts.preworkSignatureConfirmed}
       anonymousCount={anonymousFeedbackSummary.count}
       visitorCount={visitorConfirmationSummary.count}
       representativeCount={representativeSubmissionSummary.totalCount}
