@@ -54,8 +54,8 @@ const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_MONTHLY_SUMMARY_LIMIT = 500;
 
 const PARTICIPATION_SUMMARY_CARDS = [
-  { key: "monthly" as const, title: "위험성평가 공유확인 현황", accent: "border-blue-100 bg-blue-50/60" },
-  { key: "prework" as const, title: "작업 전 안전확인 현황", accent: "border-emerald-100 bg-emerald-50/60" },
+  { key: "monthly" as const, title: "위험성평가 공유확인", accent: "border-blue-100 bg-blue-50/60" },
+  { key: "prework" as const, title: "작업 전 안전확인", accent: "border-emerald-100 bg-emerald-50/60" },
 ];
 
 type RiskShareParticipationSummaryRow = {
@@ -227,26 +227,26 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
       <section className="mx-auto max-w-3xl space-y-4">
         <header className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase tracking-wide text-blue-700">
-            SafeMetrica · 월간 안전운영 요약
+            {companyLabel}
           </p>
           <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-            {period.label} 안전운영 요약
+            월간 안전운영 요약
           </h1>
           <p className="mt-2 text-sm font-bold text-slate-500">
-            {companyLabel} · 기간 {period.rangeLabel}
+            {period.label} · {period.rangeLabel}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <a
               href={managerHref}
               className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2 text-xs font-black text-white"
             >
-              관리자 홈으로 돌아가기
+              관리자 홈
             </a>
             <a
               href={fieldHref}
               className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-600"
             >
-              현장 QR 입구로 이동
+              현장 QR 입구
             </a>
           </div>
         </header>
@@ -255,7 +255,7 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
           <h2 className="text-base font-black text-slate-900">이번 달 한눈에 보기</h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
             이번 달 접수된 공유확인, 작업 전 안전확인, 익명 의견, 외부인 확인, 근로자대표 확인
-            현황을 아래 카드에서 확인합니다.
+            현황을 아래 카드로 정리했습니다.
           </p>
         </section>
 
@@ -265,15 +265,13 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-black text-slate-900">{card.title}</h2>
                 <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                  {participationSummary.status === "ok"
-                    ? `${participationSummary.counts[card.key]}건`
-                    : "준비 중"}
+                  {participationSummary.counts[card.key]}건
                 </span>
               </div>
               <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-                {participationSummary.status === "ok"
+                {participationSummary.counts[card.key] > 0
                   ? `이번 달 현장 QR로 접수된 확인 ${participationSummary.counts[card.key]}건입니다.`
-                  : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
+                  : "이번 달 접수된 확인이 없습니다."}
               </p>
             </div>
           ))}
@@ -282,15 +280,13 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-black text-slate-900">{ANONYMOUS_FEEDBACK_CARD.title}</h2>
               <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                {anonymousFeedbackSummary.status === "ok" ? `${anonymousFeedbackSummary.count}건` : "준비 중"}
+                {anonymousFeedbackSummary.count}건
               </span>
             </div>
             <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {anonymousFeedbackSummary.status === "ok"
-                ? anonymousFeedbackSummary.count > 0
-                  ? `이번 달 접수된 익명 의견 ${anonymousFeedbackSummary.count}건입니다.`
-                  : "이번 달 접수된 익명 의견이 없습니다."
-                : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
+              {anonymousFeedbackSummary.count > 0
+                ? `이번 달 접수된 익명 의견 ${anonymousFeedbackSummary.count}건입니다.`
+                : "이번 달 접수된 익명 의견이 없습니다."}
             </p>
           </div>
 
@@ -298,15 +294,13 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-black text-slate-900">{VISITOR_CONFIRMATION_CARD.title}</h2>
               <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                {visitorConfirmationSummary.status === "ok" ? `${visitorConfirmationSummary.count}건` : "준비 중"}
+                {visitorConfirmationSummary.count}건
               </span>
             </div>
             <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {visitorConfirmationSummary.status === "ok"
-                ? visitorConfirmationSummary.count > 0
-                  ? `이번 달 접수된 외부인 확인 ${visitorConfirmationSummary.count}건입니다.`
-                  : "이번 달 접수된 외부인 확인이 없습니다."
-                : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
+              {visitorConfirmationSummary.count > 0
+                ? `이번 달 접수된 외부인 확인 ${visitorConfirmationSummary.count}건입니다.`
+                : "이번 달 접수된 외부인 확인이 없습니다."}
             </p>
           </div>
 
@@ -314,24 +308,19 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-black text-slate-900">{REPRESENTATIVE_CONFIRMATION_CARD.title}</h2>
               <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-slate-500 ring-1 ring-slate-200">
-                {representativeSubmissionSummary.status === "ok" ? `${representativeSubmissionSummary.totalCount}건` : "준비 중"}
+                {representativeSubmissionSummary.totalCount}건
               </span>
             </div>
             <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              {representativeSubmissionSummary.status === "ok"
-                ? representativeSubmissionSummary.totalCount > 0
-                  ? `이번 달 접수된 근로자대표 확인·의견 ${representativeSubmissionSummary.totalCount}건입니다.`
-                  : "이번 달 접수 없음"
-                : "집계 연결 전입니다. 현장 QR 접수와 관리자 검토 기록이 쌓이면 이 카드에 이번 달 현황이 표시됩니다."}
+              {representativeSubmissionSummary.totalCount > 0
+                ? `이번 달 총 제출 ${representativeSubmissionSummary.totalCount}건입니다.`
+                : "이번 달 총 제출 내역이 없습니다."}
             </p>
-            {representativeSubmissionSummary.status === "ok" ? (
-              <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                서명 확인 {representativeSubmissionSummary.signatureConfirmedCount}건 · 선택 서명 미제출{" "}
-                {representativeSubmissionSummary.signatureNotSubmittedCount}건
-              </p>
-            ) : null}
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+              서명 확인 {representativeSubmissionSummary.signatureConfirmedCount}건 · 선택 서명 미제출{" "}
+              {representativeSubmissionSummary.signatureNotSubmittedCount}건
+            </p>
           </div>
-
         </section>
 
         <p className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-xs font-bold leading-6 text-slate-500 shadow-sm">
