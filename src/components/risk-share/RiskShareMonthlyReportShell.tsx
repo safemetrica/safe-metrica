@@ -6,6 +6,8 @@ type RiskShareMonthlyReportShellProps = {
   fieldHref: string;
   monthlyCount: number;
   preworkCount: number;
+  monthlyWorkerSignatureCount: number;
+  preworkWorkerSignatureCount: number;
   anonymousCount: number;
   visitorCount: number;
   representativeCount: number;
@@ -75,6 +77,8 @@ export default function RiskShareMonthlyReportShell({
   fieldHref,
   monthlyCount,
   preworkCount,
+  monthlyWorkerSignatureCount,
+  preworkWorkerSignatureCount,
   anonymousCount,
   visitorCount,
   representativeCount,
@@ -83,6 +87,8 @@ export default function RiskShareMonthlyReportShell({
 }: RiskShareMonthlyReportShellProps) {
   const totalCount = monthlyCount + preworkCount + anonymousCount + visitorCount + representativeCount;
   const fieldCount = monthlyCount + preworkCount;
+  const workerSignatureConfirmedCount = monthlyWorkerSignatureCount + preworkWorkerSignatureCount;
+  const workerSignatureNotSubmittedCount = Math.max(0, fieldCount - workerSignatureConfirmedCount);
 
   return (
     <main className="min-h-screen bg-[#F3F5F8] text-slate-950 lg:flex">
@@ -134,7 +140,7 @@ export default function RiskShareMonthlyReportShell({
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
               <div className="rounded-2xl bg-slate-50 px-5 py-4"><p className="text-xs font-bold text-slate-500">이번 달 총 접수</p><p className="mt-1 text-2xl font-black text-slate-950">{totalCount}건</p></div>
               <div className="rounded-2xl bg-blue-50 px-5 py-4"><p className="text-xs font-bold text-blue-700">현장 확인</p><p className="mt-1 text-2xl font-black text-blue-950">{fieldCount}건</p></div>
-              <div className="rounded-2xl bg-teal-50 px-5 py-4"><p className="text-xs font-bold text-teal-700">근로자대표 확인</p><p className="mt-1 text-2xl font-black text-teal-950">{representativeCount}건</p></div>
+              <div className="rounded-2xl bg-teal-50 px-5 py-4"><p className="text-xs font-bold text-teal-700">근로자 서명 포함</p><p className="mt-1 text-2xl font-black text-teal-950">{workerSignatureConfirmedCount}건</p></div>
             </div>
           </section>
 
@@ -144,12 +150,13 @@ export default function RiskShareMonthlyReportShell({
                 <p className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">이번 달 한눈에 보기</p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">공유·확인·의견 흐름 요약</h2>
                 <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-slate-600">이번 달 현장 확인 {fieldCount}건, 익명 의견 {anonymousCount}건, 외부인 확인 {visitorCount}건, 근로자대표 확인 {representativeCount}건이 접수되었습니다.</p>
-                <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-600">서명 포함 확인은 {signatureConfirmedCount}건이며, 선택 서명 미제출 {signatureNotSubmittedCount}건도 확인 기록으로 집계됩니다.</p>
+                <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-600">일반 근로자 서명 포함은 {workerSignatureConfirmedCount}건이며, 선택 서명 미제출 {workerSignatureNotSubmittedCount}건도 확인 기록으로 집계됩니다.</p>
+                <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-600">근로자대표 확인 중 서명 포함은 {signatureConfirmedCount}건이며, 선택 서명 미제출 {signatureNotSubmittedCount}건도 확인 기록으로 집계됩니다.</p>
               </section>
 
               <section className="grid gap-5 md:grid-cols-2">
-                <ReportCard title="위험성평가 공유확인" count={monthlyCount} description={`이번 달 현장 QR로 접수된 확인 ${monthlyCount}건입니다.`} />
-                <ReportCard title="작업 전 안전확인" count={preworkCount} description={`이번 달 현장 QR로 접수된 확인 ${preworkCount}건입니다.`} />
+                <ReportCard title="위험성평가 공유확인" count={monthlyCount} description={`이번 달 공유확인 ${monthlyCount}건 중 서명 포함 ${monthlyWorkerSignatureCount}건입니다.`} />
+                <ReportCard title="작업 전 안전확인" count={preworkCount} description={`이번 달 작업 전 확인 ${preworkCount}건 중 서명 포함 ${preworkWorkerSignatureCount}건입니다.`} />
                 <ReportCard title="익명 의견 · 아차사고 · 개선제안" count={anonymousCount} description={`이번 달 접수된 익명 의견 ${anonymousCount}건입니다.`} />
                 <ReportCard title="외부인 출입 전 안전확인" count={visitorCount} description={`이번 달 접수된 외부인 확인 ${visitorCount}건입니다.`} />
                 <ReportCard title="근로자대표 확인·의견 기록" count={representativeCount} description={`이번 달 총 제출 ${representativeCount}건입니다.`} />
@@ -184,7 +191,17 @@ export default function RiskShareMonthlyReportShell({
                 <p className="text-xs font-black uppercase tracking-[0.08em] text-white/75">월간 운영 브리핑</p>
                 <h2 className="mt-2 text-xl font-black tracking-tight">이번 달 기록 흐름</h2>
                 <p className="mt-3 text-sm font-semibold leading-6 text-white/90">현장 확인 {fieldCount}건과 익명 의견 {anonymousCount}건이 월간 운영기록으로 정리되었습니다.</p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-white/90">근로자대표 확인 {representativeCount}건 중 서명 포함은 {signatureConfirmedCount}건입니다.</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-white/90">일반 근로자 서명 포함은 {workerSignatureConfirmedCount}건, 근로자대표 서명 포함은 {signatureConfirmedCount}건입니다.</p>
+              </section>
+
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                <p className="text-xs font-black uppercase tracking-[0.08em] text-blue-600">근로자 서명 포함 요약</p>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-2xl bg-slate-50 px-2 py-3"><p className="text-lg font-black text-slate-950">{workerSignatureConfirmedCount}</p><p className="mt-1 text-[11px] font-bold text-slate-400">서명 포함</p></div>
+                  <div className="rounded-2xl bg-teal-50 px-2 py-3"><p className="text-lg font-black text-teal-800">{monthlyWorkerSignatureCount}</p><p className="mt-1 text-[11px] font-bold text-teal-700">공유확인</p></div>
+                  <div className="rounded-2xl bg-blue-50 px-2 py-3"><p className="text-lg font-black text-blue-800">{preworkWorkerSignatureCount}</p><p className="mt-1 text-[11px] font-bold text-blue-700">작업 전</p></div>
+                </div>
+                <p className="mt-4 text-xs font-semibold leading-6 text-slate-500">선택 서명 미제출 {workerSignatureNotSubmittedCount}건도 일반 근로자 확인 기록으로 집계됩니다.</p>
               </section>
 
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
