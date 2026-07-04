@@ -125,6 +125,13 @@ export async function POST(req: NextRequest) {
   const workerAffiliation = getFormText(formData, "workerAffiliation").slice(0, 80);
   const workerIdentifier = getFormText(formData, "workerIdentifier").slice(0, 20);
 
+  if (!workerIdentifier) {
+    return NextResponse.redirect(
+      new URL(buildParticipationHref(companyCode, mode, lang, "missing_identifier"), req.url),
+      { status: 303 }
+    );
+  }
+
   const modeLabel = mode === "monthly" ? "월간 위험성평가 공유확인" : "작업 전 안전확인";
   const confirmationType = mode === "monthly" ? "risk_share_confirm_monthly" : "risk_share_confirm_prework";
   const reportedDate = getTodayDateValue();

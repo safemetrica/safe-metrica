@@ -170,6 +170,12 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
               </div>
             ) : null}
 
+            {submitted === "missing_identifier" ? (
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-950">
+                확인번호를 입력해 주세요.
+              </div>
+            ) : null}
+
             <form action="/api/risk-share/participation/submit" method="post" encType="multipart/form-data">
               <input type="hidden" name="companyCode" value={companyCode} readOnly />
               <input type="hidden" name="mode" value={mode} readOnly />
@@ -197,6 +203,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                   확인번호
                   <input
                     name="workerIdentifier"
+                    required
                     maxLength={20}
                     placeholder="휴대폰 뒤 4자리 또는 사번"
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
