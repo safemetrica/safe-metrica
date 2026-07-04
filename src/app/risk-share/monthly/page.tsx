@@ -211,6 +211,7 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   const isAllowed = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
   const period = getCurrentPeriodKst();
   const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
+  const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
   const fieldHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, lang);
 
   if (!isAllowed) {
@@ -245,6 +246,12 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
             로그인 후 이용해 주세요. 접근 권한이 확인되지 않았습니다. 운영 담당자에게 문의해
             주세요.
           </p>
+          <a
+            href={`/api/auth/signin/kakao?callbackUrl=${encodeURIComponent(monthlyHref)}`}
+            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white"
+          >
+            카카오로 로그인
+          </a>
         </section>
       </main>
     );
