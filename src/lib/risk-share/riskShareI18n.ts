@@ -50,7 +50,6 @@ type FieldCopy = {
   heroTitle: string;
   heroSub: string;
   periodLabel: (month: number) => string;
-  trail: string[];
   shareTitle: string;
   shareDescription: string;
   shareFollowUp: string;
@@ -89,7 +88,6 @@ type ParticipationCopy = {
     description: string;
     cta: string;
     checklist: string[];
-    flow: string[];
   };
   prework: {
     badge: string;
@@ -97,7 +95,6 @@ type ParticipationCopy = {
     description: string;
     cta: string;
     checklist: string[];
-    flow: string[];
   };
   checklistLegend: string;
   afterSubmitLabel: string;
@@ -180,7 +177,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       heroTitle: "우리 작업장 안전 확인",
       heroSub: "QR로 들어오셨네요. 아래에서 할 일을 선택해 주세요.",
       periodLabel: (month) => `${month}월 위험성평가 공유확인 진행 중`,
-      trail: ["공유", "확인 — 지금 단계", "관리자 검토", "월간 안전운영 요약"],
       shareTitle: "위험성평가 공유확인",
       shareDescription: "이번 달 공유된 위험요인을 확인합니다. 약 3분.",
       shareFollowUp: "관리자 검토를 거쳐 다음 위험성평가 재검토 후보로 이어집니다.",
@@ -224,7 +220,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
           "현장 주의사항을 확인했습니다.",
           "의견이 있으면 익명 의견함에 남길 수 있습니다.",
         ],
-        flow: ["확인 내용", "운영기록 후보", "관리자 검토", "월간 안전운영 요약", "다음 위험성평가 보완 후보"],
       },
       prework: {
         badge: "작업 전 확인",
@@ -236,7 +231,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
           "보호구와 작업 동선을 확인했습니다.",
           "이상이 있으면 관리자에게 알리거나 익명 의견함에 남길 수 있습니다.",
         ],
-        flow: ["작업 전 확인", "운영기록 후보", "관리자 검토", "월간 안전운영 요약"],
       },
       checklistLegend: "확인 항목",
       afterSubmitLabel: "제출 이후",
@@ -317,7 +311,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       heroTitle: "Workplace Safety Check",
       heroSub: "You scanned the QR. Choose what to do below.",
       periodLabel: (month) => `${EN_MONTH_NAMES[month - 1]} risk-sharing check in progress`,
-      trail: ["Share", "Confirm — you are here", "Manager review", "Monthly summary"],
       shareTitle: "Risk-sharing check",
       shareDescription: "Review this month's shared hazards. About 3 min.",
       shareFollowUp: "After manager review, this may feed into the next risk assessment update.",
@@ -361,7 +354,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
           "I have checked the on-site precautions.",
           "I can leave a comment in the anonymous box if I have one.",
         ],
-        flow: ["Confirmation", "Record candidate", "Manager review", "Monthly summary", "Next assessment candidate"],
       },
       prework: {
         badge: "Pre-work check",
@@ -373,7 +365,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
           "I have checked my PPE and work route.",
           "I can notify the manager or leave a note in the anonymous box if something is wrong.",
         ],
-        flow: ["Pre-work check", "Record candidate", "Manager review", "Monthly summary"],
       },
       checklistLegend: "Checklist",
       afterSubmitLabel: "After submission",
@@ -454,7 +445,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       heroTitle: "Kiểm tra an toàn nơi làm việc",
       heroSub: "Bạn đã quét mã QR. Hãy chọn việc cần làm bên dưới.",
       periodLabel: (month) => `Đang xác nhận chia sẻ rủi ro tháng ${month}`,
-      trail: ["Chia sẻ", "Xác nhận — bước hiện tại", "Quản lý xem xét", "Báo cáo an toàn tháng"],
       shareTitle: "Xác nhận rủi ro đã chia sẻ",
       shareDescription: "Xem các mối nguy đã chia sẻ tháng này. Khoảng 3 phút.",
       shareFollowUp: "Sau khi quản lý xem xét, nội dung có thể trở thành ứng viên rà soát đánh giá rủi ro tiếp theo.",
@@ -498,7 +488,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
           "Tôi đã xem lưu ý an toàn tại hiện trường.",
           "Nếu có ý kiến, tôi có thể gửi vào hộp ý kiến ẩn danh.",
         ],
-        flow: ["Nội dung xác nhận", "Ứng viên hồ sơ vận hành", "Quản lý xem xét", "Báo cáo an toàn tháng", "Ứng viên rà soát đánh giá rủi ro tiếp theo"],
       },
       prework: {
         badge: "Kiểm tra trước khi làm",
@@ -510,7 +499,6 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
           "Tôi đã kiểm tra đồ bảo hộ và lối đi làm việc.",
           "Nếu có bất thường, tôi có thể báo quản lý hoặc gửi vào hộp ý kiến ẩn danh.",
         ],
-        flow: ["Kiểm tra trước khi làm", "Ứng viên hồ sơ vận hành", "Quản lý xem xét", "Báo cáo an toàn tháng"],
       },
       checklistLegend: "Mục cần xác nhận",
       afterSubmitLabel: "Sau khi gửi",
