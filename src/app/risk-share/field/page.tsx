@@ -120,23 +120,6 @@ function LangBar({ companyCode, activeLocale }: { companyCode: string; activeLoc
   );
 }
 
-function Trail({ steps }: { steps: string[] }) {
-  return (
-    <div aria-label="기록 흐름" className="flex items-stretch gap-1 px-3 pt-3">
-      {steps.map((step, index) => (
-        <span
-          key={step}
-          className={`flex flex-1 items-center justify-center rounded-lg px-1.5 py-1.5 text-center text-[0.62rem] font-black leading-4 ${
-            index === 1 ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-500"
-          }`}
-        >
-          {step}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export default async function RiskSharePublicFieldEntryPage({
   searchParams,
 }: PageProps) {
@@ -238,8 +221,6 @@ export default async function RiskSharePublicFieldEntryPage({
             <LangBar companyCode={companyCode} activeLocale={locale} />
           </div>
         </div>
-
-        <Trail steps={copy.trail} />
 
         <div className="space-y-2 p-3">
           <div className="relative space-y-2">

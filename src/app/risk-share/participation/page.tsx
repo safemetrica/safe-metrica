@@ -157,26 +157,6 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
             </div>
           </div>
 
-          <div
-            aria-label="기록 흐름"
-            className="flex flex-wrap items-center gap-1 border-b border-slate-100 bg-slate-50 px-3 py-2.5"
-          >
-            {modeCopy.flow.map((step, index) => (
-              <span key={step} className="flex items-center gap-1">
-                <span
-                  className={`rounded-full px-2 py-1 text-[0.6rem] font-black leading-4 ${
-                    index === 0 ? "bg-slate-950 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
-                  }`}
-                >
-                  {step}
-                </span>
-                {index < modeCopy.flow.length - 1 ? (
-                  <span className="text-[0.6rem] text-slate-300">→</span>
-                ) : null}
-              </span>
-            ))}
-          </div>
-
           <div className="space-y-3 p-3">
             {submitted === "1" ? (
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-950">
