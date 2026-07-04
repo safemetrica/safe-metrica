@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 
 import {
   getTenantRegistryConfigByCode,
@@ -13,6 +14,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const MAX_SIGNATURE_FILE_SIZE_BYTES = 1.5 * 1024 * 1024;
+
 type ParticipationMode = "monthly" | "prework";
 
 function getFormText(formData: FormData, key: string) {
@@ -21,6 +24,33 @@ function getFormText(formData: FormData, key: string) {
 
 function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
+}
+
+function isFile(value: FormDataEntryValue | null): value is File {
+  return value instanceof File && value.size > 0;
+}
+
+async function uploadWorkerSignature(
+  file: File,
+  companyCode: string,
+  mode: ParticipationMode,
+  reportedDate: string,
+): Promise<string | null> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN || file.size > MAX_SIGNATURE_FILE_SIZE_BYTES) {
+    return null;
+  }
+
+  try {
+    const blob = await put(
+      `risk-share-worker-signature/${companyCode}/${mode}/${reportedDate}/${Date.now()}-signature.png`,
+      file,
+      { access: "public", addRandomSuffix: true },
+    );
+
+    return blob.url;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeCompanyCode(value: string) {
@@ -91,9 +121,17 @@ export async function POST(req: NextRequest) {
   }));
   const checkedCount = checkedItems.filter((item) => item.checked).length;
   const allChecked = checklist.length > 0 && checkedCount === checklist.length;
+  const workerName = getFormText(formData, "workerName").slice(0, 60);
+  const workerAffiliation = getFormText(formData, "workerAffiliation").slice(0, 80);
 
   const modeLabel = mode === "monthly" ? "월간 위험성평가 공유확인" : "작업 전 안전확인";
   const confirmationType = mode === "monthly" ? "risk_share_confirm_monthly" : "risk_share_confirm_prework";
+  const reportedDate = getTodayDateValue();
+  const signatureFileEntry = formData.get("signatureFile");
+  const signatureFile = isFile(signatureFileEntry) ? signatureFileEntry : null;
+  const signatureUrl = signatureFile
+    ? await uploadWorkerSignature(signatureFile, tenant.code, mode, reportedDate)
+    : null;
 
   const result = await insertFieldParticipationSubmissionShadowRecord({
     tenant_code: tenant.code,
@@ -102,14 +140,14 @@ export async function POST(req: NextRequest) {
     legacy_type: "공유확인",
     title: `${tenant.name} ${modeLabel}`,
     content: `${modeLabel} 체크리스트 ${checkedCount}/${checklist.length}개 확인 완료`,
-    location: "",
-    submitter: "익명",
-    anonymous: true,
-    reported_date: getTodayDateValue(),
+    location: workerAffiliation,
+    submitter: workerName || "근로자",
+    anonymous: false,
+    reported_date: reportedDate,
     status: "접수",
     notion_page_id: null,
     notion_url: null,
-    file_urls: [],
+    file_urls: signatureUrl ? [signatureUrl] : [],
     raw_payload: {
       source: "risk_share_participation_submit_v1",
       source_channel: "risk_share_participation_submit_v1",
@@ -117,10 +155,14 @@ export async function POST(req: NextRequest) {
       confirmation_type: confirmationType,
       company_code: tenant.code,
       lang,
+      worker_name: workerName,
+      worker_affiliation: workerAffiliation,
+      identity_mode: "identified",
       checked_items: checkedItems,
       checked_count: checkedCount,
       all_checked: allChecked,
-      signature_present: false,
+      signature_present: Boolean(signatureUrl),
+      signature_url: signatureUrl,
       submitted_at: new Date().toISOString(),
     },
   });

@@ -7,6 +7,7 @@ import {
   getRiskShareLocale,
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import RiskShareRepresentativeSignaturePad from "../representative/RiskShareRepresentativeSignaturePad";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -189,12 +190,32 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
               </div>
             ) : null}
 
-            <form action="/api/risk-share/participation/submit" method="post">
+            <form action="/api/risk-share/participation/submit" method="post" encType="multipart/form-data">
               <input type="hidden" name="companyCode" value={companyCode} readOnly />
               <input type="hidden" name="mode" value={mode} readOnly />
               <input type="hidden" name="lang" value={locale} readOnly />
 
-              <fieldset className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <label className="block text-sm font-black text-slate-800">
+                  이름
+                  <input
+                    name="workerName"
+                    required
+                    placeholder="성명을 입력해 주세요"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
+                  />
+                </label>
+                <label className="block text-sm font-black text-slate-800">
+                  소속 · 작업구역
+                  <input
+                    name="workerAffiliation"
+                    placeholder="예: 생산팀 / 포장라인"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
+                  />
+                </label>
+              </div>
+
+              <fieldset className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
                 <legend className="px-1 text-sm font-black text-slate-800">{copy.checklistLegend}</legend>
                 {modeCopy.checklist.map((item, index) => (
                   <label
@@ -210,6 +231,10 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                   </label>
                 ))}
               </fieldset>
+
+              <div className="mt-3">
+                <RiskShareRepresentativeSignaturePad />
+              </div>
 
               <div className="mt-3 rounded-2xl bg-slate-950 p-4 text-white">
                 <p className="text-[0.62rem] font-black uppercase tracking-wide text-white/50">
