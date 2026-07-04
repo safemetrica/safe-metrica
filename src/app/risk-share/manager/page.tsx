@@ -529,7 +529,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <span>작업 전 {preworkConfirmationCount}</span>
                     <span>익명 {anonymousFeedbackCount}</span>
                     <span>외부인 {visitorConfirmationCount}</span>
-                    <span>대표 {representativeTotalCount}</span>
+                    <span>근로자대표 {representativeTotalCount}</span>
                   </div>
                 </KpiCard>
 
@@ -685,7 +685,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                   </div>
                   <div>
                     <p className="text-lg font-black">{signatureConfirmedCount}건</p>
-                    <p className="text-[11px] font-semibold text-white/65">대표 서명</p>
+                    <p className="text-[11px] font-semibold text-white/65">근로자대표 서명</p>
                   </div>
                 </div>
               </section>
