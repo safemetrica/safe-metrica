@@ -193,6 +193,18 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
                   />
                 </label>
+                <label className="block text-sm font-black text-slate-800">
+                  확인번호
+                  <input
+                    name="workerIdentifier"
+                    maxLength={20}
+                    placeholder="휴대폰 뒤 4자리 또는 사번"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
+                  />
+                  <span className="mt-1.5 block text-xs font-semibold leading-4 text-slate-500">
+                    동명이인 구분을 위한 확인번호입니다. 전체 전화번호는 입력하지 마세요.
+                  </span>
+                </label>
               </div>
 
               <fieldset className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">

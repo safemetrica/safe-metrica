@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
   const allChecked = checklist.length > 0 && checkedCount === checklist.length;
   const workerName = getFormText(formData, "workerName").slice(0, 60);
   const workerAffiliation = getFormText(formData, "workerAffiliation").slice(0, 80);
+  const workerIdentifier = getFormText(formData, "workerIdentifier").slice(0, 20);
 
   const modeLabel = mode === "monthly" ? "월간 위험성평가 공유확인" : "작업 전 안전확인";
   const confirmationType = mode === "monthly" ? "risk_share_confirm_monthly" : "risk_share_confirm_prework";
@@ -157,6 +158,7 @@ export async function POST(req: NextRequest) {
       lang,
       worker_name: workerName,
       worker_affiliation: workerAffiliation,
+      worker_identifier: workerIdentifier,
       identity_mode: "identified",
       checked_items: checkedItems,
       checked_count: checkedCount,
