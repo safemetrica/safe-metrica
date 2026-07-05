@@ -16,7 +16,7 @@ function isExplicitSafeCallbackUrl(value: string) {
 }
 
 function getSafeCallbackUrl(value: string) {
-  return isExplicitSafeCallbackUrl(value) ? value : "/";
+  return isExplicitSafeCallbackUrl(value) ? value : "/login";
 }
 
 export default async function LoginPage({
@@ -71,13 +71,16 @@ export default async function LoginPage({
           </div>
         ) : (
           <>
-            <CredentialsSignInForm callbackUrl={callbackUrl} />
             {!hasExplicitCallbackUrl ? (
-              <p className="mt-4 text-center text-xs leading-6 text-slate-400">
-                운영 화면으로 바로 이동하려면, 안내받은 고객사 전용 링크로 접속해 주세요.
-                이 화면에서 로그인하면 서비스 소개 화면으로 이동합니다.
-              </p>
+              <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-7 text-blue-950">
+                <p className="font-black text-blue-900">고객사 운영 화면으로 이동하시나요?</p>
+                <p className="mt-1">
+                  운영 화면은 담당자에게 안내받은 고객사 전용 링크로 접속해야 합니다.
+                  이 화면에서 로그인하면 로그인 완료 안내 화면으로 이동합니다.
+                </p>
+              </div>
             ) : null}
+            <CredentialsSignInForm callbackUrl={callbackUrl} />
           </>
         )}
 
