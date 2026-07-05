@@ -256,23 +256,6 @@ function NavItem({ href, label, active = false, icon }: NavItemProps) {
   );
 }
 
-type MetricPillProps = {
-  label: string;
-  value: number;
-};
-
-function MetricPill({ label, value }: MetricPillProps) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white">
-      <span className="text-xs font-semibold text-white/75">{label}</span>
-      <span className="text-lg font-black tracking-tight">
-        {value}
-        <span className="ml-0.5 text-xs font-bold text-white/65">건</span>
-      </span>
-    </div>
-  );
-}
-
 type StackSegment = {
   value: number;
   colorClass: string;
@@ -462,26 +445,35 @@ function ReferenceInfoCard({
   );
 }
 
-type OperationalBriefingCandidateCardProps = {
-  lines: string[];
+type AiBriefingHeroProps = {
+  summaryLine: string;
+  focusLine: string;
+  referenceLine: string;
   pills: string[];
 };
 
-function OperationalBriefingCandidateCard({ lines, pills }: OperationalBriefingCandidateCardProps) {
+function AiBriefingHero({ summaryLine, focusLine, referenceLine, pills }: AiBriefingHeroProps) {
   return (
-    <section className="rounded-3xl bg-gradient-to-br from-[#123B8F] to-blue-700 p-5 text-white shadow-[0_8px_24px_rgba(18,59,143,0.18)]">
+    <section className="grid gap-5 rounded-[1.25rem] bg-gradient-to-br from-[#123B8F] via-blue-700 to-blue-600 p-6 text-white shadow-[0_8px_24px_rgba(18,59,143,0.20)]">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-black">오늘의 운영 참고 브리핑 후보</p>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-white/70">
+          위험성평가 공유확인 운영팩 · AI 운영 보조
+        </p>
         <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-black text-white/80">
           관리자 확인 후 반영
         </span>
       </div>
-      <p className="mt-2 text-xs font-semibold leading-5 text-white/70">
-        기상·안전보건 자료·최근 이슈를 바탕으로 관리자가 확인할 참고 항목을 정리했습니다.
-      </p>
 
-      <ul className="mt-4 space-y-2">
-        {lines.map((line) => (
+      <div>
+        <h1 className="text-2xl font-black tracking-tight">AI 안전운영 브리핑</h1>
+        <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-white/80">
+          AI가 현장 확인 기록, 익명 의견, 외부인 확인, 근로자대표 확인과 기상·안전보건 참고자료를
+          모아 관리자 확인 항목으로 정리합니다.
+        </p>
+      </div>
+
+      <ul className="space-y-2">
+        {[summaryLine, focusLine, referenceLine].map((line) => (
           <li key={line} className="flex gap-2 text-sm font-semibold leading-6 text-white/90">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/60" />
             <span>{line}</span>
@@ -489,7 +481,7 @@ function OperationalBriefingCandidateCard({ lines, pills }: OperationalBriefingC
         ))}
       </ul>
 
-      <div className="mt-4 flex flex-wrap gap-1.5 border-t border-white/15 pt-4">
+      <div className="flex flex-wrap gap-1.5 border-t border-white/15 pt-4">
         {pills.map((pill) => (
           <span
             key={pill}
@@ -500,7 +492,7 @@ function OperationalBriefingCandidateCard({ lines, pills }: OperationalBriefingC
         ))}
       </div>
 
-      <p className="mt-3 text-[11px] font-semibold leading-5 text-white/60">
+      <p className="text-[11px] font-semibold leading-5 text-white/60">
         최종 판단과 조치는 관리자 또는 사업주가 확인합니다.
       </p>
     </section>
@@ -576,17 +568,6 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   const fieldReferenceSafetyNews = await fetchFieldReferenceSafetyNews();
   const fieldReferenceWeather = await fetchFieldReferenceWeather();
 
-  const operationalBriefingCandidateLines = [
-    fieldReferenceWeather.status === "live" && fieldReferenceWeather.headline
-      ? `기상 참고: ${fieldReferenceWeather.headline} — 작업 전 안내 반영 후보`
-      : "기상 참고: 온열·강풍·한파·강우 등 현장 기상 상황을 작업 전 안내에 반영할 수 있습니다.",
-    `안전자료 참고: ${KOSHA_HAZARD_REFERENCE_TAGS.join("·")} 자료 확인 후보`,
-    fieldReferenceSafetyNews.length > 0
-      ? `뉴스 참고: 최근 안전보건 이슈 ${fieldReferenceSafetyNews.length}건을 월간 운영기록 참고 후보로 확인하세요.`
-      : "뉴스 참고: 최신 이슈를 불러오지 못했습니다. 후속 확인이 필요합니다.",
-  ];
-  const operationalBriefingCandidatePills = ["작업 전 기상 확인", "TBM 참고자료 확인", "월간 운영기록 참고"];
-
   const monthlyConfirmationCount = participationSummary.counts.monthly;
   const preworkConfirmationCount = participationSummary.counts.prework;
   const monthlyWorkerSignatureCount = participationSummary.counts.monthlySignatureConfirmed;
@@ -605,6 +586,18 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     representativeTotalCount;
   const fieldConfirmationCount = monthlyConfirmationCount + preworkConfirmationCount;
   const workerSignatureNotSubmittedCount = Math.max(0, fieldConfirmationCount - workerSignatureConfirmedCount);
+
+  const aiBriefingSummaryLine = `이번 달 현장 확인 ${fieldConfirmationCount}건, 익명 의견 ${anonymousFeedbackCount}건, 근로자대표 확인 ${representativeTotalCount}건이 접수되었습니다.`;
+  const aiBriefingFocusLine = `근로자대표 미제출 ${signatureNotSubmittedCount}건과 익명 의견 ${anonymousFeedbackCount}건을 먼저 확인해 주세요.`;
+  const aiBriefingReferenceLine =
+    "기상·안전보건 참고자료는 작업 전 안내와 월간 안전운영 요약에 참고할 수 있습니다.";
+  const aiBriefingConfirmationPills = [
+    `근로자대표 미제출 확인 ${signatureNotSubmittedCount}건`,
+    `익명 의견 검토 ${anonymousFeedbackCount}건`,
+    "작업 전 안전확인 누락 확인",
+    "월간 안전운영 요약 반영",
+    "기상 참고사항 확인",
+  ];
 
   return (
     <main className="min-h-screen bg-[#F3F5F8] text-slate-950 lg:flex">
@@ -658,40 +651,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
         </header>
 
         <div className="mx-auto flex w-full max-w-[1220px] flex-col gap-5 px-4 py-5 lg:px-7">
-          <section className="grid gap-5 rounded-[1.25rem] bg-gradient-to-br from-[#123B8F] via-blue-700 to-blue-600 p-6 text-white shadow-[0_8px_24px_rgba(18,59,143,0.20)] lg:grid-cols-[1fr_230px] lg:items-center">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.08em] text-white/70">
-                위험성평가 공유확인 운영팩
-              </p>
-              <h1 className="mt-1 text-2xl font-black tracking-tight">
-                위험성평가 공유확인 관리자 홈
-              </h1>
-              <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-white/80">
-                현장 QR로 접수된 확인과 의견 흐름을 한 화면에서 확인합니다.
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <a
-                  href={fieldHref}
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
-                >
-                  현장 QR 입구
-                </a>
-                <a
-                  href={monthlyHref}
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-blue-900 transition hover:bg-blue-50"
-                >
-                  월간 안전운영 요약
-                </a>
-              </div>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-              <MetricPill label="이번 달 총 접수" value={totalSubmissionCount} />
-              <MetricPill label="현장 확인" value={fieldConfirmationCount} />
-              <MetricPill label="근로자 서명 포함" value={workerSignatureConfirmedCount} />
-            </div>
-          </section>
+          <AiBriefingHero
+            summaryLine={aiBriefingSummaryLine}
+            focusLine={aiBriefingFocusLine}
+            referenceLine={aiBriefingReferenceLine}
+            pills={aiBriefingConfirmationPills}
+          />
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_316px]">
             <div className="flex min-w-0 flex-col gap-5">
@@ -880,15 +845,10 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             </aside>
           </div>
 
-          <OperationalBriefingCandidateCard
-            lines={operationalBriefingCandidateLines}
-            pills={operationalBriefingCandidatePills}
-          />
-
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-base font-black text-slate-950">현장 참고 정보</h2>
-              <p className="text-xs font-bold text-slate-400">현장 운영 참고자료 · 관리자 확인 후 반영</p>
+              <p className="text-xs font-bold text-slate-400">AI 브리핑이 참고한 운영 자료 · 관리자 확인 후 반영</p>
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -924,10 +884,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             </div>
 
             <p className="mt-4 border-t border-slate-100 pt-3 text-xs font-semibold leading-5 text-slate-400">
-              이 영역은 현장 운영 참고자료이며, 작업중지 여부나 법적 판단을 대신하지 않습니다. 월간 운영기록 참고 후보로 활용될 수 있습니다.
-            </p>
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-400">
-              오늘의 운영 참고 브리핑 후보 · 관리자 확인 후 TBM·작업 전 안내에 반영할 수 있습니다.
+              이 자료는 상단 AI 안전운영 브리핑이 참고하는 운영 자료이며, 작업중지 여부나 법적 판단을 대신하지 않습니다.
             </p>
           </section>
         </div>
