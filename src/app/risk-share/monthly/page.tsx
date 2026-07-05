@@ -236,23 +236,38 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   });
 
   if (!tenantAccessResult.ok) {
+    if (tenantAccessResult.reason === "unauthenticated") {
+      return (
+        <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
+          <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+            <p className="text-xs font-black text-amber-700">SafeMetrica · 안전운영</p>
+            <h1 className="mt-2 text-2xl font-black text-slate-950">
+              관리자 로그인이 필요한 화면입니다.
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-amber-900">
+              로그인 후 접근 권한을 확인합니다.
+            </p>
+            <KakaoSignInButton
+              callbackUrl={monthlyHref}
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white"
+            >
+              카카오로 로그인
+            </KakaoSignInButton>
+          </section>
+        </main>
+      );
+    }
+
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
         <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
           <p className="text-xs font-black text-amber-700">SafeMetrica · 안전운영</p>
           <h1 className="mt-2 text-2xl font-black text-slate-950">
-            관리자 확인이 필요한 화면입니다.
+            이 회사의 관리자 권한이 확인되지 않았습니다.
           </h1>
           <p className="mt-3 text-sm leading-6 text-amber-900">
-            로그인 후 이용해 주세요. 접근 권한이 확인되지 않았습니다. 운영 담당자에게 문의해
-            주세요.
+            운영 담당자에게 문의해 주세요.
           </p>
-          <KakaoSignInButton
-            callbackUrl={monthlyHref}
-            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-black text-white"
-          >
-            카카오로 로그인
-          </KakaoSignInButton>
         </section>
       </main>
     );
