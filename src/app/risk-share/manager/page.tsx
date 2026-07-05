@@ -5,6 +5,7 @@ import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/s
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
+import SignOutButton from "@/components/auth/SignOutButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -495,8 +496,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             <span className="h-1 w-1 rounded-full bg-slate-300" />
             <span>{companyLabel}</span>
           </div>
-          <div className="ml-auto rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700">
-            관리자
+          <div className="ml-auto flex items-center gap-2">
+            <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700">
+              관리자
+            </div>
+            <SignOutButton />
           </div>
         </header>
 
