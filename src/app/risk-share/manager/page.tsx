@@ -7,8 +7,8 @@ import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRe
 import {
   fetchFieldReferenceSafetyNews,
   fetchFieldReferenceWeather,
-  KOSHA_OFFICIAL_LINK_URL,
-  KOSHA_SAFETY_MATERIAL_LINKS,
+  KOSHA_SAFETY_MATERIAL_ARCHIVE_URL,
+  KOSHA_SAFETY_MATERIAL_TAGS,
   SAFETY_NEWS_MORE_LINK_URL,
 } from "@/lib/risk-share/reference-info";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
@@ -379,6 +379,11 @@ type ReferenceLinkItem = {
   link: string;
 };
 
+type ReferenceHubLink = {
+  label: string;
+  href: string;
+};
+
 type ReferenceInfoCardProps = {
   icon: string;
   title: string;
@@ -387,6 +392,7 @@ type ReferenceInfoCardProps = {
   items?: ReferenceLinkItem[];
   fallbackText?: string;
   moreLink?: string;
+  hubLink?: ReferenceHubLink;
   note: string;
 };
 
@@ -398,6 +404,7 @@ function ReferenceInfoCard({
   items,
   fallbackText,
   moreLink,
+  hubLink,
   note,
 }: ReferenceInfoCardProps) {
   return (
@@ -421,6 +428,17 @@ function ReferenceInfoCard({
             </span>
           ))}
         </div>
+      ) : null}
+
+      {hubLink ? (
+        <a
+          href={hubLink.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+        >
+          {hubLink.label} →
+        </a>
       ) : null}
 
       {items && items.length > 0 ? (
@@ -844,10 +862,9 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               <ReferenceInfoCard
                 icon="KO"
                 title="안전보건공단 자료"
-                description="안전보건공단 자료를 TBM·작업 전 안내 참고자료로 활용하세요."
-                items={KOSHA_SAFETY_MATERIAL_LINKS}
-                fallbackText="추락, 끼임, 화재·폭발, 질식·중독 예방자료는 공식 자료실에서 확인해 주세요."
-                moreLink={KOSHA_OFFICIAL_LINK_URL}
+                description="안전보건공단 자료실에서 작업별 자료를 확인해 TBM·작업 전 안내 참고자료로 활용하세요."
+                tags={KOSHA_SAFETY_MATERIAL_TAGS}
+                hubLink={{ label: "자료실 바로가기", href: KOSHA_SAFETY_MATERIAL_ARCHIVE_URL }}
                 note="최종 적용 여부는 관리자가 확인합니다."
               />
               <ReferenceInfoCard
