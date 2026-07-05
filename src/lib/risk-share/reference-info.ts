@@ -8,6 +8,9 @@ export type FieldReferenceNewsItem = {
 const SAFETY_NEWS_RSS_URL =
   "https://news.google.com/rss/search?q=안전보건+뉴스&hl=ko&gl=KR&ceid=KR:ko";
 
+export const SAFETY_NEWS_MORE_LINK_URL =
+  "https://news.google.com/search?q=안전보건+뉴스&hl=ko&gl=KR&ceid=KR:ko";
+
 const SAFETY_NEWS_ITEM_LIMIT = 3;
 const SAFETY_NEWS_FETCH_TIMEOUT_MS = 4000;
 
