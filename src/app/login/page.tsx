@@ -1,20 +1,6 @@
 import Link from "next/link";
 
-import KakaoSignInButton from "@/components/auth/KakaoSignInButton";
-
 export const dynamic = "force-dynamic";
-
-function readSearchParam(value?: string | string[]) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
-
-function getSafeCallbackUrl(value: string) {
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-
-  return value;
-}
 
 const entryCards = [
   {
@@ -40,13 +26,11 @@ const entryCards = [
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; callbackUrl?: string }>;
+  searchParams?: Promise<{ error?: string }>;
 }) {
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const error = resolvedSearchParams.error;
+  const error = (await searchParams)?.error;
   const isTenantRequired = error === "tenant_required";
   const hasOtherError = Boolean(error && !isTenantRequired);
-  const callbackUrl = getSafeCallbackUrl(readSearchParam(resolvedSearchParams.callbackUrl));
 
   return (
     <main className="min-h-screen bg-[#F3F7FA] text-slate-950">
@@ -103,15 +87,15 @@ export default async function LoginPage({
             </p>
           </div>
 
-          <div className="mt-6">
-            <KakaoSignInButton
-              callbackUrl={callbackUrl}
-              className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-base font-black text-white transition hover:bg-slate-800"
-            >
-              관리자 로그인
-            </KakaoSignInButton>
-            <p className="mt-2 text-center text-xs font-semibold leading-5 text-slate-500">
-              로그인 후 접근 권한을 확인합니다.
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+            <p className="font-black text-slate-900">
+              관리자 로그인은 계정 발급 후 제공됩니다.
+            </p>
+            <p className="mt-2">
+              도입 고객은 운영 담당자를 통해 관리자 계정을 안내받습니다.
+            </p>
+            <p className="mt-2">
+              근로자와 외부인은 현장 QR로 로그인 없이 참여합니다.
             </p>
           </div>
 
