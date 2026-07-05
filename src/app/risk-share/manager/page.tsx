@@ -8,6 +8,7 @@ import {
   fetchFieldReferenceSafetyNews,
   fetchFieldReferenceWeather,
   KOSHA_OFFICIAL_LINK_URL,
+  KOSHA_SAFETY_MATERIAL_LINKS,
   SAFETY_NEWS_MORE_LINK_URL,
 } from "@/lib/risk-share/reference-info";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
@@ -843,10 +844,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               <ReferenceInfoCard
                 icon="KO"
                 title="안전보건공단 자료"
-                description="안전보건공단 자료를 TBM 참고자료로 활용하세요."
-                tags={["추락", "끼임", "화재·폭발", "질식·중독"]}
+                description="안전보건공단 자료를 TBM·작업 전 안내 참고자료로 활용하세요."
+                items={KOSHA_SAFETY_MATERIAL_LINKS}
+                fallbackText="추락, 끼임, 화재·폭발, 질식·중독 예방자료는 공식 자료실에서 확인해 주세요."
                 moreLink={KOSHA_OFFICIAL_LINK_URL}
-                note="월간 안전운영 참고자료로 활용할 수 있습니다."
+                note="최종 적용 여부는 관리자가 확인합니다."
               />
               <ReferenceInfoCard
                 icon="뉴"
