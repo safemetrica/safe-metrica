@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import CredentialsSignInForm from "@/components/auth/CredentialsSignInForm";
+import SignOutButton from "@/components/auth/SignOutButton";
+import { getCurrentTenantSessionEmail } from "@/lib/tenant-auth/tenantSessionServer";
 
 export const dynamic = "force-dynamic";
 
@@ -8,12 +11,12 @@ function readSearchParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
-function getSafeCallbackUrl(value: string) {
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
+function isExplicitSafeCallbackUrl(value: string) {
+  return Boolean(value) && value.startsWith("/") && !value.startsWith("//");
+}
 
-  return value;
+function getSafeCallbackUrl(value: string) {
+  return isExplicitSafeCallbackUrl(value) ? value : "/";
 }
 
 export default async function LoginPage({
@@ -25,7 +28,16 @@ export default async function LoginPage({
   const error = resolvedSearchParams.error;
   const isTenantRequired = error === "tenant_required";
   const hasOtherError = Boolean(error && !isTenantRequired);
-  const callbackUrl = getSafeCallbackUrl(readSearchParam(resolvedSearchParams.callbackUrl));
+  const rawCallbackUrl = readSearchParam(resolvedSearchParams.callbackUrl);
+  const hasExplicitCallbackUrl = isExplicitSafeCallbackUrl(rawCallbackUrl);
+  const callbackUrl = getSafeCallbackUrl(rawCallbackUrl);
+
+  const sessionEmail = await getCurrentTenantSessionEmail();
+  const isAlreadySignedIn = Boolean(sessionEmail);
+
+  if (isAlreadySignedIn && hasExplicitCallbackUrl) {
+    redirect(callbackUrl);
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F3F7FA] px-5 py-10 text-slate-950">
@@ -46,7 +58,28 @@ export default async function LoginPage({
           </p>
         </div>
 
-        <CredentialsSignInForm callbackUrl={callbackUrl} />
+        {isAlreadySignedIn ? (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
+            <p className="font-black text-slate-900">이미 로그인되어 있습니다.</p>
+            <p className="mt-1">
+              운영 화면으로 이동하려면 안내받은 고객사 전용 링크로 접속해 주세요.
+              다른 계정으로 로그인하려면 먼저 로그아웃해 주세요.
+            </p>
+            <div className="mt-4">
+              <SignOutButton />
+            </div>
+          </div>
+        ) : (
+          <>
+            <CredentialsSignInForm callbackUrl={callbackUrl} />
+            {!hasExplicitCallbackUrl ? (
+              <p className="mt-4 text-center text-xs leading-6 text-slate-400">
+                운영 화면으로 바로 이동하려면, 안내받은 고객사 전용 링크로 접속해 주세요.
+                이 화면에서 로그인하면 서비스 소개 화면으로 이동합니다.
+              </p>
+            ) : null}
+          </>
+        )}
 
         {isTenantRequired ? (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
