@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
+import { fetchFieldReferenceSafetyNews } from "@/lib/risk-share/reference-info";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import SignOutButton from "@/components/auth/SignOutButton";
 
@@ -367,15 +368,30 @@ function QuickAction({ href, title, description, icon }: QuickActionProps) {
   );
 }
 
+type ReferenceLinkItem = {
+  title: string;
+  link: string;
+};
+
 type ReferenceInfoCardProps = {
   icon: string;
   title: string;
   description: string;
-  tags: string[];
+  tags?: string[];
+  items?: ReferenceLinkItem[];
+  fallbackText?: string;
   note: string;
 };
 
-function ReferenceInfoCard({ icon, title, description, tags, note }: ReferenceInfoCardProps) {
+function ReferenceInfoCard({
+  icon,
+  title,
+  description,
+  tags,
+  items,
+  fallbackText,
+  note,
+}: ReferenceInfoCardProps) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center gap-2">
@@ -385,16 +401,41 @@ function ReferenceInfoCard({ icon, title, description, tags, note }: ReferenceIn
         <p className="text-sm font-black text-slate-900">{title}</p>
       </div>
       <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">{description}</p>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {tags.map((tag) => (
-          <span
-            key={tag}
-            className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
+
+      {tags && tags.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {items && items.length > 0 ? (
+        <ul className="mt-3 space-y-1.5">
+          {items.map((item) => (
+            <li key={item.link}>
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block truncate text-xs font-bold text-blue-700 underline decoration-blue-200 underline-offset-2 hover:text-blue-900"
+              >
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {items && items.length === 0 && fallbackText ? (
+        <p className="mt-3 text-xs font-semibold leading-5 text-slate-400">{fallbackText}</p>
+      ) : null}
+
       <p className="mt-3 text-[11px] font-semibold leading-5 text-slate-400">{note}</p>
     </article>
   );
@@ -466,6 +507,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     companyCode,
     currentPeriod,
   );
+  const fieldReferenceSafetyNews = await fetchFieldReferenceSafetyNews();
 
   const monthlyConfirmationCount = participationSummary.counts.monthly;
   const preworkConfirmationCount = participationSummary.counts.prework;
@@ -768,24 +810,25 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <ReferenceInfoCard
-                icon="날"
-                title="오늘의 날씨 참고"
-                description="작업 전 온열·강풍·강우 등 현장 상황을 확인하세요."
+                icon="기"
+                title="작업 전 기상 확인"
+                description="온열·강풍·한파·강우 등 현장 기상 상황을 작업 전 참고하세요."
                 tags={["온열질환 주의", "강풍 주의", "한파 주의", "강우 시 미끄럼 주의"]}
-                note="관리자 확인 후 작업 전 안내에 반영할 수 있습니다."
+                note="관리자 확인 후 반영해 주세요."
               />
               <ReferenceInfoCard
                 icon="KO"
-                title="KOSHA 안전자료 참고"
-                description="안전보건공단 자료를 작업 전 교육·TBM 참고자료로 활용하세요."
+                title="안전보건공단 자료"
+                description="안전보건공단 자료를 TBM 참고자료로 활용하세요."
                 tags={["추락", "끼임", "화재·폭발", "질식·중독"]}
-                note="최종 적용 여부는 관리자가 확인합니다."
+                note="월간 안전운영 참고자료로 활용할 수 있습니다."
               />
               <ReferenceInfoCard
                 icon="뉴"
-                title="안전보건 뉴스 · RSS 참고"
-                description="최근 안전보건 이슈를 월간 안전운영 참고자료로 확인하세요."
-                tags={["산업재해 동향", "중대재해 이슈", "현장 안전관리"]}
+                title="안전보건 뉴스"
+                description="최근 안전보건 이슈를 운영 참고자료로 확인하세요."
+                items={fieldReferenceSafetyNews}
+                fallbackText="최신 뉴스를 불러오지 못했습니다. 후속 확인이 필요합니다."
                 note="법적 판단이나 조치 확정 자료가 아니라 운영 참고자료입니다."
               />
             </div>
