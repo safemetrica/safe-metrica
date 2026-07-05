@@ -1,3 +1,5 @@
+import SignOutButton from "@/components/auth/SignOutButton";
+
 type RiskShareMonthlyReportShellProps = {
   companyLabel: string;
   periodLabel: string;
@@ -122,7 +124,10 @@ export default function RiskShareMonthlyReportShell({
             <span className="h-1 w-1 rounded-full bg-slate-300" />
             <span>{companyLabel}</span>
           </div>
-          <div className="ml-auto rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700">관리자</div>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700">관리자</div>
+            <SignOutButton />
+          </div>
         </header>
 
         <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 py-6 lg:px-8">
