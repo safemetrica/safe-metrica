@@ -1,6 +1,20 @@
 import Link from "next/link";
 
+import KakaoSignInButton from "@/components/auth/KakaoSignInButton";
+
 export const dynamic = "force-dynamic";
+
+function readSearchParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function getSafeCallbackUrl(value: string) {
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return "/";
+  }
+
+  return value;
+}
 
 const entryCards = [
   {
@@ -26,11 +40,13 @@ const entryCards = [
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; callbackUrl?: string }>;
 }) {
-  const error = (await searchParams)?.error;
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const error = resolvedSearchParams.error;
   const isTenantRequired = error === "tenant_required";
   const hasOtherError = Boolean(error && !isTenantRequired);
+  const callbackUrl = getSafeCallbackUrl(readSearchParam(resolvedSearchParams.callbackUrl));
 
   return (
     <main className="min-h-screen bg-[#F3F7FA] text-slate-950">
@@ -83,7 +99,19 @@ export default async function LoginPage({
               SafeMetrica 로그인
             </h2>
             <p className="mt-2 text-sm font-semibold text-slate-500">
-              산업안전 운영기록 플랫폼
+              관리자와 대표는 로그인 후 운영기록을 확인합니다.
+            </p>
+          </div>
+
+          <div className="mt-6">
+            <KakaoSignInButton
+              callbackUrl={callbackUrl}
+              className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-base font-black text-white transition hover:bg-slate-800"
+            >
+              관리자 로그인
+            </KakaoSignInButton>
+            <p className="mt-2 text-center text-xs font-semibold leading-5 text-slate-500">
+              로그인 후 접근 권한을 확인합니다.
             </p>
           </div>
 
@@ -96,8 +124,8 @@ export default async function LoginPage({
 
           {hasOtherError ? (
             <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-950">
-              접근 권한을 확인할 수 없습니다. 카카오 로그인 후 접근 권한을 확인합니다. 접근
-              권한이 확인되지 않으면 운영 담당자에게 문의해 주세요.
+              접근 권한을 확인할 수 없습니다. 로그인 후 접근 권한을 확인합니다. 접근 권한이
+              확인되지 않으면 운영 담당자에게 문의해 주세요.
             </div>
           ) : null}
 
