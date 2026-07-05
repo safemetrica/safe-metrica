@@ -59,21 +59,7 @@ export type FieldReferenceWeatherInfo = {
 
 export const KOSHA_OFFICIAL_LINK_URL = "https://www.kosha.or.kr";
 
-export type FieldReferenceMaterialLink = {
-  title: string;
-  link: string;
-};
-
-function buildKoshaSiteSearchLink(keyword: string) {
-  return `https://www.google.com/search?q=${encodeURIComponent(`site:kosha.or.kr ${keyword}`)}`;
-}
-
-export const KOSHA_SAFETY_MATERIAL_LINKS: FieldReferenceMaterialLink[] = [
-  { title: "추락 예방 자료", link: buildKoshaSiteSearchLink("추락 예방") },
-  { title: "끼임 예방 자료", link: buildKoshaSiteSearchLink("끼임 예방") },
-  { title: "화재·폭발 예방 자료", link: buildKoshaSiteSearchLink("화재 폭발 예방") },
-  { title: "질식·중독 예방 자료", link: buildKoshaSiteSearchLink("질식 중독 예방") },
-];
+export const KOSHA_HAZARD_REFERENCE_TAGS = ["추락", "끼임", "화재·폭발", "질식·중독"];
 
 const DEFAULT_WEATHER_TAGS = ["온열질환 주의", "강풍 주의", "한파 주의", "강우 시 미끄럼 주의"];
 const WEATHER_FETCH_TIMEOUT_MS = 4000;

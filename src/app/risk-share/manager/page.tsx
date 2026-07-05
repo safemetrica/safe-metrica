@@ -7,8 +7,8 @@ import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRe
 import {
   fetchFieldReferenceSafetyNews,
   fetchFieldReferenceWeather,
+  KOSHA_HAZARD_REFERENCE_TAGS,
   KOSHA_OFFICIAL_LINK_URL,
-  KOSHA_SAFETY_MATERIAL_LINKS,
   SAFETY_NEWS_MORE_LINK_URL,
 } from "@/lib/risk-share/reference-info";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
@@ -387,6 +387,7 @@ type ReferenceInfoCardProps = {
   items?: ReferenceLinkItem[];
   fallbackText?: string;
   moreLink?: string;
+  moreLinkLabel?: string;
   note: string;
 };
 
@@ -398,6 +399,7 @@ function ReferenceInfoCard({
   items,
   fallbackText,
   moreLink,
+  moreLinkLabel,
   note,
 }: ReferenceInfoCardProps) {
   return (
@@ -424,36 +426,35 @@ function ReferenceInfoCard({
       ) : null}
 
       {items && items.length > 0 ? (
-        <>
-          <ul className="mt-3 space-y-2.5">
-            {items.map((item) => (
-              <li key={item.link}>
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="line-clamp-2 text-xs font-semibold leading-5 text-slate-600 transition hover:text-slate-900"
-                >
-                  {item.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-          {moreLink ? (
-            <a
-              href={moreLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2.5 inline-block text-[11px] font-bold text-slate-400 transition hover:text-slate-700"
-            >
-              더 보기 →
-            </a>
-          ) : null}
-        </>
+        <ul className="mt-3 space-y-2.5">
+          {items.map((item) => (
+            <li key={item.link}>
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="line-clamp-2 text-xs font-semibold leading-5 text-slate-600 transition hover:text-slate-900"
+              >
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {items && items.length === 0 && fallbackText ? (
         <p className="mt-3 text-xs font-semibold leading-5 text-slate-400">{fallbackText}</p>
+      ) : null}
+
+      {moreLink ? (
+        <a
+          href={moreLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2.5 inline-block text-[11px] font-bold text-slate-400 transition hover:text-slate-700"
+        >
+          {moreLinkLabel ?? "더 보기 →"}
+        </a>
       ) : null}
 
       <p className="mt-3 text-[11px] font-semibold leading-5 text-slate-400">{note}</p>
@@ -844,10 +845,10 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               <ReferenceInfoCard
                 icon="KO"
                 title="안전보건공단 자료"
-                description="안전보건공단 자료를 TBM·작업 전 안내 참고자료로 활용하세요."
-                items={KOSHA_SAFETY_MATERIAL_LINKS}
-                fallbackText="추락, 끼임, 화재·폭발, 질식·중독 예방자료는 공식 자료실에서 확인해 주세요."
+                description="추락·끼임·화재·폭발·질식·중독 등 안전보건공단 공식 자료를 TBM·작업 전 안내 참고자료로 활용하세요."
+                tags={KOSHA_HAZARD_REFERENCE_TAGS}
                 moreLink={KOSHA_OFFICIAL_LINK_URL}
+                moreLinkLabel="안전보건공단 자료실 보기 →"
                 note="최종 적용 여부는 관리자가 확인합니다."
               />
               <ReferenceInfoCard
