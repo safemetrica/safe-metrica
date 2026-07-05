@@ -367,6 +367,26 @@ function QuickAction({ href, title, description, icon }: QuickActionProps) {
   );
 }
 
+type ReferenceInfoCardProps = {
+  icon: string;
+  title: string;
+  description: string;
+};
+
+function ReferenceInfoCard({ icon, title, description }: ReferenceInfoCardProps) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center gap-2">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-500">
+          {icon}
+        </span>
+        <p className="text-sm font-black text-slate-900">{title}</p>
+      </div>
+      <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">{description}</p>
+    </article>
+  );
+}
+
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
@@ -726,6 +746,35 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               </p>
             </aside>
           </div>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-base font-black text-slate-950">현장 참고 정보</h2>
+              <p className="text-xs font-bold text-slate-400">현장 운영 참고자료 · 관리자 확인 후 반영</p>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <ReferenceInfoCard
+                icon="날"
+                title="오늘의 날씨 참고"
+                description="작업 전 날씨 상황을 참고하는 안내 영역입니다. 실제 작업 여부 판단은 관리자가 현장 상황에 맞게 확인해 주세요."
+              />
+              <ReferenceInfoCard
+                icon="KO"
+                title="KOSHA 안전자료 참고"
+                description="KOSHA 안전보건자료를 참고하는 안내 영역입니다. 관리자 확인 후 현장 운영에 반영해 주세요."
+              />
+              <ReferenceInfoCard
+                icon="뉴"
+                title="안전보건 뉴스 · RSS 참고"
+                description="산업안전 관련 뉴스를 참고하는 안내 영역입니다. 후속 확인이 필요한 참고자료입니다."
+              />
+            </div>
+
+            <p className="mt-4 border-t border-slate-100 pt-3 text-xs font-semibold leading-5 text-slate-400">
+              이 영역은 현장 운영 참고자료이며, 작업중지 여부나 법적 판단을 대신하지 않습니다. 월간 운영기록 참고 후보로 활용될 수 있습니다.
+            </p>
+          </section>
         </div>
       </section>
     </main>
