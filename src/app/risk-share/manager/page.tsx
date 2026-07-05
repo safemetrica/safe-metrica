@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
-import { fetchFieldReferenceSafetyNews } from "@/lib/risk-share/reference-info";
+import {
+  fetchFieldReferenceSafetyNews,
+  SAFETY_NEWS_MORE_LINK_URL,
+} from "@/lib/risk-share/reference-info";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import SignOutButton from "@/components/auth/SignOutButton";
 
@@ -380,6 +383,7 @@ type ReferenceInfoCardProps = {
   tags?: string[];
   items?: ReferenceLinkItem[];
   fallbackText?: string;
+  moreLink?: string;
   note: string;
 };
 
@@ -390,6 +394,7 @@ function ReferenceInfoCard({
   tags,
   items,
   fallbackText,
+  moreLink,
   note,
 }: ReferenceInfoCardProps) {
   return (
@@ -416,20 +421,32 @@ function ReferenceInfoCard({
       ) : null}
 
       {items && items.length > 0 ? (
-        <ul className="mt-3 space-y-1.5">
-          {items.map((item) => (
-            <li key={item.link}>
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block truncate text-xs font-bold text-blue-700 underline decoration-blue-200 underline-offset-2 hover:text-blue-900"
-              >
-                {item.title}
-              </a>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="mt-3 space-y-2.5">
+            {items.map((item) => (
+              <li key={item.link}>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="line-clamp-2 text-xs font-semibold leading-5 text-slate-600 transition hover:text-slate-900"
+                >
+                  {item.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+          {moreLink ? (
+            <a
+              href={moreLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2.5 inline-block text-[11px] font-bold text-slate-400 transition hover:text-slate-700"
+            >
+              더 보기 →
+            </a>
+          ) : null}
+        </>
       ) : null}
 
       {items && items.length === 0 && fallbackText ? (
@@ -829,6 +846,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                 description="최근 안전보건 이슈를 운영 참고자료로 확인하세요."
                 items={fieldReferenceSafetyNews}
                 fallbackText="최신 뉴스를 불러오지 못했습니다. 후속 확인이 필요합니다."
+                moreLink={SAFETY_NEWS_MORE_LINK_URL}
                 note="법적 판단이나 조치 확정 자료가 아니라 운영 참고자료입니다."
               />
             </div>
