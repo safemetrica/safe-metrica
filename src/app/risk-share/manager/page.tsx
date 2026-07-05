@@ -462,6 +462,51 @@ function ReferenceInfoCard({
   );
 }
 
+type OperationalBriefingCandidateCardProps = {
+  lines: string[];
+  pills: string[];
+};
+
+function OperationalBriefingCandidateCard({ lines, pills }: OperationalBriefingCandidateCardProps) {
+  return (
+    <section className="rounded-3xl bg-gradient-to-br from-[#123B8F] to-blue-700 p-5 text-white shadow-[0_8px_24px_rgba(18,59,143,0.18)]">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-black">오늘의 운영 참고 브리핑 후보</p>
+        <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-black text-white/80">
+          관리자 확인 후 반영
+        </span>
+      </div>
+      <p className="mt-2 text-xs font-semibold leading-5 text-white/70">
+        기상·안전보건 자료·최근 이슈를 바탕으로 관리자가 확인할 참고 항목을 정리했습니다.
+      </p>
+
+      <ul className="mt-4 space-y-2">
+        {lines.map((line) => (
+          <li key={line} className="flex gap-2 text-sm font-semibold leading-6 text-white/90">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/60" />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap gap-1.5 border-t border-white/15 pt-4">
+        {pills.map((pill) => (
+          <span
+            key={pill}
+            className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-black text-white/85"
+          >
+            {pill}
+          </span>
+        ))}
+      </div>
+
+      <p className="mt-3 text-[11px] font-semibold leading-5 text-white/60">
+        최종 판단과 조치는 관리자 또는 사업주가 확인합니다.
+      </p>
+    </section>
+  );
+}
+
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(readSearchParam(params.company));
@@ -530,6 +575,17 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   );
   const fieldReferenceSafetyNews = await fetchFieldReferenceSafetyNews();
   const fieldReferenceWeather = await fetchFieldReferenceWeather();
+
+  const operationalBriefingCandidateLines = [
+    fieldReferenceWeather.status === "live" && fieldReferenceWeather.headline
+      ? `기상 참고: ${fieldReferenceWeather.headline} — 작업 전 안내 반영 후보`
+      : "기상 참고: 온열·강풍·한파·강우 등 현장 기상 상황을 작업 전 안내에 반영할 수 있습니다.",
+    `안전자료 참고: ${KOSHA_HAZARD_REFERENCE_TAGS.join("·")} 자료 확인 후보`,
+    fieldReferenceSafetyNews.length > 0
+      ? `뉴스 참고: 최근 안전보건 이슈 ${fieldReferenceSafetyNews.length}건을 월간 운영기록 참고 후보로 확인하세요.`
+      : "뉴스 참고: 최신 이슈를 불러오지 못했습니다. 후속 확인이 필요합니다.",
+  ];
+  const operationalBriefingCandidatePills = ["작업 전 기상 확인", "TBM 참고자료 확인", "월간 운영기록 참고"];
 
   const monthlyConfirmationCount = participationSummary.counts.monthly;
   const preworkConfirmationCount = participationSummary.counts.prework;
@@ -823,6 +879,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               </p>
             </aside>
           </div>
+
+          <OperationalBriefingCandidateCard
+            lines={operationalBriefingCandidateLines}
+            pills={operationalBriefingCandidatePills}
+          />
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
