@@ -1,15 +1,31 @@
 import Link from "next/link";
 
+import CredentialsSignInForm from "@/components/auth/CredentialsSignInForm";
+
 export const dynamic = "force-dynamic";
+
+function readSearchParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function getSafeCallbackUrl(value: string) {
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return "/";
+  }
+
+  return value;
+}
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; callbackUrl?: string }>;
 }) {
-  const error = (await searchParams)?.error;
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const error = resolvedSearchParams.error;
   const isTenantRequired = error === "tenant_required";
   const hasOtherError = Boolean(error && !isTenantRequired);
+  const callbackUrl = getSafeCallbackUrl(readSearchParam(resolvedSearchParams.callbackUrl));
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F3F7FA] px-5 py-10 text-slate-950">
@@ -30,17 +46,7 @@ export default async function LoginPage({
           </p>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-          <p className="font-black text-slate-900">
-            관리자 계정은 도입 확인 후 발급됩니다.
-          </p>
-          <p className="mt-2">
-            도입 고객은 운영 담당자를 통해 계정 안내를 받습니다.
-          </p>
-          <p className="mt-2">
-            근로자와 외부인은 현장 QR로 로그인 없이 참여합니다.
-          </p>
-        </div>
+        <CredentialsSignInForm callbackUrl={callbackUrl} />
 
         {isTenantRequired ? (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
