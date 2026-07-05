@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import CompanyCodeEntryForm from "@/components/auth/CompanyCodeEntryForm";
 import CredentialsSignInForm from "@/components/auth/CredentialsSignInForm";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { getCurrentTenantSessionEmail } from "@/lib/tenant-auth/tenantSessionServer";
@@ -62,15 +61,9 @@ export default async function LoginPage({
         {isAlreadySignedIn ? (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
             <p className="font-black text-slate-900">이미 로그인되어 있습니다.</p>
-            <p className="mt-1">
-              고객사 전용 링크 또는 고객사 코드를 입력해 운영 화면으로 이동하세요.
-              운영 담당자에게 안내받은 고객사 코드가 필요합니다.
-            </p>
-            <CompanyCodeEntryForm />
-            <p className="mt-4 text-xs text-slate-500">
-              다른 계정으로 로그인하려면 먼저 로그아웃해 주세요.
-            </p>
-            <div className="mt-3">
+            <p className="mt-1">운영 화면은 안내받은 고객사 전용 링크로 접속해 주세요.</p>
+            <p className="mt-1">다른 계정으로 로그인하려면 로그아웃 후 다시 로그인해 주세요.</p>
+            <div className="mt-4">
               <SignOutButton />
             </div>
           </div>
@@ -79,14 +72,8 @@ export default async function LoginPage({
             {!hasExplicitCallbackUrl ? (
               <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-7 text-blue-950">
                 <p className="font-black text-blue-900">고객사 운영 화면으로 이동하시나요?</p>
-                <p className="mt-1">
-                  고객사 전용 링크 또는 고객사 코드를 입력해 운영 화면으로 이동하세요.
-                  운영 담당자에게 안내받은 고객사 코드가 필요합니다.
-                </p>
-                <CompanyCodeEntryForm />
-                <p className="mt-3 text-xs text-blue-800">
-                  계정 발급 전에는 운영 담당자에게 문의해 주세요.
-                </p>
+                <p className="mt-1">운영 화면은 안내받은 고객사 전용 링크로 접속해 주세요.</p>
+                <p className="mt-1">계정이 필요하면 운영 담당자에게 문의해 주세요.</p>
               </div>
             ) : null}
             <CredentialsSignInForm callbackUrl={callbackUrl} />
