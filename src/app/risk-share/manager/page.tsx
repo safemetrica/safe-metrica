@@ -6,6 +6,8 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import {
   fetchFieldReferenceSafetyNews,
+  fetchFieldReferenceWeather,
+  KOSHA_OFFICIAL_LINK_URL,
   SAFETY_NEWS_MORE_LINK_URL,
 } from "@/lib/risk-share/reference-info";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
@@ -525,6 +527,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     currentPeriod,
   );
   const fieldReferenceSafetyNews = await fetchFieldReferenceSafetyNews();
+  const fieldReferenceWeather = await fetchFieldReferenceWeather();
 
   const monthlyConfirmationCount = participationSummary.counts.monthly;
   const preworkConfirmationCount = participationSummary.counts.prework;
@@ -829,8 +832,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               <ReferenceInfoCard
                 icon="기"
                 title="작업 전 기상 확인"
-                description="온열·강풍·한파·강우 등 현장 기상 상황을 작업 전 참고하세요."
-                tags={["온열질환 주의", "강풍 주의", "한파 주의", "강우 시 미끄럼 주의"]}
+                description={
+                  fieldReferenceWeather.status === "live" && fieldReferenceWeather.headline
+                    ? `${fieldReferenceWeather.headline} — 작업 전 참고하세요.`
+                    : "온열·강풍·한파·강우 등 현장 기상 상황을 작업 전 참고하세요."
+                }
+                tags={fieldReferenceWeather.tags}
                 note="관리자 확인 후 반영해 주세요."
               />
               <ReferenceInfoCard
@@ -838,6 +845,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                 title="안전보건공단 자료"
                 description="안전보건공단 자료를 TBM 참고자료로 활용하세요."
                 tags={["추락", "끼임", "화재·폭발", "질식·중독"]}
+                moreLink={KOSHA_OFFICIAL_LINK_URL}
                 note="월간 안전운영 참고자료로 활용할 수 있습니다."
               />
               <ReferenceInfoCard
@@ -853,6 +861,9 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
 
             <p className="mt-4 border-t border-slate-100 pt-3 text-xs font-semibold leading-5 text-slate-400">
               이 영역은 현장 운영 참고자료이며, 작업중지 여부나 법적 판단을 대신하지 않습니다. 월간 운영기록 참고 후보로 활용될 수 있습니다.
+            </p>
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-400">
+              오늘의 운영 참고 브리핑 후보 · 관리자 확인 후 TBM·작업 전 안내에 반영할 수 있습니다.
             </p>
           </section>
         </div>
