@@ -371,9 +371,11 @@ type ReferenceInfoCardProps = {
   icon: string;
   title: string;
   description: string;
+  tags: string[];
+  note: string;
 };
 
-function ReferenceInfoCard({ icon, title, description }: ReferenceInfoCardProps) {
+function ReferenceInfoCard({ icon, title, description, tags, note }: ReferenceInfoCardProps) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center gap-2">
@@ -383,6 +385,17 @@ function ReferenceInfoCard({ icon, title, description }: ReferenceInfoCardProps)
         <p className="text-sm font-black text-slate-900">{title}</p>
       </div>
       <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">{description}</p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] font-semibold leading-5 text-slate-400">{note}</p>
     </article>
   );
 }
@@ -757,17 +770,23 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               <ReferenceInfoCard
                 icon="날"
                 title="오늘의 날씨 참고"
-                description="작업 전 날씨 상황을 참고하는 안내 영역입니다. 실제 작업 여부 판단은 관리자가 현장 상황에 맞게 확인해 주세요."
+                description="작업 전 온열·강풍·강우 등 현장 상황을 확인하세요."
+                tags={["온열질환 주의", "강풍 주의", "한파 주의", "강우 시 미끄럼 주의"]}
+                note="관리자 확인 후 작업 전 안내에 반영할 수 있습니다."
               />
               <ReferenceInfoCard
                 icon="KO"
                 title="KOSHA 안전자료 참고"
-                description="KOSHA 안전보건자료를 참고하는 안내 영역입니다. 관리자 확인 후 현장 운영에 반영해 주세요."
+                description="안전보건공단 자료를 작업 전 교육·TBM 참고자료로 활용하세요."
+                tags={["추락", "끼임", "화재·폭발", "질식·중독"]}
+                note="최종 적용 여부는 관리자가 확인합니다."
               />
               <ReferenceInfoCard
                 icon="뉴"
                 title="안전보건 뉴스 · RSS 참고"
-                description="산업안전 관련 뉴스를 참고하는 안내 영역입니다. 후속 확인이 필요한 참고자료입니다."
+                description="최근 안전보건 이슈를 월간 안전운영 참고자료로 확인하세요."
+                tags={["산업재해 동향", "중대재해 이슈", "현장 안전관리"]}
+                note="법적 판단이나 조치 확정 자료가 아니라 운영 참고자료입니다."
               />
             </div>
 
