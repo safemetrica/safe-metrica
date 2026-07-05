@@ -50,3 +50,76 @@ export async function fetchFieldReferenceSafetyNews(): Promise<FieldReferenceNew
     return [];
   }
 }
+
+export type FieldReferenceWeatherInfo = {
+  status: "live" | "fallback";
+  headline: string | null;
+  tags: string[];
+};
+
+export const KOSHA_OFFICIAL_LINK_URL = "https://www.kosha.or.kr";
+
+const DEFAULT_WEATHER_TAGS = ["온열질환 주의", "강풍 주의", "한파 주의", "강우 시 미끄럼 주의"];
+const WEATHER_FETCH_TIMEOUT_MS = 4000;
+
+function getWeatherFetchBaseUrl() {
+  return process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://safe-metrica.vercel.app";
+}
+
+type WeatherApiResponse = {
+  tmp?: number | null;
+  wsd?: number | null;
+  pty?: string | null;
+};
+
+function buildWeatherHeadlineAndTags(
+  data: WeatherApiResponse,
+): { headline: string; tags: string[] } | null {
+  const tmp = Number.isFinite(data.tmp) ? Number(data.tmp) : null;
+  const wsd = Number.isFinite(data.wsd) ? Number(data.wsd) : null;
+  const hasRain = data.pty != null && data.pty !== "0";
+
+  if (tmp === null && wsd === null) {
+    return null;
+  }
+
+  const summaryParts: string[] = [];
+  if (tmp !== null) summaryParts.push(`기온 ${tmp}°C`);
+  if (wsd !== null) summaryParts.push(`풍속 ${wsd}m/s`);
+  summaryParts.push(hasRain ? "강수 있음" : "강수 없음");
+
+  const tags: string[] = [];
+  if (wsd !== null && wsd >= 10) tags.push("강풍 주의");
+  if (tmp !== null && tmp >= 33) tags.push("온열질환 주의");
+  if (tmp !== null && tmp <= -10) tags.push("한파 주의");
+  if (hasRain) tags.push("강우 시 미끄럼 주의");
+  if (tags.length === 0) tags.push("특이 기상 없음");
+
+  return { headline: summaryParts.join(" · "), tags };
+}
+
+export async function fetchFieldReferenceWeather(): Promise<FieldReferenceWeatherInfo> {
+  try {
+    const response = await fetch(`${getWeatherFetchBaseUrl()}/api/weather`, {
+      signal: AbortSignal.timeout(WEATHER_FETCH_TIMEOUT_MS),
+      next: { revalidate: 1800 },
+    });
+
+    if (!response.ok) {
+      return { status: "fallback", headline: null, tags: DEFAULT_WEATHER_TAGS };
+    }
+
+    const data = (await response.json()) as WeatherApiResponse;
+    const built = buildWeatherHeadlineAndTags(data);
+
+    if (!built) {
+      return { status: "fallback", headline: null, tags: DEFAULT_WEATHER_TAGS };
+    }
+
+    return { status: "live", headline: built.headline, tags: built.tags };
+  } catch {
+    return { status: "fallback", headline: null, tags: DEFAULT_WEATHER_TAGS };
+  }
+}
