@@ -89,8 +89,8 @@ export default async function LoginPage({
 
           {isTenantRequired ? (
             <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">
-              고객사 정보가 포함된 전용 링크가 필요합니다. 기존 링크가 열리지 않으면
-              운영관리자에게 새 링크를 요청해 주세요.
+              고객사 정보가 포함된 주소로 접속해야 하는 화면입니다. 계속 확인되지 않으면
+              운영 담당자에게 문의해 주세요.
             </div>
           ) : null}
 
