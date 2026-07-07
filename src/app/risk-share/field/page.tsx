@@ -91,6 +91,33 @@ function ActivityIcon({ kind }: { kind: "share" | "prework" | "anonymous" }) {
   );
 }
 
+const TRAIL_STEPS: Record<RiskShareLocale, [string, string, string, string]> = {
+  ko: ["공유", "확인 · 지금 단계", "관리자 검토", "월간 기록"],
+  en: ["Share", "Confirm · you are here", "Manager review", "Monthly record"],
+  vi: ["Chia sẻ", "Xác nhận · bước hiện tại", "Quản lý xem xét", "Hồ sơ tháng"],
+};
+
+function Trail({ locale }: { locale: RiskShareLocale }) {
+  const steps = TRAIL_STEPS[locale] ?? TRAIL_STEPS.ko;
+  return (
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[0.62rem] font-bold text-slate-400">
+      {steps.map((step, index) => (
+        <span
+          key={step}
+          className={
+            index === 1
+              ? "rounded-full bg-slate-950 px-2 py-0.5 font-black text-white"
+              : ""
+          }
+        >
+          {step}
+          {index < steps.length - 1 ? <span className="ml-1.5 text-slate-300">›</span> : null}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function LangBar({ companyCode, activeLocale }: { companyCode: string; activeLocale: RiskShareLocale }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -223,6 +250,8 @@ export default async function RiskSharePublicFieldEntryPage({
         </div>
 
         <div className="space-y-2 p-3">
+          <Trail locale={locale} />
+
           <div className="relative space-y-2">
             <div
               aria-hidden="true"
