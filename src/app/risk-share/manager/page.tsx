@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
@@ -223,14 +222,6 @@ async function fetchRiskShareVisitorConfirmationSummary(
   }
 }
 
-function percent(value: number, total: number) {
-  if (total <= 0) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(100, (value / total) * 100));
-}
-
 type NavItemProps = {
   href: string;
   label: string;
@@ -256,77 +247,65 @@ function NavItem({ href, label, active = false, icon }: NavItemProps) {
   );
 }
 
-type StackSegment = {
-  value: number;
-  colorClass: string;
-};
-
-function StackBar({ segments, total }: { segments: StackSegment[]; total: number }) {
-  return (
-    <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-100">
-      {segments.map((segment, index) => (
-        <span
-          key={`${segment.colorClass}-${index}`}
-          className={segment.colorClass}
-          style={{ width: `${percent(segment.value, total)}%` }}
-        />
-      ))}
-    </div>
-  );
-}
-
-type KpiCardProps = {
+type StatCardProps = {
+  icon: string;
+  iconClassName: string;
   label: string;
   value: number;
-  children: ReactNode;
+  caption?: string;
 };
 
-function KpiCard({ label, value, children }: KpiCardProps) {
+function StatCard({ icon, iconClassName, label, value, caption }: StatCardProps) {
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      <p className="text-xs font-extrabold text-slate-500">{label}</p>
-      <p className="mt-2 flex items-baseline gap-1">
-        <span className="text-4xl font-black tracking-tight text-slate-950">{value}</span>
+      <span
+        className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black ${iconClassName}`}
+      >
+        {icon}
+      </span>
+      <p className="mt-4 text-xs font-extrabold text-slate-500">{label}</p>
+      <p className="mt-1 flex items-baseline gap-1">
+        <span className="text-3xl font-black tracking-tight text-slate-950">{value}</span>
         <span className="text-sm font-black text-slate-400">건</span>
       </p>
-      <div className="mt-4">{children}</div>
+      {caption ? (
+        <p className="mt-3 inline-block rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700">
+          {caption}
+        </p>
+      ) : null}
     </article>
   );
 }
 
-type StatusRowProps = {
-  icon: string;
+type PageHeadProps = {
   title: string;
-  count: number;
-  total: number;
-  children?: ReactNode;
+  description: string;
+  fieldHref: string;
+  monthlyHref: string;
 };
 
-function StatusRow({ icon, title, count, total, children }: StatusRowProps) {
+function PageHead({ title, description, fieldHref, monthlyHref }: PageHeadProps) {
   return (
-    <div className="grid gap-3 border-b border-slate-100 px-5 py-4 last:border-b-0 md:grid-cols-[minmax(170px,230px)_1fr_56px] md:items-center">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xs font-black text-blue-600">
-          {icon}
-        </span>
-        <p className="truncate text-sm font-black text-slate-900">{title}</p>
+    <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 className="text-xl font-black tracking-tight text-slate-950">{title}</h1>
+        <p className="mt-1.5 text-sm font-semibold leading-6 text-slate-500">{description}</p>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <span
-          className="block h-full rounded-full bg-blue-600"
-          style={{ width: `${percent(count, total)}%` }}
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <a
+          href={monthlyHref}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          월간 안전운영 요약
+        </a>
+        <a
+          href={fieldHref}
+          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-blue-700"
+        >
+          현장 QR 입구
+        </a>
       </div>
-      <p className="text-right text-base font-black text-slate-950">
-        {count}
-        <span className="ml-0.5 text-xs font-black text-slate-400">건</span>
-      </p>
-      {children ? (
-        <div className="flex flex-wrap gap-2 md:col-span-3 md:pl-12">
-          {children}
-        </div>
-      ) : null}
-    </div>
+    </section>
   );
 }
 
@@ -465,7 +444,7 @@ function AiBriefingHero({ summaryLine, focusLine, referenceLine, pills }: AiBrie
       </div>
 
       <div>
-        <h1 className="text-2xl font-black tracking-tight">AI 안전운영 브리핑</h1>
+        <h2 className="text-2xl font-black tracking-tight">AI 안전운영 브리핑</h2>
         <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-white/80">
           AI가 현장 확인 기록, 익명 의견, 외부인 확인, 근로자대표 확인과 기상·안전보건 참고자료를
           모아 관리자 확인 항목으로 정리합니다.
@@ -585,7 +564,6 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     visitorConfirmationCount +
     representativeTotalCount;
   const fieldConfirmationCount = monthlyConfirmationCount + preworkConfirmationCount;
-  const workerSignatureNotSubmittedCount = Math.max(0, fieldConfirmationCount - workerSignatureConfirmedCount);
 
   const aiBriefingSummaryLine = `이번 달 현장 확인 ${fieldConfirmationCount}건, 익명 의견 ${anonymousFeedbackCount}건, 근로자대표 확인 ${representativeTotalCount}건이 접수되었습니다.`;
   const aiBriefingFocusLine = `근로자대표 미제출 ${signatureNotSubmittedCount}건과 익명 의견 ${anonymousFeedbackCount}건을 먼저 확인해 주세요.`;
@@ -651,6 +629,59 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
         </header>
 
         <div className="mx-auto flex w-full max-w-[1220px] flex-col gap-5 px-4 py-5 lg:px-7">
+          <PageHead
+            title="위험성평가 공유확인 현황"
+            description={`현장 QR로 들어온 확인·의견 흐름을 한 화면에서 봅니다. 이번 달 총 접수 ${totalSubmissionCount}건 중 아래 5개 카드가 핵심입니다.`}
+            fieldHref={fieldHref}
+            monthlyHref={monthlyHref}
+          />
+
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <StatCard
+              icon="공"
+              iconClassName="bg-blue-50 text-blue-600"
+              label="공유확인"
+              value={monthlyConfirmationCount}
+              caption={
+                monthlyWorkerSignatureCount > 0
+                  ? `근로자 서명 포함 ${monthlyWorkerSignatureCount}건`
+                  : undefined
+              }
+            />
+            <StatCard
+              icon="작"
+              iconClassName="bg-emerald-50 text-emerald-600"
+              label="작업 전 확인"
+              value={preworkConfirmationCount}
+              caption={
+                preworkWorkerSignatureCount > 0
+                  ? `근로자 서명 포함 ${preworkWorkerSignatureCount}건`
+                  : undefined
+              }
+            />
+            <StatCard
+              icon="익"
+              iconClassName="bg-amber-50 text-amber-600"
+              label="익명 의견"
+              value={anonymousFeedbackCount}
+            />
+            <StatCard
+              icon="외"
+              iconClassName="bg-violet-50 text-violet-600"
+              label="외부인 확인"
+              value={visitorConfirmationCount}
+            />
+            <StatCard
+              icon="대"
+              iconClassName="bg-rose-50 text-rose-600"
+              label="근로자대표 확인"
+              value={representativeTotalCount}
+              caption={
+                signatureConfirmedCount > 0 ? `서명 포함 ${signatureConfirmedCount}건` : undefined
+              }
+            />
+          </section>
+
           <AiBriefingHero
             summaryLine={aiBriefingSummaryLine}
             focusLine={aiBriefingFocusLine}
@@ -658,192 +689,62 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
             pills={aiBriefingConfirmationPills}
           />
 
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_316px]">
-            <div className="flex min-w-0 flex-col gap-5">
-              <section className="grid gap-4 md:grid-cols-3">
-                <KpiCard label="이번 달 총 접수" value={totalSubmissionCount}>
-                  <StackBar
-                    total={totalSubmissionCount}
-                    segments={[
-                      { value: monthlyConfirmationCount, colorClass: "bg-blue-600" },
-                      { value: preworkConfirmationCount, colorClass: "bg-blue-400" },
-                      { value: anonymousFeedbackCount, colorClass: "bg-blue-200" },
-                      { value: visitorConfirmationCount, colorClass: "bg-teal-500" },
-                      { value: representativeTotalCount, colorClass: "bg-slate-800" },
-                    ]}
-                  />
-                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-bold text-slate-400">
-                    <span>공유확인 {monthlyConfirmationCount}</span>
-                    <span>작업 전 {preworkConfirmationCount}</span>
-                    <span>익명 {anonymousFeedbackCount}</span>
-                    <span>외부인 {visitorConfirmationCount}</span>
-                    <span>근로자대표 {representativeTotalCount}</span>
-                  </div>
-                </KpiCard>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <h2 className="text-sm font-black text-slate-950">빠른 실행</h2>
+              <div className="mt-3 space-y-2">
+                <QuickAction
+                  href={fieldHref}
+                  title="현장 QR 입구"
+                  description="근로자·외부인 확인 화면으로 이동"
+                  icon="QR"
+                />
+                <QuickAction
+                  href={monthlyHref}
+                  title="월간 안전운영 요약"
+                  description="이번 달 기록 요약 화면으로 이동"
+                  icon="월"
+                />
+              </div>
+            </section>
 
-                <KpiCard label="현장 확인" value={fieldConfirmationCount}>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                    <span
-                      className="block h-full rounded-full bg-blue-600"
-                      style={{ width: `${percent(fieldConfirmationCount, totalSubmissionCount)}%` }}
-                    />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
-                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">
-                      근로자 서명 포함 {workerSignatureConfirmedCount}건
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">
-                      선택 서명 미제출 {workerSignatureNotSubmittedCount}건
-                    </span>
-                  </div>
-                </KpiCard>
-
-                <KpiCard label="근로자대표 확인" value={representativeTotalCount}>
-                  <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-100">
-                    <span
-                      className="block h-full bg-teal-500"
-                      style={{ width: `${percent(signatureConfirmedCount, representativeTotalCount)}%` }}
-                    />
-                    <span
-                      className="block h-full bg-slate-300"
-                      style={{
-                        width: `${percent(signatureNotSubmittedCount, representativeTotalCount)}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
-                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">
-                      서명 포함 {signatureConfirmedCount}건
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500">
-                      선택 서명 미제출 {signatureNotSubmittedCount}건
-                    </span>
-                  </div>
-                </KpiCard>
-              </section>
-
-              <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-5">
-                  <h2 className="text-base font-black text-slate-950">이번 달 접수 현황</h2>
-                  <p className="text-xs font-bold text-slate-400">
-                    {currentPeriod.startDate} – {currentPeriod.endDate} · 현장 QR 접수 기준
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <StatusRow
-                    icon="공"
-                    title="위험성평가 공유확인"
-                    count={monthlyConfirmationCount}
-                    total={totalSubmissionCount}
-                  >
-                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700">
-                      근로자 서명 포함 {monthlyWorkerSignatureCount}건
-                    </span>
-                  </StatusRow>
-                  <StatusRow
-                    icon="작"
-                    title="작업 전 안전확인"
-                    count={preworkConfirmationCount}
-                    total={totalSubmissionCount}
-                  >
-                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700">
-                      근로자 서명 포함 {preworkWorkerSignatureCount}건
-                    </span>
-                  </StatusRow>
-                  <StatusRow
-                    icon="익"
-                    title="익명 의견 · 아차사고 · 개선제안"
-                    count={anonymousFeedbackCount}
-                    total={totalSubmissionCount}
-                  />
-                  <StatusRow
-                    icon="외"
-                    title="외부인 출입 전 안전확인"
-                    count={visitorConfirmationCount}
-                    total={totalSubmissionCount}
-                  />
-                  <StatusRow
-                    icon="대"
-                    title="근로자대표 확인"
-                    count={representativeTotalCount}
-                    total={totalSubmissionCount}
-                  >
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
-                      총 제출 {representativeTotalCount}건
-                    </span>
-                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-black text-teal-700">
-                      서명 포함 {signatureConfirmedCount}건
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-500">
-                      선택 서명 미제출 {signatureNotSubmittedCount}건 · 확인 기록으로 집계
-                    </span>
-                  </StatusRow>
-                </div>
-
-                <p className="border-t border-slate-100 px-5 py-3 text-xs font-semibold leading-5 text-slate-400">
-                  막대는 이번 달 총 접수 {totalSubmissionCount}건 대비 비중입니다.
-                </p>
-              </section>
-            </div>
-
-            <aside className="flex flex-col gap-5">
-              <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                <h2 className="text-sm font-black text-slate-950">빠른 실행</h2>
-                <div className="mt-3 space-y-2">
-                  <QuickAction
-                    href={fieldHref}
-                    title="현장 QR 입구"
-                    description="근로자·외부인 확인 화면으로 이동"
-                    icon="QR"
-                  />
-                  <QuickAction
-                    href={monthlyHref}
-                    title="월간 안전운영 요약"
-                    description="이번 달 기록 요약 화면으로 이동"
-                    icon="월"
-                  />
-                </div>
-              </section>
-
-              <section className="rounded-3xl bg-gradient-to-br from-[#123B8F] to-blue-700 p-5 text-white shadow-[0_8px_24px_rgba(18,59,143,0.18)]">
-                <p className="text-xs font-black uppercase tracking-[0.08em] text-white/75">
-                  운영 인사이트
-                </p>
-                <p className="mt-3 text-sm font-semibold leading-6 text-white/90">
-                  이번 달 현장 확인 {fieldConfirmationCount}건, 익명 의견 {anonymousFeedbackCount}
-                  건, 근로자대표 확인 {representativeTotalCount}건이 접수되었습니다.
-                </p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-white/90">
-                  근로자 확인 서명은 {workerSignatureConfirmedCount}건 포함되었고, 근로자대표 서명 포함 확인은 {signatureConfirmedCount}건입니다.
-                </p>
-
-                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/15 pt-4">
-                  <div>
-                    <p className="text-lg font-black">{fieldConfirmationCount}건</p>
-                    <p className="text-[11px] font-semibold text-white/65">현장 확인</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-black">{workerSignatureConfirmedCount}건</p>
-                    <p className="text-[11px] font-semibold text-white/65">근로자 서명</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-black">{representativeTotalCount}건</p>
-                    <p className="text-[11px] font-semibold text-white/65">근로자대표 확인</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-black">{signatureConfirmedCount}건</p>
-                    <p className="text-[11px] font-semibold text-white/65">근로자대표 서명</p>
-                  </div>
-                </div>
-              </section>
-
-              <p className="px-1 text-xs font-semibold leading-6 text-slate-400">
-                접수된 내용은 관리자 검토 후 월간 안전운영 요약에 반영됩니다. 최종 판단과 조치는
-                관리자와 사업주가 검토합니다.
+            <section className="rounded-3xl bg-gradient-to-br from-[#123B8F] to-blue-700 p-5 text-white shadow-[0_8px_24px_rgba(18,59,143,0.18)]">
+              <p className="text-xs font-black uppercase tracking-[0.08em] text-white/75">
+                운영 인사이트
               </p>
-            </aside>
+              <p className="mt-3 text-sm font-semibold leading-6 text-white/90">
+                이번 달 현장 확인 {fieldConfirmationCount}건, 익명 의견 {anonymousFeedbackCount}
+                건, 근로자대표 확인 {representativeTotalCount}건이 접수되었습니다.
+              </p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-white/90">
+                근로자 확인 서명은 {workerSignatureConfirmedCount}건 포함되었고, 근로자대표 서명 포함 확인은 {signatureConfirmedCount}건입니다.
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/15 pt-4">
+                <div>
+                  <p className="text-lg font-black">{fieldConfirmationCount}건</p>
+                  <p className="text-[11px] font-semibold text-white/65">현장 확인</p>
+                </div>
+                <div>
+                  <p className="text-lg font-black">{workerSignatureConfirmedCount}건</p>
+                  <p className="text-[11px] font-semibold text-white/65">근로자 서명</p>
+                </div>
+                <div>
+                  <p className="text-lg font-black">{representativeTotalCount}건</p>
+                  <p className="text-[11px] font-semibold text-white/65">근로자대표 확인</p>
+                </div>
+                <div>
+                  <p className="text-lg font-black">{signatureConfirmedCount}건</p>
+                  <p className="text-[11px] font-semibold text-white/65">근로자대표 서명</p>
+                </div>
+              </div>
+            </section>
           </div>
+
+          <p className="px-1 text-xs font-semibold leading-6 text-slate-400">
+            접수된 내용은 관리자 검토 후 월간 안전운영 요약에 반영됩니다. 최종 판단과 조치는
+            관리자와 사업주가 검토합니다.
+          </p>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
