@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
-import RiskShareMonthlyReportShell from "@/components/risk-share/RiskShareMonthlyReportShell";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
+import MonthlyDesignerView from "@/components/risk-share/monthly/MonthlyDesignerView";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -45,6 +45,7 @@ function getCurrentPeriodKst() {
 
   return {
     label: `${year}년 ${month}월`,
+    monthLabel: `${month}월`,
     rangeLabel: `${year}.${pad(month)}.01 – ${year}.${pad(month)}.${pad(lastDay)}`,
     createdAtGte: startOfMonthUtc.toISOString(),
     createdAtLt: startOfNextMonthUtc.toISOString(),
@@ -52,6 +53,25 @@ function getCurrentPeriodKst() {
     endDate: `${year}-${pad(month)}-${pad(lastDay)}`,
     dayAfterEnd: new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10),
   };
+}
+
+function getTodayKstLabel() {
+  const now = new Date();
+  const datePart = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(now)
+    .replace(/\s/g, "")
+    .replace(/\.$/, "");
+  const weekdayPart = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    weekday: "short",
+  }).format(now);
+
+  return `${datePart} ${weekdayPart}`;
 }
 
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
@@ -214,7 +234,6 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   const period = getCurrentPeriodKst();
   const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
   const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
-  const fieldHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, lang);
 
   if (!isAllowed) {
     return (
@@ -256,27 +275,35 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
     );
   }
 
+  const userEmail = tenantAccessResult.context.membership.userEmail;
+  const userDisplayName = tenantAccessResult.context.membership.displayName || userEmail || "관리자";
+  const avatarInitial = userDisplayName.trim().slice(0, 1) || "관";
+
   const participationSummary = await fetchRiskShareMonthlyParticipationSummary(companyCode, period);
   const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(companyCode, period);
   const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(companyCode, period);
   const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(companyCode, period);
 
   return (
-    <RiskShareMonthlyReportShell
-      companyLabel={companyLabel}
-      periodLabel={period.label}
-      periodRangeLabel={period.rangeLabel}
+    <MonthlyDesignerView
       managerHref={managerHref}
-      fieldHref={fieldHref}
-      monthlyCount={participationSummary.counts.monthly}
-      preworkCount={participationSummary.counts.prework}
-      monthlyWorkerSignatureCount={participationSummary.counts.monthlySignatureConfirmed}
-      preworkWorkerSignatureCount={participationSummary.counts.preworkSignatureConfirmed}
-      anonymousCount={anonymousFeedbackSummary.count}
-      visitorCount={visitorConfirmationSummary.count}
-      representativeCount={representativeSubmissionSummary.totalCount}
-      signatureConfirmedCount={representativeSubmissionSummary.signatureConfirmedCount}
-      signatureNotSubmittedCount={representativeSubmissionSummary.signatureNotSubmittedCount}
+      monthlyHref={monthlyHref}
+      periodTitle={`${period.label} 안전운영 요약`}
+      periodDescription={`${companyLabel} · 기간 ${period.rangeLabel} · 이번 달 확인·의견·검토 기록을 한 장으로 정리합니다.`}
+      monthLabel={period.monthLabel}
+      todayLabel={getTodayKstLabel()}
+      userDisplayName={userDisplayName}
+      userEmail={userEmail}
+      avatarInitial={avatarInitial}
+      counts={{
+        monthly: participationSummary.counts.monthly,
+        prework: participationSummary.counts.prework,
+        anonymous: anonymousFeedbackSummary.count,
+        visitor: visitorConfirmationSummary.count,
+        representative: representativeSubmissionSummary.totalCount,
+        signatureConfirmed: representativeSubmissionSummary.signatureConfirmedCount,
+        signatureNotSubmitted: representativeSubmissionSummary.signatureNotSubmittedCount,
+      }}
     />
   );
 }
