@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import CredentialsSignInForm from "@/components/auth/CredentialsSignInForm";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { getCurrentTenantSessionEmail } from "@/lib/tenant-auth/tenantSessionServer";
+import LoginThemeProvider from "./LoginThemeProvider";
+import LoginThemeToggleButton from "./LoginThemeToggleButton";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,17 @@ function isExplicitSafeCallbackUrl(value: string) {
 
 function getSafeCallbackUrl(value: string) {
   return isExplicitSafeCallbackUrl(value) ? value : "/login";
+}
+
+/** Reuses the company param already present in a validated callbackUrl — never guesses or hardcodes one. */
+function extractCompanyCodeFromCallbackUrl(value: string) {
+  try {
+    const url = new URL(value, "http://login-callback.invalid");
+    const raw = url.searchParams.get("company") ?? "";
+    return raw.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 64);
+  } catch {
+    return "";
+  }
 }
 
 type AlertTone = "info" | "warning" | "danger";
@@ -62,14 +75,18 @@ export default async function LoginPage({
     redirect(callbackUrl);
   }
 
+  const companyCodeFromCallback = hasExplicitCallbackUrl
+    ? extractCompanyCodeFromCallbackUrl(rawCallbackUrl)
+    : "";
+  const fieldHref = companyCodeFromCallback
+    ? `/risk-share/field?company=${encodeURIComponent(companyCodeFromCallback)}`
+    : "/risk-share/field";
+
   return (
-    <div className="rsx-shell">
+    <LoginThemeProvider>
       <div className="login-body">
         <div className="login-card">
-          <button className="iconbtn theme-toggle login-theme" aria-label="테마 전환">
-            <iconify-icon icon="lucide:sun" className="sun"></iconify-icon>
-            <iconify-icon icon="lucide:moon" className="moon"></iconify-icon>
-          </button>
+          <LoginThemeToggleButton />
 
           {/* 좌측 비주얼 패널 */}
           <aside className="login-visual">
@@ -136,7 +153,7 @@ export default async function LoginPage({
                 </AlertNote>
               ) : null}
 
-              <a className="login-qr" href="/risk-share/field">
+              <a className="login-qr" href={fieldHref}>
                 <span className="login-qr__ic">
                   <iconify-icon icon="lucide:qr-code"></iconify-icon>
                 </span>
@@ -150,6 +167,6 @@ export default async function LoginPage({
           </main>
         </div>
       </div>
-    </div>
+    </LoginThemeProvider>
   );
 }
