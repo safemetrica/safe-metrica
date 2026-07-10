@@ -10,6 +10,7 @@ type CredentialsSignInFormProps = {
 export default function CredentialsSignInForm({ callbackUrl }: CredentialsSignInFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasError, setHasError] = useState(false);
 
@@ -35,50 +36,71 @@ export default function CredentialsSignInForm({ callbackUrl }: CredentialsSignIn
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-3">
-      <label className="block text-sm font-black text-slate-800">
-        이메일
-        <input
-          type="email"
-          name="email"
-          required
-          autoComplete="username"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
-        />
-      </label>
+    <form id="loginForm" onSubmit={handleSubmit} noValidate>
+      <div className={`kfld${hasError ? " is-error" : ""}`}>
+        <div className="kfld__main">
+          <label className="kfld__label" htmlFor="email">
+            Email Address
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="name@company.com"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </div>
+        <span className="kfld__ic">
+          <iconify-icon icon="lucide:mail"></iconify-icon>
+        </span>
+      </div>
 
-      <label className="block text-sm font-black text-slate-800">
-        비밀번호
-        <input
-          type="password"
-          name="password"
-          required
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
-        />
-      </label>
+      <div className={`kfld${hasError ? " is-error" : ""}`} id="pwFld">
+        <div className="kfld__main">
+          <label className="kfld__label" htmlFor="password">
+            Password
+          </label>
+          <input
+            type={isPasswordVisible ? "text" : "password"}
+            id="password"
+            name="password"
+            placeholder="비밀번호 입력"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          className="kfld__ic"
+          aria-label={isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 표시"}
+          onClick={() => setIsPasswordVisible((visible) => !visible)}
+        >
+          <iconify-icon icon={isPasswordVisible ? "lucide:eye-off" : "lucide:eye"}></iconify-icon>
+        </button>
+      </div>
 
       {hasError ? (
-        <p className="text-sm font-semibold leading-6 text-red-600">
-          이메일 또는 비밀번호를 확인해 주세요.
-        </p>
+        <p className="login-error">이메일 또는 비밀번호를 확인해 주세요.</p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-base font-black text-white transition hover:bg-slate-800 disabled:opacity-60"
-      >
-        로그인
-      </button>
+      <label className="login-remember">
+        <input type="checkbox" defaultChecked /> 로그인 유지
+      </label>
 
-      <p className="text-center text-xs font-semibold leading-5 text-slate-500">
-        계정이 필요하면 운영 담당자에게 문의해 주세요.
-      </p>
+      <div className="login-row">
+        <span className="login-forgot">비밀번호 문의: 운영 담당자</span>
+        <button type="submit" className="login-submit" disabled={isSubmitting} aria-label="로그인">
+          <iconify-icon
+            icon={isSubmitting ? "lucide:loader-2" : "lucide:arrow-right"}
+            className={isSubmitting ? "is-spinning" : ""}
+          ></iconify-icon>
+        </button>
+      </div>
     </form>
   );
 }
