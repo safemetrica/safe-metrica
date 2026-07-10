@@ -75,6 +75,8 @@ type FieldCopy = {
   repBadge: string;
   repDescription: string;
   footerDisclaimer: string;
+  /** Worker-only variant of footerDisclaimer for the worker QR entry screen (/risk-share/field), which no longer links to the visitor/representative cards. */
+  fieldWorkerDisclaimer: string;
   qrCheckingTitle: string;
   noCodeBody: string;
   notRegisteredBody: string;
@@ -203,6 +205,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       repDescription: "근로자대표가 확인과 의견을 남깁니다. 약 2분.",
       footerDisclaimer:
         "근로자와 외부인은 로그인 없이 QR로 참여합니다. 확인과 의견은 관리자 검토를 거쳐 월간 안전운영 요약으로 남습니다.",
+      fieldWorkerDisclaimer:
+        "근로자는 로그인 없이 현장 QR로 참여합니다. 확인과 의견은 관리자 검토를 거쳐 월간 안전운영 기록으로 정리됩니다.",
       qrCheckingTitle: "현장 QR 확인 중",
       noCodeBody: "회사코드가 포함된 QR 링크가 필요합니다. 현장 담당자에게 새 QR 링크를 요청해 주세요.",
       notRegisteredBody: "이 QR 링크는 아직 사용할 수 없습니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.",
@@ -336,6 +340,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       repDescription: "The worker representative leaves a confirmation and comment. About 2 min.",
       footerDisclaimer:
         "Workers and visitors join with no login, using the QR. Confirmations and reports are reviewed by a manager and kept in the monthly safety summary.",
+      fieldWorkerDisclaimer:
+        "Workers join through the site QR without logging in. Confirmations and comments are reviewed by a manager and organized into the monthly safety operation record.",
       qrCheckingTitle: "Checking field QR",
       noCodeBody: "A QR link with a company code is required. Ask the site manager for a new QR link.",
       notRegisteredBody: "This QR link is not active yet. Ask the site manager for the latest QR link.",
@@ -469,6 +475,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       repDescription: "Đại diện người lao động xác nhận và để lại ý kiến. Khoảng 2 phút.",
       footerDisclaimer:
         "Người lao động và khách tham gia không cần đăng nhập, chỉ bằng mã QR. Xác nhận và ý kiến được quản lý xem xét và lưu vào báo cáo an toàn hàng tháng.",
+      fieldWorkerDisclaimer:
+        "Người lao động tham gia bằng mã QR hiện trường mà không cần đăng nhập. Xác nhận và ý kiến được quản lý xem xét và tổng hợp vào hồ sơ vận hành an toàn hàng tháng.",
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
       noCodeBody: "Cần liên kết QR có mã công ty. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới.",
       notRegisteredBody: "Liên kết QR này chưa thể sử dụng. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới nhất.",
