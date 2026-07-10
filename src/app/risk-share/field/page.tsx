@@ -225,7 +225,7 @@ export default async function RiskSharePublicFieldEntryPage({
             </p>
           </div>
 
-          <div className="field__foot">{copy.footerDisclaimer}</div>
+          <div className="field__foot">{copy.fieldWorkerDisclaimer}</div>
         </div>
       </div>
     </div>
