@@ -1,6 +1,9 @@
+"use client";
+
 import SignOutButton from "@/components/auth/SignOutButton";
 import { Donut } from "@/app/risk-share/manager/charts";
 import { AreaTrend, HorizontalBars } from "@/app/risk-share/monthly/charts";
+import { useDashboardShellInteractions } from "@/components/risk-share/manager/useDashboardShellInteractions";
 
 /**
  * Pure presentation component for /risk-share/monthly.
@@ -66,7 +69,12 @@ export type MonthlyDesignerViewProps = {
   reassessmentCandidates?: MonthlyReassessmentCandidate[];
   /** Absent when no activity-notification feed exists yet. */
   notifications?: MonthlyNotification[];
+  /** Real last-5-month calendar labels (e.g. "3월".."7월"), computed by the route
+   * via pure date math — used as the axis when no historical aggregation exists yet. */
+  monthlyTrendFallbackLabels?: string[];
 };
+
+const DEFAULT_MONTHLY_TREND_LABELS = ["", "", "", "", ""];
 
 function percentShare(value: number, total: number) {
   if (total <= 0) {
@@ -91,16 +99,33 @@ export default function MonthlyDesignerView({
   monthlyTrendDeltaLabel,
   reassessmentCandidates,
   notifications,
+  monthlyTrendFallbackLabels,
 }: MonthlyDesignerViewProps) {
   const totalCount =
     counts.monthly + counts.prework + counts.anonymous + counts.visitor + counts.representative;
+  const hasMonthlyTrend = Boolean(monthlyTrend && monthlyTrend.length > 0);
+  const monthlyTrendLabels = hasMonthlyTrend
+    ? monthlyTrend!.map((point) => point.label)
+    : monthlyTrendFallbackLabels ?? DEFAULT_MONTHLY_TREND_LABELS;
+  const monthlyTrendValues = hasMonthlyTrend ? monthlyTrend!.map((point) => point.value) : [0, 0, 0, 0, 0];
+
+  const {
+    theme,
+    toggleTheme,
+    isSidebarOpen,
+    isSidebarMini,
+    handleSidebarToggleClick,
+    closeSidebar,
+    openDropdownId,
+    toggleDropdown,
+  } = useDashboardShellInteractions();
 
   return (
-    <div className="rsx-shell">
+    <div className={`rsx-shell${isSidebarMini ? " sb-mini" : ""}`} data-theme={theme}>
       <div className="app">
         {/* ================= Sidebar ================= */}
-        <aside className="sidebar">
-          <a className="sidebar__brand" href={managerHref}>
+        <aside className={`sidebar${isSidebarOpen ? " open" : ""}`}>
+          <a className="sidebar__brand" href={managerHref} onClick={closeSidebar}>
             <img className="logo-img logo-img--light" src="/risk-share-assets/logo.png" alt="SafeMetrica" />
             <img className="logo-img logo-img--dark" src="/risk-share-assets/logo_darkmode.png" alt="SafeMetrica" />
             <img className="brand-mark" src="https://www.safemetrica.com/brand/safemetrica-logo-mark.svg" alt="" />
@@ -109,7 +134,7 @@ export default function MonthlyDesignerView({
           <nav className="sidebar__nav">
             <div className="nav__section">
               <div className="nav__label">개요</div>
-              <a className="nav__item" href={managerHref} title="대시보드">
+              <a className="nav__item" href={managerHref} title="대시보드" onClick={closeSidebar}>
                 <iconify-icon icon="lucide:layout-dashboard"></iconify-icon>
                 <span className="nav__txt">대시보드</span>
               </a>
@@ -117,30 +142,37 @@ export default function MonthlyDesignerView({
 
             <div className="nav__section">
               <div className="nav__label">안전운영</div>
-              <a className="nav__item" href="#" title="위험성평가 공유확인">
+              <div className="nav__item is-disabled" title="위험성평가 공유확인">
                 <iconify-icon icon="lucide:share-2"></iconify-icon>
                 <span className="nav__txt">위험성평가 공유확인</span>
                 <span className="nav__badge">{counts.monthly}</span>
-              </a>
-              <a className="nav__item" href="#" title="작업 전 안전확인">
+              </div>
+              <div className="nav__item is-disabled" title="작업 전 안전확인">
                 <iconify-icon icon="lucide:clipboard-check"></iconify-icon>
                 <span className="nav__txt">작업 전 안전확인</span>
                 <span className="nav__badge">{counts.prework}</span>
-              </a>
-              <a className="nav__item" href="#" title="익명 의견함">
+              </div>
+              <div className="nav__item is-disabled" title="익명 의견함">
                 <iconify-icon icon="lucide:message-circle-question"></iconify-icon>
                 <span className="nav__txt">익명 의견함</span>
                 <span className="nav__badge">{counts.anonymous}</span>
-              </a>
-              <a className="nav__item" href="#" title="외부인 확인">
+              </div>
+              <div className="nav__item is-disabled" title="외부인 확인">
                 <iconify-icon icon="lucide:door-open"></iconify-icon>
                 <span className="nav__txt">외부인 확인</span>
-              </a>
-              <a className="nav__item" href="#" title="근로자대표 확인">
+                <span className="nav__badge">{counts.visitor}</span>
+              </div>
+              <div className="nav__item is-disabled" title="근로자대표 확인">
                 <iconify-icon icon="lucide:user-check"></iconify-icon>
                 <span className="nav__txt">근로자대표 확인</span>
-              </a>
-              <a className="nav__item nav__item--featured is-active" href={monthlyHref} title="월간 안전운영 요약">
+                <span className="nav__badge">{counts.representative}</span>
+              </div>
+              <a
+                className="nav__item nav__item--featured is-active"
+                href={monthlyHref}
+                title="월간 안전운영 요약"
+                onClick={closeSidebar}
+              >
                 <iconify-icon icon="lucide:calendar-check"></iconify-icon>
                 <span className="nav__txt">월간 안전운영 요약</span>
               </a>
@@ -150,21 +182,24 @@ export default function MonthlyDesignerView({
           <div className="sidebar__foot">
             <div className="plan-card">
               <h4>
-                <iconify-icon icon="lucide:crown"></iconify-icon> 위공팩 v1
+                <iconify-icon icon="lucide:crown"></iconify-icon> 위험성평가 공유팩
               </h4>
-              <p>확장팩 버전 1 이용 중입니다. 메뉴는 계속 추가됩니다.</p>
-              <a className="plan-card__btn" href="#">
-                플랜 관리
-              </a>
+              <p>공유확인 · 참여확인 · 월간 운영요약 흐름을 제공합니다.</p>
             </div>
           </div>
         </aside>
-        <div className="overlay"></div>
+        <div className={`overlay${isSidebarOpen ? " show" : ""}`} onClick={closeSidebar}></div>
 
         {/* ================= Main ================= */}
         <div className="main">
           <header className="header">
-            <button className="iconbtn" id="sbToggle" aria-label="메뉴 열기/닫기">
+            <button
+              className="iconbtn"
+              id="sbToggle"
+              aria-label={isSidebarOpen ? "메뉴 닫기" : "메뉴 열기"}
+              aria-expanded={isSidebarOpen}
+              onClick={handleSidebarToggleClick}
+            >
               <iconify-icon icon="lucide:menu"></iconify-icon>
             </button>
             <div className="header__spacer"></div>
@@ -172,12 +207,20 @@ export default function MonthlyDesignerView({
               <iconify-icon icon="lucide:search"></iconify-icon>
               <input type="text" placeholder="기간 · 항목 검색" />
             </div>
-            <button className="iconbtn theme-toggle" aria-label="테마 전환">
+            <button className="iconbtn theme-toggle" aria-label="테마 전환" onClick={toggleTheme}>
               <iconify-icon icon="lucide:sun" className="sun"></iconify-icon>
               <iconify-icon icon="lucide:moon" className="moon"></iconify-icon>
             </button>
-            <div className="dd">
-              <button className="iconbtn dd__btn" aria-label="알림" aria-haspopup="true">
+            <div className={`dd${openDropdownId === "notifications" ? " open" : ""}`}>
+              <button
+                className="iconbtn dd__btn"
+                aria-label="알림"
+                aria-haspopup="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleDropdown("notifications");
+                }}
+              >
                 <iconify-icon icon="lucide:bell"></iconify-icon>
                 {notifications && notifications.length > 0 ? <span className="dot"></span> : null}
               </button>
@@ -205,13 +248,17 @@ export default function MonthlyDesignerView({
                     표시할 알림이 없습니다.
                   </p>
                 )}
-                <a className="dd__foot" href="#">
-                  알림 전체 보기
-                </a>
               </div>
             </div>
-            <div className="dd">
-              <button className="user-chip dd__btn" aria-haspopup="true">
+            <div className={`dd${openDropdownId === "user" ? " open" : ""}`}>
+              <button
+                className="user-chip dd__btn"
+                aria-haspopup="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleDropdown("user");
+                }}
+              >
                 <div className="user-chip__av">{avatarInitial}</div>
                 <div className="user-chip__meta">
                   <b>{userDisplayName}</b>
@@ -227,15 +274,6 @@ export default function MonthlyDesignerView({
                     <span>안전관리자 · {userEmail}</span>
                   </div>
                 </div>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:user"></iconify-icon>프로필 정보
-                </a>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:bell-ring"></iconify-icon>알림 설정
-                </a>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:settings"></iconify-icon>계정 설정
-                </a>
                 <hr className="dd__sep" />
                 <div className="dd__item dd__item--danger">
                   <SignOutButton />
@@ -382,31 +420,16 @@ export default function MonthlyDesignerView({
                   <span className="badge b-gray">{monthlyTrendDeltaLabel ?? "데이터 없음"}</span>
                 </div>
                 <div className="card__body">
-                  {monthlyTrend && monthlyTrend.length > 0 ? (
-                    <div className="chart-wrap" style={{ height: "290px" }}>
-                      <AreaTrend
-                        labels={monthlyTrend.map((point) => point.label)}
-                        data={monthlyTrend.map((point) => point.value)}
-                        colorVar="--c1"
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="chart-wrap"
-                      style={{
-                        height: "290px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        textAlign: "center",
-                        color: "var(--text-3)",
-                        fontSize: "14px",
-                        padding: "0 24px",
-                      }}
-                    >
-                      월별 추이 기록이 없습니다. 이번 달 집계만 제공됩니다.
-                    </div>
-                  )}
+                  <div className="chart-wrap" style={{ height: "290px" }}>
+                    <AreaTrend labels={monthlyTrendLabels} data={monthlyTrendValues} colorVar="--c1" />
+                    {!hasMonthlyTrend ? (
+                      <div className="donut-center">
+                        <span style={{ fontSize: "14px", color: "var(--text-3)", padding: "0 24px" }}>
+                          월별 추이 기록이 없습니다. 이번 달 집계부터 표시됩니다.
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </article>
 
@@ -525,9 +548,15 @@ export default function MonthlyDesignerView({
                         </a>
                       ))
                     ) : (
-                      <p style={{ color: "var(--text-3)", fontSize: "14px", padding: "8px 4px" }}>
-                        표시할 재검토 후보가 없습니다.
-                      </p>
+                      <div className="empty-state" style={{ padding: "10px 4px" }}>
+                        <div className="empty-state__icon">
+                          <iconify-icon icon="lucide:refresh-ccw"></iconify-icon>
+                        </div>
+                        <div className="empty-state__title">표시할 재검토 후보가 없습니다.</div>
+                        <div className="empty-state__desc">
+                          관리자 검토 과정에서 재검토가 필요한 항목이 분류되면 표시됩니다.
+                        </div>
+                      </div>
                     )}
                   </div>
                 </article>

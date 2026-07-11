@@ -153,16 +153,28 @@ export default async function LoginPage({
                 </AlertNote>
               ) : null}
 
-              <a className="login-qr" href={fieldHref}>
-                <span className="login-qr__ic">
-                  <iconify-icon icon="lucide:qr-code"></iconify-icon>
-                </span>
-                <div>
-                  <b>근로자 · 외부인이신가요?</b>
-                  <span>로그인 없이 현장 QR로 바로 참여합니다</span>
+              {companyCodeFromCallback ? (
+                <a className="login-qr" href={fieldHref}>
+                  <span className="login-qr__ic">
+                    <iconify-icon icon="lucide:qr-code"></iconify-icon>
+                  </span>
+                  <div>
+                    <b>근로자이신가요?</b>
+                    <span>로그인 없이 현장 QR로 바로 참여합니다</span>
+                  </div>
+                  <iconify-icon icon="lucide:chevron-right" className="go"></iconify-icon>
+                </a>
+              ) : (
+                <div className="login-qr login-qr--static">
+                  <span className="login-qr__ic">
+                    <iconify-icon icon="lucide:qr-code"></iconify-icon>
+                  </span>
+                  <div>
+                    <b>현장 참여자는 사업장에 게시된 QR을 이용해 주세요.</b>
+                    <span>QR을 찾기 어려우면 현장 담당자에게 문의해 주세요.</span>
+                  </div>
                 </div>
-                <iconify-icon icon="lucide:chevron-right" className="go"></iconify-icon>
-              </a>
+              )}
             </div>
           </main>
         </div>

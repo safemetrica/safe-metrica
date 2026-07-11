@@ -74,6 +74,25 @@ function getTodayKstLabel() {
   return `${datePart} ${weekdayPart}`;
 }
 
+/** Pure calendar math — no query. Real calendar month labels for the axis of the
+ * "월별 안전운영 접수 추이" empty-state chart when no month-over-month history exists yet. */
+function getLastFiveMonthLabels() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const currentMonth = kst.getUTCMonth() + 1;
+  const labels: string[] = [];
+
+  for (let i = 4; i >= 0; i -= 1) {
+    let month = currentMonth - i;
+    while (month <= 0) {
+      month += 12;
+    }
+    labels.push(`${month}월`);
+  }
+
+  return labels;
+}
+
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_MONTHLY_SUMMARY_LIMIT = 500;
 
@@ -304,6 +323,7 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
         signatureConfirmed: representativeSubmissionSummary.signatureConfirmedCount,
         signatureNotSubmitted: representativeSubmissionSummary.signatureNotSubmittedCount,
       }}
+      monthlyTrendFallbackLabels={getLastFiveMonthLabels()}
     />
   );
 }

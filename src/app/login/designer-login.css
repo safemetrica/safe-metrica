@@ -150,6 +150,8 @@
   border-radius: 13px; padding: 15px 16px; transition: .15s;
 }
 .rsx-shell .login-qr:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.rsx-shell .login-qr--static { cursor: default; }
+.rsx-shell .login-qr--static:hover { transform: none; box-shadow: none; }
 .rsx-shell .login-qr__ic {
   width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
   background: var(--surface); color: var(--info);
