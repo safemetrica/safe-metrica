@@ -1,6 +1,9 @@
+"use client";
+
 import SignOutButton from "@/components/auth/SignOutButton";
 import { Donut } from "@/app/risk-share/manager/charts";
 import { AreaTrend, HorizontalBars } from "@/app/risk-share/monthly/charts";
+import { useDashboardShellInteractions } from "@/components/risk-share/manager/useDashboardShellInteractions";
 
 /**
  * Pure presentation component for /risk-share/monthly.
@@ -106,12 +109,23 @@ export default function MonthlyDesignerView({
     : monthlyTrendFallbackLabels ?? DEFAULT_MONTHLY_TREND_LABELS;
   const monthlyTrendValues = hasMonthlyTrend ? monthlyTrend!.map((point) => point.value) : [0, 0, 0, 0, 0];
 
+  const {
+    theme,
+    toggleTheme,
+    isSidebarOpen,
+    isSidebarMini,
+    handleSidebarToggleClick,
+    closeSidebar,
+    openDropdownId,
+    toggleDropdown,
+  } = useDashboardShellInteractions();
+
   return (
-    <div className="rsx-shell">
+    <div className={`rsx-shell${isSidebarMini ? " sb-mini" : ""}`} data-theme={theme}>
       <div className="app">
         {/* ================= Sidebar ================= */}
-        <aside className="sidebar">
-          <a className="sidebar__brand" href={managerHref}>
+        <aside className={`sidebar${isSidebarOpen ? " open" : ""}`}>
+          <a className="sidebar__brand" href={managerHref} onClick={closeSidebar}>
             <img className="logo-img logo-img--light" src="/risk-share-assets/logo.png" alt="SafeMetrica" />
             <img className="logo-img logo-img--dark" src="/risk-share-assets/logo_darkmode.png" alt="SafeMetrica" />
             <img className="brand-mark" src="https://www.safemetrica.com/brand/safemetrica-logo-mark.svg" alt="" />
@@ -120,7 +134,7 @@ export default function MonthlyDesignerView({
           <nav className="sidebar__nav">
             <div className="nav__section">
               <div className="nav__label">개요</div>
-              <a className="nav__item" href={managerHref} title="대시보드">
+              <a className="nav__item" href={managerHref} title="대시보드" onClick={closeSidebar}>
                 <iconify-icon icon="lucide:layout-dashboard"></iconify-icon>
                 <span className="nav__txt">대시보드</span>
               </a>
@@ -153,7 +167,12 @@ export default function MonthlyDesignerView({
                 <span className="nav__txt">근로자대표 확인</span>
                 <span className="nav__badge">{counts.representative}</span>
               </div>
-              <a className="nav__item nav__item--featured is-active" href={monthlyHref} title="월간 안전운영 요약">
+              <a
+                className="nav__item nav__item--featured is-active"
+                href={monthlyHref}
+                title="월간 안전운영 요약"
+                onClick={closeSidebar}
+              >
                 <iconify-icon icon="lucide:calendar-check"></iconify-icon>
                 <span className="nav__txt">월간 안전운영 요약</span>
               </a>
@@ -169,12 +188,18 @@ export default function MonthlyDesignerView({
             </div>
           </div>
         </aside>
-        <div className="overlay"></div>
+        <div className={`overlay${isSidebarOpen ? " show" : ""}`} onClick={closeSidebar}></div>
 
         {/* ================= Main ================= */}
         <div className="main">
           <header className="header">
-            <button className="iconbtn" id="sbToggle" aria-label="메뉴 열기/닫기">
+            <button
+              className="iconbtn"
+              id="sbToggle"
+              aria-label={isSidebarOpen ? "메뉴 닫기" : "메뉴 열기"}
+              aria-expanded={isSidebarOpen}
+              onClick={handleSidebarToggleClick}
+            >
               <iconify-icon icon="lucide:menu"></iconify-icon>
             </button>
             <div className="header__spacer"></div>
@@ -182,12 +207,20 @@ export default function MonthlyDesignerView({
               <iconify-icon icon="lucide:search"></iconify-icon>
               <input type="text" placeholder="기간 · 항목 검색" />
             </div>
-            <button className="iconbtn theme-toggle" aria-label="테마 전환">
+            <button className="iconbtn theme-toggle" aria-label="테마 전환" onClick={toggleTheme}>
               <iconify-icon icon="lucide:sun" className="sun"></iconify-icon>
               <iconify-icon icon="lucide:moon" className="moon"></iconify-icon>
             </button>
-            <div className="dd">
-              <button className="iconbtn dd__btn" aria-label="알림" aria-haspopup="true">
+            <div className={`dd${openDropdownId === "notifications" ? " open" : ""}`}>
+              <button
+                className="iconbtn dd__btn"
+                aria-label="알림"
+                aria-haspopup="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleDropdown("notifications");
+                }}
+              >
                 <iconify-icon icon="lucide:bell"></iconify-icon>
                 {notifications && notifications.length > 0 ? <span className="dot"></span> : null}
               </button>
@@ -217,8 +250,15 @@ export default function MonthlyDesignerView({
                 )}
               </div>
             </div>
-            <div className="dd">
-              <button className="user-chip dd__btn" aria-haspopup="true">
+            <div className={`dd${openDropdownId === "user" ? " open" : ""}`}>
+              <button
+                className="user-chip dd__btn"
+                aria-haspopup="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleDropdown("user");
+                }}
+              >
                 <div className="user-chip__av">{avatarInitial}</div>
                 <div className="user-chip__meta">
                   <b>{userDisplayName}</b>
