@@ -75,7 +75,7 @@ export function HorizontalBars({ items }: HorizontalBarsProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", height: "100%" }}>
       {items.map((item) => (
-        <div key={item.label} style={{ display: "grid", gridTemplateColumns: "92px 1fr 30px", alignItems: "center", gap: "10px" }}>
+        <div key={item.label} style={{ display: "grid", gridTemplateColumns: "92px 1fr 40px", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "12px", color: "var(--text-3)" }}>{item.label}</span>
           <span style={{ display: "block", height: "10px", borderRadius: "6px", background: "var(--border)", overflow: "hidden" }}>
             <span
@@ -88,7 +88,7 @@ export function HorizontalBars({ items }: HorizontalBarsProps) {
               }}
             />
           </span>
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-2)", textAlign: "right" }}>{item.value}</span>
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-2)", textAlign: "right" }}>{item.value}건</span>
         </div>
       ))}
     </div>

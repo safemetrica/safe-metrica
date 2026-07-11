@@ -89,13 +89,21 @@ export type ManagerDesignerViewProps = {
   recentSubmissions?: ManagerRecentSubmission[];
   /** Absent/empty when no safety-resource feed exists yet. */
   safetyResources?: ManagerSafetyResource[];
+  /** Real last-7-day calendar labels (e.g. "7.5", "오늘"), computed by the route via
+   * pure date math — used as the axis when no day-by-day aggregation exists yet. */
+  weeklyTrendFallbackLabels?: string[];
 };
 
-const EMPTY_WEEKLY_LABELS = ["", "", "", "", "", "", ""];
-const EMPTY_WEEKLY_SERIES = [
+const DEFAULT_WEEKLY_LABELS = ["", "", "", "", "", "", ""];
+const ZERO_WEEKLY_SERIES = [
   { colorVar: "--c1", data: [0, 0, 0, 0, 0, 0, 0] },
   { colorVar: "--c2", data: [0, 0, 0, 0, 0, 0, 0] },
   { colorVar: "--c3", data: [0, 0, 0, 0, 0, 0, 0] },
+];
+const ZERO_REVIEW_STATUS_ROWS = [
+  { label: "미검토", colorVar: "--c3" },
+  { label: "검토 중", colorVar: "--c1" },
+  { label: "검토 완료", colorVar: "--c2" },
 ];
 
 export default function ManagerDesignerView({
@@ -117,21 +125,27 @@ export default function ManagerDesignerView({
   reviewStatus,
   recentSubmissions,
   safetyResources,
+  weeklyTrendFallbackLabels,
 }: ManagerDesignerViewProps) {
   const hasWeeklyTrend = Boolean(weeklyTrend && weeklyTrend.length > 0);
-  const weeklyLabels = hasWeeklyTrend ? weeklyTrend!.map((point) => point.label) : EMPTY_WEEKLY_LABELS;
+  const weeklyLabels = hasWeeklyTrend
+    ? weeklyTrend!.map((point) => point.label)
+    : weeklyTrendFallbackLabels ?? DEFAULT_WEEKLY_LABELS;
   const weeklySeries = hasWeeklyTrend
     ? [
         { colorVar: "--c1", data: weeklyTrend!.map((point) => point.monthly) },
         { colorVar: "--c2", data: weeklyTrend!.map((point) => point.prework) },
         { colorVar: "--c3", data: weeklyTrend!.map((point) => point.anonymous) },
       ]
-    : EMPTY_WEEKLY_SERIES;
+    : ZERO_WEEKLY_SERIES;
 
   const hasReviewStatus = Boolean(reviewStatus && reviewStatus.length > 0);
   const reviewSegments = hasReviewStatus
     ? reviewStatus!.map((segment) => ({ value: segment.value, colorVar: segment.colorVar }))
-    : [{ value: 0, colorVar: "--border-strong" }];
+    : ZERO_REVIEW_STATUS_ROWS.map((row) => ({ value: 0, colorVar: row.colorVar }));
+  const reviewLegendRows = hasReviewStatus
+    ? reviewStatus!.map((segment) => ({ label: segment.label, value: segment.value, colorVar: segment.colorVar }))
+    : ZERO_REVIEW_STATUS_ROWS.map((row) => ({ ...row, value: 0 }));
 
   const hasRecentSubmissions = Boolean(recentSubmissions && recentSubmissions.length > 0);
   const hasSafetyResources = Boolean(safetyResources && safetyResources.length > 0);
@@ -386,11 +400,16 @@ export default function ManagerDesignerView({
                       ))}
                     </p>
                   ) : (
-                    <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
-                      아직 생성된 운영 브리핑이 없습니다.
-                      <br />
-                      현장 기록과 관리자 검토 결과가 쌓이면 이 영역에 정리됩니다.
-                    </p>
+                    <div className="empty-state">
+                      <div className="empty-state__icon">
+                        <iconify-icon icon="lucide:file-clock"></iconify-icon>
+                      </div>
+                      <div className="empty-state__title">아직 생성된 운영 브리핑이 없습니다.</div>
+                      <div className="empty-state__desc">
+                        현장 기록과 관리자 검토 결과가 쌓이면 이 영역에 정리됩니다.
+                      </div>
+                      <span className="badge b-gray">운영기록 대기</span>
+                    </div>
                   )}
                 </div>
               </article>
@@ -412,11 +431,33 @@ export default function ManagerDesignerView({
                       ))}
                     </p>
                   ) : (
-                    <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
-                      공식 참고정보 연결 전입니다.
-                      <br />
-                      사업장 위치와 공식 출처가 확인된 정보만 표시할 예정입니다.
-                    </p>
+                    <>
+                      <div className="empty-state" style={{ paddingBottom: "14px" }}>
+                        <div className="empty-state__icon">
+                          <iconify-icon icon="lucide:map-pin"></iconify-icon>
+                        </div>
+                        <div className="empty-state__title">공식 참고정보 연결 전</div>
+                        <div className="empty-state__desc">
+                          사업장 위치와 공식 출처가 확인된 정보만 표시할 예정입니다.
+                        </div>
+                      </div>
+                      <div className="wx-grid">
+                        <div className="wx-tile">
+                          <iconify-icon icon="lucide:map"></iconify-icon>
+                          <div>
+                            <b>미등록</b>
+                            <span>사업장 위치</span>
+                          </div>
+                        </div>
+                        <div className="wx-tile">
+                          <iconify-icon icon="lucide:link-2"></iconify-icon>
+                          <div>
+                            <b>연결 전</b>
+                            <span>공식 출처</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               </article>
@@ -455,18 +496,24 @@ export default function ManagerDesignerView({
                   <div className="chart-wrap" style={{ height: "180px" }}>
                     <Donut segments={reviewSegments} />
                     <div className="donut-center">
-                      {hasReviewStatus ? (
-                        <>
-                          <b>{reviewStatus!.reduce((sum, segment) => sum + segment.value, 0)}</b>
-                          <span>전체</span>
-                        </>
-                      ) : (
-                        <span style={{ fontSize: "13px", color: "var(--text-3)", padding: "0 10px" }}>
-                          검토 상태 집계 기능이 준비되지 않았습니다.
-                        </span>
-                      )}
+                      <b>{reviewLegendRows.reduce((sum, row) => sum + row.value, 0)}</b>
+                      <span>{hasReviewStatus ? "전체" : "집계 대기"}</span>
                     </div>
                   </div>
+                  <ul className="legend legend--col" style={{ marginTop: "16px" }}>
+                    {reviewLegendRows.map((row) => (
+                      <li key={row.label}>
+                        <span className="swatch" style={{ background: `var(${row.colorVar})` }}></span>
+                        {row.label}
+                        <b>{row.value}건</b>
+                      </li>
+                    ))}
+                  </ul>
+                  {!hasReviewStatus ? (
+                    <p style={{ textAlign: "center", color: "var(--text-3)", fontSize: "14px", marginTop: "12px" }}>
+                      검토 상태 집계 기능이 준비되지 않았습니다.
+                    </p>
+                  ) : null}
                 </div>
               </article>
             </section>
@@ -508,8 +555,16 @@ export default function ManagerDesignerView({
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} style={{ color: "var(--text-3)", textAlign: "center" }}>
-                            최근 접수된 운영기록이 없습니다.
+                          <td colSpan={5} style={{ padding: "28px 16px" }}>
+                            <div className="empty-state" style={{ padding: 0 }}>
+                              <div className="empty-state__icon">
+                                <iconify-icon icon="lucide:inbox"></iconify-icon>
+                              </div>
+                              <div className="empty-state__title">최근 접수된 운영기록이 없습니다.</div>
+                              <div className="empty-state__desc">
+                                현장 QR 제출이 접수되면 이곳에서 확인할 수 있습니다.
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       )}
@@ -602,10 +657,34 @@ export default function ManagerDesignerView({
                   ))}
                 </div>
               ) : (
-                <div className="card__body">
-                  <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
-                    공식 안전보건 참고자료 연결 전입니다.
-                  </p>
+                <div className="card__body res-grid" style={{ paddingTop: "8px", paddingBottom: "10px" }}>
+                  <div className="res" style={{ cursor: "default" }}>
+                    <span className="res__ic i-green">
+                      <iconify-icon icon="lucide:file-down"></iconify-icon>
+                    </span>
+                    <div className="res__main">
+                      <b>KOSHA 참고자료</b>
+                      <span>연결 전</span>
+                    </div>
+                  </div>
+                  <div className="res" style={{ cursor: "default" }}>
+                    <span className="res__ic i-blue">
+                      <iconify-icon icon="lucide:landmark"></iconify-icon>
+                    </span>
+                    <div className="res__main">
+                      <b>정부·공공 안전정보</b>
+                      <span>연결 전</span>
+                    </div>
+                  </div>
+                  <div className="res" style={{ cursor: "default" }}>
+                    <span className="res__ic i-purple">
+                      <iconify-icon icon="lucide:building-2"></iconify-icon>
+                    </span>
+                    <div className="res__main">
+                      <b>사업장 관련 참고자료</b>
+                      <span>연결 전</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>

@@ -86,6 +86,26 @@ function getTodayKstLabel() {
   return `${datePart} ${weekdayPart}`;
 }
 
+/** Pure calendar math — no query. Real calendar dates for the day-label axis of the
+ * "최근 7일 접수 흐름" empty-state chart when no day-by-day aggregation exists yet. */
+function getLastSevenDayLabels() {
+  const labels: string[] = [];
+
+  for (let i = 6; i >= 0; i -= 1) {
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000 - i * 24 * 60 * 60 * 1000);
+    if (i === 0) {
+      labels.push("오늘");
+      continue;
+    }
+    const month = kst.getUTCMonth() + 1;
+    const day = kst.getUTCDate();
+    labels.push(`${month}.${day}`);
+  }
+
+  return labels;
+}
+
 const RISK_SHARE_PARTICIPATION_SOURCE = "risk_share_participation_submit_v1";
 const RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT = 500;
 
@@ -343,6 +363,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       userDisplayName={userDisplayName}
       userEmail={userEmail}
       avatarInitial={avatarInitial}
+      weeklyTrendFallbackLabels={getLastSevenDayLabels()}
     />
   );
 }

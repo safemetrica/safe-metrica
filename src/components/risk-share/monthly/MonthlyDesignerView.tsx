@@ -66,7 +66,12 @@ export type MonthlyDesignerViewProps = {
   reassessmentCandidates?: MonthlyReassessmentCandidate[];
   /** Absent when no activity-notification feed exists yet. */
   notifications?: MonthlyNotification[];
+  /** Real last-5-month calendar labels (e.g. "3월".."7월"), computed by the route
+   * via pure date math — used as the axis when no historical aggregation exists yet. */
+  monthlyTrendFallbackLabels?: string[];
 };
+
+const DEFAULT_MONTHLY_TREND_LABELS = ["", "", "", "", ""];
 
 function percentShare(value: number, total: number) {
   if (total <= 0) {
@@ -91,9 +96,15 @@ export default function MonthlyDesignerView({
   monthlyTrendDeltaLabel,
   reassessmentCandidates,
   notifications,
+  monthlyTrendFallbackLabels,
 }: MonthlyDesignerViewProps) {
   const totalCount =
     counts.monthly + counts.prework + counts.anonymous + counts.visitor + counts.representative;
+  const hasMonthlyTrend = Boolean(monthlyTrend && monthlyTrend.length > 0);
+  const monthlyTrendLabels = hasMonthlyTrend
+    ? monthlyTrend!.map((point) => point.label)
+    : monthlyTrendFallbackLabels ?? DEFAULT_MONTHLY_TREND_LABELS;
+  const monthlyTrendValues = hasMonthlyTrend ? monthlyTrend!.map((point) => point.value) : [0, 0, 0, 0, 0];
 
   return (
     <div className="rsx-shell">
@@ -369,31 +380,16 @@ export default function MonthlyDesignerView({
                   <span className="badge b-gray">{monthlyTrendDeltaLabel ?? "데이터 없음"}</span>
                 </div>
                 <div className="card__body">
-                  {monthlyTrend && monthlyTrend.length > 0 ? (
-                    <div className="chart-wrap" style={{ height: "290px" }}>
-                      <AreaTrend
-                        labels={monthlyTrend.map((point) => point.label)}
-                        data={monthlyTrend.map((point) => point.value)}
-                        colorVar="--c1"
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="chart-wrap"
-                      style={{
-                        height: "290px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        textAlign: "center",
-                        color: "var(--text-3)",
-                        fontSize: "14px",
-                        padding: "0 24px",
-                      }}
-                    >
-                      월별 추이 기록이 없습니다. 이번 달 집계만 제공됩니다.
-                    </div>
-                  )}
+                  <div className="chart-wrap" style={{ height: "290px" }}>
+                    <AreaTrend labels={monthlyTrendLabels} data={monthlyTrendValues} colorVar="--c1" />
+                    {!hasMonthlyTrend ? (
+                      <div className="donut-center">
+                        <span style={{ fontSize: "14px", color: "var(--text-3)", padding: "0 24px" }}>
+                          월별 추이 기록이 없습니다. 이번 달 집계부터 표시됩니다.
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </article>
 
@@ -512,9 +508,15 @@ export default function MonthlyDesignerView({
                         </a>
                       ))
                     ) : (
-                      <p style={{ color: "var(--text-3)", fontSize: "14px", padding: "8px 4px" }}>
-                        표시할 재검토 후보가 없습니다.
-                      </p>
+                      <div className="empty-state" style={{ padding: "10px 4px" }}>
+                        <div className="empty-state__icon">
+                          <iconify-icon icon="lucide:refresh-ccw"></iconify-icon>
+                        </div>
+                        <div className="empty-state__title">표시할 재검토 후보가 없습니다.</div>
+                        <div className="empty-state__desc">
+                          관리자 검토 과정에서 재검토가 필요한 항목이 분류되면 표시됩니다.
+                        </div>
+                      </div>
                     )}
                   </div>
                 </article>
