@@ -5,7 +5,7 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import SignOutButton from "@/components/auth/SignOutButton";
-import { Sparkline, StackedBars, Donut } from "./charts";
+import { Donut } from "./charts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -341,29 +341,31 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
 
             <div className="nav__section">
               <div className="nav__label">안전운영</div>
-              <a className="nav__item" href="#" title="위험성평가 공유확인">
+              <div className="nav__item is-disabled" title="위험성평가 공유확인">
                 <iconify-icon icon="lucide:share-2"></iconify-icon>
                 <span className="nav__txt">위험성평가 공유확인</span>
                 <span className="nav__badge">{monthlyConfirmationCount}</span>
-              </a>
-              <a className="nav__item" href="#" title="작업 전 안전확인">
+              </div>
+              <div className="nav__item is-disabled" title="작업 전 안전확인">
                 <iconify-icon icon="lucide:clipboard-check"></iconify-icon>
                 <span className="nav__txt">작업 전 안전확인</span>
                 <span className="nav__badge">{preworkConfirmationCount}</span>
-              </a>
-              <a className="nav__item" href="#" title="익명 의견함">
+              </div>
+              <div className="nav__item is-disabled" title="익명 의견함">
                 <iconify-icon icon="lucide:message-circle-question"></iconify-icon>
                 <span className="nav__txt">익명 의견함</span>
                 <span className="nav__badge">{anonymousFeedbackCount}</span>
-              </a>
-              <a className="nav__item" href="#" title="외부인 확인">
+              </div>
+              <div className="nav__item is-disabled" title="외부인 확인">
                 <iconify-icon icon="lucide:door-open"></iconify-icon>
                 <span className="nav__txt">외부인 확인</span>
-              </a>
-              <a className="nav__item" href="#" title="근로자대표 확인">
+                <span className="nav__badge">{visitorConfirmationCount}</span>
+              </div>
+              <div className="nav__item is-disabled" title="근로자대표 확인">
                 <iconify-icon icon="lucide:user-check"></iconify-icon>
                 <span className="nav__txt">근로자대표 확인</span>
-              </a>
+                <span className="nav__badge">{representativeTotalCount}</span>
+              </div>
               <a className="nav__item nav__item--featured" href={monthlyHref} title="월간 안전운영 요약">
                 <iconify-icon icon="lucide:calendar-check"></iconify-icon>
                 <span className="nav__txt">월간 안전운영 요약</span>
@@ -374,12 +376,9 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
           <div className="sidebar__foot">
             <div className="plan-card">
               <h4>
-                <iconify-icon icon="lucide:crown"></iconify-icon> 위공팩 v1
+                <iconify-icon icon="lucide:crown"></iconify-icon> 위험성평가 공유팩
               </h4>
-              <p>확장팩 버전 1 이용 중입니다. 메뉴는 계속 추가됩니다.</p>
-              <a className="plan-card__btn" href="#">
-                플랜 관리
-              </a>
+              <p>공유확인 · 참여확인 · 월간 운영요약 흐름을 제공합니다.</p>
             </div>
           </div>
         </aside>
@@ -401,47 +400,6 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               <iconify-icon icon="lucide:moon" className="moon"></iconify-icon>
             </button>
             <div className="dd">
-              <button className="iconbtn dd__btn" aria-label="알림" aria-haspopup="true">
-                <iconify-icon icon="lucide:bell"></iconify-icon>
-                <span className="dot"></span>
-              </button>
-              <div className="dd__menu dd__menu--noti">
-                <div className="dd__head">
-                  알림 <span className="badge b-blue">3건</span>
-                </div>
-                <a className="noti" href="#">
-                  <span className="noti__ic i-blue">
-                    <iconify-icon icon="lucide:share-2"></iconify-icon>
-                  </span>
-                  <div>
-                    <b>공유확인 접수</b>
-                    <span>익명 근로자 · 오늘 09:12</span>
-                  </div>
-                </a>
-                <a className="noti" href="#">
-                  <span className="noti__ic i-orange">
-                    <iconify-icon icon="lucide:message-circle-question"></iconify-icon>
-                  </span>
-                  <div>
-                    <b>익명 의견 접수</b>
-                    <span>지게차 동선 개선 제안 · 어제 17:05</span>
-                  </div>
-                </a>
-                <a className="noti" href="#">
-                  <span className="noti__ic i-purple">
-                    <iconify-icon icon="lucide:door-open"></iconify-icon>
-                  </span>
-                  <div>
-                    <b>외부인 확인 제출</b>
-                    <span>협력업체 A · 어제 13:20</span>
-                  </div>
-                </a>
-                <a className="dd__foot" href="#">
-                  알림 전체 보기
-                </a>
-              </div>
-            </div>
-            <div className="dd">
               <button className="user-chip dd__btn" aria-haspopup="true">
                 <div className="user-chip__av">{avatarInitial}</div>
                 <div className="user-chip__meta">
@@ -458,15 +416,6 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <span>안전관리자 · {userEmail}</span>
                   </div>
                 </div>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:user"></iconify-icon>프로필 정보
-                </a>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:bell-ring"></iconify-icon>알림 설정
-                </a>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:settings"></iconify-icon>계정 설정
-                </a>
                 <hr className="dd__sep" />
                 <div className="dd__item dd__item--danger">
                   <SignOutButton />
@@ -486,25 +435,19 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                   <iconify-icon icon="lucide:calendar-days"></iconify-icon>
                   <b id="dateChipDate">{getTodayKstLabel()}</b>
                 </div>
-                <button className="btn btn--outline">
-                  <iconify-icon icon="lucide:download"></iconify-icon> 내보내기
-                </button>
                 <a className="btn btn--primary" href={fieldHref}>
                   <iconify-icon icon="lucide:qr-code"></iconify-icon> 현장 QR 입구
                 </a>
               </div>
             </div>
 
-            {/* ① 핵심 5카드 — 숫자 + 추세 스파크라인 */}
+            {/* ① 핵심 5카드 — 이번 달 실제 접수 건수 */}
             <section className="grid grid--stats">
               <article className="stat">
                 <div className="stat__top">
                   <div className="stat__icon i-blue">
                     <iconify-icon icon="lucide:share-2"></iconify-icon>
                   </div>
-                  <span className="stat__trend up">
-                    <iconify-icon icon="lucide:trending-up"></iconify-icon> +2
-                  </span>
                 </div>
                 <div>
                   <div className="stat__label">위험성평가 공유확인</div>
@@ -513,18 +456,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
-                <div className="stat__spark">
-                  <Sparkline data={[0, 1, 0, 1, 0, 1, 3]} colorVar="--c1" />
-                </div>
               </article>
               <article className="stat">
                 <div className="stat__top">
                   <div className="stat__icon i-green">
                     <iconify-icon icon="lucide:clipboard-check"></iconify-icon>
                   </div>
-                  <span className="stat__trend up">
-                    <iconify-icon icon="lucide:trending-up"></iconify-icon> +1
-                  </span>
                 </div>
                 <div>
                   <div className="stat__label">작업 전 안전확인</div>
@@ -533,18 +470,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
-                <div className="stat__spark">
-                  <Sparkline data={[1, 0, 1, 0, 0, 0, 2]} colorVar="--c2" />
-                </div>
               </article>
               <article className="stat">
                 <div className="stat__top">
                   <div className="stat__icon i-orange">
                     <iconify-icon icon="lucide:message-circle-question"></iconify-icon>
                   </div>
-                  <span className="stat__trend warn">
-                    <iconify-icon icon="lucide:bell"></iconify-icon> 2 대기
-                  </span>
                 </div>
                 <div>
                   <div className="stat__label">익명 의견함</div>
@@ -553,18 +484,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
-                <div className="stat__spark">
-                  <Sparkline data={[0, 1, 1, 0, 1, 0, 3]} colorVar="--c3" />
-                </div>
               </article>
               <article className="stat">
                 <div className="stat__top">
                   <div className="stat__icon i-purple">
                     <iconify-icon icon="lucide:door-open"></iconify-icon>
                   </div>
-                  <span className="stat__trend up">
-                    <iconify-icon icon="lucide:trending-up"></iconify-icon> +2
-                  </span>
                 </div>
                 <div>
                   <div className="stat__label">외부인 확인</div>
@@ -573,18 +498,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
-                <div className="stat__spark">
-                  <Sparkline data={[0, 0, 1, 0, 1, 0, 2]} colorVar="--c4" />
-                </div>
               </article>
               <article className="stat">
                 <div className="stat__top">
                   <div className="stat__icon i-red">
                     <iconify-icon icon="lucide:user-check"></iconify-icon>
                   </div>
-                  <span className="stat__trend warn">
-                    <iconify-icon icon="lucide:signature"></iconify-icon> 서명 1/7
-                  </span>
                 </div>
                 <div>
                   <div className="stat__label">근로자대표 확인</div>
@@ -592,9 +511,6 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     {representativeTotalCount}
                     <small>건</small>
                   </div>
-                </div>
-                <div className="stat__spark">
-                  <Sparkline data={[1, 2, 3, 4, 5, 6, 7]} colorVar="--c5" />
                 </div>
               </article>
             </section>
@@ -606,250 +522,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               </span>
               <div className="monthly-banner__txt">
                 <h3>{monthLabel} 안전운영 요약</h3>
-                <p>이번 달 기록이 월간 운영기록으로 정리되고 있습니다</p>
-              </div>
-              <div className="monthly-banner__prog">
-                <div className="monthly-banner__prog-top">
-                  <span>접수 {totalSubmissionCount}건 · 검토 완료</span>
-                  <b>65%</b>
-                </div>
-                <div className="monthly-banner__bar">
-                  <span style={{ width: "65%" }}></span>
-                </div>
+                <p>이번 달 접수 {totalSubmissionCount}건이 월간 운영기록으로 정리되고 있습니다</p>
               </div>
               <a className="btn btn--white" href={monthlyHref}>
                 월간 요약 보기 <iconify-icon icon="lucide:arrow-right"></iconify-icon>
               </a>
-            </section>
-
-            {/* ③ AI 안전운영 브리핑 + 현장 참고정보 */}
-            <section className="grid grid--dash mt-18">
-              <article className="card">
-                <div className="card__head">
-                  <div>
-                    <h3>
-                      <span className="ai-chip">AI</span>안전운영 브리핑
-                    </h3>
-                    <small>오늘 07:00 생성 · 전국 사고사례 128건 분석</small>
-                  </div>
-                  <span className="badge b-blue">
-                    <iconify-icon icon="lucide:sparkles"></iconify-icon> 우리 현장 관련 3건
-                  </span>
-                </div>
-                <div className="card__body">
-                  <div className="brief-live" aria-label="실시간 속보·사례">
-                    <span className="live-badge">LIVE</span>
-                    <div className="brief-live__ticker">
-                      <ul>
-                        <li>
-                          <b>속보</b> ○○물류센터 지게차 협착 사고 — 후진 경보 미작동
-                        </li>
-                        <li>
-                          <b className="k">기상</b> 폭염특보 지속 — 옥외작업 온열질환 주의
-                        </li>
-                        <li>
-                          <b>사례</b> △△건설현장 개구부 추락 — 덮개 미설치
-                        </li>
-                        <li>
-                          <b>속보</b> ○○물류센터 지게차 협착 사고 — 후진 경보 미작동
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="brief">
-                    <a className="brief__item brief__item--p1" href="#">
-                      <span className="brief__ic i-red">
-                        <iconify-icon icon="lucide:forklift"></iconify-icon>
-                      </span>
-                      <div className="brief__main">
-                        <b>지게차 후진 경보 작동 점검</b>
-                        <span>○○물류센터 협착 사고 속보 연계 · 우리 현장 지게차 3대 운용 중</span>
-                      </div>
-                      <span className="badge b-red">우선</span>
-                      <iconify-icon icon="lucide:chevron-right" className="go"></iconify-icon>
-                    </a>
-                    <a className="brief__item brief__item--p2" href="#">
-                      <span className="brief__ic i-orange">
-                        <iconify-icon icon="lucide:thermometer-sun"></iconify-icon>
-                      </span>
-                      <div className="brief__main">
-                        <b>옥외작업조 휴식시간 조정</b>
-                        <span>폭염 경보 지속 · 온열질환 재해 기사 2건 수집</span>
-                      </div>
-                      <span className="badge b-orange">권고</span>
-                      <iconify-icon icon="lucide:chevron-right" className="go"></iconify-icon>
-                    </a>
-                    <a className="brief__item brief__item--p3" href="#">
-                      <span className="brief__ic i-blue">
-                        <iconify-icon icon="lucide:hard-hat"></iconify-icon>
-                      </span>
-                      <div className="brief__main">
-                        <b>개구부 덮개 고정 상태 확인</b>
-                        <span>△△건설현장 추락 사고 사례 공유 · 유사 공정 보유</span>
-                      </div>
-                      <span className="badge b-blue">참고</span>
-                      <iconify-icon icon="lucide:chevron-right" className="go"></iconify-icon>
-                    </a>
-                  </div>
-                  <div className="brief__foot">
-                    <button className="btn btn--primary btn--sm">
-                      <iconify-icon icon="lucide:list-plus"></iconify-icon> 오늘 체크리스트에 반영
-                    </button>
-                    <button className="btn btn--ghost btn--sm">
-                      브리핑 전체 보기 <iconify-icon icon="lucide:chevron-right"></iconify-icon>
-                    </button>
-                  </div>
-                </div>
-              </article>
-
-              <article className="card">
-                <div className="card__head">
-                  <div>
-                    <h3>현장 참고정보</h3>
-                    <small>인천 연수구 · 오늘 07:00 기준</small>
-                  </div>
-                  <span className="badge b-orange">
-                    <iconify-icon icon="lucide:triangle-alert"></iconify-icon> 폭염주의보
-                  </span>
-                </div>
-                <div className="card__body">
-                  <div className="weather">
-                    <iconify-icon icon="lucide:sun" className="weather__ic"></iconify-icon>
-                    <div>
-                      <b>31°</b>
-                      <span>맑음 · 최고 34° / 최저 25°</span>
-                    </div>
-                  </div>
-                  <div className="wx-grid">
-                    <div className="wx-tile">
-                      <iconify-icon icon="lucide:thermometer"></iconify-icon>
-                      <div>
-                        <b>33°</b>
-                        <span>체감온도</span>
-                      </div>
-                    </div>
-                    <div className="wx-tile">
-                      <iconify-icon icon="lucide:droplets"></iconify-icon>
-                      <div>
-                        <b>68%</b>
-                        <span>습도</span>
-                      </div>
-                    </div>
-                    <div className="wx-tile">
-                      <iconify-icon icon="lucide:wind"></iconify-icon>
-                      <div>
-                        <b>3 m/s</b>
-                        <span>풍속 · 남서</span>
-                      </div>
-                    </div>
-                    <div className="wx-tile">
-                      <iconify-icon icon="lucide:leaf"></iconify-icon>
-                      <div>
-                        <b>좋음</b>
-                        <span>미세먼지</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="wx-alert">
-                    <iconify-icon icon="lucide:triangle-alert"></iconify-icon>
-                    <span>
-                      <b>폭염주의보 발효 중</b> — 14~17시 옥외작업은 시간당 10분 이상 그늘 휴식을 권고합니다.
-                    </span>
-                  </div>
-                </div>
-              </article>
-            </section>
-
-            {/* ④ 최근 7일 흐름 + 처리 현황 */}
-            <section className="grid grid--dash mt-18">
-              <article className="card">
-                <div className="card__head">
-                  <div>
-                    <h3>최근 7일 접수 흐름</h3>
-                    <small>일자별 · 항목 누적</small>
-                  </div>
-                  <ul className="legend">
-                    <li>
-                      <span className="swatch" style={{ background: "var(--c1)" }}></span>공유확인
-                    </li>
-                    <li>
-                      <span className="swatch" style={{ background: "var(--c2)" }}></span>작업 전
-                    </li>
-                    <li>
-                      <span className="swatch" style={{ background: "var(--c3)" }}></span>익명 의견
-                    </li>
-                  </ul>
-                </div>
-                <div className="card__body">
-                  <div className="chart-wrap" style={{ height: "290px" }}>
-                    <StackedBars
-                      labels={["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "오늘"]}
-                      series={[
-                        { colorVar: "--c1", data: [0, 1, 0, 1, 0, 1, 0] },
-                        { colorVar: "--c2", data: [1, 0, 1, 0, 0, 0, 0] },
-                        { colorVar: "--c3", data: [0, 1, 1, 0, 1, 0, 0] },
-                      ]}
-                    />
-                  </div>
-                </div>
-              </article>
-
-              <article className="card">
-                <div className="card__head">
-                  <div>
-                    <h3>처리 현황</h3>
-                    <small>이번 달 17건 기준</small>
-                  </div>
-                </div>
-                <div className="card__body">
-                  <div className="chart-wrap" style={{ height: "180px" }}>
-                    <Donut
-                      segments={[
-                        { value: 5, colorVar: "--c3" },
-                        { value: 3, colorVar: "--c1" },
-                        { value: 9, colorVar: "--c2" },
-                      ]}
-                    />
-                    <div className="donut-center">
-                      <b>5</b>
-                      <span>미검토</span>
-                    </div>
-                  </div>
-                  <ul className="legend legend--col" style={{ marginTop: "16px" }}>
-                    <li>
-                      <span className="swatch" style={{ background: "var(--c3)" }}></span>미검토<b>5건</b>
-                    </li>
-                    <li>
-                      <span className="swatch" style={{ background: "var(--c1)" }}></span>검토 중<b>3건</b>
-                    </li>
-                    <li>
-                      <span className="swatch" style={{ background: "var(--c2)" }}></span>검토 완료<b>9건</b>
-                    </li>
-                  </ul>
-                  <div className="action-need">
-                    <a className="action-item" href="#">
-                      <span className="action-item__ic i-red">
-                        <iconify-icon icon="lucide:triangle-alert"></iconify-icon>
-                      </span>
-                      <div>
-                        <b>지게차 동선 개선 제안</b>
-                        <span>익명 의견 · 2일째 미검토</span>
-                      </div>
-                      <iconify-icon icon="lucide:chevron-right" className="go"></iconify-icon>
-                    </a>
-                    <a className="action-item" href="#">
-                      <span className="action-item__ic i-orange">
-                        <iconify-icon icon="lucide:signature"></iconify-icon>
-                      </span>
-                      <div>
-                        <b>근로자대표 서명 {signatureNotSubmittedCount}건 대기</b>
-                        <span>{monthLabel} 공유확인 서명 요청</span>
-                      </div>
-                      <iconify-icon icon="lucide:chevron-right" className="go"></iconify-icon>
-                    </a>
-                  </div>
-                </div>
-              </article>
             </section>
 
             {/* ⑤ 최근 접수 + 서명/흐름 */}
@@ -860,124 +537,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <h3>최근 접수 내역</h3>
                     <small>QR로 접수되어 관리자 검토 대기 중</small>
                   </div>
-                  <button className="btn btn--ghost btn--sm">
-                    전체 보기 <iconify-icon icon="lucide:chevron-right"></iconify-icon>
-                  </button>
                 </div>
-                <div style={{ overflowX: "auto" }}>
-                  <table className="table table--r">
-                    <thead>
-                      <tr>
-                        <th>구분</th>
-                        <th>제출자</th>
-                        <th>내용</th>
-                        <th>접수 시각</th>
-                        <th>상태</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>
-                          <span className="badge b-blue">
-                            <iconify-icon icon="lucide:share-2"></iconify-icon> 공유확인
-                          </span>
-                        </td>
-                        <td>
-                          <div className="td-user">
-                            <span className="td-av" style={{ background: "var(--c1)" }}>
-                              익
-                            </span>{" "}
-                            익명 근로자
-                          </div>
-                        </td>
-                        <td>7월 위험요인 3건 확인 완료</td>
-                        <td>07.07 09:12</td>
-                        <td>
-                          <span className="badge b-orange">검토 대기</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <span className="badge b-green">
-                            <iconify-icon icon="lucide:clipboard-check"></iconify-icon> 작업 전
-                          </span>
-                        </td>
-                        <td>
-                          <div className="td-user">
-                            <span className="td-av" style={{ background: "var(--c2)" }}>
-                              익
-                            </span>{" "}
-                            익명 근로자
-                          </div>
-                        </td>
-                        <td>고소작업 전 안전확인 제출</td>
-                        <td>07.07 08:41</td>
-                        <td>
-                          <span className="badge b-green">검토 완료</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <span className="badge b-orange">
-                            <iconify-icon icon="lucide:message-circle-question"></iconify-icon> 익명 의견
-                          </span>
-                        </td>
-                        <td>
-                          <div className="td-user">
-                            <span className="td-av" style={{ background: "var(--c3)" }}>
-                              ?
-                            </span>{" "}
-                            이름 없음
-                          </div>
-                        </td>
-                        <td>지게차 동선 개선 제안</td>
-                        <td>07.05 17:05</td>
-                        <td>
-                          <span className="badge b-orange">검토 대기</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <span className="badge b-purple">
-                            <iconify-icon icon="lucide:door-open"></iconify-icon> 외부인
-                          </span>
-                        </td>
-                        <td>
-                          <div className="td-user">
-                            <span className="td-av" style={{ background: "var(--c4)" }}>
-                              협
-                            </span>{" "}
-                            협력업체 A
-                          </div>
-                        </td>
-                        <td>출입 전 안전 안내 확인·제출</td>
-                        <td>07.05 13:20</td>
-                        <td>
-                          <span className="badge b-green">검토 완료</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <span className="badge b-red">
-                            <iconify-icon icon="lucide:user-check"></iconify-icon> 근로자대표
-                          </span>
-                        </td>
-                        <td>
-                          <div className="td-user">
-                            <span className="td-av" style={{ background: "var(--c5)" }}>
-                              대
-                            </span>{" "}
-                            근로자대표
-                          </div>
-                        </td>
-                        <td>공유확인 검토 의견 기록</td>
-                        <td>07.04 10:33</td>
-                        <td>
-                          <span className="badge b-gray">서명 미제출</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div className="card__body">
+                  <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
+                    접수 건별 상세 목록은 아직 이 화면에 연동되어 있지 않습니다. 위 요약 건수는 실제 접수 데이터를 반영합니다.
+                  </p>
                 </div>
               </article>
 
@@ -1031,93 +595,6 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     </div>
                   </div>
                 </article>
-              </div>
-            </section>
-
-            {/* ⑥ 안전보건공단 자료 · 안전보건 뉴스 (게시판 성격 — 최하단) */}
-            <section className="card mt-18">
-              <div className="card__head">
-                <div>
-                  <h3>안전보건 자료 · 뉴스</h3>
-                  <small>안전보건공단 최신 자료와 업계 소식</small>
-                </div>
-                <button className="btn btn--ghost btn--sm">
-                  전체 보기 <iconify-icon icon="lucide:chevron-right"></iconify-icon>
-                </button>
-              </div>
-              <div className="card__body res-grid" style={{ paddingTop: "8px", paddingBottom: "10px" }}>
-                <a className="res" href="#">
-                  <span className="res__ic i-green">
-                    <iconify-icon icon="lucide:file-down"></iconify-icon>
-                  </span>
-                  <div className="res__main">
-                    <b>여름철 온열질환 예방 가이드</b>
-                    <span>
-                      <em className="src src--kosha">공단</em>안전보건공단 · 07.03 · PDF
-                    </span>
-                  </div>
-                  <iconify-icon icon="lucide:download" className="res__go"></iconify-icon>
-                </a>
-                <a className="res" href="#">
-                  <span className="res__ic i-blue">
-                    <iconify-icon icon="lucide:newspaper"></iconify-icon>
-                  </span>
-                  <div className="res__main">
-                    <b>폭염 속 옥외작업, 휴식시간 의무화 추진</b>
-                    <span>
-                      <em className="src src--news">뉴스</em>안전보건 뉴스 · 오늘
-                    </span>
-                  </div>
-                  <iconify-icon icon="lucide:external-link" className="res__go"></iconify-icon>
-                </a>
-                <a className="res" href="#">
-                  <span className="res__ic i-green">
-                    <iconify-icon icon="lucide:file-down"></iconify-icon>
-                  </span>
-                  <div className="res__main">
-                    <b>지게차 안전작업 체크리스트</b>
-                    <span>
-                      <em className="src src--kosha">공단</em>안전보건공단 · 06.28 · PDF
-                    </span>
-                  </div>
-                  <iconify-icon icon="lucide:download" className="res__go"></iconify-icon>
-                </a>
-                <a className="res" href="#">
-                  <span className="res__ic i-blue">
-                    <iconify-icon icon="lucide:newspaper"></iconify-icon>
-                  </span>
-                  <div className="res__main">
-                    <b>하반기 중대재해 예방 집중 점검 시행</b>
-                    <span>
-                      <em className="src src--news">뉴스</em>안전보건 뉴스 · 어제
-                    </span>
-                  </div>
-                  <iconify-icon icon="lucide:external-link" className="res__go"></iconify-icon>
-                </a>
-                <a className="res" href="#">
-                  <span className="res__ic i-green">
-                    <iconify-icon icon="lucide:file-down"></iconify-icon>
-                  </span>
-                  <div className="res__main">
-                    <b>소규모 사업장 위험성평가 안내서</b>
-                    <span>
-                      <em className="src src--kosha">공단</em>안전보건공단 · 06.20 · PDF
-                    </span>
-                  </div>
-                  <iconify-icon icon="lucide:download" className="res__go"></iconify-icon>
-                </a>
-                <a className="res" href="#">
-                  <span className="res__ic i-blue">
-                    <iconify-icon icon="lucide:newspaper"></iconify-icon>
-                  </span>
-                  <div className="res__main">
-                    <b>개구부 추락사고 예방 캠페인 시작</b>
-                    <span>
-                      <em className="src src--news">뉴스</em>안전보건 뉴스 · 07.04
-                    </span>
-                  </div>
-                  <iconify-icon icon="lucide:external-link" className="res__go"></iconify-icon>
-                </a>
               </div>
             </section>
 

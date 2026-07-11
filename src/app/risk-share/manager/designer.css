@@ -157,6 +157,8 @@
 }
 .rsx-shell .nav__item iconify-icon { font-size: 19px; flex-shrink: 0; width: 22px; }
 .rsx-shell .nav__item:hover { background: var(--surface-hover); color: var(--text); }
+.rsx-shell .nav__item.is-disabled { cursor: default; opacity: .6; }
+.rsx-shell .nav__item.is-disabled:hover { background: none; color: var(--sidebar-text); }
 .rsx-shell .nav__item.is-active { background: var(--brand-050); color: var(--brand-600); }
 .rsx-shell .nav__item.is-active::before {
   content: ""; position: absolute; left: -14px; top: 50%; transform: translateY(-50%);

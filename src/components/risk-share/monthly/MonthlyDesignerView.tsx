@@ -117,29 +117,31 @@ export default function MonthlyDesignerView({
 
             <div className="nav__section">
               <div className="nav__label">안전운영</div>
-              <a className="nav__item" href="#" title="위험성평가 공유확인">
+              <div className="nav__item is-disabled" title="위험성평가 공유확인">
                 <iconify-icon icon="lucide:share-2"></iconify-icon>
                 <span className="nav__txt">위험성평가 공유확인</span>
                 <span className="nav__badge">{counts.monthly}</span>
-              </a>
-              <a className="nav__item" href="#" title="작업 전 안전확인">
+              </div>
+              <div className="nav__item is-disabled" title="작업 전 안전확인">
                 <iconify-icon icon="lucide:clipboard-check"></iconify-icon>
                 <span className="nav__txt">작업 전 안전확인</span>
                 <span className="nav__badge">{counts.prework}</span>
-              </a>
-              <a className="nav__item" href="#" title="익명 의견함">
+              </div>
+              <div className="nav__item is-disabled" title="익명 의견함">
                 <iconify-icon icon="lucide:message-circle-question"></iconify-icon>
                 <span className="nav__txt">익명 의견함</span>
                 <span className="nav__badge">{counts.anonymous}</span>
-              </a>
-              <a className="nav__item" href="#" title="외부인 확인">
+              </div>
+              <div className="nav__item is-disabled" title="외부인 확인">
                 <iconify-icon icon="lucide:door-open"></iconify-icon>
                 <span className="nav__txt">외부인 확인</span>
-              </a>
-              <a className="nav__item" href="#" title="근로자대표 확인">
+                <span className="nav__badge">{counts.visitor}</span>
+              </div>
+              <div className="nav__item is-disabled" title="근로자대표 확인">
                 <iconify-icon icon="lucide:user-check"></iconify-icon>
                 <span className="nav__txt">근로자대표 확인</span>
-              </a>
+                <span className="nav__badge">{counts.representative}</span>
+              </div>
               <a className="nav__item nav__item--featured is-active" href={monthlyHref} title="월간 안전운영 요약">
                 <iconify-icon icon="lucide:calendar-check"></iconify-icon>
                 <span className="nav__txt">월간 안전운영 요약</span>
@@ -150,12 +152,9 @@ export default function MonthlyDesignerView({
           <div className="sidebar__foot">
             <div className="plan-card">
               <h4>
-                <iconify-icon icon="lucide:crown"></iconify-icon> 위공팩 v1
+                <iconify-icon icon="lucide:crown"></iconify-icon> 위험성평가 공유팩
               </h4>
-              <p>확장팩 버전 1 이용 중입니다. 메뉴는 계속 추가됩니다.</p>
-              <a className="plan-card__btn" href="#">
-                플랜 관리
-              </a>
+              <p>공유확인 · 참여확인 · 월간 운영요약 흐름을 제공합니다.</p>
             </div>
           </div>
         </aside>
@@ -205,9 +204,6 @@ export default function MonthlyDesignerView({
                     표시할 알림이 없습니다.
                   </p>
                 )}
-                <a className="dd__foot" href="#">
-                  알림 전체 보기
-                </a>
               </div>
             </div>
             <div className="dd">
@@ -227,15 +223,6 @@ export default function MonthlyDesignerView({
                     <span>안전관리자 · {userEmail}</span>
                   </div>
                 </div>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:user"></iconify-icon>프로필 정보
-                </a>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:bell-ring"></iconify-icon>알림 설정
-                </a>
-                <a className="dd__item" href="#">
-                  <iconify-icon icon="lucide:settings"></iconify-icon>계정 설정
-                </a>
                 <hr className="dd__sep" />
                 <div className="dd__item dd__item--danger">
                   <SignOutButton />
