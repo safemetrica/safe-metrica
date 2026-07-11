@@ -37,7 +37,7 @@ export function useDashboardShellInteractions() {
 
   const handleSidebarToggleClick = useCallback(() => {
     if (window.innerWidth <= MOBILE_DRAWER_BREAKPOINT_PX) {
-      setIsSidebarOpen(true);
+      setIsSidebarOpen((open) => !open);
     } else {
       setIsSidebarMini((mini) => !mini);
     }
