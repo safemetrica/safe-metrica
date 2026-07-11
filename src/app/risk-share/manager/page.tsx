@@ -400,6 +400,17 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               <iconify-icon icon="lucide:moon" className="moon"></iconify-icon>
             </button>
             <div className="dd">
+              <button className="iconbtn dd__btn" aria-label="알림" aria-haspopup="true">
+                <iconify-icon icon="lucide:bell"></iconify-icon>
+              </button>
+              <div className="dd__menu dd__menu--noti">
+                <div className="dd__head">알림</div>
+                <p style={{ color: "var(--text-3)", fontSize: "14px", padding: "10px 14px" }}>
+                  표시할 알림이 없습니다.
+                </p>
+              </div>
+            </div>
+            <div className="dd">
               <button className="user-chip dd__btn" aria-haspopup="true">
                 <div className="user-chip__av">{avatarInitial}</div>
                 <div className="user-chip__meta">
@@ -456,6 +467,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
+                <div className="stat__spark" aria-hidden="true"></div>
               </article>
               <article className="stat">
                 <div className="stat__top">
@@ -470,6 +482,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
+                <div className="stat__spark" aria-hidden="true"></div>
               </article>
               <article className="stat">
                 <div className="stat__top">
@@ -484,6 +497,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
+                <div className="stat__spark" aria-hidden="true"></div>
               </article>
               <article className="stat">
                 <div className="stat__top">
@@ -498,6 +512,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
+                <div className="stat__spark" aria-hidden="true"></div>
               </article>
               <article className="stat">
                 <div className="stat__top">
@@ -512,6 +527,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>건</small>
                   </div>
                 </div>
+                <div className="stat__spark" aria-hidden="true"></div>
               </article>
             </section>
 
@@ -522,11 +538,101 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
               </span>
               <div className="monthly-banner__txt">
                 <h3>{monthLabel} 안전운영 요약</h3>
-                <p>이번 달 접수 {totalSubmissionCount}건이 월간 운영기록으로 정리되고 있습니다</p>
+                <p>이번 달 기록이 월간 운영기록으로 정리되고 있습니다</p>
+              </div>
+              <div className="monthly-banner__prog">
+                <div className="monthly-banner__prog-top">
+                  <span>접수 {totalSubmissionCount}건</span>
+                </div>
               </div>
               <a className="btn btn--white" href={monthlyHref}>
                 월간 요약 보기 <iconify-icon icon="lucide:arrow-right"></iconify-icon>
               </a>
+            </section>
+
+            {/* ③ 안전운영 브리핑 + 현장 참고정보 */}
+            <section className="grid grid--dash mt-18">
+              <article className="card">
+                <div className="card__head">
+                  <div>
+                    <h3>안전운영 브리핑</h3>
+                  </div>
+                </div>
+                <div className="card__body">
+                  <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
+                    아직 생성된 운영 브리핑이 없습니다.
+                    <br />
+                    현장 기록과 관리자 검토 결과가 쌓이면 이 영역에 정리됩니다.
+                  </p>
+                </div>
+              </article>
+
+              <article className="card">
+                <div className="card__head">
+                  <div>
+                    <h3>현장 참고정보</h3>
+                  </div>
+                </div>
+                <div className="card__body">
+                  <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
+                    공식 참고정보 연결 전입니다.
+                    <br />
+                    사업장 위치와 공식 출처가 확인된 정보만 표시할 예정입니다.
+                  </p>
+                </div>
+              </article>
+            </section>
+
+            {/* ④ 최근 7일 흐름 + 처리 현황 */}
+            <section className="grid grid--dash mt-18">
+              <article className="card">
+                <div className="card__head">
+                  <div>
+                    <h3>최근 7일 접수 흐름</h3>
+                    <small>일자별 · 항목 누적</small>
+                  </div>
+                </div>
+                <div className="card__body">
+                  <div
+                    className="chart-wrap"
+                    style={{
+                      height: "290px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
+                      color: "var(--text-3)",
+                      fontSize: "14px",
+                    }}
+                  >
+                    최근 7일 추이 데이터가 없습니다.
+                  </div>
+                </div>
+              </article>
+
+              <article className="card">
+                <div className="card__head">
+                  <div>
+                    <h3>처리 현황</h3>
+                  </div>
+                </div>
+                <div className="card__body">
+                  <div
+                    className="chart-wrap"
+                    style={{
+                      height: "180px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
+                      color: "var(--text-3)",
+                      fontSize: "14px",
+                    }}
+                  >
+                    검토 상태 집계 기능이 준비되지 않았습니다.
+                  </div>
+                </div>
+              </article>
             </section>
 
             {/* ⑤ 최근 접수 + 서명/흐름 */}
@@ -538,10 +644,25 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     <small>QR로 접수되어 관리자 검토 대기 중</small>
                   </div>
                 </div>
-                <div className="card__body">
-                  <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
-                    접수 건별 상세 목록은 아직 이 화면에 연동되어 있지 않습니다. 위 요약 건수는 실제 접수 데이터를 반영합니다.
-                  </p>
+                <div style={{ overflowX: "auto" }}>
+                  <table className="table table--r">
+                    <thead>
+                      <tr>
+                        <th>구분</th>
+                        <th>제출자</th>
+                        <th>내용</th>
+                        <th>접수 시각</th>
+                        <th>상태</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td colSpan={5} style={{ color: "var(--text-3)", textAlign: "center" }}>
+                          최근 접수된 운영기록이 없습니다.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </article>
 
@@ -595,6 +716,20 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
                     </div>
                   </div>
                 </article>
+              </div>
+            </section>
+
+            {/* ⑥ 안전보건공단 자료 · 안전보건 뉴스 (게시판 성격 — 최하단) */}
+            <section className="card mt-18">
+              <div className="card__head">
+                <div>
+                  <h3>안전보건 자료 · 뉴스</h3>
+                </div>
+              </div>
+              <div className="card__body">
+                <p style={{ color: "var(--text-3)", fontSize: "14px" }}>
+                  공식 안전보건 참고자료 연결 전입니다.
+                </p>
               </div>
             </section>
 
