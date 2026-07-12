@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { listRiskShareSourcesForOwner } from "@/lib/risk-share/riskShareSourceRegistry";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,16 +10,7 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type RiskShareSourceRow = {
-  id?: string;
-  created_at?: string;
-  company_code?: string;
-  company_name?: string;
-  source_title?: string;
-  original_filename?: string;
-  review_status?: string;
-  extraction_status?: string;
-};
+const RECENT_SOURCE_DISPLAY_LIMIT = 6;
 
 function isOwnerTokenValid(ownerToken?: string) {
   const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
@@ -58,19 +49,6 @@ function formatDate(value?: string) {
   return kst.toISOString().slice(0, 16).replace("T", " ");
 }
 
-async function fetchRecentSources(companyCode: string) {
-  if (!companyCode) return [];
-
-  const query = new URLSearchParams({
-    select: "id,created_at,company_code,company_name,source_title,original_filename,review_status,extraction_status",
-    company_code: `eq.${companyCode}`,
-    order: "created_at.desc",
-    limit: "6",
-  });
-
-  return selectSupabaseExportRows<RiskShareSourceRow>("risk_share_sources", query);
-}
-
 export default async function ManualRiskShareCandidateCreatePage({ searchParams }: PageProps) {
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
@@ -84,13 +62,18 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
   const companyName = cleanText(readParam(params, "companyName"), 120);
   const sourceId = cleanText(readParam(params, "sourceId"), 80);
 
-  let recentSources: RiskShareSourceRow[] = [];
+  let recentSources: Awaited<ReturnType<typeof listRiskShareSourcesForOwner>> = [];
   let sourceLookupFailed = false;
 
-  try {
-    recentSources = await fetchRecentSources(companyCode);
-  } catch {
-    sourceLookupFailed = true;
+  if (companyCode) {
+    try {
+      recentSources = (await listRiskShareSourcesForOwner(companyCode)).slice(
+        0,
+        RECENT_SOURCE_DISPLAY_LIMIT,
+      );
+    } catch {
+      sourceLookupFailed = true;
+    }
   }
 
   const error = readParam(params, "error");
@@ -173,7 +156,7 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
               {recentSources.map((source) => (
                 <Link
                   key={source.id}
-                  href={`/owner/risk-share-activation/candidates/new?companyCode=${encodeURIComponent(companyCode)}&companyName=${encodeURIComponent(companyName || source.company_name || "")}&sourceId=${encodeURIComponent(source.id ?? "")}`}
+                  href={`/owner/risk-share-activation/candidates/new?companyCode=${encodeURIComponent(companyCode)}&companyName=${encodeURIComponent(companyName)}&sourceId=${encodeURIComponent(source.id)}`}
                   className={`rounded-2xl border p-4 hover:border-cyan-400/60 ${
                     sourceId && source.id === sourceId
                       ? "border-cyan-400 bg-cyan-400/10"
@@ -183,10 +166,10 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-black text-white">
-                        {source.source_title || source.original_filename || "제목 없는 source"}
+                        {source.sourceTitle || source.fileName || "제목 없는 source"}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-slate-400">
-                        {source.original_filename || "파일명 미표시"}
+                        {source.fileName || "파일명 미표시"}
                       </p>
                     </div>
                     <span className="shrink-0 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-black text-cyan-100">
@@ -194,9 +177,9 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
                     </span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-slate-400">
-                    <span>접수 {formatDate(source.created_at)}</span>
-                    <span>검토 {source.review_status || "상태 없음"}</span>
-                    <span>추출 {source.extraction_status || "상태 없음"}</span>
+                    <span>접수 {formatDate(source.uploadedAt ?? undefined)}</span>
+                    <span>검토 {source.reviewStatus || "상태 없음"}</span>
+                    <span>추출 {source.extractionStatus || "상태 없음"}</span>
                   </div>
                 </Link>
               ))}

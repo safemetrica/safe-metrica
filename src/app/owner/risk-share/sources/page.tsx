@@ -3,6 +3,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+import {
+  listRiskShareSourcesForOwner,
+  type RiskShareSourceRegistryEntry,
+} from "@/lib/risk-share/riskShareSourceRegistry";
+
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -40,6 +45,41 @@ const actionErrorMessages: Record<string, string> = {
   source_insert_failed: "원본 메타데이터 저장에 실패했습니다.",
 };
 
+const REGISTRY_STATUS_LABELS: Record<string, string> = {
+  pending: "대기",
+  processing: "처리 중",
+  completed: "완료",
+  failed: "확인 필요",
+  unknown: "상태 확인 필요",
+};
+
+function formatRegistryStatusLabel(status: string) {
+  return REGISTRY_STATUS_LABELS[status] ?? REGISTRY_STATUS_LABELS.unknown;
+}
+
+function formatRegistryFileSize(bytes: number | null) {
+  if (bytes === null || bytes <= 0) return "크기 확인 필요";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatRegistrySourceType(sourceType: string | null) {
+  if (sourceType === "risk_assessment_xlsx") return "XLSX";
+  if (sourceType === "risk_assessment_csv") return "CSV";
+  return sourceType || "형식 확인 필요";
+}
+
+function formatRegistryUploadedAt(value: string | null) {
+  if (!value) return "일시 확인 필요";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 16).replace("T", " ");
+}
+
 export default async function RiskShareSourceIntakePage({
   searchParams,
 }: {
@@ -57,12 +97,23 @@ export default async function RiskShareSourceIntakePage({
     redirect("/login?error=owner_required");
   }
 
+  let registrySources: RiskShareSourceRegistryEntry[] = [];
+  let registryLookupFailed = false;
+
+  if (companyCode) {
+    try {
+      registrySources = await listRiskShareSourcesForOwner(companyCode);
+    } catch {
+      registryLookupFailed = true;
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
       <section className="mx-auto max-w-4xl">
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
-          이 화면은 내부 운영자 전용 화면입니다. 고객용 화면이 아니며, 등록된 원본 목록이나 다운로드
-          기능은 이번 단계에서 제공하지 않습니다.
+          이 화면은 내부 운영자 전용 화면입니다. 고객용 화면이 아니며, 원본 다운로드 기능은 이번
+          단계에서 제공하지 않습니다.
         </div>
 
         <div className="mt-5 flex flex-col gap-5 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl md:flex-row md:items-end md:justify-between">
@@ -178,6 +229,72 @@ export default async function RiskShareSourceIntakePage({
             원본 등록
           </button>
         </form>
+
+        <section className="mt-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl">
+          <h2 className="text-xl font-black text-white">등록 원본</h2>
+
+          {!companyCode ? (
+            <p className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-sm leading-6 text-slate-300">
+              고객사 코드를 입력하거나 companyCode를 지정한 링크로 접속하면 등록된 원본 목록을 확인할 수 있습니다.
+            </p>
+          ) : registryLookupFailed ? (
+            <p className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-100">
+              원본 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+            </p>
+          ) : registrySources.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm font-bold text-amber-100">
+              이 고객사로 등록된 원본이 없습니다.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {registrySources.map((source) => (
+                <article
+                  key={source.id}
+                  className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-white">
+                        {source.sourceTitle || "제목 없는 원본"}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-400">
+                        {source.siteName || "사업장 미입력"} ·{" "}
+                        {formatRegistrySourceType(source.sourceType)} ·{" "}
+                        {source.fileName || "파일명 미표시"} · {formatRegistryFileSize(source.fileSize)}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        기준일 {source.sourceDocumentDate || "미입력"} · 등록{" "}
+                        {formatRegistryUploadedAt(source.uploadedAt)} · 등록주체{" "}
+                        {source.uploadedBy || "확인 필요"}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-[11px] font-bold text-slate-300">
+                      <span className="rounded-full border border-slate-600 px-2.5 py-1">
+                        원문 {formatRegistryStatusLabel(source.rawTextStatus)}
+                      </span>
+                      <span className="rounded-full border border-slate-600 px-2.5 py-1">
+                        추출 {formatRegistryStatusLabel(source.extractionStatus)}
+                      </span>
+                      <span className="rounded-full border border-slate-600 px-2.5 py-1">
+                        검토 {formatRegistryStatusLabel(source.reviewStatus)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <a
+                      href={`/owner/risk-share-activation/candidates/new?companyCode=${encodeURIComponent(companyCode)}&sourceId=${encodeURIComponent(source.id)}`}
+                      className="inline-flex rounded-xl border border-cyan-400/40 px-4 py-2 text-xs font-black text-cyan-100 hover:bg-cyan-500/10"
+                    >
+                      수동 후보 만들기
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </section>
     </main>
   );
