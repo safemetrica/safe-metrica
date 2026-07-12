@@ -212,6 +212,20 @@ const ownerDraftValidationPreview = validateOwnerTenantOnboardingDraft({
 const ownerDraftValidationMessages =
   getOwnerTenantOnboardingValidationMessages(ownerDraftValidationPreview.errors);
 
+const commercialActionErrorMessages: Record<string, string> = {
+  invalid_company: "고객사 코드 형식을 확인해 주세요.",
+  invalid_input: "입력값을 다시 확인해 주세요.",
+  tenant_not_found: "등록된 고객사 코드를 찾을 수 없습니다.",
+  tenant_not_eligible: "이 고객사는 현재 상태에서 이 작업을 진행할 수 없습니다.",
+  membership_exists: "이미 등록된 관리자 멤버십입니다.",
+  membership_insert_failed: "관리자 멤버십 저장에 실패했습니다.",
+  default_site_required: "기본 현장명이 필요합니다.",
+  active_manager_required: "활성 관리자 멤버십이 필요합니다.",
+  activation_conflict: "활성화 처리 중 상태가 변경되어 다시 확인이 필요합니다.",
+  activation_failed: "활성화 처리에 실패했습니다.",
+  missing_server_config: "운영 서버 설정을 확인할 수 없습니다.",
+};
+
 function isOwnerTokenValid(ownerToken?: string) {
   const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
   return Boolean(expectedToken && ownerToken === expectedToken);
@@ -226,6 +240,9 @@ export default async function OwnerTenantRegistryDraftPage({
   const createdStatus = getSingleSearchParam(params.created);
   const createdCompanyCode = getSingleSearchParam(params.companyCode) ?? "";
   const errorCode = getSingleSearchParam(params.error) ?? "";
+  const membershipStatus = getSingleSearchParam(params.membership) ?? "";
+  const activationStatus = getSingleSearchParam(params.activation) ?? "";
+  const actionErrorCode = getSingleSearchParam(params.actionError) ?? "";
   const createdOwnerLinks = createdCompanyCode
     ? buildOwnerOnlyLinks(createdCompanyCode)
     : [];
@@ -529,6 +546,153 @@ export default async function OwnerTenantRegistryDraftPage({
               </div>
             </section>
           </aside>
+        </div>
+
+        {membershipStatus || activationStatus || actionErrorCode ? (
+          <section
+            className={[
+              "mt-6 rounded-3xl border p-5",
+              actionErrorCode
+                ? "border-rose-500/40 bg-rose-500/10 text-rose-100"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
+            ].join(" ")}
+          >
+            <p className="text-sm font-black">
+              {actionErrorCode
+                ? commercialActionErrorMessages[actionErrorCode] ?? "요청을 처리하지 못했습니다."
+                : membershipStatus === "created"
+                  ? "관리자 멤버십이 연결되었습니다."
+                  : membershipStatus === "already_exists"
+                    ? "이미 등록된 관리자 멤버십입니다."
+                    : activationStatus === "activated"
+                      ? "고객사가 활성화되었습니다."
+                      : activationStatus === "already_active"
+                        ? "이미 활성화된 고객사입니다."
+                        : "요청을 처리했습니다."}
+            </p>
+          </section>
+        ) : null}
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <form
+            action="/api/owner/tenant-onboarding/membership/create"
+            method="post"
+            className="rounded-3xl border border-slate-800 bg-white p-6 text-slate-950"
+          >
+            <h2 className="text-xl font-black">관리자 멤버십 연결</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              이 작업은 로그인 권한 원장을 연결하며, Auth 계정이나 비밀번호를 자동 생성하지 않습니다.
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              활성 상태는 Supabase Auth 계정과 이메일 확인을 별도로 완료한 경우에만 선택합니다.
+            </p>
+
+            <div className="mt-5 grid gap-4">
+              <label className="block">
+                <span className="text-sm font-black text-slate-800">고객사 코드</span>
+                <input
+                  name="company_code"
+                  defaultValue={createdCompanyCode}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-black text-slate-800">관리자 이메일</span>
+                <input
+                  name="manager_email"
+                  type="email"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-black text-slate-800">관리자 표시명</span>
+                <input
+                  name="display_name"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+                />
+              </label>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-black text-slate-800">역할</span>
+                  <select
+                    name="role"
+                    defaultValue="tenant_manager"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+                  >
+                    <option value="tenant_admin">tenant_admin</option>
+                    <option value="tenant_manager">tenant_manager</option>
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-black text-slate-800">멤버십 상태</span>
+                  <select
+                    name="membership_status"
+                    defaultValue="invited"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+                  >
+                    <option value="invited">invited</option>
+                    <option value="active">active</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
+                <input type="checkbox" name="auth_account_confirmed" value="1" className="mt-0.5" />
+                Supabase Auth 계정과 이메일 확인을 별도로 완료했습니다. (활성 상태 선택 시 필수)
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              className="mt-5 w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-slate-950 hover:bg-emerald-300"
+            >
+              관리자 멤버십 연결
+            </button>
+          </form>
+
+          <div className="flex flex-col gap-5">
+            <form
+              action="/api/owner/tenant-onboarding/activate"
+              method="post"
+              className="rounded-3xl border border-slate-800 bg-white p-6 text-slate-950"
+            >
+              <h2 className="text-xl font-black">고객 운영 상태 활성화</h2>
+
+              <label className="mt-5 block">
+                <span className="text-sm font-black text-slate-800">고객사 코드</span>
+                <input
+                  name="company_code"
+                  defaultValue={createdCompanyCode}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+                />
+              </label>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-black text-slate-800">필수 확인</p>
+                <ul className="mt-2 space-y-1.5 text-xs font-bold leading-5 text-slate-600">
+                  <li>- 기본 현장명</li>
+                  <li>- 활성 관리자 멤버십</li>
+                  <li>- 운영자 최종 확인</li>
+                </ul>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                활성화 후 Public QR route가 열릴 수 있습니다. 실제 위험성평가 공유본과 현장 안내
+                준비가 끝나기 전에는 고객에게 QR을 배포하지 않습니다.
+              </div>
+
+              <button
+                type="submit"
+                className="mt-5 w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-slate-950 hover:bg-emerald-300"
+              >
+                활성화
+              </button>
+            </form>
+          </div>
         </div>
 
         <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-900 p-5 text-xs leading-6 text-slate-400">
