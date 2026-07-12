@@ -3,9 +3,11 @@
 -- Additive only: no table recreation, no destructive change, no backfill.
 -- Adds columns needed to record private-Blob source uploads (Commercial Core P2).
 -- Existing rows and their storage_access are not assumed or modified.
+-- updated_at is left null for existing rows: their true last-modified time is
+-- unknown, and migration run time must not be recorded as if it were one.
 
 alter table public.risk_share_sources
-  add column if not exists updated_at timestamptz not null default now();
+  add column if not exists updated_at timestamptz;
 
 alter table public.risk_share_sources
   add column if not exists file_pathname text;
@@ -22,13 +24,21 @@ alter table public.risk_share_sources
 alter table public.risk_share_sources
   add column if not exists source_document_date date;
 
-alter table public.risk_share_sources
-  drop constraint if exists risk_share_sources_storage_access_check;
-
-alter table public.risk_share_sources
-  add constraint risk_share_sources_storage_access_check check (
-    storage_access is null or storage_access in ('private', 'public', 'unknown')
-  );
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'risk_share_sources_storage_access_check'
+      and conrelid = 'public.risk_share_sources'::regclass
+  ) then
+    alter table public.risk_share_sources
+      add constraint risk_share_sources_storage_access_check check (
+        storage_access is null or storage_access in ('private', 'public', 'unknown')
+      );
+  end if;
+end
+$$;
 
 comment on column public.risk_share_sources.storage_access is
   'Access level of file_url at upload time: private, public, or unknown for rows predating this column. Not backfilled or inferred for existing rows.';

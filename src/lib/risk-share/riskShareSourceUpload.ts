@@ -11,7 +11,12 @@ const ELIGIBLE_TENANT_STATUSES = new Set(["onboarding", "active"]);
 
 const MAX_SOURCE_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 const SOURCE_DOCUMENT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const PRIVATE_BLOB_HOSTNAME_MARKER = ".private.blob.vercel-storage.com";
+const PRIVATE_BLOB_HOSTNAME_SUFFIX = ".private.blob.vercel-storage.com";
+
+const VALIDATED_CONTENT_TYPES = {
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  csv: "text/csv",
+} as const;
 
 const XLSX_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -164,6 +169,20 @@ async function validateCsvContent(file: File): Promise<ContentValidationResult> 
   return { ok: true };
 }
 
+function isValidCalendarDate(value: string): boolean {
+  if (!SOURCE_DOCUMENT_DATE_PATTERN.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  return date.toISOString().slice(0, 10) === value;
+}
+
 function sanitizeSourceFileName(fileName: string) {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
   return safeName || "risk-share-source";
@@ -260,7 +279,7 @@ export async function uploadRiskShareSource(
   if (input.sourceDocumentDate.trim()) {
     const trimmedDate = input.sourceDocumentDate.trim();
 
-    if (!SOURCE_DOCUMENT_DATE_PATTERN.test(trimmedDate)) {
+    if (!isValidCalendarDate(trimmedDate)) {
       return { ok: false, reason: "invalid_input" };
     }
 
@@ -294,6 +313,7 @@ export async function uploadRiskShareSource(
     return { ok: false, reason: contentValidation.reason };
   }
 
+  const validatedContentType = VALIDATED_CONTENT_TYPES[fileKind];
   const checksum = await computeSha256Hex(file);
 
   try {
@@ -323,21 +343,26 @@ export async function uploadRiskShareSource(
       access: "private",
       token: blobToken,
       addRandomSuffix: false,
-      contentType: file.type,
+      contentType: validatedContentType,
     });
   } catch {
     return { ok: false, reason: "upload_failed" };
   }
 
-  let blobHostname = "";
+  let blobUrl: URL | null = null;
 
   try {
-    blobHostname = new URL(blob.url).hostname;
+    blobUrl = new URL(blob.url);
   } catch {
-    blobHostname = "";
+    blobUrl = null;
   }
 
-  if (!blobHostname.includes(PRIVATE_BLOB_HOSTNAME_MARKER)) {
+  const isStrictPrivateBlobUrl =
+    blobUrl !== null &&
+    blobUrl.protocol === "https:" &&
+    blobUrl.hostname.endsWith(PRIVATE_BLOB_HOSTNAME_SUFFIX);
+
+  if (!isStrictPrivateBlobUrl) {
     await safeDeletePrivateBlob(blob.url);
     return { ok: false, reason: "upload_failed" };
   }
@@ -351,7 +376,7 @@ export async function uploadRiskShareSource(
     file_url: blob.url,
     file_pathname: blob.pathname,
     file_name: file.name || null,
-    file_mime_type: file.type || null,
+    file_mime_type: validatedContentType,
     file_size: file.size,
     file_checksum_sha256: checksum,
     file_etag: blob.etag,
