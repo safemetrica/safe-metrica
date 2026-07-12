@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 import {
   buildRiskShareLangHref,
   getRiskShareCopy,
   getRiskShareLocale,
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import FieldLangSwitcher from "./FieldLangSwitcher";
 
 export const dynamic = "force-dynamic";
@@ -92,19 +92,14 @@ export default async function RiskSharePublicFieldEntryPage({
   const companyCode = normalizeCompanyCode(params.company);
   const locale = getRiskShareLocale(params.lang);
   const copy = getRiskShareCopy(locale).field;
-  const tenant = companyCode
-    ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
-    : null;
-  const companyLabel = tenant?.name || companyCode || "현장";
-  const isRiskShareCustomer =
-    tenant?.serviceMode === "risk_share_pack" ||
-    tenant?.serviceMode === "full_safemetrica";
+  const tenantResolution = await resolveActiveRiskSharePublicTenant(params.company ?? "");
+  const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
 
   if (!companyCode) {
     return <NoticeShell title={copy.qrCheckingTitle}>{copy.noCodeBody}</NoticeShell>;
   }
 
-  if (!isRiskShareCustomer) {
+  if (!tenantResolution.ok) {
     return <NoticeShell title={copy.qrCheckingTitle}>{copy.notRegisteredBody}</NoticeShell>;
   }
 
