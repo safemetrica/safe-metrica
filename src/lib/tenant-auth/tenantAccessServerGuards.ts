@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   getActiveTenantMembershipByEmailAndCode,
+  listActiveManagerTenantMembershipsByEmail,
   type TenantMembershipConfig,
 } from "@/lib/supabaseServer";
 
@@ -135,4 +136,38 @@ export async function requireTenantManagerAccessForCurrentSession(params: {
     userEmail: sessionEmailResult.userEmail,
     tenantCode: params.tenantCode,
   });
+}
+
+export type ManagerTenantDestinationResult =
+  | { status: "unauthenticated" }
+  | { status: "lookup_failed" }
+  | { status: "none" }
+  | { status: "single"; tenantCode: string }
+  | { status: "multiple" };
+
+export async function resolveManagerTenantDestinationForCurrentSession(): Promise<ManagerTenantDestinationResult> {
+  const sessionEmailResult = await requireCurrentTenantSessionEmail();
+
+  if (!sessionEmailResult.ok) {
+    return { status: "unauthenticated" };
+  }
+
+  const memberships = await listActiveManagerTenantMembershipsByEmail(
+    sessionEmailResult.userEmail,
+  ).catch(() => null);
+
+  if (memberships === null) {
+    return { status: "lookup_failed" };
+  }
+
+  if (memberships.length === 0) {
+    return { status: "none" };
+  }
+
+  if (memberships.length > 1) {
+    // Future candidate: a tenant-selection screen instead of failing closed here.
+    return { status: "multiple" };
+  }
+
+  return { status: "single", tenantCode: memberships[0].tenantCode };
 }

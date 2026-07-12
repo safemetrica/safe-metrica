@@ -1163,3 +1163,71 @@ export async function getActiveTenantMembershipByEmailAndCode(params: {
     rawPayload: normalizeTenantMembershipRawPayload(row.raw_payload),
   } satisfies TenantMembershipConfig;
 }
+
+export type ManagerCapableTenantMembershipRole = Extract<
+  TenantMembershipRole,
+  "owner_internal" | "tenant_admin" | "tenant_manager"
+>;
+
+export type ActiveManagerTenantMembershipDestination = {
+  tenantCode: string;
+  role: ManagerCapableTenantMembershipRole;
+};
+
+function isManagerCapableTenantMembershipRole(
+  role: TenantMembershipRole
+): role is ManagerCapableTenantMembershipRole {
+  return role === "owner_internal" || role === "tenant_admin" || role === "tenant_manager";
+}
+
+const ACTIVE_MANAGER_TENANT_MEMBERSHIP_LOOKUP_LIMIT = 2;
+
+export async function listActiveManagerTenantMembershipsByEmail(
+  userEmail: string
+): Promise<ActiveManagerTenantMembershipDestination[]> {
+  const normalizedEmail = normalizeTenantMembershipEmail(userEmail);
+
+  if (!normalizedEmail) {
+    return [];
+  }
+
+  const query = new URLSearchParams({
+    select: "tenant_code,user_email,role,status",
+    user_email: `ilike.${normalizedEmail}`,
+    status: "eq.active",
+    role: "in.(owner_internal,tenant_admin,tenant_manager)",
+    order: "tenant_code.asc",
+    limit: String(ACTIVE_MANAGER_TENANT_MEMBERSHIP_LOOKUP_LIMIT),
+  });
+
+  const rows = await selectSupabaseExportRows<TenantMembershipRow>("tenant_membership", query);
+
+  const seenTenantCodes = new Set<string>();
+  const destinations: ActiveManagerTenantMembershipDestination[] = [];
+
+  for (const row of rows) {
+    const tenantCode = normalizeTenantMembershipCode(readTenantRegistryString(row.tenant_code));
+    const rowUserEmail = normalizeTenantMembershipEmail(readTenantRegistryString(row.user_email));
+    const role = normalizeTenantMembershipRole(row.role);
+    const status = normalizeTenantMembershipStatus(row.status);
+
+    if (
+      !tenantCode ||
+      rowUserEmail !== normalizedEmail ||
+      !role ||
+      !isManagerCapableTenantMembershipRole(role) ||
+      status !== "active"
+    ) {
+      continue;
+    }
+
+    if (seenTenantCodes.has(tenantCode)) {
+      continue;
+    }
+
+    seenTenantCodes.add(tenantCode);
+    destinations.push({ tenantCode, role });
+  }
+
+  return destinations.slice(0, ACTIVE_MANAGER_TENANT_MEMBERSHIP_LOOKUP_LIMIT);
+}
