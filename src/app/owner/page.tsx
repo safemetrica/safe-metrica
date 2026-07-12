@@ -356,18 +356,17 @@ export default async function OwnerConsolePage({
         ) : null}
 
         <section className="mt-6 rounded-3xl border border-emerald-500/30 bg-slate-900 p-6 shadow-2xl">
-          <p className="text-sm font-bold text-emerald-300">Risk Share Pack Activation</p>
-          <h2 className="mt-2 text-2xl font-black text-white">신규 고객 공유팩 활성화</h2>
+          <p className="text-sm font-bold text-emerald-300">위험성평가 원본 접수</p>
+          <h2 className="mt-2 text-2xl font-black text-white">신규 고객 위험성평가 원본 등록</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-            신규 고객 코드 후보, 위험성평가 source 접수, 공유항목 정리, 고객 확인, 버전 잠금, QR 활성화 상태를 확인합니다.
-            실제 운영 전 Companies DB 등록과 active 상태 확인이 필요합니다.
+            고객사가 제공한 기존 위험성평가 XLSX·CSV 원본을 비공개 저장소에 등록하고, 이후 검토·열 매핑·공유항목 후보 작업의 시작자료로 관리합니다.
           </p>
           <div className="mt-5">
             <a
-              href="/owner/risk-share-activation"
+              href="/owner/risk-share/sources"
               className="inline-flex rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-400"
             >
-              신규 공유팩 활성화 화면 열기
+              비공개 원본 등록 화면 열기
             </a>
           </div>
         </section>
