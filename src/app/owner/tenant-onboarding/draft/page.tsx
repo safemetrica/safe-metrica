@@ -287,6 +287,16 @@ export default async function OwnerTenantRegistryDraftPage({
               체크리스트로
             </Link>
             <Link
+              href={
+                createdCompanyCode
+                  ? `/owner/risk-share/sources?companyCode=${encodeURIComponent(createdCompanyCode)}`
+                  : "/owner/risk-share/sources"
+              }
+              className="inline-flex items-center justify-center rounded-2xl border border-emerald-400/60 px-4 py-3 text-sm font-black text-emerald-300 hover:bg-emerald-400/10"
+            >
+              위험성평가 원본 등록
+            </Link>
+            <Link
               href="/owner"
               className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
             >
