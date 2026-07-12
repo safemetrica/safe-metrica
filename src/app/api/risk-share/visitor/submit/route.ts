@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  getTenantRegistryConfigByCode,
-  insertFieldParticipationSubmissionShadowRecord,
-} from "@/lib/supabaseServer";
+import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
 import {
   buildRiskShareLangHref,
   getRiskShareLocale,
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +24,6 @@ function normalizeCompanyCode(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "")
     .slice(0, 64);
-}
-
-function isRiskSharePackTenant(serviceMode?: string | null) {
-  return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
 }
 
 function getTodayDateValue() {
@@ -58,13 +52,17 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const tenantResolution = await resolveActiveRiskSharePublicTenant(
+    getFormText(formData, "companyCode"),
+  );
 
-  if (!tenant || !isRiskSharePackTenant(tenant.serviceMode)) {
+  if (!tenantResolution.ok) {
     return NextResponse.redirect(new URL(buildFieldHref(companyCode, lang), req.url), {
       status: 303,
     });
   }
+
+  const tenant = tenantResolution.tenant;
 
   const purpose = getFormText(formData, "visitPurpose");
   const visitorCompany = getFormText(formData, "visitorCompany");
