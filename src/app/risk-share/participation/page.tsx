@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 import {
   RISK_SHARE_LANGUAGE_OPTIONS,
   buildRiskShareLangHref,
@@ -7,6 +6,7 @@ import {
   getRiskShareLocale,
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import RiskShareRepresentativeSignaturePad from "../representative/RiskShareRepresentativeSignaturePad";
 
 export const dynamic = "force-dynamic";
@@ -37,10 +37,6 @@ function normalizeCompanyCode(value: string) {
 
 function normalizeMode(value: string): ParticipationMode {
   return value === "prework" ? "prework" : "monthly";
-}
-
-function isRiskSharePackTenant(serviceMode?: string | null) {
-  return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
 }
 
 const MODE_ACCENT: Record<ParticipationMode, string> = {
@@ -83,7 +79,8 @@ function LangBar({
 
 export default async function RiskShareParticipationPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
-  const companyCode = normalizeCompanyCode(readSearchParam(params.company));
+  const rawCompanyCode = readSearchParam(params.company);
+  const companyCode = normalizeCompanyCode(rawCompanyCode);
   const mode = normalizeMode(readSearchParam(params.mode));
   const locale = getRiskShareLocale(readSearchParam(params.lang));
   const submitted = readSearchParam(params.submitted);
@@ -91,14 +88,11 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   const modeCopy = copy[mode];
   const accent = MODE_ACCENT[mode];
 
-  const tenant = companyCode
-    ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
-    : null;
-  const companyLabel = tenant?.name || companyCode || "현장";
-  const isAllowed = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
+  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const returnHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, locale);
 
-  if (!isAllowed) {
+  if (!tenantResolution.ok) {
     return (
       <main className="min-h-screen bg-[#EEF4F8] px-3 py-4 text-slate-950">
         <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">

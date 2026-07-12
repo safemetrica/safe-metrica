@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 import {
   RISK_SHARE_LANGUAGE_OPTIONS,
   RISK_SHARE_LANGUAGES_SOON,
@@ -8,6 +7,7 @@ import {
   getRiskShareCopy,
   getRiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -40,26 +40,20 @@ function normalizeCompanyCode(value: string) {
     .slice(0, 50);
 }
 
-function isRiskSharePackTenant(serviceMode?: string | null) {
-  return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
-}
-
 export default async function RiskShareAnonymousFeedbackPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
-  const companyCode = normalizeCompanyCode(readSearchParam(params.company));
+  const rawCompanyCode = readSearchParam(params.company);
+  const companyCode = normalizeCompanyCode(rawCompanyCode);
   const locale = getRiskShareLocale(readSearchParam(params.lang));
   const submitted = readSearchParam(params.submitted);
   const submissionError = readSearchParam(params.error);
   const copy = getRiskShareCopy(locale).anonymous;
-  const tenant = companyCode
-    ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
-    : null;
-  const isAllowedCompany = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
-  const companyLabel = tenant?.name || companyCode || "현장";
+  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const companyMark = companyLabel.trim().charAt(0) || "현";
   const returnHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, locale);
 
-  if (!isAllowedCompany) {
+  if (!tenantResolution.ok) {
     return (
       <main className="grid min-h-[100dvh] place-items-center bg-[#EEF1F4] px-5 py-8 text-[#0B2742]">
         <section className="w-full max-w-[430px] rounded-[28px] bg-white p-6 shadow-[0_18px_50px_rgba(11,39,66,0.14)]">

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 import {
   RISK_SHARE_LANGUAGE_OPTIONS,
   RISK_SHARE_LANGUAGES_SOON,
@@ -7,6 +6,7 @@ import {
   getRiskShareCopy,
   getRiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import RiskShareRepresentativeSignaturePad from "./RiskShareRepresentativeSignaturePad";
 
 export const dynamic = "force-dynamic";
@@ -33,26 +33,20 @@ function normalizeCompanyCode(value: string) {
     .slice(0, 64);
 }
 
-function isRiskSharePackTenant(serviceMode?: string | null) {
-  return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
-}
-
 export default async function RiskShareRepresentativePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
-  const companyCode = normalizeCompanyCode(readSearchParam(params.company));
+  const rawCompanyCode = readSearchParam(params.company);
+  const companyCode = normalizeCompanyCode(rawCompanyCode);
   const locale = getRiskShareLocale(readSearchParam(params.lang));
   const submitted = readSearchParam(params.submitted);
   const submissionError = readSearchParam(params.error);
   const copy = getRiskShareCopy(locale).representative;
-  const tenant = companyCode
-    ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
-    : null;
-  const companyLabel = tenant?.name || companyCode || "현장";
+  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const companyMark = companyLabel.trim().charAt(0) || "현";
-  const isAllowed = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
   const returnHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, locale);
 
-  if (!isAllowed) {
+  if (!tenantResolution.ok) {
     return (
       <main className="min-h-screen bg-[#EEF4F8] px-4 py-5 text-slate-950">
         <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
