@@ -129,6 +129,9 @@ export default async function RiskShareActivationPage({ searchParams }: PageProp
             신규 고객은 고객사 코드 생성만으로 바로 활성화하지 않습니다. 위험성평가 source 접수, 공유항목 정리,
             고객 확인, 버전 잠금, Companies DB 등록 이후 QR 링크를 활성화합니다.
           </p>
+          <p className="mt-3 max-w-4xl rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 text-xs leading-5 text-amber-100">
+            이 화면은 구형 내부 활성화 상태판입니다. 실제 위험성평가 원본 등록은 신규 비공개 원본 등록 화면에서 진행합니다.
+          </p>
         </section>
 
         <form className="mt-6 rounded-3xl border border-slate-700 bg-slate-900 p-6">
@@ -182,10 +185,14 @@ export default async function RiskShareActivationPage({ searchParams }: PageProp
               활성화 상태 미리보기
             </button>
             <Link
-              href="/owner/risk-share-activation/source-intake"
+              href={
+                companyCode
+                  ? `/owner/risk-share/sources?companyCode=${encodeURIComponent(companyCode)}`
+                  : "/owner/risk-share/sources"
+              }
               className="rounded-xl border border-blue-400/40 px-5 py-3 text-sm font-black text-blue-100 hover:bg-blue-500/10"
             >
-              Source File Intake
+              비공개 원본 등록
             </Link>
             <Link
               href={`/owner/risk-share-activation/share-items?companyCode=${encodeURIComponent(companyCode)}&companyName=${encodeURIComponent(companyName)}`}
