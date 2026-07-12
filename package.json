@@ -35,6 +35,7 @@
     "@notionhq/client": "^5.20.0",
     "@react-pdf/renderer": "^4.5.1",
     "@vercel/blob": "^2.4.0",
+    "exceljs": "4.4.0",
     "iconify-icon": "^3.0.2",
     "next": "16.2.4",
     "next-auth": "^4.24.14",

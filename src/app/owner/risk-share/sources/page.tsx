@@ -305,7 +305,13 @@ export default async function RiskShareSourceIntakePage({
                     </div>
                   </div>
 
-                  <div className="mt-3">
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={`/owner/risk-share/sources/preview?companyCode=${encodeURIComponent(companyCode)}&sourceId=${encodeURIComponent(source.id)}&sheet=0`}
+                      className="inline-flex rounded-xl border border-slate-600 px-4 py-2 text-xs font-black text-slate-200 hover:bg-slate-800"
+                    >
+                      열 미리보기
+                    </a>
                     <a
                       href={`/owner/risk-share-activation/candidates/new?companyCode=${encodeURIComponent(companyCode)}&sourceId=${encodeURIComponent(source.id)}`}
                       className="inline-flex rounded-xl border border-cyan-400/40 px-4 py-2 text-xs font-black text-cyan-100 hover:bg-cyan-500/10"
