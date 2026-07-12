@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 
-import {
-  getTenantRegistryConfigByCode,
-  insertFieldParticipationSubmissionShadowRecord,
-} from "@/lib/supabaseServer";
+import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
 import {
   buildRiskShareLangHref,
   getRiskShareCopy,
   getRiskShareLocale,
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +63,6 @@ function normalizeMode(value: string): ParticipationMode | null {
   return value === "monthly" || value === "prework" ? value : null;
 }
 
-function isRiskSharePackTenant(serviceMode?: string | null) {
-  return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
-}
-
 function getTodayDateValue() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -106,13 +100,17 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const tenantResolution = await resolveActiveRiskSharePublicTenant(
+    getFormText(formData, "companyCode"),
+  );
 
-  if (!tenant || !isRiskSharePackTenant(tenant.serviceMode)) {
+  if (!tenantResolution.ok) {
     return NextResponse.redirect(new URL(buildFieldHref(companyCode, lang), req.url), {
       status: 303,
     });
   }
+
+  const tenant = tenantResolution.tenant;
 
   const checklist = getRiskShareCopy(lang).participation[mode].checklist;
   const checkedItems = checklist.map((label, index) => ({
