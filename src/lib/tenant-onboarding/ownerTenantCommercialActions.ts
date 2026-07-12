@@ -15,6 +15,11 @@ const ELIGIBLE_TENANT_SERVICE_MODES = new Set(["risk_share_pack", "full_safemetr
 const ELIGIBLE_TENANT_STATUSES = new Set(["onboarding", "active"]);
 const EXISTING_MEMBERSHIP_STATUSES = ["invited", "active", "suspended"];
 const ACTIVE_MANAGER_ROLES = new Set<TenantMembershipRole>(["tenant_admin", "tenant_manager"]);
+const EXISTING_MEMBERSHIP_LOOKUP_LIMIT = 200;
+
+function readRowString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 export type OwnerTenantActionFailureReason =
   | "invalid_company"
@@ -57,6 +62,10 @@ async function resolveEligibleTenant(rawCompanyCode: string): Promise<EligibleTe
     return { ok: false, reason: "tenant_not_found" };
   }
 
+  if (!tenant.id || !tenant.id.trim()) {
+    return { ok: false, reason: "tenant_not_eligible" };
+  }
+
   if (
     !ELIGIBLE_TENANT_SERVICE_MODES.has(tenant.serviceMode) ||
     !ELIGIBLE_TENANT_STATUSES.has(tenant.status)
@@ -76,25 +85,32 @@ function getSupabaseServiceRoleKey() {
 }
 
 async function findExistingTenantMembership(
+  tenantId: string,
   tenantCode: string,
-  userEmail: string,
+  normalizedEmail: string,
 ): Promise<TenantMembershipRow | null> {
   const query = new URLSearchParams({
     select: "id,tenant_id,tenant_code,user_email,role,status",
+    tenant_id: `eq.${tenantId}`,
     tenant_code: `eq.${tenantCode}`,
-    user_email: `ilike.${userEmail}`,
     status: `in.(${EXISTING_MEMBERSHIP_STATUSES.join(",")})`,
-    limit: "1",
+    limit: String(EXISTING_MEMBERSHIP_LOOKUP_LIMIT),
   });
 
   const rows = await selectSupabaseExportRows<TenantMembershipRow>("tenant_membership", query);
 
-  return rows[0] ?? null;
+  return (
+    rows.find((row) => readRowString(row.user_email).toLowerCase() === normalizedEmail) ?? null
+  );
 }
 
-async function findActiveManagerMembership(tenantCode: string): Promise<TenantMembershipRow | null> {
+async function findActiveManagerMembership(
+  tenantId: string,
+  tenantCode: string,
+): Promise<TenantMembershipRow | null> {
   const query = new URLSearchParams({
-    select: "id,tenant_code,role,status",
+    select: "id,tenant_id,tenant_code,role,status",
+    tenant_id: `eq.${tenantId}`,
     tenant_code: `eq.${tenantCode}`,
     status: "eq.active",
     role: `in.(${Array.from(ACTIVE_MANAGER_ROLES).join(",")})`,
@@ -102,8 +118,27 @@ async function findActiveManagerMembership(tenantCode: string): Promise<TenantMe
   });
 
   const rows = await selectSupabaseExportRows<TenantMembershipRow>("tenant_membership", query);
+  const row = rows[0];
 
-  return rows[0] ?? null;
+  if (!row) {
+    return null;
+  }
+
+  const rowTenantId = readRowString(row.tenant_id);
+  const rowTenantCode = readRowString(row.tenant_code);
+  const rowStatus = readRowString(row.status);
+  const rowRole = readRowString(row.role);
+
+  if (
+    rowTenantId !== tenantId ||
+    rowTenantCode !== tenantCode ||
+    rowStatus !== "active" ||
+    !ACTIVE_MANAGER_ROLES.has(rowRole as TenantMembershipRole)
+  ) {
+    return null;
+  }
+
+  return row;
 }
 
 async function insertTenantMembershipRow(record: Record<string, unknown>) {
@@ -191,7 +226,11 @@ export async function createOwnerTenantMembership(
   let existingMembership: TenantMembershipRow | null;
 
   try {
-    existingMembership = await findExistingTenantMembership(tenant.code, input.managerEmail);
+    existingMembership = await findExistingTenantMembership(
+      tenant.id,
+      tenant.code,
+      input.managerEmail,
+    );
   } catch {
     return { ok: false, reason: "missing_server_config" };
   }
@@ -218,6 +257,22 @@ export async function createOwnerTenantMembership(
   });
 
   if (!insertResult.ok) {
+    let recheckedMembership: TenantMembershipRow | null;
+
+    try {
+      recheckedMembership = await findExistingTenantMembership(
+        tenant.id,
+        tenant.code,
+        input.managerEmail,
+      );
+    } catch {
+      return { ok: false, reason: "membership_insert_failed" };
+    }
+
+    if (recheckedMembership) {
+      return { ok: true, status: "already_exists", companyCode: tenant.code };
+    }
+
     return { ok: false, reason: "membership_insert_failed" };
   }
 
@@ -243,10 +298,6 @@ export async function activateOwnerTenant(
 
   const tenant = tenantResolution.tenant;
 
-  if (tenant.status === "active") {
-    return { ok: true, status: "already_active", companyCode: tenant.code };
-  }
-
   if (!tenant.defaultSiteName || !tenant.defaultSiteName.trim()) {
     return { ok: false, reason: "default_site_required" };
   }
@@ -254,13 +305,17 @@ export async function activateOwnerTenant(
   let activeManagerMembership: TenantMembershipRow | null;
 
   try {
-    activeManagerMembership = await findActiveManagerMembership(tenant.code);
+    activeManagerMembership = await findActiveManagerMembership(tenant.id, tenant.code);
   } catch {
     return { ok: false, reason: "missing_server_config" };
   }
 
   if (!activeManagerMembership) {
     return { ok: false, reason: "active_manager_required" };
+  }
+
+  if (tenant.status === "active") {
+    return { ok: true, status: "already_active", companyCode: tenant.code };
   }
 
   const patchResult = await patchTenantRegistryStatusToActive(tenant.id);
