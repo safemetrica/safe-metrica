@@ -57,6 +57,7 @@ export type RiskShareSourceUploadInput = {
   siteName: string;
   sourceDocumentDate: string;
   sourceFile: FormDataEntryValue | null;
+  oidcToken: string;
 };
 
 type EligibleTenant = {
@@ -198,8 +199,10 @@ type RiskSourceBlobOidcCredentials = {
   storeId: string;
 };
 
-function getRiskSourceBlobOidcCredentials(): RiskSourceBlobOidcCredentials | null {
-  const oidcToken = process.env.VERCEL_OIDC_TOKEN?.trim();
+function getRiskSourceBlobOidcCredentials(
+  rawOidcToken: string,
+): RiskSourceBlobOidcCredentials | null {
+  const oidcToken = rawOidcToken.trim();
   const storeId = process.env.RISK_SOURCE_BLOB_STORE_ID?.trim();
 
   if (!oidcToken || !storeId) {
@@ -338,7 +341,7 @@ export async function uploadRiskShareSource(
     return { ok: false, reason: "source_insert_failed" };
   }
 
-  const blobCredentials = getRiskSourceBlobOidcCredentials();
+  const blobCredentials = getRiskSourceBlobOidcCredentials(input.oidcToken);
 
   if (!blobCredentials) {
     return { ok: false, reason: "storage_not_configured" };

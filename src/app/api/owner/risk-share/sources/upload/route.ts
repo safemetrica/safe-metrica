@@ -23,7 +23,7 @@ function buildRedirect(request: NextRequest, params: Record<string, string>) {
     if (value) url.searchParams.set(key, value);
   });
 
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, { status: 303 });
 }
 
 export async function POST(request: NextRequest) {
@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
   if (!isOwnerTokenValid(ownerToken)) {
     return buildRedirect(request, { error: "owner_required" });
   }
+
+  const oidcToken = request.headers.get("x-vercel-oidc-token")?.trim() ?? "";
 
   const formData = await request.formData();
 
@@ -48,6 +50,7 @@ export async function POST(request: NextRequest) {
     siteName,
     sourceDocumentDate,
     sourceFile,
+    oidcToken,
   });
 
   if (!result.ok) {
