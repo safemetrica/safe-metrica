@@ -193,8 +193,20 @@ async function computeSha256Hex(file: File): Promise<string> {
   return createHash("sha256").update(buffer).digest("hex");
 }
 
-function getRiskSourceBlobToken() {
-  return process.env.RISK_SOURCE_BLOB_READ_WRITE_TOKEN;
+type RiskSourceBlobOidcCredentials = {
+  oidcToken: string;
+  storeId: string;
+};
+
+function getRiskSourceBlobOidcCredentials(): RiskSourceBlobOidcCredentials | null {
+  const oidcToken = process.env.VERCEL_OIDC_TOKEN?.trim();
+  const storeId = process.env.RISK_SOURCE_BLOB_STORE_ID?.trim();
+
+  if (!oidcToken || !storeId) {
+    return null;
+  }
+
+  return { oidcToken, storeId };
 }
 
 function getSupabaseUrl() {
@@ -242,9 +254,9 @@ async function insertRiskShareSourceRow(record: Record<string, unknown>): Promis
   return res.ok;
 }
 
-async function safeDeletePrivateBlob(url: string) {
+async function safeDeletePrivateBlob(url: string, credentials: RiskSourceBlobOidcCredentials) {
   try {
-    await del(url, { token: getRiskSourceBlobToken() });
+    await del(url, { oidcToken: credentials.oidcToken, storeId: credentials.storeId });
   } catch {
     // Cleanup best-effort only; failure detail is never surfaced to the client.
   }
@@ -326,9 +338,9 @@ export async function uploadRiskShareSource(
     return { ok: false, reason: "source_insert_failed" };
   }
 
-  const blobToken = getRiskSourceBlobToken();
+  const blobCredentials = getRiskSourceBlobOidcCredentials();
 
-  if (!blobToken) {
+  if (!blobCredentials) {
     return { ok: false, reason: "storage_not_configured" };
   }
 
@@ -341,7 +353,8 @@ export async function uploadRiskShareSource(
   try {
     blob = await put(pathname, file, {
       access: "private",
-      token: blobToken,
+      oidcToken: blobCredentials.oidcToken,
+      storeId: blobCredentials.storeId,
       addRandomSuffix: false,
       contentType: validatedContentType,
     });
@@ -363,7 +376,7 @@ export async function uploadRiskShareSource(
     blobUrl.hostname.endsWith(PRIVATE_BLOB_HOSTNAME_SUFFIX);
 
   if (!isStrictPrivateBlobUrl) {
-    await safeDeletePrivateBlob(blob.url);
+    await safeDeletePrivateBlob(blob.url, blobCredentials);
     return { ok: false, reason: "upload_failed" };
   }
 
@@ -393,7 +406,7 @@ export async function uploadRiskShareSource(
   });
 
   if (!insertOk) {
-    await safeDeletePrivateBlob(blob.url);
+    await safeDeletePrivateBlob(blob.url, blobCredentials);
     return { ok: false, reason: "source_insert_failed" };
   }
 
