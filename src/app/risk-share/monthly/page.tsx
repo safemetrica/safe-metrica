@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 
-import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
+import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import MonthlyDesignerView from "@/components/risk-share/monthly/MonthlyDesignerView";
 
@@ -26,10 +27,6 @@ function normalizeCompanyCode(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "")
     .slice(0, 64);
-}
-
-function isRiskSharePackTenant(serviceMode?: string | null) {
-  return serviceMode === "risk_share_pack" || serviceMode === "full_safemetrica";
 }
 
 function getCurrentPeriodKst() {
@@ -243,18 +240,16 @@ async function fetchRiskShareMonthlyVisitorConfirmationSummary(
 
 export default async function RiskShareMonthlySummaryPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
-  const companyCode = normalizeCompanyCode(readSearchParam(params.company));
+  const rawCompanyCode = readSearchParam(params.company);
+  const companyCode = normalizeCompanyCode(rawCompanyCode);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
-  const tenant = companyCode
-    ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
-    : null;
-  const companyLabel = tenant?.name || companyCode || "현장";
-  const isAllowed = Boolean(companyCode) && isRiskSharePackTenant(tenant?.serviceMode);
+  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const period = getCurrentPeriodKst();
   const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
   const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
 
-  if (!isAllowed) {
+  if (!tenantResolution.ok) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
         <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -270,8 +265,10 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
     );
   }
 
+  const tenantCode = tenantResolution.tenant.code;
+
   const tenantAccessResult = await requireTenantManagerAccessForCurrentSession({
-    tenantCode: companyCode,
+    tenantCode,
   });
 
   if (!tenantAccessResult.ok) {
@@ -298,10 +295,10 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   const userDisplayName = tenantAccessResult.context.membership.displayName || userEmail || "관리자";
   const avatarInitial = userDisplayName.trim().slice(0, 1) || "관";
 
-  const participationSummary = await fetchRiskShareMonthlyParticipationSummary(companyCode, period);
-  const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(companyCode, period);
-  const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(companyCode, period);
-  const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(companyCode, period);
+  const participationSummary = await fetchRiskShareMonthlyParticipationSummary(tenantCode, period);
+  const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(tenantCode, period);
+  const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(tenantCode, period);
+  const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(tenantCode, period);
 
   return (
     <MonthlyDesignerView
