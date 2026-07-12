@@ -310,6 +310,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   const userEmail = tenantAccessResult.context.membership.userEmail;
   const userDisplayName = tenantAccessResult.context.membership.displayName || userEmail || "관리자";
   const avatarInitial = userDisplayName.trim().slice(0, 1) || "관";
+  const role = tenantAccessResult.context.role;
+  const sourceRegistryHref =
+    role === "tenant_admin" || role === "tenant_manager"
+      ? buildRiskShareLangHref("/risk-share/manager/sources", { company: tenantCode }, lang)
+      : undefined;
 
   const participationSummary = await fetchRiskShareParticipationSummary(
     tenantCode,
@@ -361,6 +366,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       userEmail={userEmail}
       avatarInitial={avatarInitial}
       weeklyTrendFallbackLabels={getLastSevenDayLabels()}
+      sourceRegistryHref={sourceRegistryHref}
     />
   );
 }
