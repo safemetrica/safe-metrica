@@ -233,6 +233,29 @@ export default async function RiskShareSourceIntakePage({
         <section className="mt-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl">
           <h2 className="text-xl font-black text-white">등록 원본</h2>
 
+          <form
+            method="get"
+            action="/owner/risk-share/sources"
+            className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"
+          >
+            <label className="block flex-1">
+              <span className="text-sm font-black text-slate-200">고객사 코드</span>
+              <input
+                name="companyCode"
+                defaultValue={companyCode}
+                placeholder="예: test-risk-pack-01"
+                className="mt-2 w-full rounded-2xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm font-bold text-white outline-none focus:border-emerald-400"
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-5 py-3 text-sm font-black text-emerald-100 hover:bg-emerald-500/20"
+            >
+              등록 원본 조회
+            </button>
+          </form>
+
           {!companyCode ? (
             <p className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-sm leading-6 text-slate-300">
               고객사 코드를 입력하거나 companyCode를 지정한 링크로 접속하면 등록된 원본 목록을 확인할 수 있습니다.
