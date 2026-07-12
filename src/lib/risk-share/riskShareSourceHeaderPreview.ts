@@ -12,6 +12,7 @@ const MAX_PREVIEW_ROWS = 20;
 const MAX_PREVIEW_COLUMNS = 40;
 const MAX_CELL_CHARS = 300;
 const BLOB_READ_TIMEOUT_MS = 15_000;
+const XLSX_PARSE_TIMEOUT_MS = 8_000;
 
 export type RiskShareSourceHeaderPreviewFailureReason =
   | "storage_not_configured"
@@ -185,8 +186,12 @@ function parseCsvBuffer(buffer: Buffer): { ok: true; rows: string[][]; truncated
   let rowHasContent = false;
 
   const pushField = () => {
+    const clamped = clampCellText(field);
+    if (clamped.truncated) {
+      truncatedColumns = true;
+    }
     if (row.length < MAX_PREVIEW_COLUMNS) {
-      row.push(field);
+      row.push(clamped.text);
     } else {
       truncatedColumns = true;
     }
@@ -205,10 +210,12 @@ function parseCsvBuffer(buffer: Buffer): { ok: true; rows: string[][]; truncated
   };
 
   let index = 0;
+  let reachedRowCap = false;
 
   while (index < text.length) {
     if (rows.length >= MAX_PREVIEW_ROWS) {
       truncatedRows = true;
+      reachedRowCap = true;
       break;
     }
 
@@ -262,7 +269,11 @@ function parseCsvBuffer(buffer: Buffer): { ok: true; rows: string[][]; truncated
     index += 1;
   }
 
-  if ((rowHasContent || field.length > 0) && rows.length < MAX_PREVIEW_ROWS) {
+  if (inQuotes && !reachedRowCap) {
+    return { ok: false, reason: "parse_failed" };
+  }
+
+  if (!inQuotes && (rowHasContent || field.length > 0) && rows.length < MAX_PREVIEW_ROWS) {
     pushRow();
   }
 
@@ -289,14 +300,41 @@ async function buildCsvPreview(
 }
 
 class ByteCapExceededError extends Error {}
+class XlsxParseTimeoutError extends Error {}
+
+type XlsxSheetCollector = {
+  rows: string[][];
+  truncatedRows: boolean;
+  truncatedColumns: boolean;
+};
+
+function collectXlsxRowIntoSheet(row: unknown, collector: XlsxSheetCollector) {
+  const values = Array.isArray((row as { values?: unknown }).values)
+    ? ((row as { values: unknown[] }).values.slice(1) as unknown[])
+    : [];
+
+  if (values.length > MAX_PREVIEW_COLUMNS) {
+    collector.truncatedColumns = true;
+  }
+
+  const cells = values.slice(0, MAX_PREVIEW_COLUMNS).map((cellValue) => {
+    const formatted = formatCellValue(cellValue);
+    const clamped = clampCellText(formatted);
+    if (clamped.truncated) collector.truncatedColumns = true;
+    return clamped.text;
+  });
+
+  collector.rows.push(cells);
+}
 
 async function buildXlsxPreview(
   webStream: ReadableStream<Uint8Array>,
-  selectedSheetIndex: number,
+  requestedSheetIndex: number,
 ): Promise<
   | {
       ok: true;
       sheets: RiskShareSourceHeaderPreviewSheet[];
+      selectedSheetIndex: number;
       rows: string[][];
       truncatedRows: boolean;
       truncatedColumns: boolean;
@@ -313,10 +351,14 @@ async function buildXlsxPreview(
     }
   });
 
+  const timeoutId = setTimeout(() => {
+    nodeReadable.destroy(new XlsxParseTimeoutError("xlsx parse exceeded time budget"));
+  }, XLSX_PARSE_TIMEOUT_MS);
+
   const sheets: RiskShareSourceHeaderPreviewSheet[] = [];
-  const rows: string[][] = [];
-  let truncatedRows = false;
-  let truncatedColumns = false;
+  const fallback: XlsxSheetCollector = { rows: [], truncatedRows: false, truncatedColumns: false };
+  const requested: XlsxSheetCollector = { rows: [], truncatedRows: false, truncatedColumns: false };
+  let sawRequestedSheet = false;
 
   try {
     const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(nodeReadable, {
@@ -339,39 +381,36 @@ async function buildXlsxPreview(
         sheets.push({ index: currentIndex, name });
       }
 
-      const isSelected = currentIndex === selectedSheetIndex;
-      let rowCount = 0;
+      const isFallback = currentIndex === 0;
+      const isRequested = currentIndex === requestedSheetIndex;
 
-      for await (const row of worksheetReader) {
-        if (!isSelected) {
-          continue;
-        }
-
-        if (rowCount >= MAX_PREVIEW_ROWS) {
-          truncatedRows = true;
-          continue;
-        }
-
-        const values = Array.isArray((row as { values?: unknown }).values)
-          ? ((row as { values: unknown[] }).values.slice(1) as unknown[])
-          : [];
-
-        if (values.length > MAX_PREVIEW_COLUMNS) {
-          truncatedColumns = true;
-        }
-
-        const cells = values.slice(0, MAX_PREVIEW_COLUMNS).map((cellValue) => {
-          const formatted = formatCellValue(cellValue);
-          const clamped = clampCellText(formatted);
-          if (clamped.truncated) truncatedColumns = true;
-          return clamped.text;
-        });
-
-        rows.push(cells);
-        rowCount += 1;
+      if (isRequested) {
+        sawRequestedSheet = true;
       }
 
-      if (sheets.length >= MAX_SHEETS && currentIndex >= selectedSheetIndex) {
+      // Relevant sheets (index 0 for fallback, and the requested index) are read up to
+      // MAX_PREVIEW_ROWS + 1 rows to detect truncation, then the row loop breaks early.
+      // All other sheets are never iterated at all — exceljs's streaming reader does not
+      // require draining an unconsumed worksheet entry before advancing to the next one
+      // (verified empirically: a multi-thousand-row irrelevant sheet between the fallback
+      // and requested sheets adds no measurable delay and never stalls the outer iterator).
+      if (isFallback || isRequested) {
+        let rowCount = 0;
+
+        for await (const row of worksheetReader) {
+          if (rowCount >= MAX_PREVIEW_ROWS) {
+            if (isFallback) fallback.truncatedRows = true;
+            if (isRequested) requested.truncatedRows = true;
+            break;
+          }
+
+          if (isFallback) collectXlsxRowIntoSheet(row, fallback);
+          if (isRequested) collectXlsxRowIntoSheet(row, requested);
+          rowCount += 1;
+        }
+      }
+
+      if (sheets.length >= MAX_SHEETS && currentIndex >= requestedSheetIndex) {
         break;
       }
     }
@@ -380,9 +419,25 @@ async function buildXlsxPreview(
       return { ok: false, reason: "file_too_large" };
     }
     return { ok: false, reason: "parse_failed" };
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  return { ok: true, sheets, rows, truncatedRows, truncatedColumns };
+  if (sheets.length === 0) {
+    return { ok: false, reason: "parse_failed" };
+  }
+
+  const useFallback = !sawRequestedSheet;
+  const resolved = useFallback ? fallback : requested;
+
+  return {
+    ok: true,
+    sheets,
+    selectedSheetIndex: useFallback ? 0 : requestedSheetIndex,
+    rows: resolved.rows,
+    truncatedRows: resolved.truncatedRows,
+    truncatedColumns: resolved.truncatedColumns,
+  };
 }
 
 export async function readRiskShareSourceHeaderPreview(
@@ -461,14 +516,12 @@ export async function readRiskShareSourceHeaderPreview(
   if (xlsxResult.truncatedColumns) warnings.push("일부 열 또는 셀 내용이 생략되었습니다.");
   if (xlsxResult.sheets.length >= MAX_SHEETS) warnings.push("일부 시트가 목록에서 생략되었을 수 있습니다.");
 
-  const resolvedSheetIndex = xlsxResult.sheets.some((sheet) => sheet.index === safeSheetIndex) ? safeSheetIndex : xlsxResult.sheets[0].index;
-
   return {
     ok: true,
     preview: {
       source: buildSourceSummary(descriptor),
       sheets: xlsxResult.sheets,
-      selectedSheetIndex: resolvedSheetIndex,
+      selectedSheetIndex: xlsxResult.selectedSheetIndex,
       rows: xlsxResult.rows,
       suggestedHeaderRowIndex: computeSuggestedHeaderRowIndex(xlsxResult.rows),
       truncatedRows: xlsxResult.truncatedRows,
