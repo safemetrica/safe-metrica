@@ -8,10 +8,9 @@ import {
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
 
 export const dynamic = "force-dynamic";
-
-const MAX_SIGNATURE_FILE_SIZE_BYTES = 1.5 * 1024 * 1024;
 
 function getFormText(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -21,16 +20,12 @@ function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
 
-function isFile(value: FormDataEntryValue | null): value is File {
-  return value instanceof File && value.size > 0;
-}
-
 async function uploadRepresentativeSignature(
   file: File,
   companyCode: string,
   reportedDate: string,
 ): Promise<string | null> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN || file.size > MAX_SIGNATURE_FILE_SIZE_BYTES) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return null;
   }
 
@@ -96,8 +91,17 @@ export async function POST(req: NextRequest) {
   const submitterLabel = representativeName || "근로자대표";
   const reportedDate = getTodayDateValue();
 
-  const signatureFileEntry = formData.get("signatureFile");
-  const signatureFile = isFile(signatureFileEntry) ? signatureFileEntry : null;
+  const signatureResolution = await resolveOptionalRiskShareSignatureFile(
+    formData.get("signatureFile"),
+  );
+
+  if (!signatureResolution.ok) {
+    return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "error"), req.url), {
+      status: 303,
+    });
+  }
+
+  const signatureFile = signatureResolution.file;
   const signatureUrl = signatureFile
     ? await uploadRepresentativeSignature(signatureFile, tenant.code, reportedDate)
     : null;

@@ -9,10 +9,9 @@ import {
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
 
 export const dynamic = "force-dynamic";
-
-const MAX_SIGNATURE_FILE_SIZE_BYTES = 1.5 * 1024 * 1024;
 
 type ParticipationMode = "monthly" | "prework";
 
@@ -24,17 +23,13 @@ function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
 
-function isFile(value: FormDataEntryValue | null): value is File {
-  return value instanceof File && value.size > 0;
-}
-
 async function uploadWorkerSignature(
   file: File,
   companyCode: string,
   mode: ParticipationMode,
   reportedDate: string,
 ): Promise<string | null> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN || file.size > MAX_SIGNATURE_FILE_SIZE_BYTES) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return null;
   }
 
@@ -130,11 +125,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const signatureResolution = await resolveOptionalRiskShareSignatureFile(
+    formData.get("signatureFile"),
+  );
+
+  if (!signatureResolution.ok) {
+    return NextResponse.redirect(
+      new URL(buildParticipationHref(companyCode, mode, lang, "error"), req.url),
+      { status: 303 }
+    );
+  }
+
   const modeLabel = mode === "monthly" ? "월간 위험성평가 공유확인" : "작업 전 안전확인";
   const confirmationType = mode === "monthly" ? "risk_share_confirm_monthly" : "risk_share_confirm_prework";
   const reportedDate = getTodayDateValue();
-  const signatureFileEntry = formData.get("signatureFile");
-  const signatureFile = isFile(signatureFileEntry) ? signatureFileEntry : null;
+  const signatureFile = signatureResolution.file;
   const signatureUrl = signatureFile
     ? await uploadWorkerSignature(signatureFile, tenant.code, mode, reportedDate)
     : null;
