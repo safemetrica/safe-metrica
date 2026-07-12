@@ -99,7 +99,7 @@ function toRegistryEntry(row: RiskShareSourceRegistryRow): RiskShareSourceRegist
   };
 }
 
-export async function listRiskShareSourcesForOwner(
+async function listRiskShareSourcesByCompanyCode(
   rawCompanyCode: string,
   options?: { limit?: number },
 ): Promise<RiskShareSourceRegistryEntry[]> {
@@ -125,4 +125,18 @@ export async function listRiskShareSourcesForOwner(
   return rows
     .map(toRegistryEntry)
     .filter((entry): entry is RiskShareSourceRegistryEntry => entry !== null);
+}
+
+export async function listRiskShareSourcesForOwner(
+  rawCompanyCode: string,
+  options?: { limit?: number },
+): Promise<RiskShareSourceRegistryEntry[]> {
+  return listRiskShareSourcesByCompanyCode(rawCompanyCode, options);
+}
+
+export async function listRiskShareSourcesForTenant(
+  rawCompanyCode: string,
+  options?: { limit?: number },
+): Promise<RiskShareSourceRegistryEntry[]> {
+  return listRiskShareSourcesByCompanyCode(rawCompanyCode, options);
 }

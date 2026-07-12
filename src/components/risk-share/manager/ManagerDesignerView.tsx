@@ -95,6 +95,8 @@ export type ManagerDesignerViewProps = {
   /** Real last-7-day calendar labels (e.g. "7.5", "오늘"), computed by the route via
    * pure date math — used as the axis when no day-by-day aggregation exists yet. */
   weeklyTrendFallbackLabels?: string[];
+  /** Absent for roles without source-registry access (e.g. owner_internal). */
+  sourceRegistryHref?: string;
 };
 
 const DEFAULT_WEEKLY_LABELS = ["", "", "", "", "", "", ""];
@@ -129,6 +131,7 @@ export default function ManagerDesignerView({
   recentSubmissions,
   safetyResources,
   weeklyTrendFallbackLabels,
+  sourceRegistryHref,
 }: ManagerDesignerViewProps) {
   const hasWeeklyTrend = Boolean(weeklyTrend && weeklyTrend.length > 0);
   const weeklyLabels = hasWeeklyTrend
@@ -224,6 +227,17 @@ export default function ManagerDesignerView({
                 <iconify-icon icon="lucide:calendar-check"></iconify-icon>
                 <span className="nav__txt">월간 안전운영 요약</span>
               </a>
+              {sourceRegistryHref ? (
+                <a
+                  className="nav__item"
+                  href={sourceRegistryHref}
+                  title="위험성평가 원본 관리"
+                  onClick={closeSidebar}
+                >
+                  <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon>
+                  <span className="nav__txt">위험성평가 원본 관리</span>
+                </a>
+              ) : null}
             </div>
           </nav>
 

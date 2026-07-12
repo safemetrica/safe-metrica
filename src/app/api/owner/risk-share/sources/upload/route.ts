@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     sourceDocumentDate,
     sourceFile,
     oidcToken,
+    uploadedBy: "owner_console",
   });
 
   if (!result.ok) {

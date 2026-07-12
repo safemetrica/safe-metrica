@@ -51,6 +51,8 @@ export type RiskShareSourceUploadResult =
   | { ok: true; status: "created"; companyCode: string }
   | { ok: false; reason: RiskShareSourceUploadFailureReason };
 
+export type RiskShareSourceUploadActor = "owner_console" | "tenant_admin" | "tenant_manager";
+
 export type RiskShareSourceUploadInput = {
   companyCode: string;
   sourceTitle: string;
@@ -58,6 +60,7 @@ export type RiskShareSourceUploadInput = {
   sourceDocumentDate: string;
   sourceFile: FormDataEntryValue | null;
   oidcToken: string;
+  uploadedBy: RiskShareSourceUploadActor;
 };
 
 type EligibleTenant = {
@@ -398,7 +401,7 @@ export async function uploadRiskShareSource(
     file_etag: blob.etag,
     storage_provider: "vercel_blob_private",
     storage_access: "private",
-    uploaded_by: "owner_console",
+    uploaded_by: input.uploadedBy,
     uploaded_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     source_document_date: sourceDocumentDate,
