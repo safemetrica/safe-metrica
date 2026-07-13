@@ -23,13 +23,14 @@ function readText(formData: FormData, key: string, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-function readMany(formData: FormData, key: string, maxItems = 200) {
-  return formData
+function readManyUnique(formData: FormData, key: string, maxItems = 200) {
+  const values = formData
     .getAll(key)
     .filter((value): value is string => typeof value === "string")
     .map((value) => value.trim())
-    .filter(Boolean)
-    .slice(0, maxItems);
+    .filter(Boolean);
+
+  return Array.from(new Set(values)).slice(0, maxItems);
 }
 
 function normalizeCompanyCode(value: string) {
@@ -81,8 +82,8 @@ async function fetchAnyCustomerConfirmedShareItem(companyCode: string) {
 }
 
 type CreateVersionLockRpcResult =
-  | { ok: true; id: string; itemCount: number; duplicate: false }
-  | { ok: true; id: null; itemCount: 0; duplicate: boolean }
+  | { ok: true; id: string; itemCount: number; duplicate: false; selectionMismatch: false }
+  | { ok: true; id: null; itemCount: 0; duplicate: boolean; selectionMismatch: boolean }
   | { ok: false };
 
 async function callCreateVersionLockRpc(params: {
@@ -145,14 +146,15 @@ async function callCreateVersionLockRpc(params: {
   }
 
   const duplicate = row.duplicate_lock === true;
+  const selectionMismatch = row.selection_mismatch === true;
   const itemCount = typeof row.item_count === "number" ? row.item_count : 0;
   const id = typeof row.id === "string" && isUuid(row.id) ? row.id : null;
 
-  if (id && !duplicate && itemCount > 0) {
-    return { ok: true, id, itemCount, duplicate: false };
+  if (id && !duplicate && !selectionMismatch && itemCount > 0) {
+    return { ok: true, id, itemCount, duplicate: false, selectionMismatch: false };
   }
 
-  return { ok: true, id: null, itemCount: 0, duplicate };
+  return { ok: true, id: null, itemCount: 0, duplicate, selectionMismatch };
 }
 
 export async function POST(request: NextRequest) {
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest) {
     `${companyCode || "company"} ${lockMonth || "month"} Risk Share Version Lock`;
   const notes = readText(formData, "notes", 500) || null;
   const lockWorkerVisible = formData.get("workerVisible") === "on";
-  const requestedItemIds = readMany(formData, "itemIds").filter(isUuid);
+  const requestedItemIds = readManyUnique(formData, "itemIds").filter(isUuid);
 
   const redirectParams = {
     companyCode,
@@ -222,6 +224,13 @@ export async function POST(request: NextRequest) {
     return buildRedirect(request, {
       ...redirectParams,
       error: "version_lock_month_exists",
+    });
+  }
+
+  if (rpcResult.selectionMismatch) {
+    return buildRedirect(request, {
+      ...redirectParams,
+      error: "version_lock_selection_changed",
     });
   }
 

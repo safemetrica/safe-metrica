@@ -246,6 +246,17 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
   const errorCode = cleanText(readParam(params, "error"), 80);
   const versionLockResult = await fetchVersionLockResult(versionLockId, companyCode);
 
+  // versionLocked=1 in the URL is a client-controlled hint only. The success
+  // headline/badge below only render once the lock row is actually confirmed
+  // to exist for this exact companyCode -- a crafted query with a fake or
+  // stale versionLockId must not be able to show "생성 완료".
+  const lockVerified =
+    versionLocked &&
+    isUuid(versionLockId) &&
+    versionLockResult.status === "ok" &&
+    versionLockResult.lock !== null &&
+    versionLockResult.lock.company_code === companyCode;
+
   const requiredChecks = LOCK_CHECKS.filter((item) => item.required);
   const completedRequiredCount = requiredChecks.filter((item) => getCheckStatus(params, item.key)).length;
   const completedAllCount = LOCK_CHECKS.filter((item) => getCheckStatus(params, item.key)).length;
@@ -279,7 +290,7 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
           </p>
         </section>
 
-        {versionLocked ? (
+        {lockVerified && versionLockResult.lock ? (
           <section className="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-400/10 p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -293,59 +304,47 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
               </span>
             </div>
 
-            {versionLockResult.status === "ok" && versionLockResult.lock ? (
-              <div className="mt-5 grid gap-3 md:grid-cols-4">
-                {[
-                  {
-                    label: "Lock 제목",
-                    value: versionLockResult.lock.lock_title || "제목 확인 필요",
-                  },
-                  {
-                    label: "대상월",
-                    value: versionLockResult.lock.lock_month || "월 확인 필요",
-                  },
-                  {
-                    label: "Lock 항목",
-                    value: `${readNumber(versionLockResult.lock.item_count)}건`,
-                  },
-                  {
-                    label: "근로자 QR 노출",
-                    value: `${readNumber(versionLockResult.lock.worker_visible_count)}건`,
-                  },
-                  {
-                    label: "고객 확인",
-                    value: `${readNumber(versionLockResult.lock.customer_confirmed_count)}건`,
-                  },
-                  {
-                    label: "상태",
-                    value: versionLockResult.lock.lock_status || "상태 확인 필요",
-                  },
-                  {
-                    label: "생성시각",
-                    value: formatKstDateTime(versionLockResult.lock.created_at),
-                  },
-                  {
-                    label: "담당",
-                    value: versionLockResult.lock.locked_by || "Owner",
-                  },
-                ].map((item) => (
-                  <article key={item.label} className="rounded-2xl border border-emerald-300/20 bg-slate-950/40 p-4">
-                    <p className="text-xs font-black text-emerald-200/80">{item.label}</p>
-                    <p className="mt-2 text-sm font-black text-white">{item.value}</p>
-                  </article>
-                ))}
-              </div>
-            ) : versionLockResult.status === "not_found" ? (
-              <p className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm font-bold text-amber-100">
-                Lock ID는 전달됐지만 원장에서 조회되지 않았습니다. Supabase migration과 companyCode를 확인하세요.
-              </p>
-            ) : versionLockResult.status === "failed" ? (
-              <p className="mt-4 rounded-2xl border border-rose-300/30 bg-rose-300/10 p-4 text-sm font-bold text-rose-100">
-                Version Lock 결과 원장 조회가 실패했습니다. 생성 결과가 고객·근로자 화면에 확정 표시되기 전 Supabase 상태를 확인하세요.
-              </p>
-            ) : versionLockId ? (
-              <p className="mt-2 text-xs font-bold text-emerald-200">Lock ID: {versionLockId}</p>
-            ) : null}
+            <div className="mt-5 grid gap-3 md:grid-cols-4">
+              {[
+                {
+                  label: "Lock 제목",
+                  value: versionLockResult.lock.lock_title || "제목 확인 필요",
+                },
+                {
+                  label: "대상월",
+                  value: versionLockResult.lock.lock_month || "월 확인 필요",
+                },
+                {
+                  label: "Lock 항목",
+                  value: `${readNumber(versionLockResult.lock.item_count)}건`,
+                },
+                {
+                  label: "근로자 QR 노출",
+                  value: `${readNumber(versionLockResult.lock.worker_visible_count)}건`,
+                },
+                {
+                  label: "고객 확인",
+                  value: `${readNumber(versionLockResult.lock.customer_confirmed_count)}건`,
+                },
+                {
+                  label: "상태",
+                  value: versionLockResult.lock.lock_status || "상태 확인 필요",
+                },
+                {
+                  label: "생성시각",
+                  value: formatKstDateTime(versionLockResult.lock.created_at),
+                },
+                {
+                  label: "담당",
+                  value: versionLockResult.lock.locked_by || "Owner",
+                },
+              ].map((item) => (
+                <article key={item.label} className="rounded-2xl border border-emerald-300/20 bg-slate-950/40 p-4">
+                  <p className="text-xs font-black text-emerald-200/80">{item.label}</p>
+                  <p className="mt-2 text-sm font-black text-white">{item.value}</p>
+                </article>
+              ))}
+            </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
@@ -361,6 +360,20 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
                 관리자 월별 보관함 확인
               </Link>
             </div>
+          </section>
+        ) : versionLocked ? (
+          <section className="mt-6 rounded-3xl border border-amber-400/30 bg-amber-400/10 p-5">
+            <h2 className="text-lg font-black text-amber-100">Version Lock 생성 결과를 확인할 수 없습니다</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-50">
+              {versionLockResult.status === "not_found"
+                ? "전달된 Lock ID가 원장에서 조회되지 않았습니다. Supabase migration과 companyCode를 확인하세요."
+                : versionLockResult.status === "failed"
+                  ? "Version Lock 원장 조회가 실패했습니다. Supabase 상태를 확인하세요."
+                  : "Version Lock 생성 여부를 원장에서 확인하지 못했습니다."}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-amber-200/80">
+              이 화면은 URL 값만으로 생성 완료를 표시하지 않습니다. 아래에서 companyCode로 다시 조회해 주세요.
+            </p>
           </section>
         ) : null}
 
