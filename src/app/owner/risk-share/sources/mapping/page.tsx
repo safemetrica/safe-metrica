@@ -14,6 +14,7 @@ import {
 import RiskShareSourceColumnMappingForm, {
   type RiskShareSourceColumnMappingFormColumn,
 } from "@/components/risk-share/source/RiskShareSourceColumnMappingForm";
+import { hasRiskShareCandidatesForConfirmedMapping } from "@/lib/risk-share/riskShareSourceCandidateImport";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -141,10 +142,9 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
   const savedStatus = getSingleSearchParam(params.saved) ?? "";
   const savedVersion = parseNonNegativeInt(getSingleSearchParam(params.version));
   const actionErrorCode = getSingleSearchParam(params.actionError) ?? "";
-  const candidateImportStatus = getSingleSearchParam(params.candidateImport) ?? "";
-  const candidateImportInserted = parseNonNegativeInt(getSingleSearchParam(params.inserted));
-  const candidateImportDuplicate = parseNonNegativeInt(getSingleSearchParam(params.duplicate));
-  const candidateImportInvalid = parseNonNegativeInt(getSingleSearchParam(params.invalid));
+  // candidateImport=success on its own is a client-controlled URL query and proves
+  // nothing; it only decides whether to run the DB verification check below.
+  const candidateImportRequested = getSingleSearchParam(params.candidateImport) === "success";
 
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
@@ -253,17 +253,21 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
       ? appliedStatus
       : null;
 
-  const candidateImportSummary =
-    candidateImportStatus === "success"
-      ? {
-          inserted: candidateImportInserted ?? 0,
-          duplicate: candidateImportDuplicate ?? 0,
-          invalid: candidateImportInvalid ?? 0,
-        }
-      : null;
-
   const canCreateCandidates = appliedStatus !== null && appliedStatus.status === "confirmed";
   const candidatesReviewHref = `/owner/risk-share-activation/candidates?companyCode=${encodeURIComponent(companyCode)}&status=pending`;
+
+  // The candidateImport=success query is client-controlled and is only a hint to
+  // check; the banner itself only renders when risk_share_item_candidates actually
+  // has rows for this exact confirmed mapping version + sheet.
+  const candidateImportVerified =
+    candidateImportRequested && canCreateCandidates && appliedStatus
+      ? await hasRiskShareCandidatesForConfirmedMapping({
+          companyCode,
+          sourceId,
+          mappingVersion: appliedStatus.version,
+          sheetIndex: selectedSheetIndex,
+        })
+      : false;
 
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
@@ -305,15 +309,10 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
           staleSavedMapping={staleSavedMapping}
         />
 
-        {candidateImportSummary ? (
+        {candidateImportVerified ? (
           <section className="mt-5 rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-sm leading-6 text-emerald-100">
-            <p className="font-black">원본 행을 검토 후보로 만들었습니다.</p>
-            <p className="mt-2">관리자가 검토·수정한 뒤 다음 단계로 진행합니다.</p>
-            <ul className="mt-3 space-y-1 text-emerald-50">
-              <li>생성 건수: {candidateImportSummary.inserted}건</li>
-              <li>기존 중복 건수: {candidateImportSummary.duplicate}건</li>
-              <li>제외 건수(위험요인 누락): {candidateImportSummary.invalid}건</li>
-            </ul>
+            <p className="font-black">검토 후보 생성 요청을 처리했습니다.</p>
+            <p className="mt-2">실제 생성 결과는 후보 검토함에서 확인해 주세요.</p>
             <Link
               href={candidatesReviewHref}
               className="mt-4 inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"

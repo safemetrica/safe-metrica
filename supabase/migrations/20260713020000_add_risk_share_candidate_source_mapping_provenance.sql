@@ -251,7 +251,7 @@ begin
       null,
       false,
       'pending',
-      true,
+      false,
       false,
       coalesce(rows.raw_payload, '{}'::jsonb),
       p_mapping_version,

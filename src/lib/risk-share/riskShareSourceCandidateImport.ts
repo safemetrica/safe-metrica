@@ -284,3 +284,51 @@ export async function importRiskShareCandidatesFromConfirmedSourceMapping(params
     mappingVersion: mappingRecord.mappingVersion,
   };
 }
+
+/**
+ * Confirms, straight from risk_share_item_candidates, that candidates with
+ * this exact mapping provenance actually exist. A page must call this
+ * before showing any "candidates were created" success state -- a
+ * candidateImport=success URL query alone is client-controlled and proves
+ * nothing on its own.
+ */
+export async function hasRiskShareCandidatesForConfirmedMapping(params: {
+  companyCode: string;
+  sourceId: string;
+  mappingVersion: number;
+  sheetIndex: number;
+}): Promise<boolean> {
+  const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, "");
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return false;
+  }
+
+  const query = new URLSearchParams({
+    select: "id",
+    company_code: `eq.${params.companyCode}`,
+    source_id: `eq.${params.sourceId}`,
+    mapping_version: `eq.${params.mappingVersion}`,
+    sheet_index: `eq.${params.sheetIndex}`,
+    limit: "1",
+  });
+
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_item_candidates?${query.toString()}`, {
+      method: "GET",
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return false;
+
+    const rows = await res.json().catch(() => undefined);
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
