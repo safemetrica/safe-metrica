@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
 
 import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
 import {
@@ -10,6 +9,10 @@ import {
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
+import {
+  deletePrivateRiskShareSignature,
+  uploadPrivateRiskShareSignature,
+} from "@/lib/risk-share/riskShareSignatureBlob";
 
 export const dynamic = "force-dynamic";
 
@@ -21,29 +24,6 @@ function getFormText(formData: FormData, key: string) {
 
 function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
-}
-
-async function uploadWorkerSignature(
-  file: File,
-  companyCode: string,
-  mode: ParticipationMode,
-  reportedDate: string,
-): Promise<string | null> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return null;
-  }
-
-  try {
-    const blob = await put(
-      `risk-share-worker-signature/${companyCode}/${mode}/${reportedDate}/${Date.now()}-signature.png`,
-      file,
-      { access: "public", addRandomSuffix: true },
-    );
-
-    return blob.url;
-  } catch {
-    return null;
-  }
 }
 
 function normalizeCompanyCode(value: string) {
@@ -140,9 +120,24 @@ export async function POST(req: NextRequest) {
   const confirmationType = mode === "monthly" ? "risk_share_confirm_monthly" : "risk_share_confirm_prework";
   const reportedDate = getTodayDateValue();
   const signatureFile = signatureResolution.file;
-  const signatureUrl = signatureFile
-    ? await uploadWorkerSignature(signatureFile, tenant.code, mode, reportedDate)
-    : null;
+  const oidcToken = req.headers.get("x-vercel-oidc-token")?.trim() ?? "";
+
+  let signatureUpload: Awaited<ReturnType<typeof uploadPrivateRiskShareSignature>> | null = null;
+
+  if (signatureFile) {
+    signatureUpload = await uploadPrivateRiskShareSignature(
+      signatureFile,
+      `risk-share-signatures/${tenant.code}/${mode}/${reportedDate}`,
+      oidcToken,
+    );
+
+    if (!signatureUpload.ok) {
+      return NextResponse.redirect(
+        new URL(buildParticipationHref(companyCode, mode, lang, "error"), req.url),
+        { status: 303 }
+      );
+    }
+  }
 
   const result = await insertFieldParticipationSubmissionShadowRecord({
     tenant_code: tenant.code,
@@ -158,7 +153,7 @@ export async function POST(req: NextRequest) {
     status: "접수",
     notion_page_id: null,
     notion_url: null,
-    file_urls: signatureUrl ? [signatureUrl] : [],
+    file_urls: [],
     raw_payload: {
       source: "risk_share_participation_submit_v1",
       source_channel: "risk_share_participation_submit_v1",
@@ -173,13 +168,25 @@ export async function POST(req: NextRequest) {
       checked_items: checkedItems,
       checked_count: checkedCount,
       all_checked: allChecked,
-      signature_present: Boolean(signatureUrl),
-      signature_url: signatureUrl,
+      signature_present: Boolean(signatureUpload?.ok),
+      ...(signatureUpload?.ok
+        ? {
+            signature_storage_provider: "vercel_blob_private",
+            signature_storage_access: "private",
+            signature_pathname: signatureUpload.pathname,
+            signature_content_type: signatureUpload.contentType,
+            signature_size_bytes: signatureUpload.sizeBytes,
+          }
+        : {}),
       submitted_at: new Date().toISOString(),
     },
   });
 
   if (!result.ok) {
+    if (signatureUpload?.ok) {
+      await deletePrivateRiskShareSignature(signatureUpload.cleanupUrl, oidcToken);
+    }
+
     return NextResponse.redirect(
       new URL(buildParticipationHref(companyCode, mode, lang, "error"), req.url),
       { status: 303 }

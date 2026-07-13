@@ -356,7 +356,9 @@ function getUploadedFiles(row: ExportRow) {
 }
 
 function getEvidenceCount(row: ExportRow) {
-  return getFileUrls(row).length + getUploadedFiles(row).length;
+  const fileCount = getFileUrls(row).length + getUploadedFiles(row).length;
+
+  return hasRiskShareSignatureEvidence(row) ? Math.max(fileCount, 1) : fileCount;
 }
 
 function hasEvidence(row: ExportRow) {
@@ -452,6 +454,26 @@ function getRawPayload(row: ExportRow): ExportRow {
 
 function getPayloadString(row: ExportRow, keys: string[]) {
   return getString(getRawPayload(row), keys);
+}
+
+const RISK_SHARE_SIGNATURE_SOURCES = new Set([
+  "risk_share_participation_submit_v1",
+  "risk_share_representative_confirmation_v1",
+]);
+
+function isRiskShareSignatureSubmission(row: ExportRow) {
+  return RISK_SHARE_SIGNATURE_SOURCES.has(getPayloadString(row, ["source"]));
+}
+
+function hasRiskShareSignatureEvidence(row: ExportRow) {
+  if (!isRiskShareSignatureSubmission(row)) {
+    return false;
+  }
+
+  return (
+    getBoolean(getRawPayload(row), ["signature_present"]) ||
+    Boolean(getPayloadString(row, ["signature_url"]))
+  );
 }
 
 function getIdentityMode(row: ExportRow) {
@@ -902,6 +924,10 @@ function buildEvidenceManifestRows(
   }
 
   for (const row of fieldRows) {
+    if (isRiskShareSignatureSubmission(row)) {
+      continue;
+    }
+
     const eventDate = getString(row, ["reported_date", "submitted_at", "created_at"]);
     const submissionType = getSubmissionType(row);
 
