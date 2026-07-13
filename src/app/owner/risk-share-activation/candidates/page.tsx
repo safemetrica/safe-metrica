@@ -33,6 +33,9 @@ type CandidateRow = {
   reviewer_note?: string;
   worker_visible?: boolean;
   customer_confirmed?: boolean;
+  mapping_version?: number;
+  sheet_index?: number;
+  source_row_number?: number;
 };
 
 const REVIEWER_STATUS_LABELS: Record<string, string> = {
@@ -125,7 +128,7 @@ async function fetchCandidates(companyCode: string, status: string) {
 
   const query = new URLSearchParams({
     select:
-      "id,created_at,source_id,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,category,source_page,source_row,confidence,ai_generated,reviewer_status,reviewer_note,worker_visible,customer_confirmed",
+      "id,created_at,source_id,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,category,source_page,source_row,confidence,ai_generated,reviewer_status,reviewer_note,worker_visible,customer_confirmed,mapping_version,sheet_index,source_row_number",
     company_code: `eq.${companyCode}`,
     order: "created_at.desc",
     limit: "100",
@@ -331,6 +334,12 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
                       <p>생성일: {formatDate(candidate.created_at)}</p>
                       <p>신뢰도: {formatConfidence(candidate.confidence)}</p>
                       <p>Source: {candidate.source_page ? `${candidate.source_page}p` : "위치 미표시"} {candidate.source_row ? `/ ${candidate.source_row}` : ""}</p>
+                      {typeof candidate.mapping_version === "number" ? (
+                        <p>
+                          매핑 v{candidate.mapping_version} · sheet {candidate.sheet_index ?? "-"} · row{" "}
+                          {candidate.source_row_number ?? "-"}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
 

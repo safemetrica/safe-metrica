@@ -14,6 +14,7 @@ import {
 import RiskShareSourceColumnMappingForm, {
   type RiskShareSourceColumnMappingFormColumn,
 } from "@/components/risk-share/source/RiskShareSourceColumnMappingForm";
+import { hasRiskShareCandidatesForConfirmedMapping } from "@/lib/risk-share/riskShareSourceCandidateImport";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -81,6 +82,13 @@ const SAVE_ACTION_ERROR_MESSAGES: Record<string, string> = {
   invalid_intent: "저장 방식을 확인할 수 없습니다.",
   access_denied: "접근 권한이 없습니다.",
   save_failed: "저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  confirmed_mapping_required: "확정된 열 매핑이 필요합니다. 매핑을 확정한 뒤 다시 시도해 주세요.",
+  source_not_found: "등록된 원본을 찾을 수 없습니다.",
+  source_read_failed: "원본 파일을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  unsupported_file: "이번 단계에서는 XLSX와 CSV만 지원합니다.",
+  source_row_limit_exceeded: "원본 데이터 행이 처리 가능한 범위를 초과합니다.",
+  no_candidate_rows: "검토 후보로 만들 수 있는 행이 없습니다. 위험요인 열의 값을 확인해 주세요.",
+  candidate_import_failed: "검토 후보 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.",
 };
 
 function ErrorScreen({ companyCode, message }: { companyCode: string; message: string }) {
@@ -134,6 +142,9 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
   const savedStatus = getSingleSearchParam(params.saved) ?? "";
   const savedVersion = parseNonNegativeInt(getSingleSearchParam(params.version));
   const actionErrorCode = getSingleSearchParam(params.actionError) ?? "";
+  // candidateImport=success on its own is a client-controlled URL query and proves
+  // nothing; it only decides whether to run the DB verification check below.
+  const candidateImportRequested = getSingleSearchParam(params.candidateImport) === "success";
 
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
@@ -242,6 +253,22 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
       ? appliedStatus
       : null;
 
+  const canCreateCandidates = appliedStatus !== null && appliedStatus.status === "confirmed";
+  const candidatesReviewHref = `/owner/risk-share-activation/candidates?companyCode=${encodeURIComponent(companyCode)}&status=pending`;
+
+  // The candidateImport=success query is client-controlled and is only a hint to
+  // check; the banner itself only renders when risk_share_item_candidates actually
+  // has rows for this exact confirmed mapping version + sheet.
+  const candidateImportVerified =
+    candidateImportRequested && canCreateCandidates && appliedStatus
+      ? await hasRiskShareCandidatesForConfirmedMapping({
+          companyCode,
+          sourceId,
+          mappingVersion: appliedStatus.version,
+          sheetIndex: selectedSheetIndex,
+        })
+      : false;
+
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
       <section className="mx-auto max-w-5xl">
@@ -281,6 +308,41 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
           appliedStatus={appliedStatus}
           staleSavedMapping={staleSavedMapping}
         />
+
+        {candidateImportVerified ? (
+          <section className="mt-5 rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-sm leading-6 text-emerald-100">
+            <p className="font-black">검토 후보 생성 요청을 처리했습니다.</p>
+            <p className="mt-2">실제 생성 결과는 후보 검토함에서 확인해 주세요.</p>
+            <Link
+              href={candidatesReviewHref}
+              className="mt-4 inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
+            >
+              후보 검토함으로 이동
+            </Link>
+          </section>
+        ) : null}
+
+        {canCreateCandidates ? (
+          <section className="mt-5 rounded-3xl border border-slate-800 bg-slate-900/80 p-6">
+            <p className="text-sm font-black text-white">검토 후보 만들기</p>
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              확정된 열 매핑을 기준으로 원본 데이터 행을 읽어 기존 후보 검토함에 검토 대기 상태로
+              추가합니다. 이 작업은 위험성평가를 확정하거나 공유본을 생성하지 않습니다.
+            </p>
+            <form action="/api/owner/risk-share/sources/candidates" method="post" className="mt-4">
+              <input type="hidden" name="companyCode" value={companyCode} />
+              <input type="hidden" name="sourceId" value={sourceId} />
+              <input type="hidden" name="sheetIndex" value={String(selectedSheetIndex)} />
+              <input type="hidden" name="headerRowIndex" value={String(headerRowIndex)} />
+              <button
+                type="submit"
+                className="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-5 py-3 text-sm font-black text-emerald-100 hover:bg-emerald-500/20"
+              >
+                검토 후보 만들기
+              </button>
+            </form>
+          </section>
+        ) : null}
       </section>
     </main>
   );
