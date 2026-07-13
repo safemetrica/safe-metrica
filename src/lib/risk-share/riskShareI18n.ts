@@ -107,6 +107,13 @@ type ParticipationCopy = {
   submittedBanner: string;
   errorBanner: string;
   missingIdentifierBanner: string;
+  workerNameLabel: string;
+  workerNamePlaceholder: string;
+  workerAffiliationLabel: string;
+  workerAffiliationPlaceholder: string;
+  workerIdentifierLabel: string;
+  workerIdentifierPlaceholder: string;
+  workerIdentifierHelp: string;
 };
 
 type AnonymousCopy = {
@@ -275,6 +282,13 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       submittedBanner: "제출이 완료되었습니다. 확인해 주셔서 감사합니다.",
       errorBanner: "저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
       missingIdentifierBanner: "확인번호를 입력해 주세요.",
+      workerNameLabel: "이름",
+      workerNamePlaceholder: "성명을 입력해 주세요",
+      workerAffiliationLabel: "소속 · 작업구역",
+      workerAffiliationPlaceholder: "예: 생산팀 / 포장라인",
+      workerIdentifierLabel: "확인번호",
+      workerIdentifierPlaceholder: "휴대폰 뒤 4자리 또는 사번",
+      workerIdentifierHelp: "동명이인 구분을 위한 확인번호입니다. 전체 전화번호는 입력하지 마세요.",
     },
     anonymous: {
       heroTitle: "익명 의견함",
@@ -429,6 +443,13 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       submittedBanner: "Your submission is complete. Thank you for checking in.",
       errorBanner: "Something went wrong while saving. Please try again in a moment.",
       missingIdentifierBanner: "Please enter your ID number.",
+      workerNameLabel: "Name",
+      workerNamePlaceholder: "Enter your name",
+      workerAffiliationLabel: "Team · work area",
+      workerAffiliationPlaceholder: "e.g. Production team / Packing line",
+      workerIdentifierLabel: "ID number",
+      workerIdentifierPlaceholder: "Last 4 digits of phone or employee number",
+      workerIdentifierHelp: "Used only to tell apart people with the same name. Do not enter your full phone number.",
     },
     anonymous: {
       heroTitle: "Anonymous box",
