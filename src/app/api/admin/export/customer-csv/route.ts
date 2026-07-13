@@ -454,6 +454,15 @@ function getPayloadString(row: ExportRow, keys: string[]) {
   return getString(getRawPayload(row), keys);
 }
 
+const RISK_SHARE_SIGNATURE_SOURCES = new Set([
+  "risk_share_participation_submit_v1",
+  "risk_share_representative_confirmation_v1",
+]);
+
+function isRiskShareSignatureSubmission(row: ExportRow) {
+  return RISK_SHARE_SIGNATURE_SOURCES.has(getPayloadString(row, ["source"]));
+}
+
 function getIdentityMode(row: ExportRow) {
   const mode =
     getString(row, ["identity_mode", "identityMode"]) ||
@@ -902,6 +911,10 @@ function buildEvidenceManifestRows(
   }
 
   for (const row of fieldRows) {
+    if (isRiskShareSignatureSubmission(row)) {
+      continue;
+    }
+
     const eventDate = getString(row, ["reported_date", "submitted_at", "created_at"]);
     const submissionType = getSubmissionType(row);
 

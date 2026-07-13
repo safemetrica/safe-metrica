@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
 
 import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
 import {
@@ -9,6 +8,10 @@ import {
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
+import {
+  deletePrivateRiskShareSignature,
+  uploadPrivateRiskShareSignature,
+} from "@/lib/risk-share/riskShareSignatureBlob";
 
 export const dynamic = "force-dynamic";
 
@@ -18,28 +21,6 @@ function getFormText(formData: FormData, key: string) {
 
 function getFormChecked(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
-}
-
-async function uploadRepresentativeSignature(
-  file: File,
-  companyCode: string,
-  reportedDate: string,
-): Promise<string | null> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return null;
-  }
-
-  try {
-    const blob = await put(
-      `risk-share-representative-signature/${companyCode}/${reportedDate}/${Date.now()}-signature.png`,
-      file,
-      { access: "public", addRandomSuffix: true },
-    );
-
-    return blob.url;
-  } catch {
-    return null;
-  }
 }
 
 function normalizeCompanyCode(value: string) {
@@ -102,9 +83,23 @@ export async function POST(req: NextRequest) {
   }
 
   const signatureFile = signatureResolution.file;
-  const signatureUrl = signatureFile
-    ? await uploadRepresentativeSignature(signatureFile, tenant.code, reportedDate)
-    : null;
+  const oidcToken = req.headers.get("x-vercel-oidc-token")?.trim() ?? "";
+
+  let signatureUpload: Awaited<ReturnType<typeof uploadPrivateRiskShareSignature>> | null = null;
+
+  if (signatureFile) {
+    signatureUpload = await uploadPrivateRiskShareSignature(
+      signatureFile,
+      `risk-share-signatures/${tenant.code}/representative/${reportedDate}`,
+      oidcToken,
+    );
+
+    if (!signatureUpload.ok) {
+      return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "error"), req.url), {
+        status: 303,
+      });
+    }
+  }
 
   const result = await insertFieldParticipationSubmissionShadowRecord({
     tenant_code: tenant.code,
@@ -128,12 +123,24 @@ export async function POST(req: NextRequest) {
       opinion,
       confirmed,
       lang,
-      signature_present: Boolean(signatureUrl),
-      signature_url: signatureUrl,
+      signature_present: Boolean(signatureUpload?.ok),
+      ...(signatureUpload?.ok
+        ? {
+            signature_storage_provider: "vercel_blob_private",
+            signature_storage_access: "private",
+            signature_pathname: signatureUpload.pathname,
+            signature_content_type: signatureUpload.contentType,
+            signature_size_bytes: signatureUpload.sizeBytes,
+          }
+        : {}),
     },
   });
 
   if (!result.ok) {
+    if (signatureUpload?.ok) {
+      await deletePrivateRiskShareSignature(signatureUpload.cleanupUrl, oidcToken);
+    }
+
     return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "error"), req.url), {
       status: 303,
     });
