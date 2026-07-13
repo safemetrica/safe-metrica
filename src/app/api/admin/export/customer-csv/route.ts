@@ -356,7 +356,9 @@ function getUploadedFiles(row: ExportRow) {
 }
 
 function getEvidenceCount(row: ExportRow) {
-  return getFileUrls(row).length + getUploadedFiles(row).length;
+  const fileCount = getFileUrls(row).length + getUploadedFiles(row).length;
+
+  return hasRiskShareSignatureEvidence(row) ? Math.max(fileCount, 1) : fileCount;
 }
 
 function hasEvidence(row: ExportRow) {
@@ -461,6 +463,17 @@ const RISK_SHARE_SIGNATURE_SOURCES = new Set([
 
 function isRiskShareSignatureSubmission(row: ExportRow) {
   return RISK_SHARE_SIGNATURE_SOURCES.has(getPayloadString(row, ["source"]));
+}
+
+function hasRiskShareSignatureEvidence(row: ExportRow) {
+  if (!isRiskShareSignatureSubmission(row)) {
+    return false;
+  }
+
+  return (
+    getBoolean(getRawPayload(row), ["signature_present"]) ||
+    Boolean(getPayloadString(row, ["signature_url"]))
+  );
 }
 
 function getIdentityMode(row: ExportRow) {
