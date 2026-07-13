@@ -379,6 +379,56 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
                     <input type="hidden" name="candidateId" value={candidate.id ?? ""} />
                     <input type="hidden" name="companyCode" value={companyCode} />
 
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="block">
+                        <span className="text-xs font-black text-slate-400">작업명 (task_name)</span>
+                        <input
+                          name="taskName"
+                          defaultValue={candidate.task_name ?? ""}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black text-slate-400">위험도 (risk_level, 원문 유지 권장)</span>
+                        <input
+                          name="riskLevel"
+                          defaultValue={candidate.risk_level ?? ""}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+                        />
+                      </label>
+                      <label className="block md:col-span-2">
+                        <span className="text-xs font-black text-slate-400">위험요인 (hazard) *</span>
+                        <textarea
+                          name="hazard"
+                          rows={2}
+                          defaultValue={candidate.hazard ?? ""}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black text-slate-400">현재조치 (current_controls)</span>
+                        <textarea
+                          name="currentControls"
+                          rows={2}
+                          defaultValue={candidate.current_controls ?? ""}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black text-slate-400">개선대책 (improvement_plan)</span>
+                        <textarea
+                          name="improvementPlan"
+                          rows={2}
+                          defaultValue={candidate.improvement_plan ?? ""}
+                          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-cyan-400"
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[11px] leading-5 text-slate-500">
+                      승인·수정 후 승인 시 작업명과 위험요인은 비어 있을 수 없습니다. 위험도는 원본 문자열을
+                      그대로 유지하거나 필요한 경우에만 수정하세요.
+                    </p>
+
                     <label className="block">
                       <span className="text-xs font-black text-slate-400">Owner 검토 메모</span>
                       <input

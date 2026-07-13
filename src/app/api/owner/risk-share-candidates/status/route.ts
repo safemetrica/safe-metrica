@@ -1,24 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  insertRiskShareCandidateReviewEventRecord,
-  selectSupabaseExportRows,
-  updateRiskShareItemCandidateReviewStatus,
-  type RiskShareItemCandidateReviewerStatus,
-} from "@/lib/supabaseServer";
+import type { RiskShareItemCandidateReviewerStatus } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-type CandidateRow = {
-  id?: string;
-  source_id?: string;
-  company_code?: string;
-  company_name?: string;
-  reviewer_status?: RiskShareItemCandidateReviewerStatus;
-  worker_visible?: boolean;
-  customer_confirmed?: boolean;
-};
 
 const REVIEWER_STATUSES = new Set<RiskShareItemCandidateReviewerStatus>([
   "pending",
@@ -62,27 +47,79 @@ function buildRedirect(request: NextRequest, path: string, params: Record<string
   return NextResponse.redirect(url);
 }
 
-async function findCandidate(candidateId: string, companyCode: string) {
-  const query = new URLSearchParams({
-    select: "id,source_id,company_code,company_name,reviewer_status,worker_visible,customer_confirmed",
-    id: `eq.${candidateId}`,
-    company_code: `eq.${companyCode}`,
-    limit: "1",
-  });
+type ReviewCandidateRpcResult =
+  | { ok: true; result: "ok"; id: string }
+  | { ok: true; result: "not_found" | "missing_required_fields" }
+  | { ok: false };
 
-  const rows = await selectSupabaseExportRows<CandidateRow>("risk_share_item_candidates", query);
-  return rows[0] ?? null;
-}
+async function callReviewCandidateRpc(params: {
+  candidateId: string;
+  companyCode: string;
+  reviewerStatus: RiskShareItemCandidateReviewerStatus;
+  reviewerNote: string | null;
+  taskName: string;
+  hazard: string;
+  currentControls: string | null;
+  improvementPlan: string | null;
+  riskLevel: string | null;
+}): Promise<ReviewCandidateRpcResult> {
+  const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, "");
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-async function preflightCandidateReviewEventsTable(candidateId: string, companyCode: string) {
-  const query = new URLSearchParams({
-    select: "id",
-    candidate_id: `eq.${candidateId}`,
-    company_code: `eq.${companyCode}`,
-    limit: "1",
-  });
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return { ok: false };
+  }
 
-  await selectSupabaseExportRows("risk_share_candidate_review_events", query);
+  let res: Response;
+
+  try {
+    res = await fetch(`${supabaseUrl}/rest/v1/rpc/review_risk_share_item_candidate`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        p_candidate_id: params.candidateId,
+        p_company_code: params.companyCode,
+        p_reviewer_status: params.reviewerStatus,
+        p_reviewer_note: params.reviewerNote,
+        p_task_name: params.taskName,
+        p_hazard: params.hazard,
+        p_current_controls: params.currentControls,
+        p_improvement_plan: params.improvementPlan,
+        p_risk_level: params.riskLevel,
+        p_actor_type: "owner",
+        p_actor_label: "Owner",
+      }),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false };
+  }
+
+  if (!res.ok) {
+    return { ok: false };
+  }
+
+  const data = await res.json().catch(() => undefined);
+  const row = Array.isArray(data) ? data[0] : undefined;
+
+  if (!row || typeof row.result !== "string") {
+    return { ok: false };
+  }
+
+  if (row.result === "ok" && typeof row.id === "string" && isUuid(row.id)) {
+    return { ok: true, result: "ok", id: row.id };
+  }
+
+  if (row.result === "not_found" || row.result === "missing_required_fields") {
+    return { ok: true, result: row.result };
+  }
+
+  return { ok: false };
 }
 
 export async function POST(request: NextRequest) {
@@ -114,78 +151,43 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  let candidate: CandidateRow | null = null;
-
-  try {
-    candidate = await findCandidate(candidateId, companyCode);
-  } catch {
-    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
-      ...redirectParams,
-      error: "candidate_lookup_failed",
-    });
-  }
-
-  if (!candidate) {
-    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
-      ...redirectParams,
-      error: "candidate_not_found",
-    });
-  }
-
-  try {
-    await preflightCandidateReviewEventsTable(candidateId, companyCode);
-  } catch {
-    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
-      ...redirectParams,
-      error: "review_event_table_unavailable",
-    });
-  }
-
   const reviewerNote = readText(formData, "reviewerNote", 500) || null;
-  const workerVisible = formData.get("workerVisible") === "on";
-  const customerConfirmed = formData.get("customerConfirmed") === "on";
-  const previousStatus = candidate.reviewer_status ?? "pending";
+  const taskName = readText(formData, "taskName", 200);
+  const hazard = readText(formData, "hazard", 500);
+  const currentControls = readText(formData, "currentControls", 800) || null;
+  const improvementPlan = readText(formData, "improvementPlan", 800) || null;
+  const riskLevel = readText(formData, "riskLevel", 40) || null;
 
-  const result = await updateRiskShareItemCandidateReviewStatus(candidateId, companyCode, {
-    reviewer_status: reviewerStatus,
-    reviewer_note: reviewerNote,
-    worker_visible: workerVisible,
-    customer_confirmed: customerConfirmed,
+  const rpcResult = await callReviewCandidateRpc({
+    candidateId,
+    companyCode,
+    reviewerStatus,
+    reviewerNote,
+    taskName,
+    hazard,
+    currentControls,
+    improvementPlan,
+    riskLevel,
   });
 
-  if (!result.ok) {
+  if (!rpcResult.ok) {
     return buildRedirect(request, "/owner/risk-share-activation/candidates", {
       ...redirectParams,
       error: "status_update_failed",
     });
   }
 
-  const eventResult = await insertRiskShareCandidateReviewEventRecord({
-    candidate_id: candidateId,
-    source_id: candidate.source_id ?? null,
-    company_code: companyCode,
-    company_name: candidate.company_name ?? null,
-    previous_status: previousStatus,
-    next_status: reviewerStatus,
-    reviewer_note: reviewerNote,
-    actor_type: "owner",
-    actor_label: "Owner",
-    worker_visible: workerVisible,
-    customer_confirmed: customerConfirmed,
-    event_type: "status_change",
-    raw_payload: {
-      source: "owner_candidate_status_update_v1",
-      changedBy: "owner",
-      previousStatus,
-      nextStatus: reviewerStatus,
-      changedAt: new Date().toISOString(),
-    },
-  });
-
-  if (!eventResult.ok) {
+  if (rpcResult.result === "not_found") {
     return buildRedirect(request, "/owner/risk-share-activation/candidates", {
       ...redirectParams,
-      error: "review_event_insert_failed",
+      error: "candidate_not_found",
+    });
+  }
+
+  if (rpcResult.result === "missing_required_fields") {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "candidate_missing_required_fields",
     });
   }
 

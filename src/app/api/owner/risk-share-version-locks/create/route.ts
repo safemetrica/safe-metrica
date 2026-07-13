@@ -1,10 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  insertRiskShareVersionLockRecord,
-  selectSupabaseExportRows,
-  updateRiskShareItemsForVersionLock,
-} from "@/lib/supabaseServer";
+import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -15,15 +11,6 @@ type ShareItemRow = {
   company_name?: string | null;
   site_name?: string | null;
   source_title?: string | null;
-  share_status?: string | null;
-  customer_check_status?: string | null;
-  customer_confirmed?: boolean | null;
-  worker_visible?: boolean | null;
-  version_lock_id?: string | null;
-};
-
-type VersionLockInsertData = {
-  id?: string;
 };
 
 function isOwnerTokenValid(ownerToken?: string) {
@@ -36,13 +23,14 @@ function readText(formData: FormData, key: string, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-function readMany(formData: FormData, key: string, maxItems = 200) {
-  return formData
+function readManyUnique(formData: FormData, key: string, maxItems = 200) {
+  const values = formData
     .getAll(key)
     .filter((value): value is string => typeof value === "string")
     .map((value) => value.trim())
-    .filter(Boolean)
-    .slice(0, maxItems);
+    .filter(Boolean);
+
+  return Array.from(new Set(values)).slice(0, maxItems);
 }
 
 function normalizeCompanyCode(value: string) {
@@ -73,26 +61,100 @@ function buildRedirect(request: NextRequest, params: Record<string, string>) {
   return NextResponse.redirect(url);
 }
 
-function extractInsertedLockId(data: unknown) {
-  if (!Array.isArray(data)) return "";
-  const row = data[0] as VersionLockInsertData | undefined;
-  return typeof row?.id === "string" && isUuid(row.id) ? row.id : "";
-}
-
-async function fetchEligibleShareItems(companyCode: string) {
+// Best-effort only: used to pre-fill company_name/site_name/source_title
+// fallback display text if the form did not supply them. The actual item
+// selection and locking decision is made inside create_risk_share_version_lock,
+// not from this read.
+async function fetchAnyCustomerConfirmedShareItem(companyCode: string) {
   const query = new URLSearchParams({
-    select:
-      "id,company_code,company_name,site_name,source_title,share_status,customer_check_status,customer_confirmed,worker_visible,version_lock_id",
+    select: "id,company_code,company_name,site_name,source_title",
     company_code: `eq.${companyCode}`,
     share_status: "eq.customer_confirmed",
     customer_check_status: "eq.confirmed",
     customer_confirmed: "eq.true",
     version_lock_id: "is.null",
     order: "created_at.asc",
-    limit: "200",
+    limit: "1",
   });
 
-  return selectSupabaseExportRows<ShareItemRow>("risk_share_items", query);
+  const rows = await selectSupabaseExportRows<ShareItemRow>("risk_share_items", query);
+  return rows[0] ?? null;
+}
+
+type CreateVersionLockRpcResult =
+  | { ok: true; id: string; itemCount: number; duplicate: false; selectionMismatch: false }
+  | { ok: true; id: null; itemCount: 0; duplicate: boolean; selectionMismatch: boolean }
+  | { ok: false };
+
+async function callCreateVersionLockRpc(params: {
+  companyCode: string;
+  companyName: string | null;
+  siteName: string | null;
+  sourceTitle: string | null;
+  lockTitle: string;
+  lockMonth: string;
+  notes: string | null;
+  workerVisible: boolean;
+  itemIds: string[];
+  lockedBy: string;
+}): Promise<CreateVersionLockRpcResult> {
+  const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, "");
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return { ok: false };
+  }
+
+  let res: Response;
+
+  try {
+    res = await fetch(`${supabaseUrl}/rest/v1/rpc/create_risk_share_version_lock`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        p_company_code: params.companyCode,
+        p_company_name: params.companyName,
+        p_site_name: params.siteName,
+        p_source_title: params.sourceTitle,
+        p_lock_title: params.lockTitle,
+        p_lock_month: params.lockMonth,
+        p_notes: params.notes,
+        p_worker_visible: params.workerVisible,
+        p_item_ids: params.itemIds,
+        p_locked_by: params.lockedBy,
+      }),
+      cache: "no-store",
+    });
+  } catch {
+    return { ok: false };
+  }
+
+  if (!res.ok) {
+    return { ok: false };
+  }
+
+  const data = await res.json().catch(() => undefined);
+  const row = Array.isArray(data) ? data[0] : undefined;
+
+  if (!row) {
+    return { ok: false };
+  }
+
+  const duplicate = row.duplicate_lock === true;
+  const selectionMismatch = row.selection_mismatch === true;
+  const itemCount = typeof row.item_count === "number" ? row.item_count : 0;
+  const id = typeof row.id === "string" && isUuid(row.id) ? row.id : null;
+
+  if (id && !duplicate && !selectionMismatch && itemCount > 0) {
+    return { ok: true, id, itemCount, duplicate: false, selectionMismatch: false };
+  }
+
+  return { ok: true, id: null, itemCount: 0, duplicate, selectionMismatch };
 }
 
 export async function POST(request: NextRequest) {
@@ -114,7 +176,7 @@ export async function POST(request: NextRequest) {
     `${companyCode || "company"} ${lockMonth || "month"} Risk Share Version Lock`;
   const notes = readText(formData, "notes", 500) || null;
   const lockWorkerVisible = formData.get("workerVisible") === "on";
-  const requestedItemIds = readMany(formData, "itemIds").filter(isUuid);
+  const requestedItemIds = readManyUnique(formData, "itemIds").filter(isUuid);
 
   const redirectParams = {
     companyCode,
@@ -129,93 +191,59 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  let eligibleItems: ShareItemRow[] = [];
+  let fallbackItem: ShareItemRow | null = null;
 
   try {
-    eligibleItems = await fetchEligibleShareItems(companyCode);
+    fallbackItem = await fetchAnyCustomerConfirmedShareItem(companyCode);
   } catch {
-    return buildRedirect(request, {
-      ...redirectParams,
-      error: "version_lock_items_lookup_failed",
-    });
+    // Non-fatal: fallback display text only. The RPC below independently
+    // re-checks for eligible items and is the actual source of truth.
   }
 
-  const selectedItems =
-    requestedItemIds.length > 0
-      ? eligibleItems.filter((item) => typeof item.id === "string" && requestedItemIds.includes(item.id))
-      : eligibleItems;
-
-  const selectedItemIds = selectedItems
-    .map((item) => item.id)
-    .filter((id): id is string => typeof id === "string" && isUuid(id));
-
-  if (selectedItemIds.length === 0) {
-    return buildRedirect(request, {
-      ...redirectParams,
-      error: "no_customer_confirmed_items",
-    });
-  }
-
-  const now = new Date().toISOString();
-  const fallbackCompanyName = companyName ?? selectedItems[0]?.company_name ?? null;
-  const fallbackSiteName = siteName ?? selectedItems[0]?.site_name ?? null;
-  const fallbackSourceTitle = sourceTitle ?? selectedItems[0]?.source_title ?? null;
-
-  const lockResult = await insertRiskShareVersionLockRecord({
-    company_code: companyCode,
-    company_name: fallbackCompanyName,
-    site_name: fallbackSiteName,
-    source_title: fallbackSourceTitle,
-    lock_title: lockTitle,
-    lock_month: lockMonth,
-    item_count: selectedItemIds.length,
-    customer_confirmed_count: selectedItemIds.length,
-    worker_visible_count: lockWorkerVisible ? selectedItemIds.length : 0,
-    lock_status: "active",
-    locked_by: "Owner",
+  const rpcResult = await callCreateVersionLockRpc({
+    companyCode,
+    companyName: companyName ?? fallbackItem?.company_name ?? null,
+    siteName: siteName ?? fallbackItem?.site_name ?? null,
+    sourceTitle: sourceTitle ?? fallbackItem?.source_title ?? null,
+    lockTitle,
+    lockMonth,
     notes,
-    raw_payload: {
-      source: "owner_version_lock_create_v1",
-      selectedItemCount: selectedItemIds.length,
-      workerVisible: lockWorkerVisible,
-      createdAt: now,
-    },
+    workerVisible: lockWorkerVisible,
+    itemIds: requestedItemIds,
+    lockedBy: "Owner",
   });
 
-  if (!lockResult.ok) {
+  if (!rpcResult.ok) {
     return buildRedirect(request, {
       ...redirectParams,
       error: "version_lock_create_failed",
     });
   }
 
-  const versionLockId = extractInsertedLockId(lockResult.data);
-
-  if (!versionLockId) {
+  if (rpcResult.duplicate) {
     return buildRedirect(request, {
       ...redirectParams,
-      error: "version_lock_id_missing",
+      error: "version_lock_month_exists",
     });
   }
 
-  const updateResult = await updateRiskShareItemsForVersionLock(selectedItemIds, companyCode, {
-    share_status: "locked",
-    version_lock_id: versionLockId,
-    worker_visible: lockWorkerVisible,
-    version_locked_at: now,
-    updated_at: now,
-  });
-
-  if (!updateResult.ok) {
+  if (rpcResult.selectionMismatch) {
     return buildRedirect(request, {
       ...redirectParams,
-      error: "version_lock_items_update_failed",
+      error: "version_lock_selection_changed",
+    });
+  }
+
+  if (!rpcResult.id) {
+    return buildRedirect(request, {
+      ...redirectParams,
+      error: "no_customer_confirmed_items",
     });
   }
 
   return buildRedirect(request, {
     ...redirectParams,
     versionLocked: "1",
-    versionLockId,
+    versionLockId: rpcResult.id,
   });
 }
