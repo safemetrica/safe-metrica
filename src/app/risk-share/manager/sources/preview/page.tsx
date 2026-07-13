@@ -184,12 +184,29 @@ export default async function RiskShareManagerSourcePreviewPage({
             </p>
           </div>
 
-          <a
-            href={sourcesHref}
-            className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
-          >
-            관리자 원본 목록으로 돌아가기
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={buildRiskShareLangHref(
+                "/risk-share/manager/sources/mapping",
+                {
+                  company: selectedTenantCode,
+                  sourceId,
+                  sheet: String(preview.selectedSheetIndex),
+                  headerRow: String(preview.suggestedHeaderRowIndex ?? 0),
+                },
+                lang,
+              )}
+              className="inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
+            >
+              열 매핑
+            </a>
+            <a
+              href={sourcesHref}
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
+            >
+              관리자 원본 목록으로 돌아가기
+            </a>
+          </div>
         </div>
 
         {preview.sheets.length > 1 ? (
