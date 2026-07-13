@@ -478,6 +478,14 @@ export type RiskShareItemCandidateStatusUpdateRecord = {
   worker_visible: boolean;
   customer_confirmed: boolean;
   raw_payload?: Record<string, unknown>;
+  // Optional Owner review edits to the extracted/imported candidate fields.
+  // Never AI-written by this path; only a human reviewer submits these.
+  task_name?: string;
+  hazard?: string;
+  current_controls?: string | null;
+  improvement_plan?: string | null;
+  risk_level?: string | null;
+  updated_at?: string;
 };
 
 export async function updateRiskShareItemCandidateReviewStatus(

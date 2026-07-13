@@ -18,6 +18,11 @@ type CandidateRow = {
   reviewer_status?: RiskShareItemCandidateReviewerStatus;
   worker_visible?: boolean;
   customer_confirmed?: boolean;
+  task_name?: string;
+  hazard?: string;
+  current_controls?: string | null;
+  improvement_plan?: string | null;
+  risk_level?: string | null;
 };
 
 const REVIEWER_STATUSES = new Set<RiskShareItemCandidateReviewerStatus>([
@@ -64,7 +69,8 @@ function buildRedirect(request: NextRequest, path: string, params: Record<string
 
 async function findCandidate(candidateId: string, companyCode: string) {
   const query = new URLSearchParams({
-    select: "id,source_id,company_code,company_name,reviewer_status,worker_visible,customer_confirmed",
+    select:
+      "id,source_id,company_code,company_name,reviewer_status,worker_visible,customer_confirmed,task_name,hazard,current_controls,improvement_plan,risk_level",
     id: `eq.${candidateId}`,
     company_code: `eq.${companyCode}`,
     limit: "1",
@@ -146,11 +152,42 @@ export async function POST(request: NextRequest) {
   const customerConfirmed = formData.get("customerConfirmed") === "on";
   const previousStatus = candidate.reviewer_status ?? "pending";
 
+  // Reviewer field edits. Fields left blank in the form fall back to the
+  // candidate's current stored value rather than being blanked out -- the
+  // review form always renders these pre-filled with the current value, so
+  // an empty submission here means the field was never populated to begin
+  // with, not that the reviewer intentionally cleared it.
+  const taskName = readText(formData, "taskName", 200) || candidate.task_name || "";
+  const hazard = readText(formData, "hazard", 500) || candidate.hazard || "";
+  const currentControls = readText(formData, "currentControls", 800) || candidate.current_controls || null;
+  const improvementPlan = readText(formData, "improvementPlan", 800) || candidate.improvement_plan || null;
+  const riskLevel = readText(formData, "riskLevel", 40) || candidate.risk_level || null;
+
+  if ((reviewerStatus === "accepted" || reviewerStatus === "edited") && (!taskName || !hazard)) {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "candidate_missing_required_fields",
+    });
+  }
+
+  const fieldsChanged =
+    taskName !== (candidate.task_name ?? "") ||
+    hazard !== (candidate.hazard ?? "") ||
+    currentControls !== (candidate.current_controls ?? null) ||
+    improvementPlan !== (candidate.improvement_plan ?? null) ||
+    riskLevel !== (candidate.risk_level ?? null);
+
   const result = await updateRiskShareItemCandidateReviewStatus(candidateId, companyCode, {
     reviewer_status: reviewerStatus,
     reviewer_note: reviewerNote,
     worker_visible: workerVisible,
     customer_confirmed: customerConfirmed,
+    task_name: taskName,
+    hazard,
+    current_controls: currentControls,
+    improvement_plan: improvementPlan,
+    risk_level: riskLevel,
+    updated_at: new Date().toISOString(),
   });
 
   if (!result.ok) {
@@ -179,6 +216,7 @@ export async function POST(request: NextRequest) {
       previousStatus,
       nextStatus: reviewerStatus,
       changedAt: new Date().toISOString(),
+      fieldsEdited: fieldsChanged,
     },
   });
 
