@@ -1,0 +1,253 @@
+/*
+ * Shared design tokens for the five official public risk-share QR screens
+ * (/risk-share/field, /participation, /anonymous, /visitor, /representative).
+ * Scoped under .rsx-pub so it never leaks into manager/monthly/owner shells,
+ * which keep their own designer.css / .rsx-shell tokens untouched.
+ */
+
+.rsx-pub {
+  --pub-bg: #eef4f8;
+  --pub-card-bg: #ffffff;
+  --pub-card-border: #e2e8f0;
+  --pub-card-shadow: 0 20px 45px rgba(2, 6, 23, 0.12);
+  --pub-text: #020617;
+  --pub-text-muted: #64748b;
+  --pub-text-subtle: #94a3b8;
+  --pub-input-bg: #ffffff;
+  --pub-input-border: #e2e8f0;
+  --pub-field-bg: #f8fafc;
+  --pub-field-border: #e2e8f0;
+  --pub-focus-ring: #3b82f6;
+  --pub-success-bg: #ecfdf5;
+  --pub-success-border: #a7f3d0;
+  --pub-success-text: #022c22;
+  --pub-error-bg: #fff1f2;
+  --pub-error-border: #fecdd3;
+  --pub-error-text: #4c0519;
+  --pub-warning-bg: #fffbeb;
+  --pub-warning-border: #fde68a;
+  --pub-warning-text: #451a03;
+  --pub-cta-bg: #020617;
+  --pub-cta-text: #ffffff;
+  --pub-cta-bg-disabled: #64748b;
+  --pub-chip-bg: rgba(2, 6, 23, 0.05);
+  --pub-signature-bg: #ffffff;
+  --pub-signature-border: #e2e8f0;
+  color-scheme: light;
+  background: var(--pub-bg);
+  color: var(--pub-text);
+}
+
+.rsx-pub[data-theme="dark"] {
+  --pub-bg: #0b1120;
+  --pub-card-bg: #111a2e;
+  --pub-card-border: #1e293b;
+  --pub-card-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+  --pub-text: #f1f5f9;
+  --pub-text-muted: #94a3b8;
+  --pub-text-subtle: #64748b;
+  --pub-input-bg: #0f1729;
+  --pub-input-border: #24324a;
+  --pub-field-bg: #0f1729;
+  --pub-field-border: #24324a;
+  --pub-focus-ring: #60a5fa;
+  --pub-success-bg: rgba(16, 185, 129, 0.14);
+  --pub-success-border: rgba(16, 185, 129, 0.4);
+  --pub-success-text: #a7f3d0;
+  --pub-error-bg: rgba(244, 63, 94, 0.16);
+  --pub-error-border: rgba(244, 63, 94, 0.45);
+  --pub-error-text: #fecdd3;
+  --pub-warning-bg: rgba(245, 158, 11, 0.16);
+  --pub-warning-border: rgba(245, 158, 11, 0.45);
+  --pub-warning-text: #fde68a;
+  --pub-cta-bg: #f8fafc;
+  --pub-cta-text: #0b1120;
+  --pub-cta-bg-disabled: #334155;
+  --pub-chip-bg: rgba(255, 255, 255, 0.08);
+  --pub-signature-bg: #ffffff;
+  --pub-signature-border: #24324a;
+  color-scheme: dark;
+}
+
+.rsx-pub-page {
+  min-height: 100dvh;
+  background: var(--pub-bg);
+  color: var(--pub-text);
+}
+
+.rsx-pub-card {
+  background: var(--pub-card-bg);
+  border: 1px solid var(--pub-card-border);
+  box-shadow: var(--pub-card-shadow);
+}
+
+/* Same surface as .rsx-pub-card without the drop shadow, for secondary
+   buttons/links that should not compete visually with the primary card. */
+.rsx-pub-card-flat {
+  background: var(--pub-card-bg);
+  border: 1px solid var(--pub-card-border);
+  color: var(--pub-text-muted);
+}
+
+.rsx-pub-field-card {
+  background: var(--pub-field-bg);
+  border: 1px solid var(--pub-field-border);
+}
+
+.rsx-pub-input {
+  background: var(--pub-input-bg) !important;
+  border-color: var(--pub-input-border) !important;
+  color: var(--pub-text) !important;
+}
+
+.rsx-pub-input::placeholder {
+  color: var(--pub-text-subtle);
+}
+
+.rsx-pub-input:focus-visible {
+  outline: 2px solid var(--pub-focus-ring);
+  outline-offset: 1px;
+  border-color: var(--pub-focus-ring) !important;
+}
+
+.rsx-pub-label {
+  color: var(--pub-text);
+}
+
+.rsx-pub-muted {
+  color: var(--pub-text-muted);
+}
+
+.rsx-pub-subtle {
+  color: var(--pub-text-subtle);
+}
+
+.rsx-pub-banner {
+  border-radius: 1rem;
+}
+
+.rsx-pub-banner--success {
+  background: var(--pub-success-bg);
+  border: 1px solid var(--pub-success-border);
+  color: var(--pub-success-text);
+}
+
+.rsx-pub-banner--error {
+  background: var(--pub-error-bg);
+  border: 1px solid var(--pub-error-border);
+  color: var(--pub-error-text);
+}
+
+.rsx-pub-banner--warning {
+  background: var(--pub-warning-bg);
+  border: 1px solid var(--pub-warning-border);
+  color: var(--pub-warning-text);
+}
+
+.rsx-pub-cta {
+  background: var(--pub-cta-bg);
+  color: var(--pub-cta-text);
+  min-height: 44px;
+  transition: opacity 0.15s ease;
+}
+
+.rsx-pub-cta:disabled {
+  background: var(--pub-cta-bg-disabled);
+  color: var(--pub-cta-text);
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+.rsx-pub-cta:focus-visible {
+  outline: 2px solid var(--pub-focus-ring);
+  outline-offset: 2px;
+}
+
+.rsx-pub-chip {
+  background: var(--pub-chip-bg);
+}
+
+.rsx-pub-signature-frame {
+  background: var(--pub-signature-bg);
+  border: 1px solid var(--pub-signature-border);
+}
+
+/* Signature canvas keeps a white surface with dark ink in both themes, per contract. */
+.rsx-pub-signature-canvas {
+  background: #ffffff !important;
+}
+
+.rsx-pub-lang__menu {
+  background: var(--pub-card-bg);
+  border: 1px solid var(--pub-card-border);
+  color: var(--pub-text);
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.18);
+}
+
+.rsx-pub-lang__item {
+  min-height: 44px;
+  color: var(--pub-text);
+}
+
+.rsx-pub-lang__item[aria-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.rsx-pub-theme-toggle {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.rsx-pub-theme-toggle__moon {
+  display: none;
+}
+
+.rsx-pub[data-theme="dark"] .rsx-pub-theme-toggle__sun {
+  display: none;
+}
+
+.rsx-pub[data-theme="dark"] .rsx-pub-theme-toggle__moon {
+  display: block;
+}
+
+.rsx-pub-checkbox-row {
+  border: 1px solid var(--pub-field-border);
+  background: var(--pub-field-bg);
+  color: var(--pub-text);
+}
+
+.rsx-pub-title-lb {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.rsx-pub-qcard {
+  background: var(--pub-field-bg);
+  border: 1px solid var(--pub-field-border);
+  color: var(--pub-text);
+}
+
+.rsx-pub-trail-dot {
+  background: var(--pub-field-bg);
+  border: 1px solid var(--pub-field-border);
+  color: var(--pub-text-muted);
+}
+
+.rsx-pub-trail-dot--active {
+  background: #0b5ea8;
+  border-color: #0b5ea8;
+  color: #ffffff;
+}
+
+.rsx-pub-trail-line {
+  background: var(--pub-card-border);
+}
+
+.rsx-pub a:focus-visible,
+.rsx-pub button:focus-visible,
+.rsx-pub input:focus-visible,
+.rsx-pub textarea:focus-visible {
+  outline: 2px solid var(--pub-focus-ring);
+  outline-offset: 2px;
+}

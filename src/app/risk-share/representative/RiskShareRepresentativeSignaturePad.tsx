@@ -10,7 +10,19 @@ function getCanvasPoint(canvas: HTMLCanvasElement, clientX: number, clientY: num
   return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
-export default function RiskShareRepresentativeSignaturePad() {
+type RiskShareRepresentativeSignaturePadProps = {
+  title: string;
+  optionalTag: string;
+  hint: string;
+  clearLabel: string;
+};
+
+export default function RiskShareRepresentativeSignaturePad({
+  title,
+  optionalTag,
+  hint,
+  clearLabel,
+}: RiskShareRepresentativeSignaturePadProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -105,29 +117,27 @@ export default function RiskShareRepresentativeSignaturePad() {
   }
 
   return (
-    <div ref={rootRef} className="rounded-2xl border border-slate-200 bg-white p-3">
+    <div ref={rootRef} className="rsx-pub-field-card rounded-2xl p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-black text-slate-800">
-          모바일 서명 <span className="font-bold text-slate-400">· 선택</span>
+        <p className="rsx-pub-label text-sm font-black">
+          {title} <span className="rsx-pub-muted font-bold">· {optionalTag}</span>
         </p>
         {hasSignature ? (
           <button
             type="button"
             onClick={clearSignature}
-            className="rounded-full bg-slate-100 px-3 py-1 text-[0.68rem] font-black text-slate-600"
+            className="rsx-pub-chip rounded-full px-3 py-1 text-[0.68rem] font-black"
           >
-            서명 지우기
+            {clearLabel}
           </button>
         ) : null}
       </div>
-      <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-        원하시면 아래 칸에 손가락으로 서명을 남길 수 있습니다. 서명이 없어도 제출할 수 있습니다.
-      </p>
+      <p className="rsx-pub-muted mt-1 text-xs font-semibold leading-5">{hint}</p>
 
-      <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+      <div className="rsx-pub-signature-frame mt-3 overflow-hidden rounded-xl">
         <canvas
           ref={canvasRef}
-          className="block w-full touch-none bg-white"
+          className="rsx-pub-signature-canvas block w-full touch-none"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

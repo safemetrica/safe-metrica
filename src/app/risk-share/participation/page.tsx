@@ -1,16 +1,21 @@
-import Link from "next/link";
 import {
-  RISK_SHARE_LANGUAGE_OPTIONS,
   buildRiskShareLangHref,
   getRiskShareCopy,
   getRiskShareLocale,
-  type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import RiskSharePublicShell from "@/components/risk-share/public/RiskSharePublicShell";
+import RiskSharePublicHeader, {
+  type RiskSharePublicHeaderVariant,
+} from "@/components/risk-share/public/RiskSharePublicHeader";
+import RiskShareStatusBanner from "@/components/risk-share/public/RiskShareStatusBanner";
+import RiskSharePrimaryButton from "@/components/risk-share/public/RiskSharePrimaryButton";
 import RiskShareRepresentativeSignaturePad from "../representative/RiskShareRepresentativeSignaturePad";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const PATHNAME = "/risk-share/participation";
 
 type ParticipationMode = "monthly" | "prework";
 
@@ -39,43 +44,10 @@ function normalizeMode(value: string): ParticipationMode {
   return value === "prework" ? "prework" : "monthly";
 }
 
-const MODE_ACCENT: Record<ParticipationMode, string> = {
-  monthly: "from-blue-600 to-blue-500",
-  prework: "from-emerald-600 to-emerald-500",
+const MODE_VARIANT: Record<ParticipationMode, RiskSharePublicHeaderVariant> = {
+  monthly: "monthly",
+  prework: "prework",
 };
-
-function LangBar({
-  companyCode,
-  mode,
-  activeLocale,
-}: {
-  companyCode: string;
-  mode: ParticipationMode;
-  activeLocale: RiskShareLocale;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span aria-hidden="true" className="text-sm">🌐</span>
-      {RISK_SHARE_LANGUAGE_OPTIONS.map((language) => (
-        <Link
-          key={language.code}
-          href={buildRiskShareLangHref(
-            "/risk-share/participation",
-            { company: companyCode, mode },
-            language.code,
-          )}
-          className={`rounded-full px-2.5 py-1 text-[0.65rem] font-black ${
-            language.code === activeLocale
-              ? "bg-white text-[#0B5EA8]"
-              : "border border-white/25 bg-white/5 text-white/70"
-          }`}
-        >
-          {language.label}
-        </Link>
-      ))}
-    </div>
-  );
-}
 
 export default async function RiskShareParticipationPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
@@ -85,178 +57,167 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   const locale = getRiskShareLocale(readSearchParam(params.lang));
   const submitted = readSearchParam(params.submitted);
   const copy = getRiskShareCopy(locale).participation;
+  const common = getRiskShareCopy(locale).common;
   const modeCopy = copy[mode];
-  const accent = MODE_ACCENT[mode];
 
   const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const returnHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, locale);
+  const query = { company: companyCode, mode };
 
   if (!tenantResolution.ok) {
     return (
-      <main className="min-h-screen bg-[#EEF4F8] px-3 py-4 text-slate-950">
-        <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
-          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl">
-            <div className="bg-gradient-to-br from-[#083A6B] via-[#0B5EA8] to-[#19B7A4] p-5 text-white">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[0.68rem] font-black tracking-tight text-white/90">
-                SafeMetrica
+      <RiskSharePublicShell>
+        <main className="rsx-pub-page px-3 py-4">
+          <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
+            <div className="rsx-pub-card overflow-hidden rounded-[1.75rem]">
+              <RiskSharePublicHeader
+                variant="brand"
+                companyLabel={companyLabel}
+                pathname={PATHNAME}
+                query={query}
+                activeLocale={locale}
+                languageLabel={common.languageLabel}
+                languageSoonBadgeLabel={common.languageSoonBadge}
+                themeToggleLabel={common.themeToggleLabel}
+                title={copy.qrCheckingTitle}
+              />
+              <div className="p-3">
+                <RiskShareStatusBanner variant="warning" className="rounded-2xl px-4 py-4">
+                  {copy.notAllowedBody}
+                </RiskShareStatusBanner>
+                {companyCode ? (
+                  <a
+                    href={returnHref}
+                    className="rsx-pub-cta mt-3 block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                  >
+                    {copy.returnToField}
+                  </a>
+                ) : null}
               </div>
-              <h1 className="mt-4 text-xl font-black leading-tight tracking-tight">
-                {copy.qrCheckingTitle}
-              </h1>
             </div>
-            <div className="p-3">
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-bold leading-6 text-amber-950">
-                {copy.notAllowedBody}
-              </div>
-              {companyCode ? (
-                <a
-                  href={returnHref}
-                  className="mt-3 block rounded-2xl bg-slate-950 px-5 py-3 text-center text-sm font-black text-white"
-                >
-                  {copy.returnToField}
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      </main>
+          </section>
+        </main>
+      </RiskSharePublicShell>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#EEF4F8] px-3 py-4 text-slate-950">
-      <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
-        <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl">
-          <div className={`bg-gradient-to-br ${accent} p-5 text-white`}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[0.68rem] font-black tracking-tight text-white/90">
-                SafeMetrica
-              </span>
-              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[0.68rem] font-black tracking-tight text-white/90">
-                {companyLabel}
-              </span>
-            </div>
-            <span className="mt-4 inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-[0.65rem] font-black text-white/90">
-              {modeCopy.badge}
-            </span>
-            <h1 className="mt-2 text-2xl font-black leading-tight tracking-tight">
-              {modeCopy.title}
-            </h1>
-            <p className="mt-2 text-sm font-semibold leading-6 text-white/85">
-              {modeCopy.description}
-            </p>
-            <div className="mt-3 border-t border-white/15 pt-3">
-              <LangBar companyCode={companyCode} mode={mode} activeLocale={locale} />
-            </div>
-          </div>
+    <RiskSharePublicShell>
+      <main className="rsx-pub-page px-3 py-4">
+        <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
+          <div className="rsx-pub-card overflow-hidden rounded-[1.75rem]">
+            <RiskSharePublicHeader
+              variant={MODE_VARIANT[mode]}
+              companyLabel={companyLabel}
+              pathname={PATHNAME}
+              query={query}
+              activeLocale={locale}
+              languageLabel={common.languageLabel}
+              languageSoonBadgeLabel={common.languageSoonBadge}
+              themeToggleLabel={common.themeToggleLabel}
+              title={modeCopy.title}
+              description={modeCopy.description}
+              badge={
+                <span className="rsx-pub-chip inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black">
+                  {modeCopy.badge}
+                </span>
+              }
+            />
 
-          <div className="space-y-3 p-3">
-            {submitted === "1" ? (
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-950">
-                제출이 완료되었습니다. 확인해 주셔서 감사합니다.
-              </div>
-            ) : null}
+            <div className="space-y-3 p-3">
+              {submitted === "1" ? <RiskShareStatusBanner variant="success">{copy.submittedBanner}</RiskShareStatusBanner> : null}
+              {submitted === "error" ? <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner> : null}
+              {submitted === "missing_identifier" ? (
+                <RiskShareStatusBanner variant="error">{copy.missingIdentifierBanner}</RiskShareStatusBanner>
+              ) : null}
 
-            {submitted === "error" ? (
-              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-950">
-                저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
-              </div>
-            ) : null}
+              <form action="/api/risk-share/participation/submit" method="post" encType="multipart/form-data">
+                <input type="hidden" name="companyCode" value={companyCode} readOnly />
+                <input type="hidden" name="mode" value={mode} readOnly />
+                <input type="hidden" name="lang" value={locale} readOnly />
 
-            {submitted === "missing_identifier" ? (
-              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-950">
-                확인번호를 입력해 주세요.
-              </div>
-            ) : null}
-
-            <form action="/api/risk-share/participation/submit" method="post" encType="multipart/form-data">
-              <input type="hidden" name="companyCode" value={companyCode} readOnly />
-              <input type="hidden" name="mode" value={mode} readOnly />
-              <input type="hidden" name="lang" value={locale} readOnly />
-
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <label className="block text-sm font-black text-slate-800">
-                  이름
-                  <input
-                    name="workerName"
-                    required
-                    placeholder="성명을 입력해 주세요"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
-                  />
-                </label>
-                <label className="block text-sm font-black text-slate-800">
-                  소속 · 작업구역
-                  <input
-                    name="workerAffiliation"
-                    placeholder="예: 생산팀 / 포장라인"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
-                  />
-                </label>
-                <label className="block text-sm font-black text-slate-800">
-                  확인번호
-                  <input
-                    name="workerIdentifier"
-                    required
-                    maxLength={20}
-                    placeholder="휴대폰 뒤 4자리 또는 사번"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-blue-400"
-                  />
-                  <span className="mt-1.5 block text-xs font-semibold leading-4 text-slate-500">
-                    동명이인 구분을 위한 확인번호입니다. 전체 전화번호는 입력하지 마세요.
-                  </span>
-                </label>
-              </div>
-
-              <fieldset className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
-                <legend className="px-1 text-sm font-black text-slate-800">{copy.checklistLegend}</legend>
-                {modeCopy.checklist.map((item, index) => (
-                  <label
-                    key={item}
-                    className="flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-sm font-bold leading-5 text-slate-700"
-                  >
+                <div className="rsx-pub-field-card space-y-3 rounded-2xl p-3">
+                  <label className="rsx-pub-label block text-sm font-black">
+                    이름
                     <input
-                      type="checkbox"
-                      name={`checklist-${mode}-${index}`}
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
+                      name="workerName"
+                      required
+                      placeholder="성명을 입력해 주세요"
+                      className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
                     />
-                    {item}
                   </label>
-                ))}
-              </fieldset>
+                  <label className="rsx-pub-label block text-sm font-black">
+                    소속 · 작업구역
+                    <input
+                      name="workerAffiliation"
+                      placeholder="예: 생산팀 / 포장라인"
+                      className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
+                    />
+                  </label>
+                  <label className="rsx-pub-label block text-sm font-black">
+                    확인번호
+                    <input
+                      name="workerIdentifier"
+                      required
+                      maxLength={20}
+                      placeholder="휴대폰 뒤 4자리 또는 사번"
+                      className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
+                    />
+                    <span className="rsx-pub-muted mt-1.5 block text-xs font-semibold leading-4">
+                      동명이인 구분을 위한 확인번호입니다. 전체 전화번호는 입력하지 마세요.
+                    </span>
+                  </label>
+                </div>
 
-              <div className="mt-3">
-                <RiskShareRepresentativeSignaturePad />
-              </div>
+                <fieldset className="rsx-pub-card mt-3 space-y-2 rounded-2xl p-3">
+                  <legend className="rsx-pub-label px-1 text-sm font-black">{copy.checklistLegend}</legend>
+                  {modeCopy.checklist.map((item, index) => (
+                    <label
+                      key={item}
+                      className="rsx-pub-checkbox-row flex items-start gap-2 rounded-xl p-2.5 text-sm font-bold leading-5"
+                    >
+                      <input
+                        type="checkbox"
+                        name={`checklist-${mode}-${index}`}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
+                      />
+                      {item}
+                    </label>
+                  ))}
+                </fieldset>
 
-              <div className="mt-3 rounded-2xl bg-slate-950 p-4 text-white">
-                <p className="text-[0.62rem] font-black uppercase tracking-wide text-white/50">
-                  {copy.afterSubmitLabel}
-                </p>
-                <p className="mt-1.5 text-xs font-bold leading-5 text-white/90">
-                  {copy.afterSubmitBody}
-                </p>
-              </div>
+                <div className="mt-3">
+                  <RiskShareRepresentativeSignaturePad
+                    title={common.signatureTitle}
+                    optionalTag={common.signatureOptionalTag}
+                    hint={common.signatureHint}
+                    clearLabel={common.signatureClear}
+                  />
+                </div>
 
-              <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <button
-                  type="submit"
-                  className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-base font-black text-white"
-                >
-                  {modeCopy.cta}
-                </button>
-              </div>
-            </form>
+                <div className="rsx-pub-chip mt-3 rounded-2xl p-4">
+                  <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
+                    {copy.afterSubmitLabel}
+                  </p>
+                  <p className="rsx-pub-label mt-1.5 text-xs font-bold leading-5">{copy.afterSubmitBody}</p>
+                </div>
 
-            <a
-              href={returnHref}
-              className="block rounded-2xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-black text-slate-600"
-            >
-              {copy.returnToField}
-            </a>
+                <div className="rsx-pub-field-card mt-3 rounded-2xl p-3">
+                  <RiskSharePrimaryButton label={modeCopy.cta} submittingLabel={common.submittingLabel} />
+                </div>
+              </form>
+
+              <a
+                href={returnHref}
+                className="rsx-pub-card-flat block rounded-2xl px-5 py-3 text-center text-sm font-black"
+              >
+                {copy.returnToField}
+              </a>
+            </div>
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </RiskSharePublicShell>
   );
 }
