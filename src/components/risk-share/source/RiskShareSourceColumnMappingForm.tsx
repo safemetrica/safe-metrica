@@ -8,7 +8,10 @@ export type RiskShareSourceColumnMappingFormColumn = {
   index: number;
   header: string;
   samples: string[];
+  /** Deterministic alias recommendation only, shown as a "(추천)" badge. */
   suggestedField: RiskShareSourceCanonicalField | null;
+  /** Value the select should open with: a valid saved mapping if one applies, else suggestedField. */
+  initialField: RiskShareSourceCanonicalField | null;
 };
 
 export type RiskShareSourceColumnMappingFormHeaderRowOption = {
@@ -36,6 +39,10 @@ export type RiskShareSourceColumnMappingFormProps = {
   columns: RiskShareSourceColumnMappingFormColumn[];
   errorMessage: string | null;
   savedNotice: { status: "draft" | "confirmed"; version: number } | null;
+  /** Currently-applied saved mapping state, shown independent of any URL query. */
+  appliedStatus: { status: "draft" | "confirmed"; version: number } | null;
+  /** True when a saved mapping exists but no longer matches the current header, so it was not applied. */
+  staleSavedMapping: boolean;
 };
 
 export default function RiskShareSourceColumnMappingForm({
@@ -49,6 +56,8 @@ export default function RiskShareSourceColumnMappingForm({
   columns,
   errorMessage,
   savedNotice,
+  appliedStatus,
+  staleSavedMapping,
 }: RiskShareSourceColumnMappingFormProps) {
   return (
     <section className="mt-6 space-y-5">
@@ -61,6 +70,19 @@ export default function RiskShareSourceColumnMappingForm({
         <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-100">
           열 연결 기준을 저장했습니다. ({savedNotice.status === "confirmed" ? "확정" : "임시 저장"}
           , 버전 {savedNotice.version})
+        </div>
+      ) : null}
+
+      {staleSavedMapping ? (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm font-bold text-amber-100">
+          원본 헤더 변경 확인이 필요합니다. 이전 저장값 대신 추천값을 표시합니다.
+        </div>
+      ) : null}
+
+      {appliedStatus ? (
+        <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-4 text-sm leading-6 text-slate-200">
+          현재 저장된 열 연결: {appliedStatus.status === "confirmed" ? "확정" : "임시 저장"} · 버전{" "}
+          {appliedStatus.version}
         </div>
       ) : null}
 
@@ -152,7 +174,7 @@ export default function RiskShareSourceColumnMappingForm({
                   <td className="border-b border-slate-100 px-3 py-3">
                     <select
                       name={`mapping_field_${column.index}`}
-                      defaultValue={column.suggestedField ?? ""}
+                      defaultValue={column.initialField ?? ""}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
                     >
                       <option value="">매핑 안 함</option>

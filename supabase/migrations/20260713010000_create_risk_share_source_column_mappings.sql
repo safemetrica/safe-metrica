@@ -166,6 +166,14 @@ $$;
 
 alter table public.risk_share_source_column_mappings enable row level security;
 
+-- Final invariant: at most one confirmed mapping version per source+sheet.
+-- The RPC's row lock (see save_risk_share_source_column_mapping_version)
+-- keeps the supersede-then-insert sequence race-free; this index is the
+-- backstop if that invariant is ever violated by a future code path.
+create unique index if not exists risk_share_source_column_mappings_one_confirmed_uidx
+  on public.risk_share_source_column_mappings (source_id, sheet_index)
+  where status = 'confirmed';
+
 create index if not exists risk_share_source_column_mappings_company_idx
   on public.risk_share_source_column_mappings (company_code, created_at desc);
 
@@ -211,13 +219,13 @@ create trigger risk_share_source_column_mappings_set_updated_at_trigger
   for each row
   execute function public.risk_share_source_column_mappings_set_updated_at();
 
--- Atomic version save: verifies source+company, supersedes the previous
--- confirmed row for the same source_id+sheet_index when saving a confirmed
--- mapping, computes the next mapping_version, and inserts the new row, all
--- within the calling function's single transaction. Returns no rows when
--- the source_id/company_code pair does not match (caller must treat an
--- empty result as "source not found" and must not synthesize its own
--- version number).
+-- Atomic version save: locks the risk_share_sources row (FOR UPDATE) so
+-- concurrent saves for the same source serialize on this function -- the
+-- max(mapping_version)+1 computation and the confirmed->superseded
+-- supersession cannot race across two overlapping calls, for either draft
+-- or confirmed status. Returns no rows when the source_id/company_code
+-- pair does not match (caller must treat an empty result as "source not
+-- found" and must not synthesize its own version number).
 create or replace function public.save_risk_share_source_column_mapping_version(
   p_company_code text,
   p_source_id uuid,
@@ -235,19 +243,16 @@ security definer
 set search_path = public, pg_temp
 as $$
 declare
-  v_source_exists boolean;
   v_next_version integer;
   v_new_id uuid;
 begin
-  select exists (
-    select 1
-    from public.risk_share_sources
-    where risk_share_sources.id = p_source_id
-      and risk_share_sources.company_code = p_company_code
-  )
-  into v_source_exists;
+  perform 1
+  from public.risk_share_sources
+  where risk_share_sources.id = p_source_id
+    and risk_share_sources.company_code = p_company_code
+  for update;
 
-  if not v_source_exists then
+  if not found then
     return;
   end if;
 

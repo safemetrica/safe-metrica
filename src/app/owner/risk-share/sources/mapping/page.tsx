@@ -6,6 +6,8 @@ import Link from "next/link";
 import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
 import {
   readRiskShareSourceColumnMappingSourceState,
+  readLatestRiskShareSourceColumnMappingVersion,
+  reconcileRiskShareSourceColumnMappingRecord,
   suggestCanonicalFieldForHeader,
   type RiskShareSourceColumnMappingSourceReadFailureReason,
 } from "@/lib/risk-share/riskShareSourceColumnMapping";
@@ -174,6 +176,23 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
 
   const { preview, selectedSheetIndex, headerRowIndex, headerCells } = sourceStateResult;
 
+  const latestMappingResult = await readLatestRiskShareSourceColumnMappingVersion({
+    companyCode,
+    sourceId,
+    sheetIndex: selectedSheetIndex,
+  });
+  const latestRecord = latestMappingResult.ok ? latestMappingResult.record : null;
+
+  const reconciliation = reconcileRiskShareSourceColumnMappingRecord({
+    record: latestRecord,
+    selectedSheetIndex,
+    headerRowIndex,
+    headerSignature: sourceStateResult.headerSignature,
+    headerCells,
+  });
+
+  const staleSavedMapping = latestRecord !== null && reconciliation === null;
+
   const columns: RiskShareSourceColumnMappingFormColumn[] = headerCells.map((header, index) => {
     const samples: string[] = [];
     for (let rowIndex = headerRowIndex + 1; rowIndex < preview.rows.length && samples.length < 3; rowIndex += 1) {
@@ -181,11 +200,14 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
       if (value) samples.push(value);
     }
 
+    const suggestedField = suggestCanonicalFieldForHeader(header);
+
     return {
       index,
       header,
       samples,
-      suggestedField: suggestCanonicalFieldForHeader(header),
+      suggestedField,
+      initialField: reconciliation ? (reconciliation.initialFieldByIndex.get(index) ?? null) : suggestedField,
     };
   });
 
@@ -207,9 +229,17 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
     ? (SAVE_ACTION_ERROR_MESSAGES[actionErrorCode] ?? "요청을 처리하지 못했습니다.")
     : null;
 
+  const appliedStatus: { status: "draft" | "confirmed"; version: number } | null = reconciliation
+    ? { status: reconciliation.status, version: reconciliation.version }
+    : null;
+
   const savedNotice: { status: "draft" | "confirmed"; version: number } | null =
-    savedVersion !== null && (savedStatus === "draft" || savedStatus === "confirmed")
-      ? { status: savedStatus, version: savedVersion }
+    appliedStatus !== null &&
+    savedVersion !== null &&
+    (savedStatus === "draft" || savedStatus === "confirmed") &&
+    appliedStatus.status === savedStatus &&
+    appliedStatus.version === savedVersion
+      ? appliedStatus
       : null;
 
   return (
@@ -248,6 +278,8 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
           columns={columns}
           errorMessage={errorMessage}
           savedNotice={savedNotice}
+          appliedStatus={appliedStatus}
+          staleSavedMapping={staleSavedMapping}
         />
       </section>
     </main>
