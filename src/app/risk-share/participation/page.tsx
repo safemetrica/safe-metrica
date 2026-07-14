@@ -107,7 +107,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   }
 
   let monthlyVersion: RiskSharePublicVersion | null = null;
-  let monthlyVersionUnavailableReason: "no_share" | "lookup_failed" | null = null;
+  let monthlyVersionUnavailableReason: "no_share" | "invalid_share" | "lookup_failed" | null = null;
 
   if (mode === "monthly") {
     const versionResult = await resolveActiveRiskSharePublicVersion(tenantResolution.tenant.code);
@@ -118,6 +118,13 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
       monthlyVersionUnavailableReason = versionResult.reason;
     }
   }
+
+  const monthlyVersionUnavailableBody =
+    monthlyVersionUnavailableReason === "lookup_failed"
+      ? copy.versionShareLookupFailedBody
+      : monthlyVersionUnavailableReason === "invalid_share"
+        ? copy.versionShareInvalidBody
+        : copy.versionShareEmptyBody;
 
   if (mode === "monthly" && monthlyVersionUnavailableReason) {
     return (
@@ -144,12 +151,10 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
               />
               <div className="p-3">
                 <RiskShareStatusBanner
-                  variant={monthlyVersionUnavailableReason === "lookup_failed" ? "error" : "warning"}
+                  variant={monthlyVersionUnavailableReason === "no_share" ? "warning" : "error"}
                   className="rounded-2xl px-4 py-4"
                 >
-                  {monthlyVersionUnavailableReason === "lookup_failed"
-                    ? copy.versionShareLookupFailedBody
-                    : copy.versionShareEmptyBody}
+                  {monthlyVersionUnavailableBody}
                 </RiskShareStatusBanner>
                 <a
                   href={returnHref}
@@ -262,7 +267,11 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                       </p>
                     </div>
 
-                    {monthlyVersion.items.map((item) => (
+                    {monthlyVersion.items.map((item) => {
+                      const safetyMeasure =
+                        item.workerShareSummary || item.improvementPlan || item.currentControls;
+
+                      return (
                       <div key={item.id} className="rsx-pub-card space-y-2 rounded-2xl p-3">
                         <input type="hidden" name="shareItemId" value={item.id} readOnly />
                         <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
@@ -273,13 +282,13 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                           {copy.versionItemHazardLabel}
                         </p>
                         <p className="rsx-pub-label text-sm font-bold leading-5">{item.hazard}</p>
-                        {item.improvementPlan || item.currentControls || item.workerShareSummary ? (
+                        {safetyMeasure ? (
                           <>
                             <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
                               {copy.versionItemMeasureLabel}
                             </p>
                             <p className="rsx-pub-label text-sm font-bold leading-5">
-                              {item.improvementPlan || item.currentControls || item.workerShareSummary}
+                              {safetyMeasure}
                             </p>
                           </>
                         ) : null}
@@ -298,7 +307,8 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                           {copy.versionItemConfirmLabel}
                         </label>
                       </div>
-                    ))}
+                      );
+                    })}
                   </fieldset>
                 ) : (
                   <fieldset className="rsx-pub-card mt-3 space-y-2 rounded-2xl p-3">

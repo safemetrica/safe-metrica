@@ -3,6 +3,7 @@ import "server-only";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 const RISK_SHARE_PUBLIC_VERSION_ITEM_LIMIT = 100;
+const RISK_SHARE_PUBLIC_VERSION_ITEM_FETCH_LIMIT = RISK_SHARE_PUBLIC_VERSION_ITEM_LIMIT + 1;
 
 export type RiskSharePublicVersionLock = {
   id: string;
@@ -28,13 +29,14 @@ export type RiskSharePublicVersion = {
 
 export type ResolveRiskSharePublicVersionResult =
   | { ok: true; version: RiskSharePublicVersion }
-  | { ok: false; reason: "no_share" | "lookup_failed" };
+  | { ok: false; reason: "no_share" | "invalid_share" | "lookup_failed" };
 
 type VersionLockRow = {
   id?: string | null;
   lock_title?: string | null;
   lock_month?: string | null;
   created_at?: string | null;
+  worker_visible_count?: number | null;
 };
 
 type LockedItemRow = {
@@ -51,9 +53,13 @@ function readText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function readOptionalCount(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 async function fetchActiveVersionLock(companyCode: string): Promise<VersionLockRow | null> {
   const query = new URLSearchParams({
-    select: "id,lock_title,lock_month,created_at",
+    select: "id,lock_title,lock_month,created_at,worker_visible_count",
     company_code: `eq.${companyCode}`,
     lock_status: "eq.active",
     order: "created_at.desc",
@@ -77,7 +83,7 @@ async function fetchWorkerVisibleLockedItems(
     customer_confirmed: "eq.true",
     worker_visible: "eq.true",
     order: "created_at.asc,id.asc",
-    limit: String(RISK_SHARE_PUBLIC_VERSION_ITEM_LIMIT),
+    limit: String(RISK_SHARE_PUBLIC_VERSION_ITEM_FETCH_LIMIT),
   });
 
   return selectSupabaseExportRows<LockedItemRow>("risk_share_items", query);
@@ -96,6 +102,14 @@ async function fetchWorkerVisibleLockedItems(
  * attaches items to a lock. Only worker-safe fields are selected; raw_payload,
  * customer_note, owner_note, and other internal/Owner-only fields are never
  * read here.
+ *
+ * Fail-closed on data integrity problems rather than silently truncating or
+ * skipping rows: the item query asks for one row more than the display/limit
+ * ceiling so an overflow can be detected instead of quietly clipped, and any
+ * row missing id/task_name/hazard, any duplicate item id, or a mismatch
+ * against the lock's own worker_visible_count is reported as "invalid_share"
+ * (never rendered, never confirmable) instead of being filtered out and
+ * mistaken by the caller for the complete list.
  */
 export async function resolveActiveRiskSharePublicVersion(
   companyCode: string,
@@ -109,21 +123,47 @@ export async function resolveActiveRiskSharePublicVersion(
 
     const itemRows = await fetchWorkerVisibleLockedItems(companyCode, lockRow.id);
 
-    const items: RiskSharePublicVersionItem[] = itemRows
-      .filter((row) => Boolean(row.id) && Boolean(readText(row.task_name)) && Boolean(readText(row.hazard)))
-      .map((row) => ({
-        id: String(row.id),
-        taskName: readText(row.task_name),
-        hazard: readText(row.hazard),
-        riskLevel: readText(row.risk_level) || null,
-        currentControls: readText(row.current_controls) || null,
-        improvementPlan: readText(row.improvement_plan) || null,
-        workerShareSummary: readText(row.worker_share_summary) || null,
-      }));
+    if (itemRows.length > RISK_SHARE_PUBLIC_VERSION_ITEM_LIMIT) {
+      return { ok: false, reason: "invalid_share" };
+    }
 
-    if (items.length === 0) {
+    const seenItemIds = new Set<string>();
+
+    for (const row of itemRows) {
+      const id = readText(row.id);
+      const taskName = readText(row.task_name);
+      const hazard = readText(row.hazard);
+
+      if (!id || !taskName || !hazard) {
+        return { ok: false, reason: "invalid_share" };
+      }
+
+      if (seenItemIds.has(id)) {
+        return { ok: false, reason: "invalid_share" };
+      }
+
+      seenItemIds.add(id);
+    }
+
+    const workerVisibleCount = readOptionalCount(lockRow.worker_visible_count);
+
+    if (workerVisibleCount !== null && workerVisibleCount !== itemRows.length) {
+      return { ok: false, reason: "invalid_share" };
+    }
+
+    if (itemRows.length === 0) {
       return { ok: false, reason: "no_share" };
     }
+
+    const items: RiskSharePublicVersionItem[] = itemRows.map((row) => ({
+      id: readText(row.id),
+      taskName: readText(row.task_name),
+      hazard: readText(row.hazard),
+      riskLevel: readText(row.risk_level) || null,
+      currentControls: readText(row.current_controls) || null,
+      improvementPlan: readText(row.improvement_plan) || null,
+      workerShareSummary: readText(row.worker_share_summary) || null,
+    }));
 
     return {
       ok: true,

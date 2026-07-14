@@ -124,6 +124,7 @@ type ParticipationCopy = {
   versionItemConfirmLabel: string;
   versionShareEmptyBody: string;
   versionShareLookupFailedBody: string;
+  versionShareInvalidBody: string;
   versionShareChangedBanner: string;
   versionShareIncompleteBanner: string;
 };
@@ -311,6 +312,7 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       versionItemConfirmLabel: "이 위험요인과 안전조치 내용을 확인했습니다.",
       versionShareEmptyBody: "현재 근로자에게 공유된 위험성평가 항목이 없습니다.",
       versionShareLookupFailedBody: "공유본을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      versionShareInvalidBody: "현재 공유본을 확인할 수 없습니다. 현장 담당자에게 문의해 주세요.",
       versionShareChangedBanner: "공유본이 갱신되었습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.",
       versionShareIncompleteBanner: "모든 위험요인을 확인해야 제출할 수 있습니다.",
     },
@@ -484,6 +486,7 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       versionItemConfirmLabel: "I have reviewed this hazard and safety measure.",
       versionShareEmptyBody: "There are no shared hazards for workers right now.",
       versionShareLookupFailedBody: "We couldn't load the shared risk pack. Please try again in a moment.",
+      versionShareInvalidBody: "We can't display the current shared risk pack right now. Please contact the site manager.",
       versionShareChangedBanner: "The shared risk pack was updated. Please refresh and review it again.",
       versionShareIncompleteBanner: "Please review every hazard before submitting.",
     },
@@ -657,6 +660,7 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       versionItemConfirmLabel: "Tôi đã xem mối nguy và biện pháp an toàn này.",
       versionShareEmptyBody: "Hiện chưa có mối nguy nào được chia sẻ cho người lao động.",
       versionShareLookupFailedBody: "Không thể tải gói rủi ro chia sẻ. Vui lòng thử lại sau ít phút.",
+      versionShareInvalidBody: "Hiện không thể hiển thị gói rủi ro chia sẻ. Vui lòng liên hệ người phụ trách hiện trường.",
       versionShareChangedBanner: "Gói rủi ro chia sẻ đã được cập nhật. Vui lòng tải lại và xem lại.",
       versionShareIncompleteBanner: "Vui lòng xác nhận tất cả các mối nguy trước khi gửi.",
     },

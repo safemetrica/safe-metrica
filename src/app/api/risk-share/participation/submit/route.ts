@@ -123,6 +123,8 @@ export async function POST(req: NextRequest) {
 
     const itemSetMatches =
       expectedItemIds.length > 0 &&
+      submittedShareItemIds.length === expectedItemIds.length &&
+      submittedIdSet.size === submittedShareItemIds.length &&
       submittedIdSet.size === expectedItemIds.length &&
       expectedItemIds.every((id) => submittedIdSet.has(id));
     const allConfirmed = expectedItemIds.every((id) =>
