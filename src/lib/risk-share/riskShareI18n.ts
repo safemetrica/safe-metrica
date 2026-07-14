@@ -104,6 +104,16 @@ type ParticipationCopy = {
   qrCheckingTitle: string;
   notAllowedBody: string;
   returnToField: string;
+  submittedBanner: string;
+  errorBanner: string;
+  missingIdentifierBanner: string;
+  workerNameLabel: string;
+  workerNamePlaceholder: string;
+  workerAffiliationLabel: string;
+  workerAffiliationPlaceholder: string;
+  workerIdentifierLabel: string;
+  workerIdentifierPlaceholder: string;
+  workerIdentifierHelp: string;
 };
 
 type AnonymousCopy = {
@@ -126,6 +136,8 @@ type AnonymousCopy = {
   returnToField: string;
   qrCheckingTitle: string;
   notAllowedBody: string;
+  submittedBanner: string;
+  errorBanner: string;
 };
 
 type VisitorCopy = {
@@ -146,6 +158,8 @@ type VisitorCopy = {
   returnToField: string;
   qrCheckingTitle: string;
   notAllowedBody: string;
+  submittedBanner: string;
+  errorBanner: string;
 };
 
 type RepresentativeCopy = {
@@ -163,9 +177,23 @@ type RepresentativeCopy = {
   returnToField: string;
   qrCheckingTitle: string;
   notAllowedBody: string;
+  submittedBanner: string;
+  errorBanner: string;
+};
+
+type CommonCopy = {
+  languageLabel: string;
+  languageSoonBadge: string;
+  themeToggleLabel: string;
+  submittingLabel: string;
+  signatureTitle: string;
+  signatureOptionalTag: string;
+  signatureHint: string;
+  signatureClear: string;
 };
 
 type RiskShareCopy = {
+  common: CommonCopy;
   field: FieldCopy;
   participation: ParticipationCopy;
   anonymous: AnonymousCopy;
@@ -175,6 +203,16 @@ type RiskShareCopy = {
 
 const COPY: Record<RiskShareLocale, RiskShareCopy> = {
   ko: {
+    common: {
+      languageLabel: "언어 선택",
+      languageSoonBadge: "준비중",
+      themeToggleLabel: "화면 테마 전환",
+      submittingLabel: "제출 중…",
+      signatureTitle: "모바일 서명",
+      signatureOptionalTag: "선택",
+      signatureHint: "원하시면 아래 칸에 손가락으로 서명을 남길 수 있습니다. 서명이 없어도 제출할 수 있습니다.",
+      signatureClear: "서명 지우기",
+    },
     field: {
       heroTitle: "우리 작업장 안전 확인",
       heroSub: "QR로 들어오셨네요. 아래에서 할 일을 선택해 주세요.",
@@ -241,6 +279,16 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       qrCheckingTitle: "현장 QR 확인 중",
       notAllowedBody: "이 확인 화면은 지정된 현장 QR에서만 열립니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.",
       returnToField: "현장 QR 입구로 돌아가기",
+      submittedBanner: "제출이 완료되었습니다. 확인해 주셔서 감사합니다.",
+      errorBanner: "저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      missingIdentifierBanner: "확인번호를 입력해 주세요.",
+      workerNameLabel: "이름",
+      workerNamePlaceholder: "성명을 입력해 주세요",
+      workerAffiliationLabel: "소속 · 작업구역",
+      workerAffiliationPlaceholder: "예: 생산팀 / 포장라인",
+      workerIdentifierLabel: "확인번호",
+      workerIdentifierPlaceholder: "휴대폰 뒤 4자리 또는 사번",
+      workerIdentifierHelp: "동명이인 구분을 위한 확인번호입니다. 전체 전화번호는 입력하지 마세요.",
     },
     anonymous: {
       heroTitle: "익명 의견함",
@@ -268,6 +316,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "현장 QR 입구로 돌아가기",
       qrCheckingTitle: "익명 의견 접수 화면을 열 수 없습니다.",
       notAllowedBody: "현재 이 익명 의견 경로는 지정된 현장 QR에서만 사용할 수 있습니다.",
+      submittedBanner: "익명 의견이 접수되었습니다. 확인해 주셔서 감사합니다.",
+      errorBanner: "저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
     },
     visitor: {
       heroTitle: "방문자 출입 전 안전 안내",
@@ -291,6 +341,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "현장 QR 입구로 돌아가기",
       qrCheckingTitle: "현장 QR 확인 중",
       notAllowedBody: "이 안내 화면은 지정된 현장 QR에서만 열립니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.",
+      submittedBanner: "확인이 접수되었습니다.",
+      errorBanner: "저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
     },
     representative: {
       heroTitle: "근로자대표 확인·의견 기록",
@@ -307,9 +359,21 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "현장 QR 입구로 돌아가기",
       qrCheckingTitle: "현장 QR 확인 중",
       notAllowedBody: "이 확인 화면은 지정된 현장 QR에서만 열립니다. 현장 담당자에게 최신 QR 링크를 요청해 주세요.",
+      submittedBanner: "확인이 접수되었습니다. 감사합니다.",
+      errorBanner: "저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
     },
   },
   en: {
+    common: {
+      languageLabel: "Language",
+      languageSoonBadge: "Soon",
+      themeToggleLabel: "Toggle screen theme",
+      submittingLabel: "Submitting…",
+      signatureTitle: "Mobile signature",
+      signatureOptionalTag: "optional",
+      signatureHint: "You may sign with your finger in the box below if you like. You can submit without a signature.",
+      signatureClear: "Clear signature",
+    },
     field: {
       heroTitle: "Workplace Safety Check",
       heroSub: "You scanned the QR. Choose what to do below.",
@@ -376,6 +440,16 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       qrCheckingTitle: "Checking field QR",
       notAllowedBody: "This confirmation screen only opens from the designated field QR. Ask the site manager for the latest QR link.",
       returnToField: "Back to field QR entry",
+      submittedBanner: "Your submission is complete. Thank you for checking in.",
+      errorBanner: "Something went wrong while saving. Please try again in a moment.",
+      missingIdentifierBanner: "Please enter your ID number.",
+      workerNameLabel: "Name",
+      workerNamePlaceholder: "Enter your name",
+      workerAffiliationLabel: "Team · work area",
+      workerAffiliationPlaceholder: "e.g. Production team / Packing line",
+      workerIdentifierLabel: "ID number",
+      workerIdentifierPlaceholder: "Last 4 digits of phone or employee number",
+      workerIdentifierHelp: "Used only to tell apart people with the same name. Do not enter your full phone number.",
     },
     anonymous: {
       heroTitle: "Anonymous box",
@@ -403,6 +477,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "Back to field QR entry",
       qrCheckingTitle: "This anonymous report screen is not available.",
       notAllowedBody: "This anonymous report link only works from the designated field QR.",
+      submittedBanner: "Your anonymous report has been received. Thank you for checking in.",
+      errorBanner: "Something went wrong while saving. Please try again in a moment.",
     },
     visitor: {
       heroTitle: "Visitor safety notes before entry",
@@ -426,6 +502,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "Back to field QR entry",
       qrCheckingTitle: "Checking field QR",
       notAllowedBody: "This notice screen only opens from the designated field QR. Ask the site manager for the latest QR link.",
+      submittedBanner: "Your confirmation has been received.",
+      errorBanner: "Something went wrong while saving. Please try again in a moment.",
     },
     representative: {
       heroTitle: "Worker representative confirmation",
@@ -442,9 +520,21 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "Back to field QR entry",
       qrCheckingTitle: "Checking field QR",
       notAllowedBody: "This confirmation screen only opens from the designated field QR. Ask the site manager for the latest QR link.",
+      submittedBanner: "Your confirmation has been received. Thank you.",
+      errorBanner: "Something went wrong while saving. Please try again in a moment.",
     },
   },
   vi: {
+    common: {
+      languageLabel: "Ngôn ngữ",
+      languageSoonBadge: "Sắp có",
+      themeToggleLabel: "Chuyển giao diện sáng/tối",
+      submittingLabel: "Đang gửi…",
+      signatureTitle: "Chữ ký trên điện thoại",
+      signatureOptionalTag: "không bắt buộc",
+      signatureHint: "Bạn có thể ký bằng ngón tay vào khung bên dưới nếu muốn. Vẫn có thể gửi mà không cần chữ ký.",
+      signatureClear: "Xóa chữ ký",
+    },
     field: {
       heroTitle: "Kiểm tra an toàn nơi làm việc",
       heroSub: "Bạn đã quét mã QR. Hãy chọn việc cần làm bên dưới.",
@@ -511,6 +601,16 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
       notAllowedBody: "Màn hình xác nhận này chỉ mở từ mã QR hiện trường được chỉ định. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới nhất.",
       returnToField: "Quay lại cổng vào QR hiện trường",
+      submittedBanner: "Đã gửi thành công. Cảm ơn bạn đã xác nhận.",
+      errorBanner: "Có lỗi khi lưu. Vui lòng thử lại sau ít phút.",
+      missingIdentifierBanner: "Vui lòng nhập số xác nhận.",
+      workerNameLabel: "Họ và tên",
+      workerNamePlaceholder: "Nhập họ và tên",
+      workerAffiliationLabel: "Bộ phận · khu vực làm việc",
+      workerAffiliationPlaceholder: "VD: Nhóm sản xuất / dây chuyền đóng gói",
+      workerIdentifierLabel: "Mã xác nhận",
+      workerIdentifierPlaceholder: "4 số cuối điện thoại hoặc mã nhân viên",
+      workerIdentifierHelp: "Chỉ dùng để phân biệt người trùng tên. Không nhập toàn bộ số điện thoại.",
     },
     anonymous: {
       heroTitle: "Hộp ý kiến ẩn danh",
@@ -538,6 +638,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "Quay lại cổng vào QR hiện trường",
       qrCheckingTitle: "Không thể mở màn hình gửi ý kiến ẩn danh.",
       notAllowedBody: "Đường dẫn ý kiến ẩn danh này chỉ hoạt động từ mã QR hiện trường được chỉ định.",
+      submittedBanner: "Đã tiếp nhận ý kiến ẩn danh. Cảm ơn bạn đã xác nhận.",
+      errorBanner: "Có lỗi khi lưu. Vui lòng thử lại sau ít phút.",
     },
     visitor: {
       heroTitle: "Hướng dẫn an toàn trước khi vào",
@@ -561,6 +663,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "Quay lại cổng vào QR hiện trường",
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
       notAllowedBody: "Màn hình hướng dẫn này chỉ mở từ mã QR hiện trường được chỉ định. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới nhất.",
+      submittedBanner: "Đã xác nhận thành công.",
+      errorBanner: "Có lỗi khi lưu. Vui lòng thử lại sau ít phút.",
     },
     representative: {
       heroTitle: "Xác nhận của đại diện người lao động",
@@ -577,6 +681,8 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       returnToField: "Quay lại cổng vào QR hiện trường",
       qrCheckingTitle: "Đang kiểm tra mã QR hiện trường",
       notAllowedBody: "Màn hình xác nhận này chỉ mở từ mã QR hiện trường được chỉ định. Hãy hỏi người phụ trách hiện trường để lấy liên kết QR mới nhất.",
+      submittedBanner: "Đã gửi xác nhận thành công. Xin cảm ơn.",
+      errorBanner: "Có lỗi khi lưu. Vui lòng thử lại sau ít phút.",
     },
   },
 };
