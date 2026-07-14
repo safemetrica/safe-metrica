@@ -4,6 +4,10 @@ import {
   getRiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import {
+  resolveActiveRiskSharePublicVersion,
+  type RiskSharePublicVersion,
+} from "@/lib/risk-share/riskSharePublicVersion";
 import RiskSharePublicShell from "@/components/risk-share/public/RiskSharePublicShell";
 import RiskSharePublicHeader, {
   type RiskSharePublicHeaderVariant,
@@ -102,6 +106,65 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
     );
   }
 
+  let monthlyVersion: RiskSharePublicVersion | null = null;
+  let monthlyVersionUnavailableReason: "no_share" | "lookup_failed" | null = null;
+
+  if (mode === "monthly") {
+    const versionResult = await resolveActiveRiskSharePublicVersion(tenantResolution.tenant.code);
+
+    if (versionResult.ok) {
+      monthlyVersion = versionResult.version;
+    } else {
+      monthlyVersionUnavailableReason = versionResult.reason;
+    }
+  }
+
+  if (mode === "monthly" && monthlyVersionUnavailableReason) {
+    return (
+      <RiskSharePublicShell>
+        <main className="rsx-pub-page px-3 py-4">
+          <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
+            <div className="rsx-pub-card overflow-hidden rounded-[1.75rem]">
+              <RiskSharePublicHeader
+                variant={MODE_VARIANT[mode]}
+                companyLabel={companyLabel}
+                pathname={PATHNAME}
+                query={query}
+                activeLocale={locale}
+                languageLabel={common.languageLabel}
+                languageSoonBadgeLabel={common.languageSoonBadge}
+                themeToggleLabel={common.themeToggleLabel}
+                title={modeCopy.title}
+                description={modeCopy.description}
+                badge={
+                  <span className="rsx-pub-chip inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black">
+                    {modeCopy.badge}
+                  </span>
+                }
+              />
+              <div className="p-3">
+                <RiskShareStatusBanner
+                  variant={monthlyVersionUnavailableReason === "lookup_failed" ? "error" : "warning"}
+                  className="rounded-2xl px-4 py-4"
+                >
+                  {monthlyVersionUnavailableReason === "lookup_failed"
+                    ? copy.versionShareLookupFailedBody
+                    : copy.versionShareEmptyBody}
+                </RiskShareStatusBanner>
+                <a
+                  href={returnHref}
+                  className="rsx-pub-cta mt-3 block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                >
+                  {copy.returnToField}
+                </a>
+              </div>
+            </div>
+          </section>
+        </main>
+      </RiskSharePublicShell>
+    );
+  }
+
   return (
     <RiskSharePublicShell>
       <main className="rsx-pub-page px-3 py-4">
@@ -130,6 +193,15 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
               {submitted === "error" ? <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner> : null}
               {submitted === "missing_identifier" ? (
                 <RiskShareStatusBanner variant="error">{copy.missingIdentifierBanner}</RiskShareStatusBanner>
+              ) : null}
+              {submitted === "version_unavailable" ? (
+                <RiskShareStatusBanner variant="warning">{copy.versionShareEmptyBody}</RiskShareStatusBanner>
+              ) : null}
+              {submitted === "version_changed" ? (
+                <RiskShareStatusBanner variant="warning">{copy.versionShareChangedBanner}</RiskShareStatusBanner>
+              ) : null}
+              {submitted === "incomplete_confirmation" ? (
+                <RiskShareStatusBanner variant="error">{copy.versionShareIncompleteBanner}</RiskShareStatusBanner>
               ) : null}
 
               <form action="/api/risk-share/participation/submit" method="post" encType="multipart/form-data">
@@ -170,22 +242,82 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                   </label>
                 </div>
 
-                <fieldset className="rsx-pub-card mt-3 space-y-2 rounded-2xl p-3">
-                  <legend className="rsx-pub-label px-1 text-sm font-black">{copy.checklistLegend}</legend>
-                  {modeCopy.checklist.map((item, index) => (
-                    <label
-                      key={item}
-                      className="rsx-pub-checkbox-row flex items-start gap-2 rounded-xl p-2.5 text-sm font-bold leading-5"
-                    >
-                      <input
-                        type="checkbox"
-                        name={`checklist-${mode}-${index}`}
-                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
-                      />
-                      {item}
-                    </label>
-                  ))}
-                </fieldset>
+                {mode === "monthly" && monthlyVersion ? (
+                  <fieldset className="mt-3 space-y-3">
+                    <legend className="sr-only">{copy.versionShareTitleLabel}</legend>
+                    <input type="hidden" name="versionLockId" value={monthlyVersion.lock.id} readOnly />
+
+                    <div className="rsx-pub-field-card space-y-1 rounded-2xl p-3">
+                      <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
+                        {copy.versionShareTitleLabel}
+                      </p>
+                      <p className="rsx-pub-label text-sm font-black">
+                        {monthlyVersion.lock.title || modeCopy.title}
+                      </p>
+                      <p className="rsx-pub-muted text-xs font-bold">
+                        {copy.versionShareMonthLabel}: {monthlyVersion.lock.month}
+                      </p>
+                      <p className="rsx-pub-muted text-xs font-bold">
+                        {copy.versionShareItemCountLabel(monthlyVersion.items.length)}
+                      </p>
+                    </div>
+
+                    {monthlyVersion.items.map((item) => (
+                      <div key={item.id} className="rsx-pub-card space-y-2 rounded-2xl p-3">
+                        <input type="hidden" name="shareItemId" value={item.id} readOnly />
+                        <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
+                          {copy.versionItemTaskLabel}
+                        </p>
+                        <p className="rsx-pub-label text-sm font-black">{item.taskName}</p>
+                        <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
+                          {copy.versionItemHazardLabel}
+                        </p>
+                        <p className="rsx-pub-label text-sm font-bold leading-5">{item.hazard}</p>
+                        {item.improvementPlan || item.currentControls || item.workerShareSummary ? (
+                          <>
+                            <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
+                              {copy.versionItemMeasureLabel}
+                            </p>
+                            <p className="rsx-pub-label text-sm font-bold leading-5">
+                              {item.improvementPlan || item.currentControls || item.workerShareSummary}
+                            </p>
+                          </>
+                        ) : null}
+                        {item.riskLevel ? (
+                          <span className="rsx-pub-chip inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black">
+                            {copy.versionItemRiskLevelLabel}: {item.riskLevel}
+                          </span>
+                        ) : null}
+                        <label className="rsx-pub-checkbox-row flex items-start gap-2 rounded-xl p-2.5 text-sm font-bold leading-5">
+                          <input
+                            type="checkbox"
+                            name={`shareItemConfirmed-${item.id}`}
+                            required
+                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
+                          />
+                          {copy.versionItemConfirmLabel}
+                        </label>
+                      </div>
+                    ))}
+                  </fieldset>
+                ) : (
+                  <fieldset className="rsx-pub-card mt-3 space-y-2 rounded-2xl p-3">
+                    <legend className="rsx-pub-label px-1 text-sm font-black">{copy.checklistLegend}</legend>
+                    {modeCopy.checklist.map((item, index) => (
+                      <label
+                        key={item}
+                        className="rsx-pub-checkbox-row flex items-start gap-2 rounded-xl p-2.5 text-sm font-bold leading-5"
+                      >
+                        <input
+                          type="checkbox"
+                          name={`checklist-${mode}-${index}`}
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
+                        />
+                        {item}
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
 
                 <div className="mt-3">
                   <RiskShareRepresentativeSignaturePad

@@ -114,6 +114,18 @@ type ParticipationCopy = {
   workerIdentifierLabel: string;
   workerIdentifierPlaceholder: string;
   workerIdentifierHelp: string;
+  versionShareTitleLabel: string;
+  versionShareMonthLabel: string;
+  versionShareItemCountLabel: (count: number) => string;
+  versionItemTaskLabel: string;
+  versionItemHazardLabel: string;
+  versionItemMeasureLabel: string;
+  versionItemRiskLevelLabel: string;
+  versionItemConfirmLabel: string;
+  versionShareEmptyBody: string;
+  versionShareLookupFailedBody: string;
+  versionShareChangedBanner: string;
+  versionShareIncompleteBanner: string;
 };
 
 type AnonymousCopy = {
@@ -289,6 +301,18 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       workerIdentifierLabel: "확인번호",
       workerIdentifierPlaceholder: "휴대폰 뒤 4자리 또는 사번",
       workerIdentifierHelp: "동명이인 구분을 위한 확인번호입니다. 전체 전화번호는 입력하지 마세요.",
+      versionShareTitleLabel: "공유본",
+      versionShareMonthLabel: "기준 월",
+      versionShareItemCountLabel: (count) => `공유 위험요인 ${count}건`,
+      versionItemTaskLabel: "작업명",
+      versionItemHazardLabel: "위험요인",
+      versionItemMeasureLabel: "확인할 안전조치",
+      versionItemRiskLevelLabel: "위험등급",
+      versionItemConfirmLabel: "이 위험요인과 안전조치 내용을 확인했습니다.",
+      versionShareEmptyBody: "현재 근로자에게 공유된 위험성평가 항목이 없습니다.",
+      versionShareLookupFailedBody: "공유본을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      versionShareChangedBanner: "공유본이 갱신되었습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.",
+      versionShareIncompleteBanner: "모든 위험요인을 확인해야 제출할 수 있습니다.",
     },
     anonymous: {
       heroTitle: "익명 의견함",
@@ -450,6 +474,18 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       workerIdentifierLabel: "ID number",
       workerIdentifierPlaceholder: "Last 4 digits of phone or employee number",
       workerIdentifierHelp: "Used only to tell apart people with the same name. Do not enter your full phone number.",
+      versionShareTitleLabel: "Shared risk pack",
+      versionShareMonthLabel: "Reference month",
+      versionShareItemCountLabel: (count) => `${count} shared hazard${count === 1 ? "" : "s"}`,
+      versionItemTaskLabel: "Task",
+      versionItemHazardLabel: "Hazard",
+      versionItemMeasureLabel: "Safety measure to confirm",
+      versionItemRiskLevelLabel: "Risk level",
+      versionItemConfirmLabel: "I have reviewed this hazard and safety measure.",
+      versionShareEmptyBody: "There are no shared hazards for workers right now.",
+      versionShareLookupFailedBody: "We couldn't load the shared risk pack. Please try again in a moment.",
+      versionShareChangedBanner: "The shared risk pack was updated. Please refresh and review it again.",
+      versionShareIncompleteBanner: "Please review every hazard before submitting.",
     },
     anonymous: {
       heroTitle: "Anonymous box",
@@ -611,6 +647,18 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       workerIdentifierLabel: "Mã xác nhận",
       workerIdentifierPlaceholder: "4 số cuối điện thoại hoặc mã nhân viên",
       workerIdentifierHelp: "Chỉ dùng để phân biệt người trùng tên. Không nhập toàn bộ số điện thoại.",
+      versionShareTitleLabel: "Gói rủi ro chia sẻ",
+      versionShareMonthLabel: "Tháng áp dụng",
+      versionShareItemCountLabel: (count) => `${count} mối nguy đã chia sẻ`,
+      versionItemTaskLabel: "Công việc",
+      versionItemHazardLabel: "Mối nguy",
+      versionItemMeasureLabel: "Biện pháp an toàn cần xác nhận",
+      versionItemRiskLevelLabel: "Mức độ rủi ro",
+      versionItemConfirmLabel: "Tôi đã xem mối nguy và biện pháp an toàn này.",
+      versionShareEmptyBody: "Hiện chưa có mối nguy nào được chia sẻ cho người lao động.",
+      versionShareLookupFailedBody: "Không thể tải gói rủi ro chia sẻ. Vui lòng thử lại sau ít phút.",
+      versionShareChangedBanner: "Gói rủi ro chia sẻ đã được cập nhật. Vui lòng tải lại và xem lại.",
+      versionShareIncompleteBanner: "Vui lòng xác nhận tất cả các mối nguy trước khi gửi.",
     },
     anonymous: {
       heroTitle: "Hộp ý kiến ẩn danh",
