@@ -604,6 +604,13 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       submittedBanner: "Đã gửi thành công. Cảm ơn bạn đã xác nhận.",
       errorBanner: "Có lỗi khi lưu. Vui lòng thử lại sau ít phút.",
       missingIdentifierBanner: "Vui lòng nhập số xác nhận.",
+      workerNameLabel: "Họ và tên",
+      workerNamePlaceholder: "Nhập họ và tên",
+      workerAffiliationLabel: "Bộ phận · khu vực làm việc",
+      workerAffiliationPlaceholder: "VD: Nhóm sản xuất / dây chuyền đóng gói",
+      workerIdentifierLabel: "Mã xác nhận",
+      workerIdentifierPlaceholder: "4 số cuối điện thoại hoặc mã nhân viên",
+      workerIdentifierHelp: "Chỉ dùng để phân biệt người trùng tên. Không nhập toàn bộ số điện thoại.",
     },
     anonymous: {
       heroTitle: "Hộp ý kiến ẩn danh",

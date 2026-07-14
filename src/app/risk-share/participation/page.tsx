@@ -139,33 +139,33 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
 
                 <div className="rsx-pub-field-card space-y-3 rounded-2xl p-3">
                   <label className="rsx-pub-label block text-sm font-black">
-                    이름
+                    {copy.workerNameLabel}
                     <input
                       name="workerName"
                       required
-                      placeholder="성명을 입력해 주세요"
+                      placeholder={copy.workerNamePlaceholder}
                       className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
                     />
                   </label>
                   <label className="rsx-pub-label block text-sm font-black">
-                    소속 · 작업구역
+                    {copy.workerAffiliationLabel}
                     <input
                       name="workerAffiliation"
-                      placeholder="예: 생산팀 / 포장라인"
+                      placeholder={copy.workerAffiliationPlaceholder}
                       className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
                     />
                   </label>
                   <label className="rsx-pub-label block text-sm font-black">
-                    확인번호
+                    {copy.workerIdentifierLabel}
                     <input
                       name="workerIdentifier"
                       required
                       maxLength={20}
-                      placeholder="휴대폰 뒤 4자리 또는 사번"
+                      placeholder={copy.workerIdentifierPlaceholder}
                       className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
                     />
                     <span className="rsx-pub-muted mt-1.5 block text-xs font-semibold leading-4">
-                      동명이인 구분을 위한 확인번호입니다. 전체 전화번호는 입력하지 마세요.
+                      {copy.workerIdentifierHelp}
                     </span>
                   </label>
                 </div>
