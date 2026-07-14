@@ -59,7 +59,7 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
       <RiskSharePublicShell className="rsx-pub-flow rsx-pub-flow--anonymous">
         <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
           <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
-            <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
+            <div className="rsx-pub-card rsx-pub-flow-card">
               <RiskSharePublicHeader
                 variant="anonymous"
                 companyLabel={companyLabel}
@@ -72,13 +72,13 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
                 title={copy.qrCheckingTitle}
               />
               <div className="rsx-pub-flow-body p-3">
-                <RiskShareStatusBanner variant="warning" className="rounded-2xl px-4 py-4">
+                <RiskShareStatusBanner variant="warning" className="rounded-[13px] px-4 py-4">
                   {copy.notAllowedBody}
                 </RiskShareStatusBanner>
                 {companyCode ? (
                   <a
                     href={returnHref}
-                    className="rsx-pub-cta rsx-pub-return-link mt-3 block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                    className="rsx-pub-cta rsx-pub-return-link mt-3 block rounded-[11px] px-5 py-3 text-center text-sm font-black"
                   >
                     {copy.returnToField}
                   </a>
@@ -95,7 +95,7 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
     <RiskSharePublicShell className="rsx-pub-flow rsx-pub-flow--anonymous">
       <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
         <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
-          <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
+          <div className="rsx-pub-card rsx-pub-flow-card">
             <RiskSharePublicHeader
               variant="anonymous"
               companyLabel={companyLabel}
@@ -135,7 +135,7 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
                     {copy.typeChoices.map((choice, index) => (
                       <label
                         key={choice.value}
-                        className="rsx-pub-field-card rsx-pub-choice-card flex items-center gap-2 rounded-2xl px-3 py-3 text-sm font-bold"
+                        className="rsx-pub-field-card rsx-pub-choice-card flex items-center gap-2 rounded-[13px] px-3 py-3 text-sm font-bold"
                       >
                         <input
                           type="radio"
@@ -151,13 +151,13 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
                   </div>
                 </fieldset>
 
-                <div className="rsx-pub-field-card rsx-pub-form-section space-y-3 rounded-2xl p-3">
+                <div className="rsx-pub-field-card rsx-pub-form-section space-y-3 rounded-[13px] p-3">
                   <label className="rsx-pub-label block text-sm font-black">
                     {copy.locationLabel}
                     <input
                       name="location"
                       placeholder={copy.locationPlaceholder}
-                      className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
+                      className="rsx-pub-input mt-2 w-full rounded-[13px] border px-4 py-3 text-base outline-none"
                     />
                   </label>
 
@@ -169,31 +169,31 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
                       minLength={2}
                       placeholder={copy.contentPlaceholder}
                       rows={6}
-                      className="rsx-pub-input mt-2 w-full resize-none rounded-2xl border px-4 py-3 text-base leading-7 outline-none"
+                      className="rsx-pub-input mt-2 w-full resize-none rounded-[13px] border px-4 py-3 text-base leading-7 outline-none"
                     />
                   </label>
                 </div>
 
-                <div className="rsx-pub-banner rsx-pub-banner--warning rounded-2xl p-4">
+                <div className="rsx-pub-banner rsx-pub-banner--warning rounded-[13px] p-4">
                   <p className="text-sm font-black">{copy.preSubmitTitle}</p>
                   <p className="mt-2 text-sm leading-6">{copy.preSubmitBody}</p>
                 </div>
 
-                <div className="rsx-pub-chip rsx-pub-after-note rounded-2xl p-4">
+                <div className="rsx-pub-chip rsx-pub-after-note rounded-[13px] p-4">
                   <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
                     {copy.afterSubmitLabel}
                   </p>
                   <p className="rsx-pub-label mt-1.5 text-xs font-bold leading-5">{copy.afterSubmitBody}</p>
                 </div>
 
-                <div className="rsx-pub-field-card rsx-pub-submit-zone rounded-2xl p-3">
+                <div className="rsx-pub-field-card rsx-pub-submit-zone rounded-[13px] p-3">
                   <RiskSharePrimaryButton label={copy.submitCta} submittingLabel={common.submittingLabel} />
                 </div>
               </form>
 
               <a
                 href={returnHref}
-                className="rsx-pub-card-flat rsx-pub-return-link block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                className="rsx-pub-card-flat rsx-pub-return-link block rounded-[11px] px-5 py-3 text-center text-sm font-black"
               >
                 {copy.returnToField}
               </a>

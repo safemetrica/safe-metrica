@@ -9,7 +9,7 @@
   --pub-bg: #eef4f8;
   --pub-card-bg: #ffffff;
   --pub-card-border: #e2e8f0;
-  --pub-card-shadow: 0 20px 45px rgba(2, 6, 23, 0.12);
+  --pub-card-shadow: 0 14px 36px rgba(20, 30, 55, 0.12);
   --pub-text: #020617;
   --pub-text-muted: #64748b;
   --pub-text-subtle: #94a3b8;
@@ -42,7 +42,7 @@
   --pub-bg: #0b1120;
   --pub-card-bg: #111a2e;
   --pub-card-border: #1e293b;
-  --pub-card-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+  --pub-card-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
   --pub-text: #f1f5f9;
   --pub-text-muted: #94a3b8;
   --pub-text-subtle: #64748b;
@@ -123,7 +123,7 @@
 }
 
 .rsx-pub-banner {
-  border-radius: 1rem;
+  border-radius: 13px;
 }
 
 .rsx-pub-banner--success {
@@ -369,7 +369,13 @@
   box-shadow: inset 0 1px 0 0 var(--pub-flow-accent-soft);
 }
 
+/*
+ * RiskSharePrimaryButton hardcodes rounded-2xl; override to the designer's
+ * own .btn radius (11px, from designer.css/CSS_TOKENS.md) here instead of
+ * editing that shared component, which is out of this change's scope.
+ */
 .rsx-pub-flow .rsx-pub-cta {
+  border-radius: 11px;
   box-shadow: 0 10px 24px var(--pub-flow-accent-soft);
 }
 

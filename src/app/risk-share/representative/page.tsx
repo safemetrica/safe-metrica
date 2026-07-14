@@ -51,7 +51,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
       <RiskSharePublicShell className="rsx-pub-flow">
         <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
           <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
-            <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
+            <div className="rsx-pub-card rsx-pub-flow-card">
               <RiskSharePublicHeader
                 variant="brand"
                 companyLabel={companyLabel}
@@ -64,13 +64,13 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
                 title={copy.qrCheckingTitle}
               />
               <div className="rsx-pub-flow-body p-3">
-                <RiskShareStatusBanner variant="warning" className="rounded-2xl px-4 py-4">
+                <RiskShareStatusBanner variant="warning" className="rounded-[13px] px-4 py-4">
                   {copy.notAllowedBody}
                 </RiskShareStatusBanner>
                 {companyCode ? (
                   <a
                     href={returnHref}
-                    className="rsx-pub-cta mt-3 block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                    className="rsx-pub-cta mt-3 block rounded-[11px] px-5 py-3 text-center text-sm font-black"
                   >
                     {copy.returnToField}
                   </a>
@@ -87,7 +87,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
     <RiskSharePublicShell className="rsx-pub-flow">
       <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
         <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
-          <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
+          <div className="rsx-pub-card rsx-pub-flow-card">
             <RiskSharePublicHeader
               variant="brand"
               companyLabel={companyLabel}
@@ -121,7 +121,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
                   <input
                     name="representativeName"
                     placeholder={copy.namePlaceholder}
-                    className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
+                    className="rsx-pub-input mt-2 w-full rounded-[13px] border px-4 py-3 text-base outline-none"
                   />
                 </label>
 
@@ -130,7 +130,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
                   <input
                     name="affiliation"
                     placeholder={copy.affiliationPlaceholder}
-                    className="rsx-pub-input mt-2 w-full rounded-2xl border px-4 py-3 text-base outline-none"
+                    className="rsx-pub-input mt-2 w-full rounded-[13px] border px-4 py-3 text-base outline-none"
                   />
                 </label>
 
@@ -140,11 +140,11 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
                     name="opinion"
                     placeholder={copy.opinionPlaceholder}
                     rows={5}
-                    className="rsx-pub-input mt-2 w-full resize-none rounded-2xl border px-4 py-3 text-base leading-7 outline-none"
+                    className="rsx-pub-input mt-2 w-full resize-none rounded-[13px] border px-4 py-3 text-base leading-7 outline-none"
                   />
                 </label>
 
-                <label className="rsx-pub-checkbox-row flex items-start gap-2 rounded-2xl p-3 text-sm font-bold leading-5">
+                <label className="rsx-pub-checkbox-row flex items-start gap-2 rounded-[13px] p-3 text-sm font-bold leading-5">
                   <input type="checkbox" name="confirmed" className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300" />
                   {copy.confirmLabel}
                 </label>
@@ -156,7 +156,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
                   clearLabel={common.signatureClear}
                 />
 
-                <div className="rsx-pub-field-card rsx-pub-submit-zone rounded-2xl p-3">
+                <div className="rsx-pub-field-card rsx-pub-submit-zone rounded-[13px] p-3">
                   <RiskSharePrimaryButton label={copy.submitCta} submittingLabel={common.submittingLabel} />
                 </div>
               </form>
@@ -165,7 +165,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
 
               <a
                 href={returnHref}
-                className="rsx-pub-card-flat rsx-pub-return-link block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                className="rsx-pub-card-flat rsx-pub-return-link block rounded-[11px] px-5 py-3 text-center text-sm font-black"
               >
                 {copy.returnToField}
               </a>
