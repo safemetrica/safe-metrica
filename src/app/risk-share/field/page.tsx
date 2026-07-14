@@ -6,13 +6,24 @@ import {
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
-import RiskSharePublicShell from "@/components/risk-share/public/RiskSharePublicShell";
-import RiskSharePublicHeader from "@/components/risk-share/public/RiskSharePublicHeader";
+import FieldLangSwitcher from "./FieldLangSwitcher";
+import FieldThemeToggle from "./FieldThemeToggle";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const PATHNAME = "/risk-share/field";
+const FIELD_THEME_STORAGE_KEY = "sm-risk-share-public-theme";
+
+/**
+ * Seeds this page's nearest .rsx-shell with the same theme preference the
+ * #889 shared .rsx-pub shell reads/writes (sm-risk-share-public-theme), so a
+ * choice made on one public QR screen is respected here too, before paint --
+ * mirrors RiskSharePublicShell's inline init script, scoped to this page's
+ * own script tag via document.currentScript instead of a shared root id.
+ */
+const FIELD_THEME_INIT_SCRIPT = `(function(){try{var k=${JSON.stringify(
+  FIELD_THEME_STORAGE_KEY,
+)};var s=localStorage.getItem(k);var t=(s==="light"||s==="dark")?s:((window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");var r=document.currentScript&&document.currentScript.closest(".rsx-shell");if(r)r.setAttribute("data-theme",t);}catch(e){}})();`;
 
 type PageProps = {
   searchParams?: Promise<{
@@ -39,92 +50,34 @@ function getCurrentMonthKst() {
   return kst.getUTCMonth() + 1;
 }
 
-function NoticeShell({
-  title,
-  companyLabel,
-  pathname,
-  query,
-  locale,
-  languageLabel,
-  languageSoonBadgeLabel,
-  themeToggleLabel,
-  children,
-}: {
-  title: string;
-  companyLabel: string;
-  pathname: string;
-  query: Record<string, string | undefined>;
-  locale: RiskShareLocale;
-  languageLabel: string;
-  languageSoonBadgeLabel: string;
-  themeToggleLabel: string;
-  children: React.ReactNode;
-}) {
+function NoticeShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <RiskSharePublicShell>
-      <main className="rsx-pub-page px-4 py-5">
-        <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
-          <div className="rsx-pub-card overflow-hidden rounded-[2rem]">
-            <RiskSharePublicHeader
-              variant="brand"
-              companyLabel={companyLabel}
-              pathname={pathname}
-              query={query}
-              activeLocale={locale}
-              languageLabel={languageLabel}
-              languageSoonBadgeLabel={languageSoonBadgeLabel}
-              themeToggleLabel={themeToggleLabel}
-              title={title}
-            />
-            <div className="p-4">
-              <div className="rsx-pub-banner rsx-pub-banner--warning rounded-3xl px-5 py-5 leading-7">
-                {children}
+    <div className="rsx-shell">
+      <div className="field-body">
+        <div className="field">
+          <div className="field__top">
+            <div className="field__bar">
+              <div className="field__brand">
+                <img src="/risk-share-assets/logo_darkmode.png" alt="SafeMetrica" />
               </div>
             </div>
+            <h1 className="field__title">{title}</h1>
           </div>
-        </section>
-      </main>
-    </RiskSharePublicShell>
+          <div className="field__body">
+            <div className="field__note">
+              <iconify-icon icon="lucide:info"></iconify-icon>
+              <span>{children}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
-const ACTIVITY_ICON: Record<string, React.ReactNode> = {
-  share: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-      <circle cx="18" cy="5" r="3" />
-      <circle cx="6" cy="12" r="3" />
-      <circle cx="18" cy="19" r="3" />
-      <path d="m8.6 10.5 6.8-3.9M8.6 13.5l6.8 3.9" />
-    </svg>
-  ),
-  prework: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-      <rect x="4" y="4" width="16" height="18" rx="2" />
-      <path d="M9 2h6v4H9zM8 12l2.5 2.5L16 9" />
-    </svg>
-  ),
-  anonymous: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" />
-    </svg>
-  ),
-};
-
-const ACTIVITY_ICON_CLASS: Record<string, string> = {
-  share: "bg-blue-100 text-blue-600",
-  prework: "bg-emerald-100 text-emerald-600",
-  anonymous: "bg-amber-100 text-amber-600",
-};
-
-const ACTIVITY_BADGE_CLASS: Record<string, string> = {
-  share: "bg-blue-50 text-blue-700",
-  prework: "bg-emerald-50 text-emerald-700",
-  anonymous: "bg-amber-50 text-amber-700",
-};
-
 /**
  * Designer field.html's step trail merges "공유" + "확인·지금 단계" into a
- * single active step; kept locally (not in riskShareI18n.ts -- this was
+ * single active step; kept locally (not in riskShareI18n.ts — this was
  * already a page-local constant, not a shared i18n key) so the 4-segment
  * Trail semantics survive as 3 dot-steps matching the designer structure.
  */
@@ -146,7 +99,9 @@ const FIELD_TRAIL_STEPS: Record<RiskShareLocale, [string, string][]> = {
   ],
 };
 
-export default async function RiskSharePublicFieldEntryPage({ searchParams }: PageProps) {
+export default async function RiskSharePublicFieldEntryPage({
+  searchParams,
+}: PageProps) {
   const params = (await searchParams) ?? {};
   const companyCode = normalizeCompanyCode(params.company);
   const locale = getRiskShareLocale(params.lang);
@@ -154,31 +109,13 @@ export default async function RiskSharePublicFieldEntryPage({ searchParams }: Pa
   const common = getRiskShareCopy(locale).common;
   const tenantResolution = await resolveActiveRiskSharePublicTenant(params.company ?? "");
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
-  const query = { company: companyCode };
-  const noticeShellProps = {
-    companyLabel,
-    pathname: PATHNAME,
-    query,
-    locale,
-    languageLabel: common.languageLabel,
-    languageSoonBadgeLabel: common.languageSoonBadge,
-    themeToggleLabel: common.themeToggleLabel,
-  };
 
   if (!companyCode) {
-    return (
-      <NoticeShell title={copy.qrCheckingTitle} {...noticeShellProps}>
-        {copy.noCodeBody}
-      </NoticeShell>
-    );
+    return <NoticeShell title={copy.qrCheckingTitle}>{copy.noCodeBody}</NoticeShell>;
   }
 
   if (!tenantResolution.ok) {
-    return (
-      <NoticeShell title={copy.qrCheckingTitle} {...noticeShellProps}>
-        {copy.notRegisteredBody}
-      </NoticeShell>
-    );
+    return <NoticeShell title={copy.qrCheckingTitle}>{copy.notRegisteredBody}</NoticeShell>;
   }
 
   const currentMonth = getCurrentMonthKst();
@@ -187,6 +124,9 @@ export default async function RiskSharePublicFieldEntryPage({ searchParams }: Pa
   const activities = [
     {
       kind: "share",
+      icon: "lucide:share-2",
+      iconClass: "i-blue",
+      badgeClass: "b-blue",
       title: copy.shareTitle,
       badge: copy.shareBadge,
       description: copy.shareDescription,
@@ -196,6 +136,9 @@ export default async function RiskSharePublicFieldEntryPage({ searchParams }: Pa
     },
     {
       kind: "prework",
+      icon: "lucide:clipboard-check",
+      iconClass: "i-green",
+      badgeClass: "b-green",
       title: copy.preworkTitle,
       badge: copy.preworkBadge,
       description: copy.preworkDescription,
@@ -205,6 +148,9 @@ export default async function RiskSharePublicFieldEntryPage({ searchParams }: Pa
     },
     {
       kind: "anonymous",
+      icon: "lucide:message-circle-question",
+      iconClass: "i-orange",
+      badgeClass: "b-orange",
       title: copy.anonTitle,
       badge: copy.anonBadge,
       description: copy.anonDescription,
@@ -215,103 +161,81 @@ export default async function RiskSharePublicFieldEntryPage({ searchParams }: Pa
   ];
 
   return (
-    <RiskSharePublicShell>
-      <main className="rsx-pub-page px-3 py-4">
-        <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
-          <div className="rsx-pub-card overflow-hidden rounded-[1.75rem]">
-            <RiskSharePublicHeader
-              variant="brand"
-              companyLabel={companyLabel}
-              pathname={PATHNAME}
-              query={query}
-              activeLocale={locale}
-              languageLabel={common.languageLabel}
-              languageSoonBadgeLabel={common.languageSoonBadge}
-              themeToggleLabel={common.themeToggleLabel}
-              title={copy.heroTitle}
-              description={copy.heroSub}
-              badge={
-                <span className="rsx-pub-chip inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.65rem] font-black">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
-                  {copy.periodLabel(currentMonth)}
-                </span>
-              }
-            />
-
-            <div className="space-y-3 p-3">
-              <div className="flex items-center justify-between px-1">
-                {trailSteps.map((step, index) => (
-                  <div key={step.join("-")} className="flex flex-1 items-center last:flex-none">
-                    <div className="flex flex-col items-center gap-1 text-center">
-                      <div
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black ${
-                          index === 0 ? "rsx-pub-trail-dot--active" : "rsx-pub-trail-dot"
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                      <div className="rsx-pub-subtle text-[0.62rem] font-bold leading-tight">
-                        {step[0]}
-                        <br />
-                        {step[1]}
-                      </div>
-                    </div>
-                    {index < trailSteps.length - 1 ? (
-                      <div className="rsx-pub-trail-line mx-1.5 h-px flex-1" aria-hidden="true" />
-                    ) : null}
-                  </div>
-                ))}
+    <div className="rsx-shell" suppressHydrationWarning>
+      <script dangerouslySetInnerHTML={{ __html: FIELD_THEME_INIT_SCRIPT }} />
+      <div className="field-body">
+        <div className="field">
+          <div className="field__top">
+            <div className="field__bar">
+              <div className="field__brand">
+                <img src="/risk-share-assets/logo_darkmode.png" alt="SafeMetrica" />
               </div>
+              <div className="field__tools">
+                <FieldLangSwitcher companyCode={companyCode} activeLocale={locale} />
+                <FieldThemeToggle label={common.themeToggleLabel} />
+              </div>
+            </div>
+            <div className="field__company">{companyLabel}</div>
+            <h1 className="field__title">{copy.heroTitle}</h1>
+            <p className="field__sub">{copy.heroSub}</p>
+            <div className="field__chip">
+              <span className="live"></span> {copy.periodLabel(currentMonth)}
+            </div>
+          </div>
 
-              {activities.map((activity) => (
-                <Link
-                  key={activity.kind}
-                  href={activity.href}
-                  className="rsx-pub-qcard block rounded-2xl p-3 transition-opacity active:opacity-80"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${ACTIVITY_ICON_CLASS[activity.kind]}`}>
-                      {ACTIVITY_ICON[activity.kind]}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <b className="rsx-pub-label text-sm font-black">{activity.title}</b>
-                      <p className="rsx-pub-muted mt-0.5 text-xs font-semibold leading-5">{activity.description}</p>
-                      <p className="rsx-pub-subtle mt-0.5 text-[0.7rem] leading-5">{activity.followUp}</p>
-                    </div>
+          <div className="field__body">
+            <div className="field__steps">
+              {trailSteps.map((step, index) => (
+                <div className={index === 0 ? "fstep active" : "fstep"} key={step.join("-")}>
+                  <div className="fstep__dot">{index + 1}</div>
+                  <div className="fstep__t">
+                    {step[0]}
+                    <br />
+                    {step[1]}
                   </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black ${ACTIVITY_BADGE_CLASS[activity.kind]}`}>
-                      {activity.badge}
-                    </span>
-                    <span className="rsx-pub-label inline-flex items-center gap-1 text-xs font-black">
-                      {activity.cta}
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden="true">
-                        <path d="M5 12h14M13 6l6 6-6 6" />
-                      </svg>
-                    </span>
-                  </div>
-                </Link>
+                  {index < trailSteps.length - 1 ? <div className="fstep__line"></div> : null}
+                </div>
               ))}
-
-              <div className="rsx-pub-chip flex items-start gap-2 rounded-2xl p-3">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4M12 8h.01" />
-                </svg>
-                <span className="rsx-pub-muted text-xs font-semibold leading-5">
-                  <b className="rsx-pub-label font-black">{copy.recordNoteLabel}</b> · {copy.recordNoteBody}
-                </span>
-              </div>
-
-              <p className="rsx-pub-subtle text-center text-xs">{copy.helpline}</p>
             </div>
 
-            <p className="rsx-pub-subtle border-t border-[color:var(--pub-card-border)] px-4 py-3 text-center text-[0.65rem] leading-5">
-              {copy.fieldWorkerDisclaimer}
+            {activities.map((activity) => (
+              <Link key={activity.kind} href={activity.href} className="qcard">
+                <div className="qcard__row">
+                  <div className={`qcard__ic ${activity.iconClass}`}>
+                    <iconify-icon icon={activity.icon}></iconify-icon>
+                  </div>
+                  <div className="qcard__main">
+                    <b>{activity.title}</b>
+                    <p>{activity.description}</p>
+                    <p style={{ color: "var(--text-3)", fontSize: "13px", marginTop: "1px" }}>
+                      {activity.followUp}
+                    </p>
+                  </div>
+                </div>
+                <div className="qcard__foot">
+                  <span className={`badge ${activity.badgeClass}`}>{activity.badge}</span>
+                  <span className="qcard__cta">
+                    {activity.cta} <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+                  </span>
+                </div>
+              </Link>
+            ))}
+
+            <div className="field__note">
+              <iconify-icon icon="lucide:info"></iconify-icon>
+              <span>
+                <b>{copy.recordNoteLabel}</b> · {copy.recordNoteBody}
+              </span>
+            </div>
+
+            <p style={{ textAlign: "center", fontSize: "14px", color: "var(--text-3)" }}>
+              {copy.helpline}
             </p>
           </div>
-        </section>
-      </main>
-    </RiskSharePublicShell>
+
+          <div className="field__foot">{copy.fieldWorkerDisclaimer}</div>
+        </div>
+      </div>
+    </div>
   );
 }
