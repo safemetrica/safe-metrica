@@ -71,12 +71,12 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
 
   if (!tenantResolution.ok) {
     return (
-      <RiskSharePublicShell>
-        <main className="rsx-pub-page px-3 py-4">
+      <RiskSharePublicShell className={`rsx-pub-flow rsx-pub-flow--${mode}`}>
+        <main className="rsx-pub-page rsx-pub-flow-page px-3 py-4">
           <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
-            <div className="rsx-pub-card overflow-hidden rounded-[1.75rem]">
+            <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
               <RiskSharePublicHeader
-                variant="brand"
+                variant={MODE_VARIANT[mode]}
                 companyLabel={companyLabel}
                 pathname={PATHNAME}
                 query={query}
@@ -86,7 +86,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                 themeToggleLabel={common.themeToggleLabel}
                 title={copy.qrCheckingTitle}
               />
-              <div className="p-3">
+              <div className="rsx-pub-flow-body p-3">
                 <RiskShareStatusBanner variant="warning" className="rounded-2xl px-4 py-4">
                   {copy.notAllowedBody}
                 </RiskShareStatusBanner>
@@ -128,10 +128,10 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
 
   if (mode === "monthly" && monthlyVersionUnavailableReason) {
     return (
-      <RiskSharePublicShell>
-        <main className="rsx-pub-page px-3 py-4">
+      <RiskSharePublicShell className={`rsx-pub-flow rsx-pub-flow--${mode}`}>
+        <main className="rsx-pub-page rsx-pub-flow-page px-3 py-4">
           <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
-            <div className="rsx-pub-card overflow-hidden rounded-[1.75rem]">
+            <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
               <RiskSharePublicHeader
                 variant={MODE_VARIANT[mode]}
                 companyLabel={companyLabel}
@@ -144,12 +144,12 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                 title={modeCopy.title}
                 description={modeCopy.description}
                 badge={
-                  <span className="rsx-pub-chip inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black">
+                  <span className="rsx-pub-chip rsx-pub-flow-badge inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black">
                     {modeCopy.badge}
                   </span>
                 }
               />
-              <div className="p-3">
+              <div className="rsx-pub-flow-body p-3">
                 <RiskShareStatusBanner
                   variant={monthlyVersionUnavailableReason === "no_share" ? "warning" : "error"}
                   className="rounded-2xl px-4 py-4"
@@ -171,10 +171,10 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   }
 
   return (
-    <RiskSharePublicShell>
-      <main className="rsx-pub-page px-3 py-4">
+    <RiskSharePublicShell className={`rsx-pub-flow rsx-pub-flow--${mode}`}>
+      <main className="rsx-pub-page rsx-pub-flow-page px-3 py-4">
         <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
-          <div className="rsx-pub-card overflow-hidden rounded-[1.75rem]">
+          <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
             <RiskSharePublicHeader
               variant={MODE_VARIANT[mode]}
               companyLabel={companyLabel}
@@ -187,13 +187,13 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
               title={modeCopy.title}
               description={modeCopy.description}
               badge={
-                <span className="rsx-pub-chip inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black">
+                <span className="rsx-pub-chip rsx-pub-flow-badge inline-flex items-center rounded-full px-2.5 py-1 text-[0.65rem] font-black">
                   {modeCopy.badge}
                 </span>
               }
             />
 
-            <div className="space-y-3 p-3">
+            <div className="rsx-pub-flow-body space-y-3 p-3">
               {submitted === "1" ? <RiskShareStatusBanner variant="success">{copy.submittedBanner}</RiskShareStatusBanner> : null}
               {submitted === "error" ? <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner> : null}
               {submitted === "missing_identifier" ? (
@@ -214,7 +214,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                 <input type="hidden" name="mode" value={mode} readOnly />
                 <input type="hidden" name="lang" value={locale} readOnly />
 
-                <div className="rsx-pub-field-card space-y-3 rounded-2xl p-3">
+                <div className="rsx-pub-field-card rsx-pub-form-section space-y-3 rounded-2xl p-3">
                   <label className="rsx-pub-label block text-sm font-black">
                     {copy.workerNameLabel}
                     <input
@@ -252,7 +252,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                     <legend className="sr-only">{copy.versionShareTitleLabel}</legend>
                     <input type="hidden" name="versionLockId" value={monthlyVersion.lock.id} readOnly />
 
-                    <div className="rsx-pub-field-card space-y-1 rounded-2xl p-3">
+                    <div className="rsx-pub-field-card rsx-pub-version-summary space-y-1 rounded-2xl p-3">
                       <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
                         {copy.versionShareTitleLabel}
                       </p>
@@ -272,7 +272,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                         item.workerShareSummary || item.improvementPlan || item.currentControls;
 
                       return (
-                      <div key={item.id} className="rsx-pub-card space-y-2 rounded-2xl p-3">
+                      <div key={item.id} className="rsx-pub-card rsx-pub-item-card space-y-2 rounded-2xl p-3">
                         <input type="hidden" name="shareItemId" value={item.id} readOnly />
                         <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
                           {copy.versionItemTaskLabel}
@@ -311,7 +311,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                     })}
                   </fieldset>
                 ) : (
-                  <fieldset className="rsx-pub-card mt-3 space-y-2 rounded-2xl p-3">
+                  <fieldset className="rsx-pub-card rsx-pub-form-section mt-3 space-y-2 rounded-2xl p-3">
                     <legend className="rsx-pub-label px-1 text-sm font-black">{copy.checklistLegend}</legend>
                     {modeCopy.checklist.map((item, index) => (
                       <label
@@ -338,21 +338,21 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                   />
                 </div>
 
-                <div className="rsx-pub-chip mt-3 rounded-2xl p-4">
+                <div className="rsx-pub-chip rsx-pub-after-note mt-3 rounded-2xl p-4">
                   <p className="rsx-pub-muted text-[0.62rem] font-black uppercase tracking-wide">
                     {copy.afterSubmitLabel}
                   </p>
                   <p className="rsx-pub-label mt-1.5 text-xs font-bold leading-5">{copy.afterSubmitBody}</p>
                 </div>
 
-                <div className="rsx-pub-field-card mt-3 rounded-2xl p-3">
+                <div className="rsx-pub-field-card rsx-pub-submit-zone mt-3 rounded-2xl p-3">
                   <RiskSharePrimaryButton label={modeCopy.cta} submittingLabel={common.submittingLabel} />
                 </div>
               </form>
 
               <a
                 href={returnHref}
-                className="rsx-pub-card-flat block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                className="rsx-pub-card-flat rsx-pub-return-link block rounded-2xl px-5 py-3 text-center text-sm font-black"
               >
                 {copy.returnToField}
               </a>

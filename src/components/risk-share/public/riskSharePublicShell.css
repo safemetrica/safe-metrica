@@ -251,3 +251,119 @@
   outline: 2px solid var(--pub-focus-ring);
   outline-offset: 2px;
 }
+
+/*
+ * .rsx-pub-flow: visual extension of the restored /risk-share/field design
+ * system onto the participation (monthly/prework) and anonymous arrival
+ * screens. Every selector below is scoped under .rsx-pub-flow so it can
+ * never reach the visitor/representative/field shells or the brand/minimal
+ * header variants those screens use.
+ */
+.rsx-pub-flow--monthly {
+  --pub-flow-accent: #2f6bff;
+  --pub-flow-accent-soft: rgba(47, 107, 255, 0.12);
+}
+
+.rsx-pub-flow--prework {
+  --pub-flow-accent: #14a56c;
+  --pub-flow-accent-soft: rgba(20, 165, 108, 0.12);
+}
+
+.rsx-pub-flow--anonymous {
+  --pub-flow-accent: #e8892b;
+  --pub-flow-accent-soft: rgba(232, 137, 43, 0.12);
+}
+
+.rsx-pub-flow--monthly[data-theme="dark"] {
+  --pub-flow-accent: #6a95ff;
+  --pub-flow-accent-soft: rgba(106, 149, 255, 0.18);
+}
+
+.rsx-pub-flow--prework[data-theme="dark"] {
+  --pub-flow-accent: #2bd08a;
+  --pub-flow-accent-soft: rgba(43, 208, 138, 0.18);
+}
+
+.rsx-pub-flow--anonymous[data-theme="dark"] {
+  --pub-flow-accent: #f5a04d;
+  --pub-flow-accent-soft: rgba(245, 160, 77, 0.18);
+}
+
+.rsx-pub-flow .rsx-pub-hero {
+  position: relative;
+}
+
+.rsx-pub-flow .rsx-pub-hero::after {
+  content: "";
+  position: absolute;
+  left: 1.25rem;
+  right: 1.25rem;
+  bottom: 0;
+  height: 1px;
+  background-image: linear-gradient(to right, currentColor 50%, transparent 0);
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+  opacity: 0.35;
+}
+
+.rsx-pub-flow .rsx-pub-hero--minimal::after {
+  display: none;
+}
+
+.rsx-pub-flow .rsx-pub-hero__title {
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.rsx-pub-flow .rsx-pub-hero__description {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 480px) {
+  .rsx-pub-flow .rsx-pub-hero__title {
+    font-size: 1.625rem;
+  }
+}
+
+.rsx-pub-flow .rsx-pub-flow-page {
+  overflow-x: hidden;
+}
+
+.rsx-pub-flow .rsx-pub-flow-card {
+  border-top: 3px solid var(--pub-flow-accent);
+}
+
+.rsx-pub-flow .rsx-pub-flow-badge {
+  background: var(--pub-flow-accent-soft);
+  color: var(--pub-flow-accent);
+}
+
+.rsx-pub-flow .rsx-pub-version-summary,
+.rsx-pub-flow .rsx-pub-item-card,
+.rsx-pub-flow .rsx-pub-choice-card {
+  border-color: var(--pub-flow-accent-soft);
+}
+
+.rsx-pub-flow .rsx-pub-choice-card:has(:checked) {
+  border-color: var(--pub-flow-accent);
+}
+
+.rsx-pub-flow .rsx-pub-choice-card input[type="radio"] {
+  accent-color: var(--pub-flow-accent);
+}
+
+.rsx-pub-flow .rsx-pub-submit-zone {
+  box-shadow: inset 0 1px 0 0 var(--pub-flow-accent-soft);
+}
+
+.rsx-pub-flow .rsx-pub-cta {
+  box-shadow: 0 10px 24px var(--pub-flow-accent-soft);
+}
+
+.rsx-pub-flow .rsx-pub-sticky-footer {
+  border-top: 1px solid var(--pub-flow-accent-soft);
+}
+
+.rsx-pub-flow .rsx-pub-return-link {
+  border-color: var(--pub-flow-accent-soft);
+}
