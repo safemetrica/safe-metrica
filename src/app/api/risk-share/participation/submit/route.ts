@@ -8,6 +8,7 @@ import {
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { resolveActiveRiskSharePublicVersion } from "@/lib/risk-share/riskSharePublicVersion";
 import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
 import {
   deletePrivateRiskShareSignature,
@@ -87,7 +88,66 @@ export async function POST(req: NextRequest) {
 
   const tenant = tenantResolution.tenant;
 
-  const checklist = getRiskShareCopy(lang).participation[mode].checklist;
+  let monthlyVersionProvenance: {
+    version_lock_id: string;
+    version_lock_month: string;
+    confirmed_share_item_ids: string[];
+    confirmed_share_item_count: number;
+    version_confirmed_at: string;
+  } | null = null;
+
+  if (mode === "monthly") {
+    const versionResult = await resolveActiveRiskSharePublicVersion(tenant.code);
+
+    if (!versionResult.ok) {
+      return NextResponse.redirect(
+        new URL(buildParticipationHref(companyCode, mode, lang, "version_unavailable"), req.url),
+        { status: 303 }
+      );
+    }
+
+    const expectedItemIds = versionResult.version.items.map((item) => item.id);
+    const submittedVersionLockId = getFormText(formData, "versionLockId");
+    const submittedShareItemIds = formData
+      .getAll("shareItemId")
+      .map((value) => String(value).trim())
+      .filter(Boolean);
+    const submittedIdSet = new Set(submittedShareItemIds);
+
+    if (submittedVersionLockId !== versionResult.version.lock.id) {
+      return NextResponse.redirect(
+        new URL(buildParticipationHref(companyCode, mode, lang, "version_changed"), req.url),
+        { status: 303 }
+      );
+    }
+
+    const itemSetMatches =
+      expectedItemIds.length > 0 &&
+      submittedShareItemIds.length === expectedItemIds.length &&
+      submittedIdSet.size === submittedShareItemIds.length &&
+      submittedIdSet.size === expectedItemIds.length &&
+      expectedItemIds.every((id) => submittedIdSet.has(id));
+    const allConfirmed = expectedItemIds.every((id) =>
+      getFormChecked(formData, `shareItemConfirmed-${id}`)
+    );
+
+    if (!itemSetMatches || !allConfirmed) {
+      return NextResponse.redirect(
+        new URL(buildParticipationHref(companyCode, mode, lang, "incomplete_confirmation"), req.url),
+        { status: 303 }
+      );
+    }
+
+    monthlyVersionProvenance = {
+      version_lock_id: versionResult.version.lock.id,
+      version_lock_month: versionResult.version.lock.month,
+      confirmed_share_item_ids: expectedItemIds,
+      confirmed_share_item_count: expectedItemIds.length,
+      version_confirmed_at: new Date().toISOString(),
+    };
+  }
+
+  const checklist = mode === "prework" ? getRiskShareCopy(lang).participation.prework.checklist : [];
   const checkedItems = checklist.map((label, index) => ({
     label,
     checked: getFormChecked(formData, `checklist-${mode}-${index}`),
@@ -145,7 +205,10 @@ export async function POST(req: NextRequest) {
     submission_type: "공유확인",
     legacy_type: "공유확인",
     title: `${tenant.name} ${modeLabel}`,
-    content: `${modeLabel} 체크리스트 ${checkedCount}/${checklist.length}개 확인 완료`,
+    content:
+      mode === "monthly"
+        ? `${modeLabel} 위험요인 ${monthlyVersionProvenance?.confirmed_share_item_count ?? 0}건 확인 완료`
+        : `${modeLabel} 체크리스트 ${checkedCount}/${checklist.length}개 확인 완료`,
     location: workerAffiliation,
     submitter: workerName || "근로자",
     anonymous: false,
@@ -165,9 +228,10 @@ export async function POST(req: NextRequest) {
       worker_affiliation: workerAffiliation,
       worker_identifier: workerIdentifier,
       identity_mode: "identified",
-      checked_items: checkedItems,
-      checked_count: checkedCount,
-      all_checked: allChecked,
+      ...(mode === "prework"
+        ? { checked_items: checkedItems, checked_count: checkedCount, all_checked: allChecked }
+        : {}),
+      ...(monthlyVersionProvenance ?? {}),
       signature_present: Boolean(signatureUpload?.ok),
       ...(signatureUpload?.ok
         ? {
