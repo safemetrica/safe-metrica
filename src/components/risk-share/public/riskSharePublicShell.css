@@ -254,11 +254,24 @@
 
 /*
  * .rsx-pub-flow: visual extension of the restored /risk-share/field design
- * system onto the participation (monthly/prework) and anonymous arrival
- * screens. Every selector below is scoped under .rsx-pub-flow so it can
- * never reach the visitor/representative/field shells or the brand/minimal
- * header variants those screens use.
+ * system onto all four public arrival/submission screens (participation
+ * monthly/prework, anonymous, visitor, representative). Every selector below
+ * is scoped under .rsx-pub-flow so it can never reach /risk-share/field
+ * itself (a different, already-approved shell) or the manager/monthly/owner
+ * .rsx-shell system. visitor/representative apply the base .rsx-pub-flow
+ * class only (no --monthly/--prework/--anonymous modifier), so they inherit
+ * the default accent below and keep their existing brand-gradient header.
  */
+.rsx-pub-flow {
+  --pub-flow-accent: #0b5ea8;
+  --pub-flow-accent-soft: rgba(11, 94, 168, 0.12);
+}
+
+.rsx-pub-flow[data-theme="dark"] {
+  --pub-flow-accent: #4d80ff;
+  --pub-flow-accent-soft: rgba(77, 128, 255, 0.18);
+}
+
 .rsx-pub-flow--monthly {
   --pub-flow-accent: #2f6bff;
   --pub-flow-accent-soft: rgba(47, 107, 255, 0.12);
@@ -358,10 +371,6 @@
 
 .rsx-pub-flow .rsx-pub-cta {
   box-shadow: 0 10px 24px var(--pub-flow-accent-soft);
-}
-
-.rsx-pub-flow .rsx-pub-sticky-footer {
-  border-top: 1px solid var(--pub-flow-accent-soft);
 }
 
 .rsx-pub-flow .rsx-pub-return-link {

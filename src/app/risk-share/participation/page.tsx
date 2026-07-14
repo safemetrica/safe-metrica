@@ -72,8 +72,8 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   if (!tenantResolution.ok) {
     return (
       <RiskSharePublicShell className={`rsx-pub-flow rsx-pub-flow--${mode}`}>
-        <main className="rsx-pub-page rsx-pub-flow-page px-3 py-4">
-          <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
+        <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
+          <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
             <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
               <RiskSharePublicHeader
                 variant={MODE_VARIANT[mode]}
@@ -129,8 +129,8 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   if (mode === "monthly" && monthlyVersionUnavailableReason) {
     return (
       <RiskSharePublicShell className={`rsx-pub-flow rsx-pub-flow--${mode}`}>
-        <main className="rsx-pub-page rsx-pub-flow-page px-3 py-4">
-          <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
+        <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
+          <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
             <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
               <RiskSharePublicHeader
                 variant={MODE_VARIANT[mode]}
@@ -172,8 +172,8 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
 
   return (
     <RiskSharePublicShell className={`rsx-pub-flow rsx-pub-flow--${mode}`}>
-      <main className="rsx-pub-page rsx-pub-flow-page px-3 py-4">
-        <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-md flex-col justify-center">
+      <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
+        <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
           <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
             <RiskSharePublicHeader
               variant={MODE_VARIANT[mode]}

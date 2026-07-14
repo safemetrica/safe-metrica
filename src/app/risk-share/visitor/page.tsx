@@ -45,10 +45,10 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
 
   if (!tenantResolution.ok) {
     return (
-      <RiskSharePublicShell>
-        <main className="rsx-pub-page px-4 py-5">
-          <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
-            <div className="rsx-pub-card overflow-hidden rounded-[2rem]">
+      <RiskSharePublicShell className="rsx-pub-flow">
+        <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
+          <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
+            <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
               <RiskSharePublicHeader
                 variant="brand"
                 companyLabel={companyLabel}
@@ -60,14 +60,14 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
                 themeToggleLabel={common.themeToggleLabel}
                 title={copy.qrCheckingTitle}
               />
-              <div className="p-4">
-                <RiskShareStatusBanner variant="warning" className="rounded-3xl px-5 py-5 leading-7">
+              <div className="rsx-pub-flow-body p-3">
+                <RiskShareStatusBanner variant="warning" className="rounded-2xl px-4 py-4">
                   {copy.notAllowedBody}
                 </RiskShareStatusBanner>
                 {companyCode ? (
                   <a
                     href={returnHref}
-                    className="rsx-pub-cta mt-4 block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                    className="rsx-pub-cta mt-3 block rounded-2xl px-5 py-3 text-center text-sm font-black"
                   >
                     {copy.returnToField}
                   </a>
@@ -81,10 +81,10 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
   }
 
   return (
-    <RiskSharePublicShell>
-      <main className="rsx-pub-page px-4 py-5">
-        <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
-          <div className="rsx-pub-card overflow-hidden rounded-[2rem]">
+    <RiskSharePublicShell className="rsx-pub-flow">
+      <main className="rsx-pub-page rsx-pub-flow-page px-4 py-5">
+        <section className="rsx-pub-flow-wrap mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-md flex-col justify-center">
+          <div className="rsx-pub-card rsx-pub-flow-card overflow-hidden rounded-[1.75rem]">
             <RiskSharePublicHeader
               variant="brand"
               companyLabel={companyLabel}
@@ -98,11 +98,11 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
               description={`${copy.heroSubLine1} ${copy.heroSubLine2}`}
             />
 
-            <div className="space-y-4 p-4">
+            <div className="rsx-pub-flow-body space-y-3 p-3">
               {submitted === "1" ? <RiskShareStatusBanner variant="success">{copy.submittedBanner}</RiskShareStatusBanner> : null}
               {submitted === "error" ? <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner> : null}
 
-              <form action="/api/risk-share/visitor/submit" method="post" className="space-y-4">
+              <form action="/api/risk-share/visitor/submit" method="post" className="space-y-3">
                 <input type="hidden" name="companyCode" value={companyCode} readOnly />
                 <input type="hidden" name="lang" value={locale} readOnly />
 
@@ -164,7 +164,7 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
                   {copy.confirmLabel}
                 </label>
 
-                <div className="rsx-pub-field-card rounded-2xl p-4">
+                <div className="rsx-pub-field-card rsx-pub-submit-zone rounded-2xl p-3">
                   <RiskSharePrimaryButton label={copy.submitCta} submittingLabel={common.submittingLabel} />
                 </div>
               </form>
@@ -173,7 +173,7 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
 
               <a
                 href={returnHref}
-                className="rsx-pub-card-flat block rounded-2xl px-5 py-3 text-center text-sm font-black"
+                className="rsx-pub-card-flat rsx-pub-return-link block rounded-2xl px-5 py-3 text-center text-sm font-black"
               >
                 {copy.returnToField}
               </a>
