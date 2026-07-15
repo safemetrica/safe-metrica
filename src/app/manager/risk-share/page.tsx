@@ -541,6 +541,19 @@ export default async function RiskSharePackManagerHomePage({
     redirect("/login?error=risk_share_pack_not_available");
   }
 
+  // New tenant_registry-based SaaS tenants (service_mode "risk_share_pack",
+  // assigned only by /api/owner/tenant-onboarding/create) must render through
+  // the session/membership-guarded /risk-share/manager, not this legacy
+  // cookie/param-trusting console. Legacy Notion tenants and richi (which
+  // never reaches tenant_registry lookup here) are untouched.
+  const tenantRegistryEntry = await getTenantRegistryConfigByCode(
+    company.code,
+  ).catch(() => null);
+
+  if (tenantRegistryEntry?.serviceMode === "risk_share_pack") {
+    redirect(`/risk-share/manager?company=${encodeURIComponent(company.code)}`);
+  }
+
   const currentPeriod = getCurrentKstMonthPeriod();
 
   const [
