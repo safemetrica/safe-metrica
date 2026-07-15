@@ -118,6 +118,7 @@
    Shell — Sidebar(축소 지원) + Header + Content
    ===================================================================== */
 .rsx-shell .app { display: flex; min-height: 100vh; }
+.rsx-shell .app--plain .main { margin-left: 0; }
 
 /* ---------- Sidebar ---------- */
 .rsx-shell .sidebar {
@@ -352,6 +353,7 @@
 .rsx-shell .btn iconify-icon { font-size: 16px; }
 .rsx-shell .btn--primary { background: var(--brand-500); color: #fff; box-shadow: 0 4px 12px rgba(47,107,255,.28); }
 .rsx-shell .btn--primary:hover { background: var(--brand-600); transform: translateY(-1px); }
+.rsx-shell .btn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
 .rsx-shell .btn--outline { border-color: var(--border-strong); color: var(--text); background: var(--surface); }
 .rsx-shell .btn--outline:hover { background: var(--surface-hover); }
 .rsx-shell .btn--ghost { color: var(--text-2); }
@@ -377,6 +379,37 @@
 .rsx-shell .card__head h3 { font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; }
 .rsx-shell .card__head small { color: var(--text-3); font-size: 14px; font-weight: 500; display: block; }
 .rsx-shell .card__body { padding: 20px; }
+
+.rsx-shell .eyebrow {
+  font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--brand-600);
+}
+.rsx-shell .muted { color: var(--text-2); }
+.rsx-shell .notice {
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+  font-size: 14px; font-weight: 700; line-height: 1.55;
+}
+.rsx-shell .notice--warn { border-color: var(--warning); background: var(--warning-bg); color: var(--warning); }
+.rsx-shell .form-field {
+  display: grid; gap: 7px; min-width: 0; color: var(--text); font-weight: 700;
+}
+.rsx-shell .form-field input:not([type="radio"]),
+.rsx-shell .form-field textarea {
+  width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); color: var(--text); padding: 11px 12px;
+  font: inherit; line-height: 1.5;
+}
+.rsx-shell .form-field textarea { resize: vertical; }
+.rsx-shell .form-field input:not([type="radio"]):focus,
+.rsx-shell .form-field textarea:focus {
+  outline: none; border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-500) 14%, transparent);
+}
+.rsx-shell .form-field input[type="radio"] {
+  width: 16px; min-width: 16px; height: 16px; padding: 0; margin: 0;
+  border: 0; background: transparent; accent-color: var(--brand-500);
+  box-shadow: none; flex: 0 0 auto;
+}
 
 /* ---------- Stat card (스파크라인 내장) ---------- */
 .rsx-shell .stat {

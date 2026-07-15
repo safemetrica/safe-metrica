@@ -5,6 +5,7 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
+import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
 import ManagerDesignerView from "@/components/risk-share/manager/ManagerDesignerView";
 
 export const dynamic = "force-dynamic";
@@ -257,8 +258,10 @@ type TenantSiteProfileSummary = {
    * per the zero-state-vs-failure principle used across this page. */
   status: "ok" | "not_configured" | "failed";
   siteName: string | null;
-  /** True when at least one operational profile field has been set beyond
-   * the site name. Never inferred from an absent site. */
+  /** True only when every required operational profile field is valid:
+   * site name, industry, processes, equipment, worker count, external
+   * workforce flag, and worker representative flag. Never inferred from an
+   * absent site or a failed lookup. */
   profileComplete: boolean;
 };
 
@@ -270,21 +273,10 @@ async function fetchTenantSiteProfileSummary(companyCode: string): Promise<Tenan
       return { status: "not_configured", siteName: null, profileComplete: false };
     }
 
-    const profileComplete = Boolean(
-      site.industryProfile ||
-        site.majorProcesses ||
-        site.majorEquipment ||
-        site.workerCountBand ||
-        site.usesExternalWorkforce !== null ||
-        site.hasWorkerRepresentative !== null
-    );
-
-    return { status: "ok", siteName: site.siteName, profileComplete };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-
+    return { status: "ok", siteName: site.siteName, profileComplete: isTenantSiteProfileComplete(site) };
+  } catch {
     return {
-      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      status: "failed",
       siteName: null,
       profileComplete: false,
     };
@@ -355,6 +347,10 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     role === "tenant_admin" || role === "tenant_manager"
       ? buildRiskShareLangHref("/risk-share/manager/sources", { company: tenantCode }, lang)
       : undefined;
+  const siteProfileHref =
+    role === "tenant_admin" || role === "tenant_manager"
+      ? buildRiskShareLangHref("/risk-share/manager/settings/site-profile", { company: tenantCode }, lang)
+      : undefined;
 
   const participationSummary = await fetchRiskShareParticipationSummary(
     tenantCode,
@@ -396,6 +392,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       monthLabel={monthLabel}
       todayLabel={getTodayKstLabel()}
       siteProfile={siteProfileSummary}
+      siteProfileHref={siteProfileHref}
       counts={{
         monthly: monthlyConfirmationCount,
         prework: preworkConfirmationCount,
