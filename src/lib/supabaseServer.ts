@@ -162,7 +162,8 @@ type SupabaseExportTable =
   | "risk_share_items"
   | "risk_share_version_locks"
   | "tenant_registry"
-  | "tenant_membership";
+  | "tenant_membership"
+  | "tenant_sites";
 
 export class SupabaseReadError extends Error {
   status: number;
@@ -1016,6 +1017,141 @@ export async function getTenantRegistryConfigByCode(rawCompanyCode: string) {
     contactLabel: readTenantRegistryString(row.contact_label) || null,
     rawPayload: normalizeTenantRegistryRawPayload(row.raw_payload),
   } satisfies TenantRegistryConfig;
+}
+
+export type TenantSiteRow = {
+  id?: string;
+  tenant_id?: string | null;
+  tenant_code?: string | null;
+  site_name?: string | null;
+  is_default?: boolean | null;
+  status?: string | null;
+  industry_profile?: string | null;
+  major_processes?: string[] | null;
+  major_equipment?: string[] | null;
+  worker_count_band?: string | null;
+  uses_external_workforce?: boolean | null;
+  has_worker_representative?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type TenantSiteConfig = {
+  id: string;
+  tenantId: string;
+  tenantCode: string;
+  siteName: string;
+  isDefault: boolean;
+  status: "active" | "archived";
+  /** Null means not yet set. Never defaulted to a placeholder string. */
+  industryProfile: string | null;
+  /** Null means not yet set. Never defaulted to an empty array. */
+  majorProcesses: string[] | null;
+  /** Null means not yet set. Never defaulted to an empty array. */
+  majorEquipment: string[] | null;
+  /** Null means not yet set. Never defaulted to a placeholder string. */
+  workerCountBand: string | null;
+  /** Null means not yet confirmed. False means confirmed "no". Never defaulted. */
+  usesExternalWorkforce: boolean | null;
+  /** Null means not yet confirmed. False means confirmed "no". Never defaulted. */
+  hasWorkerRepresentative: boolean | null;
+};
+
+const TENANT_SITE_SELECT_COLUMNS =
+  "id,tenant_id,tenant_code,site_name,is_default,status,industry_profile,major_processes,major_equipment,worker_count_band,uses_external_workforce,has_worker_representative,created_at,updated_at";
+
+function readTenantSiteStringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const items = value.map((item) => readTenantRegistryString(item)).filter(Boolean);
+
+  return items.length > 0 ? items : null;
+}
+
+function readTenantSiteStatus(value: unknown): "active" | "archived" {
+  return readTenantRegistryString(value) === "archived" ? "archived" : "active";
+}
+
+function toTenantSiteConfig(row: TenantSiteRow): TenantSiteConfig | null {
+  const id = readTenantRegistryString(row.id);
+  const tenantId = readTenantRegistryString(row.tenant_id);
+  const tenantCode = readTenantRegistryString(row.tenant_code);
+  const siteName = readTenantRegistryString(row.site_name);
+
+  if (!id || !tenantId || !tenantCode || !siteName) {
+    return null;
+  }
+
+  return {
+    id,
+    tenantId,
+    tenantCode,
+    siteName,
+    isDefault: row.is_default === true,
+    status: readTenantSiteStatus(row.status),
+    industryProfile: readTenantRegistryString(row.industry_profile) || null,
+    majorProcesses: readTenantSiteStringArray(row.major_processes),
+    majorEquipment: readTenantSiteStringArray(row.major_equipment),
+    workerCountBand: readTenantRegistryString(row.worker_count_band) || null,
+    usesExternalWorkforce:
+      typeof row.uses_external_workforce === "boolean" ? row.uses_external_workforce : null,
+    hasWorkerRepresentative:
+      typeof row.has_worker_representative === "boolean" ? row.has_worker_representative : null,
+  } satisfies TenantSiteConfig;
+}
+
+/** Every site for a tenant, most recently created first. Used by the Owner
+ * site management screen only -- manager reads use
+ * getDefaultTenantSiteConfigByTenantCode below, never the full list. */
+export async function listTenantSitesByTenantCode(tenantCode: string): Promise<TenantSiteConfig[]> {
+  const normalizedCode = tenantCode.trim().toLowerCase();
+
+  if (!normalizedCode) {
+    return [];
+  }
+
+  const query = new URLSearchParams({
+    select: TENANT_SITE_SELECT_COLUMNS,
+    tenant_code: `eq.${normalizedCode}`,
+    order: "created_at.desc",
+    limit: "200",
+  });
+
+  const rows = await selectSupabaseExportRows<TenantSiteRow>("tenant_sites", query);
+
+  return rows
+    .map((row) => toTenantSiteConfig(row))
+    .filter((site): site is TenantSiteConfig => site !== null);
+}
+
+/** The tenant's single active default site, or null if none exists yet.
+ * Used by both the manager read-only profile status and the Owner
+ * activation gate -- never trusts tenant_registry.default_site_name alone,
+ * since that field is only a compatibility mirror synced by the
+ * create_tenant_default_site / set_tenant_default_site RPCs. */
+export async function getDefaultTenantSiteConfigByTenantCode(
+  tenantCode: string
+): Promise<TenantSiteConfig | null> {
+  const normalizedCode = tenantCode.trim().toLowerCase();
+
+  if (!normalizedCode) {
+    return null;
+  }
+
+  const query = new URLSearchParams({
+    select: TENANT_SITE_SELECT_COLUMNS,
+    tenant_code: `eq.${normalizedCode}`,
+    is_default: "eq.true",
+    status: "eq.active",
+    limit: "1",
+  });
+
+  const rows = await selectSupabaseExportRows<TenantSiteRow>("tenant_sites", query);
+  const row = rows[0];
+
+  return row ? toTenantSiteConfig(row) : null;
 }
 
 export type TenantMembershipRole =

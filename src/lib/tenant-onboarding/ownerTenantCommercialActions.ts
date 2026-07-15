@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  getDefaultTenantSiteConfigByTenantCode,
   getTenantRegistryConfigByCode,
   selectSupabaseExportRows,
   type TenantMembershipRole,
@@ -298,7 +299,25 @@ export async function activateOwnerTenant(
 
   const tenant = tenantResolution.tenant;
 
-  if (!tenant.defaultSiteName || !tenant.defaultSiteName.trim()) {
+  // Verifies the real tenant_sites default row -- not just
+  // tenant_registry.default_site_name, which is only a compatibility
+  // mirror. Requires all three: an active default site exists, the
+  // registry's default_site_id actually points at it (catching a partial
+  // failure where a site was created but the registry sync did not run),
+  // and the site name itself is non-empty.
+  let defaultSite: Awaited<ReturnType<typeof getDefaultTenantSiteConfigByTenantCode>>;
+
+  try {
+    defaultSite = await getDefaultTenantSiteConfigByTenantCode(tenant.code);
+  } catch {
+    return { ok: false, reason: "missing_server_config" };
+  }
+
+  if (
+    !defaultSite ||
+    !defaultSite.siteName.trim() ||
+    defaultSite.id !== tenant.defaultSiteId
+  ) {
     return { ok: false, reason: "default_site_required" };
   }
 

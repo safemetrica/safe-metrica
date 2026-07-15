@@ -51,6 +51,18 @@ export type ManagerRepresentativeSignature = {
   status: ManagerQueryStatus;
 };
 
+/** Read-only Company/Site Operational Profile status (Commercial Core Gate
+ * 2). "not_configured" means the query succeeded but the tenant has no
+ * active default site yet -- distinct from "failed", a real query error.
+ * No site selector: downstream source/item/version/evidence tables are not
+ * connected to a canonical site_id yet, so a multi-site switcher here would
+ * misleadingly imply the numbers above it are already site-filtered. */
+export type ManagerSiteProfile = {
+  status: ManagerQueryStatus;
+  siteName: string | null;
+  profileComplete: boolean;
+};
+
 export type ManagerWeeklyTrendPoint = {
   label: string;
   monthly: number;
@@ -89,6 +101,7 @@ export type ManagerDesignerViewProps = {
   fieldHref: string;
   monthLabel: string;
   todayLabel: string;
+  siteProfile: ManagerSiteProfile;
   counts: ManagerStatCounts;
   statuses: ManagerStatStatuses;
   totalSubmissionCount: number;
@@ -161,6 +174,7 @@ export default function ManagerDesignerView({
   fieldHref,
   monthLabel,
   todayLabel,
+  siteProfile,
   counts,
   statuses,
   totalSubmissionCount,
@@ -375,6 +389,21 @@ export default function ManagerDesignerView({
               <div>
                 <h2>위험성평가 공유확인 현황</h2>
                 <p>현장 QR로 들어온 확인·의견 흐름을 한 화면에서 봅니다. 상단 5개 카드가 이번 달의 핵심입니다.</p>
+                <p style={{ marginTop: "6px", fontSize: "13px", fontWeight: 700 }}>
+                  {siteProfile.status === "ok" ? (
+                    <>
+                      <span style={{ color: "var(--text-2)" }}>사업장: {siteProfile.siteName}</span>
+                      {" · "}
+                      <span style={{ color: siteProfile.profileComplete ? "var(--success)" : "var(--warning)" }}>
+                        {siteProfile.profileComplete ? "운영 프로필 설정 완료" : "운영 프로필 확인 필요"}
+                      </span>
+                    </>
+                  ) : siteProfile.status === "not_configured" ? (
+                    <span style={{ color: "var(--warning)" }}>사업장 정보 확인 필요</span>
+                  ) : (
+                    <span style={{ color: "var(--warning)" }}>운영정보 조회 상태 확인 필요</span>
+                  )}
+                </p>
               </div>
               <div className="page-head__actions">
                 <div className="date-chip" aria-label="오늘 날짜">

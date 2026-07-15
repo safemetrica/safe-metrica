@@ -7,6 +7,7 @@ import {
 import {
   validateOwnerTenantOnboardingDraft,
 } from "@/lib/tenant-onboarding/ownerTenantOnboardingValidation";
+import { createOwnerTenantDefaultSite } from "@/lib/tenant-onboarding/ownerTenantSiteActions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -209,6 +210,27 @@ export async function POST(request: NextRequest) {
       companyCode,
       companyName,
     });
+  }
+
+  // Prepares the tenant_sites default row atomically (create_tenant_default_site
+  // RPC) so tenant_registry.default_site_id and the new site row are always
+  // in sync. The tenant row above is still created with status "onboarding"
+  // -- activateOwnerTenant() independently re-verifies the real tenant_sites
+  // default row before allowing activation, so a failure here blocks
+  // activation later rather than silently leaving a half-configured tenant.
+  if (defaultSiteName) {
+    const siteResult = await createOwnerTenantDefaultSite({
+      companyCode,
+      siteName: defaultSiteName,
+    });
+
+    if (!siteResult.ok) {
+      return buildRedirect(request, {
+        created: "1",
+        companyCode,
+        siteWarning: siteResult.reason,
+      });
+    }
   }
 
   return buildRedirect(request, {

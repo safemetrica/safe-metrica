@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { getDefaultTenantSiteConfigByTenantCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
@@ -251,6 +251,46 @@ async function fetchRiskShareVisitorConfirmationSummary(
   }
 }
 
+type TenantSiteProfileSummary = {
+  /** "not_configured" means the query itself succeeded but no active
+   * default site exists yet -- distinct from "failed" (a real query error),
+   * per the zero-state-vs-failure principle used across this page. */
+  status: "ok" | "not_configured" | "failed";
+  siteName: string | null;
+  /** True when at least one operational profile field has been set beyond
+   * the site name. Never inferred from an absent site. */
+  profileComplete: boolean;
+};
+
+async function fetchTenantSiteProfileSummary(companyCode: string): Promise<TenantSiteProfileSummary> {
+  try {
+    const site = await getDefaultTenantSiteConfigByTenantCode(companyCode);
+
+    if (!site) {
+      return { status: "not_configured", siteName: null, profileComplete: false };
+    }
+
+    const profileComplete = Boolean(
+      site.industryProfile ||
+        site.majorProcesses ||
+        site.majorEquipment ||
+        site.workerCountBand ||
+        site.usesExternalWorkforce !== null ||
+        site.hasWorkerRepresentative !== null
+    );
+
+    return { status: "ok", siteName: site.siteName, profileComplete };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    return {
+      status: message.includes("configuration is missing") ? "not_configured" : "failed",
+      siteName: null,
+      profileComplete: false,
+    };
+  }
+}
+
 export default async function RiskShareManagerHomePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const rawCompanyCode = readSearchParam(params.company);
@@ -326,6 +366,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     tenantCode,
     currentPeriod,
   );
+  const siteProfileSummary = await fetchTenantSiteProfileSummary(tenantCode);
 
   const monthlyConfirmationCount = participationSummary.counts.monthly;
   const preworkConfirmationCount = participationSummary.counts.prework;
@@ -354,6 +395,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       fieldHref={fieldHref}
       monthLabel={monthLabel}
       todayLabel={getTodayKstLabel()}
+      siteProfile={siteProfileSummary}
       counts={{
         monthly: monthlyConfirmationCount,
         prework: preworkConfirmationCount,
