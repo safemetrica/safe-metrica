@@ -10,6 +10,7 @@ import {
   RISK_SHARE_LANGUAGE_OPTIONS,
   buildRiskShareLangHref,
 } from "@/lib/risk-share/riskShareI18n";
+import { listOwnerTenantSites } from "@/lib/tenant-onboarding/ownerTenantSiteActions";
 
 export const dynamic = "force-dynamic";
 
@@ -226,6 +227,33 @@ const commercialActionErrorMessages: Record<string, string> = {
   missing_server_config: "운영 서버 설정을 확인할 수 없습니다.",
 };
 
+const siteActionErrorMessages: Record<string, string> = {
+  invalid_company: "고객사 코드 형식을 확인해 주세요.",
+  tenant_not_found: "등록된 고객사 코드를 찾을 수 없습니다.",
+  tenant_not_eligible: "이 고객사는 현재 상태에서 이 작업을 진행할 수 없습니다.",
+  site_name_required: "사업장명을 입력해야 합니다.",
+  site_name_too_long: "사업장명이 너무 깁니다.",
+  profile_list_invalid: "주요 공정·설비는 20개, 항목당 80자 이내로 입력해야 합니다.",
+  sensitive_text_not_allowed: "민감정보 또는 내부 인증값으로 보이는 입력은 저장할 수 없습니다.",
+  site_not_found: "사업장을 찾을 수 없습니다.",
+  site_insert_failed: "사업장 저장에 실패했습니다.",
+  site_update_failed: "사업장 정보 수정에 실패했습니다.",
+  default_already_exists: "이미 기본사업장이 등록되어 있습니다.",
+  site_tenant_mismatch: "다른 고객사의 사업장은 지정할 수 없습니다.",
+  site_not_active: "보관 처리된 사업장은 기본사업장으로 지정할 수 없습니다.",
+  cannot_archive_default_site: "기본사업장은 보관 처리할 수 없습니다. 다른 사업장을 기본으로 지정한 후 다시 시도하세요.",
+  missing_server_config: "운영 서버 설정을 확인할 수 없습니다.",
+  invalid_input: "입력값을 다시 확인해 주세요.",
+  owner_required: "운영자 인증이 필요합니다.",
+};
+
+const siteActionSuccessMessages: Record<string, string> = {
+  created: "사업장이 추가되었습니다.",
+  profile_updated: "사업장 정보가 저장되었습니다.",
+  default_set: "기본사업장이 변경되었습니다.",
+  status_updated: "사업장 상태가 변경되었습니다.",
+};
+
 function isOwnerTokenValid(ownerToken?: string) {
   const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
   return Boolean(expectedToken && ownerToken === expectedToken);
@@ -243,6 +271,9 @@ export default async function OwnerTenantRegistryDraftPage({
   const membershipStatus = getSingleSearchParam(params.membership) ?? "";
   const activationStatus = getSingleSearchParam(params.activation) ?? "";
   const actionErrorCode = getSingleSearchParam(params.actionError) ?? "";
+  const siteAction = getSingleSearchParam(params.siteAction) ?? "";
+  const siteActionError = getSingleSearchParam(params.siteActionError) ?? "";
+  const siteWarning = getSingleSearchParam(params.siteWarning) ?? "";
   const createdOwnerLinks = createdCompanyCode
     ? buildOwnerOnlyLinks(createdCompanyCode)
     : [];
@@ -256,6 +287,11 @@ export default async function OwnerTenantRegistryDraftPage({
   if (!isOwnerTokenValid(ownerToken)) {
     redirect("/login?error=owner_required");
   }
+
+  const siteListResult = createdCompanyCode
+    ? await listOwnerTenantSites(createdCompanyCode)
+    : null;
+  const tenantSites = siteListResult?.ok ? siteListResult.sites : [];
 
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-white">
@@ -703,6 +739,343 @@ export default async function OwnerTenantRegistryDraftPage({
               </button>
             </form>
           </div>
+        </div>
+
+        {siteAction || siteActionError || siteWarning ? (
+          <section
+            className={[
+              "mt-6 rounded-3xl border p-5",
+              siteActionError
+                ? "border-rose-500/40 bg-rose-500/10 text-rose-100"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-100",
+            ].join(" ")}
+          >
+            <p className="text-sm font-black">
+              {siteActionError
+                ? siteActionErrorMessages[siteActionError] ?? "요청을 처리하지 못했습니다."
+                : siteAction
+                  ? siteActionSuccessMessages[siteAction] ?? "요청을 처리했습니다."
+                  : `고객사가 생성되었지만 기본사업장 연결 확인이 필요합니다: ${siteActionErrorMessages[siteWarning] ?? siteWarning}`}
+            </p>
+          </section>
+        ) : null}
+
+        <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-xl font-black text-white">
+            사업장 관리 (Company/Site Operational Profile)
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            고객사 코드를 입력한 뒤 사업장 목록을 확인하고 기본사업장·운영 프로필을 관리합니다.
+            여러 사업장이 있어도 관리자 화면에는 사업장 전환 기능을 만들지 않습니다.
+          </p>
+
+          <form method="get" className="mt-4 flex flex-wrap gap-3">
+            <input
+              name="companyCode"
+              defaultValue={createdCompanyCode}
+              placeholder="고객사 코드"
+              className="min-w-[200px] flex-1 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-emerald-400"
+            />
+            <button
+              type="submit"
+              className="rounded-2xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-200 hover:bg-slate-800"
+            >
+              사업장 목록 불러오기
+            </button>
+          </form>
+
+          {createdCompanyCode ? (
+            <div className="mt-5 space-y-4">
+              {siteListResult && !siteListResult.ok ? (
+                <p className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm font-bold text-amber-200">
+                  사업장 목록 조회 상태를 확인해 주세요. ({siteActionErrorMessages[siteListResult.reason] ?? siteListResult.reason})
+                </p>
+              ) : tenantSites.length === 0 ? (
+                <p className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm font-bold text-slate-400">
+                  등록된 사업장이 없습니다.
+                </p>
+              ) : (
+                tenantSites.map((site) => (
+                  <div key={site.id} className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-black text-white">{site.siteName}</span>
+                      {site.isDefault ? (
+                        <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[0.65rem] font-black text-emerald-300">
+                          기본사업장
+                        </span>
+                      ) : null}
+                      <span
+                        className={
+                          site.status === "active"
+                            ? "rounded-full bg-slate-700 px-2 py-0.5 text-[0.65rem] font-black text-slate-200"
+                            : "rounded-full bg-rose-500/20 px-2 py-0.5 text-[0.65rem] font-black text-rose-200"
+                        }
+                      >
+                        {site.status === "active" ? "운영중" : "보관됨"}
+                      </span>
+                    </div>
+
+                    <dl className="mt-3 grid gap-2 text-xs font-bold text-slate-400 md:grid-cols-2">
+                      <div>
+                        <dt className="text-slate-500">업종 프로필</dt>
+                        <dd className="text-slate-200">{site.industryProfile ?? "미확인"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">근로자 규모</dt>
+                        <dd className="text-slate-200">{site.workerCountBand ?? "미확인"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">외부 인력 사용</dt>
+                        <dd className="text-slate-200">
+                          {site.usesExternalWorkforce === null
+                            ? "미확인"
+                            : site.usesExternalWorkforce
+                              ? "예"
+                              : "아니오"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">근로자대표 존재</dt>
+                        <dd className="text-slate-200">
+                          {site.hasWorkerRepresentative === null
+                            ? "미확인"
+                            : site.hasWorkerRepresentative
+                              ? "예"
+                              : "아니오"}
+                        </dd>
+                      </div>
+                      <div className="md:col-span-2">
+                        <dt className="text-slate-500">주요 공정</dt>
+                        <dd className="text-slate-200">{site.majorProcesses?.join(", ") ?? "미확인"}</dd>
+                      </div>
+                      <div className="md:col-span-2">
+                        <dt className="text-slate-500">주요 설비</dt>
+                        <dd className="text-slate-200">{site.majorEquipment?.join(", ") ?? "미확인"}</dd>
+                      </div>
+                    </dl>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {!site.isDefault && site.status === "active" ? (
+                        <form action="/api/owner/tenant-onboarding/sites" method="post">
+                          <input type="hidden" name="action" value="set_default" />
+                          <input type="hidden" name="company_code" value={createdCompanyCode} />
+                          <input type="hidden" name="site_id" value={site.id} />
+                          <button
+                            type="submit"
+                            className="rounded-xl border border-emerald-400/50 px-3 py-2 text-xs font-black text-emerald-300 hover:bg-emerald-400/10"
+                          >
+                            기본사업장으로 지정
+                          </button>
+                        </form>
+                      ) : null}
+
+                      <form action="/api/owner/tenant-onboarding/sites" method="post">
+                        <input type="hidden" name="action" value="set_status" />
+                        <input type="hidden" name="company_code" value={createdCompanyCode} />
+                        <input type="hidden" name="site_id" value={site.id} />
+                        <input
+                          type="hidden"
+                          name="status"
+                          value={site.status === "active" ? "archived" : "active"}
+                        />
+                        <button
+                          type="submit"
+                          className="rounded-xl border border-slate-700 px-3 py-2 text-xs font-black text-slate-300 hover:bg-slate-800"
+                        >
+                          {site.status === "active" ? "보관 처리" : "다시 운영중으로"}
+                        </button>
+                      </form>
+                    </div>
+
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-xs font-black text-slate-400">
+                        운영 프로필 수정
+                      </summary>
+                      <form
+                        action="/api/owner/tenant-onboarding/sites"
+                        method="post"
+                        className="mt-3 grid gap-3"
+                      >
+                        <input type="hidden" name="action" value="update_profile" />
+                        <input type="hidden" name="company_code" value={createdCompanyCode} />
+                        <input type="hidden" name="site_id" value={site.id} />
+
+                        <label className="block">
+                          <span className="text-xs font-black text-slate-400">사업장명</span>
+                          <input
+                            name="site_name"
+                            defaultValue={site.siteName}
+                            className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-slate-400">업종 프로필</span>
+                          <input
+                            name="industry_profile"
+                            defaultValue={site.industryProfile ?? ""}
+                            className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-slate-400">근로자 규모</span>
+                          <input
+                            name="worker_count_band"
+                            defaultValue={site.workerCountBand ?? ""}
+                            className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-slate-400">
+                            주요 공정 (줄바꿈으로 구분, 최대 20개)
+                          </span>
+                          <textarea
+                            name="major_processes"
+                            defaultValue={site.majorProcesses?.join("\n") ?? ""}
+                            className="mt-1 min-h-20 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black text-slate-400">
+                            주요 설비 (줄바꿈으로 구분, 최대 20개)
+                          </span>
+                          <textarea
+                            name="major_equipment"
+                            defaultValue={site.majorEquipment?.join("\n") ?? ""}
+                            className="mt-1 min-h-20 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                          />
+                        </label>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="block">
+                            <span className="text-xs font-black text-slate-400">외부 인력 사용</span>
+                            <select
+                              name="uses_external_workforce"
+                              defaultValue={
+                                site.usesExternalWorkforce === null
+                                  ? "unset"
+                                  : String(site.usesExternalWorkforce)
+                              }
+                              className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                            >
+                              <option value="unset">미확인</option>
+                              <option value="true">예</option>
+                              <option value="false">아니오</option>
+                            </select>
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-black text-slate-400">근로자대표 존재</span>
+                            <select
+                              name="has_worker_representative"
+                              defaultValue={
+                                site.hasWorkerRepresentative === null
+                                  ? "unset"
+                                  : String(site.hasWorkerRepresentative)
+                              }
+                              className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                            >
+                              <option value="unset">미확인</option>
+                              <option value="true">예</option>
+                              <option value="false">아니오</option>
+                            </select>
+                          </label>
+                        </div>
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-emerald-400 px-4 py-2 text-xs font-black text-slate-950 hover:bg-emerald-300"
+                        >
+                          프로필 저장
+                        </button>
+                      </form>
+                    </details>
+                  </div>
+                ))
+              )}
+
+              <details className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                <summary className="cursor-pointer text-sm font-black text-emerald-300">
+                  + 새 사업장 추가
+                </summary>
+                <form action="/api/owner/tenant-onboarding/sites" method="post" className="mt-4 grid gap-3">
+                  <input type="hidden" name="action" value="create" />
+                  <input type="hidden" name="company_code" value={createdCompanyCode} />
+                  <label className="block">
+                    <span className="text-xs font-black text-slate-400">사업장명</span>
+                    <input
+                      name="site_name"
+                      className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-black text-slate-400">업종 프로필</span>
+                    <input
+                      name="industry_profile"
+                      className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-black text-slate-400">근로자 규모</span>
+                    <input
+                      name="worker_count_band"
+                      className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-black text-slate-400">
+                      주요 공정 (줄바꿈으로 구분, 최대 20개)
+                    </span>
+                    <textarea
+                      name="major_processes"
+                      className="mt-1 min-h-20 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-black text-slate-400">
+                      주요 설비 (줄바꿈으로 구분, 최대 20개)
+                    </span>
+                    <textarea
+                      name="major_equipment"
+                      className="mt-1 min-h-20 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                    />
+                  </label>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-black text-slate-400">외부 인력 사용</span>
+                      <select
+                        name="uses_external_workforce"
+                        defaultValue="unset"
+                        className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                      >
+                        <option value="unset">미확인</option>
+                        <option value="true">예</option>
+                        <option value="false">아니오</option>
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-black text-slate-400">근로자대표 존재</span>
+                      <select
+                        name="has_worker_representative"
+                        defaultValue="unset"
+                        className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-emerald-400"
+                      >
+                        <option value="unset">미확인</option>
+                        <option value="true">예</option>
+                        <option value="false">아니오</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-emerald-300"
+                  >
+                    사업장 추가
+                  </button>
+                </form>
+              </details>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm font-bold text-slate-500">
+              고객사 코드를 입력하면 사업장 목록이 표시됩니다.
+            </p>
+          )}
         </div>
 
         <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-900 p-5 text-xs leading-6 text-slate-400">
