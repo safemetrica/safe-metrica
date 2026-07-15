@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Script from "next/script";
 
 import "./riskSharePublicShell.css";
 
@@ -22,7 +23,14 @@ type RiskSharePublicShellProps = {
  * from localStorage / prefers-color-scheme via an inline script that runs
  * before paint -- theme is applied by direct DOM attribute writes (this
  * script, and RiskSharePublicThemeToggle), never through React state, so
- * there is no server/client render mismatch to hydrate.
+ * there is no server/client render mismatch to hydrate. Uses next/script's
+ * `beforeInteractive` strategy (rather than a raw <script> in the React
+ * tree) since App Router logs a console error for any bare <script> a
+ * component renders -- `beforeInteractive` is the supported way to still run
+ * code before hydration. The script looks up its target by a fixed element
+ * id (RISK_SHARE_PUBLIC_SHELL_ROOT_ID) rather than DOM position, because
+ * Next re-creates and executes beforeInteractive scripts from document.head,
+ * detached from wherever they were declared in the tree.
  */
 export default function RiskSharePublicShell({ children, className }: RiskSharePublicShellProps) {
   return (
@@ -31,7 +39,12 @@ export default function RiskSharePublicShell({ children, className }: RiskShareP
       className={`rsx-pub ${className ?? ""}`}
       suppressHydrationWarning
     >
-      <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document -- App Router only; see this component's doc comment above. */}
+      <Script
+        id="rsx-pub-theme-init"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+      />
       {children}
     </div>
   );
