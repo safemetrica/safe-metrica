@@ -1193,16 +1193,35 @@ async function callTenantSiteRpc(
       apikey: supabaseServiceRoleKey,
       Authorization: `Bearer ${supabaseServiceRoleKey}`,
       "Content-Type": "application/json",
+      Prefer: "return=representation",
     },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
 
   if (!res.ok) {
+    console.error("[tenant-site-rpc] request failed", {
+      rpcName,
+      status: res.status,
+      statusText: res.statusText,
+    });
+
     return { ok: false, id: null, reason: "request_failed" };
   }
 
-  return normalizeTenantSiteRpcResult(await res.json().catch(() => undefined));
+  const data = await res.json().catch(() => undefined);
+  const result = normalizeTenantSiteRpcResult(data);
+
+  if (result.reason === "unknown") {
+    console.error("[tenant-site-rpc] unexpected response", {
+      rpcName,
+      status: res.status,
+      responseKind: Array.isArray(data) ? "array" : typeof data,
+      rowCount: Array.isArray(data) ? data.length : undefined,
+    });
+  }
+
+  return result;
 }
 
 export async function createTenantDefaultSite(params: {
