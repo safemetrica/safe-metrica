@@ -1,8 +1,7 @@
 "use client";
 
 import { RISK_SHARE_PUBLIC_SHELL_ROOT_ID } from "./RiskSharePublicShell";
-
-const THEME_STORAGE_KEY = "sm-risk-share-public-theme";
+import { persistRiskSharePublicTheme, readRiskSharePublicTheme } from "@/lib/risk-share/riskSharePublicTheme";
 
 type RiskSharePublicThemeToggleProps = {
   label: string;
@@ -11,9 +10,10 @@ type RiskSharePublicThemeToggleProps = {
 
 /**
  * Flips the shell's data-theme attribute directly on the DOM (mirroring the
- * inline init script in RiskSharePublicShell) instead of React state, so the
- * sun/moon icon swap stays purely CSS-driven and there is nothing to
- * hydrate. Theme is never sent to the server or stored on any submission.
+ * root layout's pre-paint init script, see riskSharePublicTheme.ts) instead
+ * of React state, so the sun/moon icon swap stays purely CSS-driven and
+ * there is nothing to hydrate. Theme is never sent to the server or stored
+ * on any submission.
  */
 export default function RiskSharePublicThemeToggle({ label, className }: RiskSharePublicThemeToggleProps) {
   function handleClick() {
@@ -21,9 +21,9 @@ export default function RiskSharePublicThemeToggle({ label, className }: RiskSha
       const root = document.getElementById(RISK_SHARE_PUBLIC_SHELL_ROOT_ID);
       if (!root) return;
 
-      const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      const next = readRiskSharePublicTheme() === "dark" ? "light" : "dark";
       root.setAttribute("data-theme", next);
-      window.localStorage.setItem(THEME_STORAGE_KEY, next);
+      persistRiskSharePublicTheme(next);
     } catch {
       // Theme preference is best-effort only.
     }

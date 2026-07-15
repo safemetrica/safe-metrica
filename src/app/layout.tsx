@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { buildRiskSharePublicThemeInitScript } from "@/lib/risk-share/riskSharePublicTheme";
 
 
 export const metadata: Metadata = {
@@ -17,8 +19,21 @@ export default function RootLayout({
 		<html
 			lang="ko"
 			className="h-full antialiased"
+			suppressHydrationWarning
 		>
 			<body className="min-h-full flex flex-col">
+				{/*
+				  Only next/script(beforeInteractive) tag in the app -- Next.js only
+				  supports that strategy in the root layout. Seeds the public
+				  risk-share theme pre-paint; a no-op on every other route. See
+				  src/lib/risk-share/riskSharePublicTheme.ts for why this lives here
+				  instead of in RiskSharePublicShell or the field page.
+				*/}
+				<Script
+					id="risk-share-public-theme-init"
+					strategy="beforeInteractive"
+					dangerouslySetInnerHTML={{ __html: buildRiskSharePublicThemeInitScript() }}
+				/>
 				<Providers>
 					<main className="flex-1">{children}</main>
 
