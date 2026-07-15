@@ -6,24 +6,12 @@ import {
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { RISK_SHARE_FIELD_ROOT_ID } from "@/lib/risk-share/riskSharePublicTheme";
 import FieldLangSwitcher from "./FieldLangSwitcher";
 import FieldThemeToggle from "./FieldThemeToggle";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const FIELD_THEME_STORAGE_KEY = "sm-risk-share-public-theme";
-
-/**
- * Seeds this page's nearest .rsx-shell with the same theme preference the
- * #889 shared .rsx-pub shell reads/writes (sm-risk-share-public-theme), so a
- * choice made on one public QR screen is respected here too, before paint --
- * mirrors RiskSharePublicShell's inline init script, scoped to this page's
- * own script tag via document.currentScript instead of a shared root id.
- */
-const FIELD_THEME_INIT_SCRIPT = `(function(){try{var k=${JSON.stringify(
-  FIELD_THEME_STORAGE_KEY,
-)};var s=localStorage.getItem(k);var t=(s==="light"||s==="dark")?s:((window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");var r=document.currentScript&&document.currentScript.closest(".rsx-shell");if(r)r.setAttribute("data-theme",t);}catch(e){}})();`;
 
 type PageProps = {
   searchParams?: Promise<{
@@ -161,8 +149,7 @@ export default async function RiskSharePublicFieldEntryPage({
   ];
 
   return (
-    <div className="rsx-shell" suppressHydrationWarning>
-      <script dangerouslySetInnerHTML={{ __html: FIELD_THEME_INIT_SCRIPT }} />
+    <div id={RISK_SHARE_FIELD_ROOT_ID} className="rsx-shell" suppressHydrationWarning>
       <div className="field-body">
         <div className="field">
           <div className="field__top">

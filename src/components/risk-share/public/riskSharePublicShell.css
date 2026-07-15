@@ -1,8 +1,12 @@
 /*
- * Shared design tokens for the five official public risk-share QR screens
- * (/risk-share/field, /participation, /anonymous, /visitor, /representative).
+ * Shared design tokens for the RiskSharePublicShell-based public risk-share
+ * QR screens (/participation, /anonymous, /visitor, /representative).
  * Scoped under .rsx-pub so it never leaks into manager/monthly/owner shells,
- * which keep their own designer.css / .rsx-shell tokens untouched.
+ * which keep their own designer.css / .rsx-shell tokens untouched. Dark-theme
+ * selectors read html[data-risk-share-public-theme="dark"] -- the SSOT
+ * attribute set by the root layout's pre-paint init script (see
+ * src/lib/risk-share/riskSharePublicTheme.ts) -- rather than a local
+ * [data-theme] attribute.
  */
 
 .rsx-pub {
@@ -38,7 +42,7 @@
   color: var(--pub-text);
 }
 
-.rsx-pub[data-theme="dark"] {
+html[data-risk-share-public-theme="dark"] .rsx-pub {
   --pub-bg: #0b1120;
   --pub-card-bg: #111a2e;
   --pub-card-border: #1e293b;
@@ -203,11 +207,11 @@
   display: none;
 }
 
-.rsx-pub[data-theme="dark"] .rsx-pub-theme-toggle__sun {
+html[data-risk-share-public-theme="dark"] .rsx-pub .rsx-pub-theme-toggle__sun {
   display: none;
 }
 
-.rsx-pub[data-theme="dark"] .rsx-pub-theme-toggle__moon {
+html[data-risk-share-public-theme="dark"] .rsx-pub .rsx-pub-theme-toggle__moon {
   display: block;
 }
 
@@ -267,7 +271,7 @@
   --pub-flow-accent-soft: rgba(11, 94, 168, 0.12);
 }
 
-.rsx-pub-flow[data-theme="dark"] {
+html[data-risk-share-public-theme="dark"] .rsx-pub-flow {
   --pub-flow-accent: #4d80ff;
   --pub-flow-accent-soft: rgba(77, 128, 255, 0.18);
 }
@@ -287,17 +291,17 @@
   --pub-flow-accent-soft: rgba(232, 137, 43, 0.12);
 }
 
-.rsx-pub-flow--monthly[data-theme="dark"] {
+html[data-risk-share-public-theme="dark"] .rsx-pub-flow--monthly {
   --pub-flow-accent: #6a95ff;
   --pub-flow-accent-soft: rgba(106, 149, 255, 0.18);
 }
 
-.rsx-pub-flow--prework[data-theme="dark"] {
+html[data-risk-share-public-theme="dark"] .rsx-pub-flow--prework {
   --pub-flow-accent: #2bd08a;
   --pub-flow-accent-soft: rgba(43, 208, 138, 0.18);
 }
 
-.rsx-pub-flow--anonymous[data-theme="dark"] {
+html[data-risk-share-public-theme="dark"] .rsx-pub-flow--anonymous {
   --pub-flow-accent: #f5a04d;
   --pub-flow-accent-soft: rgba(245, 160, 77, 0.18);
 }
