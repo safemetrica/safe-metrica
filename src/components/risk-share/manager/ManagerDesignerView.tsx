@@ -30,10 +30,25 @@ export type ManagerStatCounts = {
   representative: number;
 };
 
+/** Mirrors the query-result status already returned by each manager summary
+ * helper (page.tsx / riskShareRepresentativeSubmissionRecords.ts) so the UI can
+ * tell a real zero apart from a failed or unconfigured query instead of both
+ * collapsing to the count default of 0. */
+export type ManagerQueryStatus = "ok" | "not_configured" | "failed";
+
+export type ManagerStatStatuses = {
+  monthly: ManagerQueryStatus;
+  prework: ManagerQueryStatus;
+  anonymous: ManagerQueryStatus;
+  visitor: ManagerQueryStatus;
+  representative: ManagerQueryStatus;
+};
+
 export type ManagerRepresentativeSignature = {
   totalCount: number;
   signatureConfirmedCount: number;
   signatureNotSubmittedCount: number;
+  status: ManagerQueryStatus;
 };
 
 export type ManagerWeeklyTrendPoint = {
@@ -75,7 +90,12 @@ export type ManagerDesignerViewProps = {
   monthLabel: string;
   todayLabel: string;
   counts: ManagerStatCounts;
+  statuses: ManagerStatStatuses;
   totalSubmissionCount: number;
+  /** false when any source feeding totalSubmissionCount is not "ok" — the sum
+   * would otherwise look like a complete count while silently missing a
+   * failed or unconfigured source. */
+  totalSubmissionIsComplete: boolean;
   representative: ManagerRepresentativeSignature;
   userDisplayName: string;
   userEmail: string;
@@ -111,6 +131,29 @@ const ZERO_REVIEW_STATUS_ROWS = [
   { label: "검토 완료", colorVar: "--c2" },
 ];
 
+const QUERY_NEEDS_REVIEW_LABEL = "확인 필요";
+
+function StatValue({ status, count }: { status: ManagerQueryStatus; count: number }) {
+  if (status !== "ok") {
+    return (
+      <span style={{ fontSize: "19px", fontWeight: 800, color: "var(--warning)" }}>
+        {QUERY_NEEDS_REVIEW_LABEL}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      {count}
+      <small>건</small>
+    </>
+  );
+}
+
+function NavBadge({ status, count }: { status: ManagerQueryStatus; count: number }) {
+  return <span className="nav__badge">{status === "ok" ? count : "–"}</span>;
+}
+
 export default function ManagerDesignerView({
   companyLabel,
   managerHref,
@@ -119,7 +162,9 @@ export default function ManagerDesignerView({
   monthLabel,
   todayLabel,
   counts,
+  statuses,
   totalSubmissionCount,
+  totalSubmissionIsComplete,
   representative,
   userDisplayName,
   userEmail,
@@ -133,6 +178,7 @@ export default function ManagerDesignerView({
   weeklyTrendFallbackLabels,
   sourceRegistryHref,
 }: ManagerDesignerViewProps) {
+  const hasRepresentativeSignatureData = representative.status === "ok";
   const hasWeeklyTrend = Boolean(weeklyTrend && weeklyTrend.length > 0);
   const weeklyLabels = hasWeeklyTrend
     ? weeklyTrend!.map((point) => point.label)
@@ -196,27 +242,27 @@ export default function ManagerDesignerView({
               <div className="nav__item is-disabled" title="위험성평가 공유확인">
                 <iconify-icon icon="lucide:share-2"></iconify-icon>
                 <span className="nav__txt">위험성평가 공유확인</span>
-                <span className="nav__badge">{counts.monthly}</span>
+                <NavBadge status={statuses.monthly} count={counts.monthly} />
               </div>
               <div className="nav__item is-disabled" title="작업 전 안전확인">
                 <iconify-icon icon="lucide:clipboard-check"></iconify-icon>
                 <span className="nav__txt">작업 전 안전확인</span>
-                <span className="nav__badge">{counts.prework}</span>
+                <NavBadge status={statuses.prework} count={counts.prework} />
               </div>
               <div className="nav__item is-disabled" title="익명 의견함">
                 <iconify-icon icon="lucide:message-circle-question"></iconify-icon>
                 <span className="nav__txt">익명 의견함</span>
-                <span className="nav__badge">{counts.anonymous}</span>
+                <NavBadge status={statuses.anonymous} count={counts.anonymous} />
               </div>
               <div className="nav__item is-disabled" title="외부인 확인">
                 <iconify-icon icon="lucide:door-open"></iconify-icon>
                 <span className="nav__txt">외부인 확인</span>
-                <span className="nav__badge">{counts.visitor}</span>
+                <NavBadge status={statuses.visitor} count={counts.visitor} />
               </div>
               <div className="nav__item is-disabled" title="근로자대표 확인">
                 <iconify-icon icon="lucide:user-check"></iconify-icon>
                 <span className="nav__txt">근로자대표 확인</span>
-                <span className="nav__badge">{counts.representative}</span>
+                <NavBadge status={statuses.representative} count={counts.representative} />
               </div>
               <a
                 className="nav__item nav__item--featured"
@@ -352,8 +398,7 @@ export default function ManagerDesignerView({
                 <div>
                   <div className="stat__label">위험성평가 공유확인</div>
                   <div className="stat__value">
-                    {counts.monthly}
-                    <small>건</small>
+                    <StatValue status={statuses.monthly} count={counts.monthly} />
                   </div>
                 </div>
                 <div className="stat__spark" aria-hidden="true"></div>
@@ -367,8 +412,7 @@ export default function ManagerDesignerView({
                 <div>
                   <div className="stat__label">작업 전 안전확인</div>
                   <div className="stat__value">
-                    {counts.prework}
-                    <small>건</small>
+                    <StatValue status={statuses.prework} count={counts.prework} />
                   </div>
                 </div>
                 <div className="stat__spark" aria-hidden="true"></div>
@@ -382,8 +426,7 @@ export default function ManagerDesignerView({
                 <div>
                   <div className="stat__label">익명 의견함</div>
                   <div className="stat__value">
-                    {counts.anonymous}
-                    <small>건</small>
+                    <StatValue status={statuses.anonymous} count={counts.anonymous} />
                   </div>
                 </div>
                 <div className="stat__spark" aria-hidden="true"></div>
@@ -397,8 +440,7 @@ export default function ManagerDesignerView({
                 <div>
                   <div className="stat__label">외부인 확인</div>
                   <div className="stat__value">
-                    {counts.visitor}
-                    <small>건</small>
+                    <StatValue status={statuses.visitor} count={counts.visitor} />
                   </div>
                 </div>
                 <div className="stat__spark" aria-hidden="true"></div>
@@ -412,8 +454,7 @@ export default function ManagerDesignerView({
                 <div>
                   <div className="stat__label">근로자대표 확인</div>
                   <div className="stat__value">
-                    {counts.representative}
-                    <small>건</small>
+                    <StatValue status={statuses.representative} count={counts.representative} />
                   </div>
                 </div>
                 <div className="stat__spark" aria-hidden="true"></div>
@@ -431,7 +472,13 @@ export default function ManagerDesignerView({
               </div>
               <div className="monthly-banner__prog">
                 <div className="monthly-banner__prog-top">
-                  <span>접수 {totalSubmissionCount}건</span>
+                  <span>
+                    {totalSubmissionIsComplete ? (
+                      `접수 ${totalSubmissionCount}건`
+                    ) : (
+                      <span style={{ color: "var(--warning)" }}>접수 현황 확인 필요</span>
+                    )}
+                  </span>
                 </div>
               </div>
               <a className="btn btn--white" href={monthlyHref}>
@@ -638,28 +685,41 @@ export default function ManagerDesignerView({
                   </div>
                   <div className="chart-wrap" style={{ height: "145px" }}>
                     <Donut
-                      segments={[
-                        { value: representative.signatureConfirmedCount, colorVar: "--c2" },
-                        { value: representative.signatureNotSubmittedCount, colorVar: "--border-strong" },
-                      ]}
+                      segments={
+                        hasRepresentativeSignatureData
+                          ? [
+                              { value: representative.signatureConfirmedCount, colorVar: "--c2" },
+                              { value: representative.signatureNotSubmittedCount, colorVar: "--border-strong" },
+                            ]
+                          : [{ value: 0, colorVar: "--border-strong" }]
+                      }
                     />
                     <div className="donut-center">
-                      <b style={{ fontSize: "23px" }}>
-                        {representative.signatureConfirmedCount}/{representative.totalCount}
-                      </b>
+                      {hasRepresentativeSignatureData ? (
+                        <b style={{ fontSize: "23px" }}>
+                          {representative.signatureConfirmedCount}/{representative.totalCount}
+                        </b>
+                      ) : (
+                        <b style={{ fontSize: "17px", color: "var(--warning)" }}>확인 필요</b>
+                      )}
                       <span>서명 확인</span>
                     </div>
                   </div>
                   <ul className="legend legend--col" style={{ marginTop: "16px" }}>
                     <li>
                       <span className="swatch" style={{ background: "var(--c2)" }}></span>서명 확인
-                      <b>{representative.signatureConfirmedCount}건</b>
+                      <b>{hasRepresentativeSignatureData ? `${representative.signatureConfirmedCount}건` : "확인 필요"}</b>
                     </li>
                     <li>
                       <span className="swatch" style={{ background: "var(--border-strong)" }}></span>선택 서명 미제출
-                      <b>{representative.signatureNotSubmittedCount}건</b>
+                      <b>{hasRepresentativeSignatureData ? `${representative.signatureNotSubmittedCount}건` : "확인 필요"}</b>
                     </li>
                   </ul>
+                  {!hasRepresentativeSignatureData ? (
+                    <p style={{ textAlign: "center", color: "var(--text-3)", fontSize: "14px", marginTop: "12px" }}>
+                      운영 데이터 조회 상태를 확인해 주세요.
+                    </p>
+                  ) : null}
                 </article>
 
                 <article className="card card--pad">

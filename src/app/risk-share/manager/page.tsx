@@ -340,6 +340,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     anonymousFeedbackCount +
     visitorConfirmationCount +
     representativeTotalCount;
+  const totalSubmissionIsComplete =
+    participationSummary.status === "ok" &&
+    anonymousFeedbackSummary.status === "ok" &&
+    visitorConfirmationSummary.status === "ok" &&
+    representativeSubmissionSummary.status === "ok";
 
   return (
     <ManagerDesignerView
@@ -356,11 +361,20 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
         visitor: visitorConfirmationCount,
         representative: representativeTotalCount,
       }}
+      statuses={{
+        monthly: participationSummary.status,
+        prework: participationSummary.status,
+        anonymous: anonymousFeedbackSummary.status,
+        visitor: visitorConfirmationSummary.status,
+        representative: representativeSubmissionSummary.status,
+      }}
       totalSubmissionCount={totalSubmissionCount}
+      totalSubmissionIsComplete={totalSubmissionIsComplete}
       representative={{
         totalCount: representativeTotalCount,
         signatureConfirmedCount,
         signatureNotSubmittedCount,
+        status: representativeSubmissionSummary.status,
       }}
       userDisplayName={userDisplayName}
       userEmail={userEmail}
