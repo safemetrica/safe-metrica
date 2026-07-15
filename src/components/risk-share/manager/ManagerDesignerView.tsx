@@ -102,6 +102,7 @@ export type ManagerDesignerViewProps = {
   monthLabel: string;
   todayLabel: string;
   siteProfile: ManagerSiteProfile;
+  siteProfileHref?: string;
   counts: ManagerStatCounts;
   statuses: ManagerStatStatuses;
   totalSubmissionCount: number;
@@ -175,6 +176,7 @@ export default function ManagerDesignerView({
   monthLabel,
   todayLabel,
   siteProfile,
+  siteProfileHref,
   counts,
   statuses,
   totalSubmissionCount,
@@ -404,6 +406,13 @@ export default function ManagerDesignerView({
                     <span style={{ color: "var(--warning)" }}>운영정보 조회 상태 확인 필요</span>
                   )}
                 </p>
+                {siteProfileHref && siteProfile.status !== "failed" ? (
+                  <p style={{ marginTop: "10px" }}>
+                    <a className="btn btn--ghost" href={siteProfileHref}>
+                      {siteProfile.status === "ok" && siteProfile.profileComplete ? "사업장 정보 수정" : "사업장 정보 설정"}
+                    </a>
+                  </p>
+                ) : null}
               </div>
               <div className="page-head__actions">
                 <div className="date-chip" aria-label="오늘 날짜">

@@ -1154,6 +1154,93 @@ export async function getDefaultTenantSiteConfigByTenantCode(
   return row ? toTenantSiteConfig(row) : null;
 }
 
+export type TenantSiteRpcResult = {
+  ok: boolean;
+  id: string | null;
+  reason: string;
+};
+
+type TenantSiteRpcRow = {
+  id?: unknown;
+  ok?: unknown;
+  reason?: unknown;
+};
+
+function normalizeTenantSiteRpcResult(data: unknown): TenantSiteRpcResult {
+  const row = Array.isArray(data) ? (data[0] as TenantSiteRpcRow | undefined) : (data as TenantSiteRpcRow | undefined);
+
+  return {
+    ok: row?.ok === true,
+    id: readTenantRegistryString(row?.id) || null,
+    reason: readTenantRegistryString(row?.reason) || "unknown",
+  };
+}
+
+async function callTenantSiteRpc(
+  rpcName: "create_tenant_default_site" | "update_tenant_site_profile",
+  payload: Record<string, unknown>,
+): Promise<TenantSiteRpcResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return { ok: false, id: null, reason: "not_configured" };
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${rpcName}`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    return { ok: false, id: null, reason: "request_failed" };
+  }
+
+  return normalizeTenantSiteRpcResult(await res.json().catch(() => undefined));
+}
+
+export async function createTenantDefaultSite(params: {
+  tenantId: string;
+  tenantCode: string;
+  siteName: string;
+}): Promise<TenantSiteRpcResult> {
+  return callTenantSiteRpc("create_tenant_default_site", {
+    p_tenant_id: params.tenantId,
+    p_tenant_code: params.tenantCode,
+    p_site_name: params.siteName,
+  });
+}
+
+export async function updateTenantSiteProfile(params: {
+  tenantId: string;
+  siteId: string;
+  siteName: string;
+  industryProfile: string;
+  majorProcesses: string[];
+  majorEquipment: string[];
+  workerCountBand: string;
+  usesExternalWorkforce: boolean;
+  hasWorkerRepresentative: boolean;
+}): Promise<TenantSiteRpcResult> {
+  return callTenantSiteRpc("update_tenant_site_profile", {
+    p_tenant_id: params.tenantId,
+    p_site_id: params.siteId,
+    p_site_name: params.siteName,
+    p_industry_profile: params.industryProfile,
+    p_major_processes: params.majorProcesses,
+    p_major_equipment: params.majorEquipment,
+    p_worker_count_band: params.workerCountBand,
+    p_uses_external_workforce: params.usesExternalWorkforce,
+    p_has_worker_representative: params.hasWorkerRepresentative,
+  });
+}
+
 export type TenantMembershipRole =
   | "owner_internal"
   | "tenant_admin"
