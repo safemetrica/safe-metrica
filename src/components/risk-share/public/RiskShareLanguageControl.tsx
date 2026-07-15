@@ -19,6 +19,12 @@ type RiskShareLanguageControlProps = {
   className?: string;
 };
 
+const MENU_VIEWPORT_MARGIN = 16;
+const MENU_WIDTH = 220;
+const MENU_GAP = 8;
+
+type MenuPosition = { top: number; left: number; width: number };
+
 /**
  * Shared language switcher for all five public risk-share QR screens.
  * Always exposes exactly the three supported locales (ko/en/vi) as real
@@ -35,7 +41,9 @@ export default function RiskShareLanguageControl({
   className,
 }: RiskShareLanguageControlProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const activeLabel =
     RISK_SHARE_LANGUAGE_OPTIONS.find((language) => language.code === activeLocale)?.label ?? "한국어";
 
@@ -64,9 +72,45 @@ export default function RiskShareLanguageControl({
     };
   }, [isOpen]);
 
+  /**
+   * The menu is rendered with position: fixed (viewport-relative, not
+   * ancestor-relative) so it always escapes the rounded card's
+   * overflow-hidden clipping regardless of where the trigger sits in the
+   * header row. Position is computed from the trigger's own rect and
+   * clamped to a 16px screen margin, rather than anchored via CSS right-0
+   * against the trigger box -- anchoring to a narrow trigger near the left
+   * edge is exactly what pushed the menu off-screen before.
+   */
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function updatePosition() {
+      const trigger = buttonRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(MENU_WIDTH, window.innerWidth - MENU_VIEWPORT_MARGIN * 2);
+      const maxLeft = window.innerWidth - MENU_VIEWPORT_MARGIN - width;
+      const left = Math.max(MENU_VIEWPORT_MARGIN, Math.min(rect.right - width, maxLeft));
+
+      setMenuPosition({ top: rect.bottom + MENU_GAP, left, width });
+    }
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen]);
+
   return (
     <div className={`relative inline-block ${className ?? ""}`} ref={containerRef}>
       <button
+        ref={buttonRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -102,11 +146,12 @@ export default function RiskShareLanguageControl({
         </svg>
       </button>
 
-      {isOpen ? (
+      {isOpen && menuPosition ? (
         <div
           role="listbox"
           aria-label={label}
-          className="rsx-pub-lang__menu absolute right-0 z-20 mt-2 min-w-[170px] rounded-2xl p-1.5"
+          className="rsx-pub-lang__menu fixed z-[100] max-h-[min(60vh,320px)] overflow-y-auto rounded-2xl p-1.5"
+          style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width }}
         >
           {RISK_SHARE_LANGUAGE_OPTIONS.map((language) => (
             <Link
@@ -141,7 +186,7 @@ export default function RiskShareLanguageControl({
               className="rsx-pub-lang__item rsx-pub-subtle flex items-center justify-between gap-2 rounded-xl px-3 text-sm font-bold"
             >
               {language}
-              <span className="rsx-pub-chip rounded-full px-1.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wide">
+              <span className="rsx-pub-chip shrink-0 rounded-full px-1.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wide">
                 {soonBadgeLabel}
               </span>
             </span>
