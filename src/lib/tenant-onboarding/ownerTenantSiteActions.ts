@@ -18,8 +18,11 @@ export type OwnerTenantSiteActionFailureReason =
   | "tenant_not_eligible"
   | "site_name_required"
   | "site_name_too_long"
+  | "industry_profile_too_long"
+  | "worker_count_band_too_long"
   | "profile_list_invalid"
   | "site_not_found"
+  | "site_name_duplicate"
   | "site_insert_failed"
   | "site_update_failed"
   | "default_already_exists"
@@ -184,8 +187,16 @@ export async function createOwnerTenantSite(
     return { ok: false, reason: "site_name_too_long" };
   }
 
-  const industryProfile = input.industryProfile.trim().slice(0, INDUSTRY_PROFILE_MAX_LENGTH) || null;
-  const workerCountBand = input.workerCountBand.trim().slice(0, WORKER_COUNT_BAND_MAX_LENGTH) || null;
+  const industryProfile = input.industryProfile.trim() || null;
+  const workerCountBand = input.workerCountBand.trim() || null;
+
+  if (industryProfile && industryProfile.length > INDUSTRY_PROFILE_MAX_LENGTH) {
+    return { ok: false, reason: "industry_profile_too_long" };
+  }
+
+  if (workerCountBand && workerCountBand.length > WORKER_COUNT_BAND_MAX_LENGTH) {
+    return { ok: false, reason: "worker_count_band_too_long" };
+  }
 
   const majorProcesses = normalizeProfileList(input.majorProcesses);
   const majorEquipment = normalizeProfileList(input.majorEquipment);
@@ -235,9 +246,8 @@ export type UpdateOwnerTenantSiteProfileResult =
   | { ok: true; companyCode: string }
   | { ok: false; reason: OwnerTenantSiteActionFailureReason };
 
-/** Plain single-row update, scoped by both site id and tenant_id -- a single
- * UPDATE statement is already atomic; this never touches tenant_registry,
- * so it does not need the RPC path. */
+/** Uses update_tenant_site_profile so a default-site rename and the
+ * tenant_registry compatibility fields remain synchronized atomically. */
 export async function updateOwnerTenantSiteProfile(
   input: UpdateOwnerTenantSiteProfileInput
 ): Promise<UpdateOwnerTenantSiteProfileResult> {
@@ -258,8 +268,16 @@ export async function updateOwnerTenantSiteProfile(
     return { ok: false, reason: "site_name_too_long" };
   }
 
-  const industryProfile = input.industryProfile.trim().slice(0, INDUSTRY_PROFILE_MAX_LENGTH) || null;
-  const workerCountBand = input.workerCountBand.trim().slice(0, WORKER_COUNT_BAND_MAX_LENGTH) || null;
+  const industryProfile = input.industryProfile.trim() || null;
+  const workerCountBand = input.workerCountBand.trim() || null;
+
+  if (industryProfile && industryProfile.length > INDUSTRY_PROFILE_MAX_LENGTH) {
+    return { ok: false, reason: "industry_profile_too_long" };
+  }
+
+  if (workerCountBand && workerCountBand.length > WORKER_COUNT_BAND_MAX_LENGTH) {
+    return { ok: false, reason: "worker_count_band_too_long" };
+  }
 
   const majorProcesses = normalizeProfileList(input.majorProcesses);
   const majorEquipment = normalizeProfileList(input.majorEquipment);
@@ -268,34 +286,46 @@ export async function updateOwnerTenantSiteProfile(
     return { ok: false, reason: "profile_list_invalid" };
   }
 
-  const query = new URLSearchParams({
-    id: `eq.${input.siteId}`,
-    tenant_id: `eq.${tenant.id}`,
-  });
-
-  const res = await supabaseFetch(`/rest/v1/tenant_sites?${query.toString()}`, {
-    method: "PATCH",
+  const res = await supabaseFetch("/rest/v1/rpc/update_tenant_site_profile", {
+    method: "POST",
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({
-      site_name: siteName,
-      industry_profile: industryProfile,
-      major_processes: majorProcesses.value,
-      major_equipment: majorEquipment.value,
-      worker_count_band: workerCountBand,
-      uses_external_workforce: normalizeTristate(input.usesExternalWorkforce),
-      has_worker_representative: normalizeTristate(input.hasWorkerRepresentative),
-      updated_at: new Date().toISOString(),
+      p_tenant_id: tenant.id,
+      p_site_id: input.siteId,
+      p_site_name: siteName,
+      p_industry_profile: industryProfile,
+      p_major_processes: majorProcesses.value,
+      p_major_equipment: majorEquipment.value,
+      p_worker_count_band: workerCountBand,
+      p_uses_external_workforce: normalizeTristate(input.usesExternalWorkforce),
+      p_has_worker_representative: normalizeTristate(input.hasWorkerRepresentative),
     }),
   });
 
   if (!res || !res.ok) {
-    return { ok: false, reason: "site_update_failed" };
+    return { ok: false, reason: "missing_server_config" };
   }
 
-  const data = await res.json().catch(() => []);
+  const data = await res.json().catch(() => undefined);
+  const row = Array.isArray(data) ? data[0] : undefined;
 
-  if (!Array.isArray(data) || data.length === 0) {
-    return { ok: false, reason: "site_not_found" };
+  if (!row || row.ok !== true) {
+    const reason = typeof row?.reason === "string" ? row.reason : "site_update_failed";
+
+    switch (reason) {
+      case "tenant_not_found":
+        return { ok: false, reason: "tenant_not_found" };
+      case "site_not_found":
+        return { ok: false, reason: "site_not_found" };
+      case "site_tenant_mismatch":
+        return { ok: false, reason: "site_tenant_mismatch" };
+      case "site_name_required":
+        return { ok: false, reason: "site_name_required" };
+      case "site_name_duplicate":
+        return { ok: false, reason: "site_name_duplicate" };
+      default:
+        return { ok: false, reason: "site_update_failed" };
+    }
   }
 
   return { ok: true, companyCode: tenant.code };
@@ -456,10 +486,14 @@ export async function createOwnerTenantDefaultSite(
   }
 
   const tenant = tenantResolution.tenant;
-  const siteName = input.siteName.trim().slice(0, SITE_NAME_MAX_LENGTH);
+  const siteName = input.siteName.trim();
 
   if (!siteName) {
     return { ok: false, reason: "site_name_required" };
+  }
+
+  if (siteName.length > SITE_NAME_MAX_LENGTH) {
+    return { ok: false, reason: "site_name_too_long" };
   }
 
   const res = await supabaseFetch("/rest/v1/rpc/create_tenant_default_site", {

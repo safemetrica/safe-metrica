@@ -17,7 +17,13 @@ function isOwnerTokenValid(ownerToken?: string) {
 
 function readText(formData: FormData, key: string, max = 500) {
   const value = formData.get(key);
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
+
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > max ? trimmed.slice(0, max + 1) : trimmed;
 }
 
 function readTristate(formData: FormData, key: string): "unset" | "true" | "false" {
@@ -36,7 +42,7 @@ function readList(formData: FormData, key: string, maxItems = 20) {
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean)
-    .slice(0, maxItems);
+    .slice(0, maxItems + 1);
 }
 
 const FORBIDDEN_FREE_TEXT_PATTERN =

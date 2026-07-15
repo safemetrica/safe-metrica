@@ -5,8 +5,8 @@
 -- remain as compatibility fields for existing readers
 -- (ownerTenantCommercialActions.ts default_site_required check,
 -- riskShareSourceUpload.ts's siteName fallback) and are kept in sync with
--- the tenant_sites default row through the two RPCs below -- never written
--- by two separate non-transactional requests.
+-- the tenant_sites default row through the RPCs below -- never written by
+-- two separate non-transactional requests.
 --
 -- Existing per-row site_name text columns (risk_share_sources,
 -- risk_share_items, risk_share_item_candidates, risk_share_version_locks,
@@ -21,6 +21,62 @@
 -- means not yet set, never defaulted to false or an empty array.
 
 create extension if not exists pgcrypto;
+
+-- Bounded-array validator for major_processes / major_equipment. Defined
+-- before the table because tenant_sites' CHECK constraints call it --
+-- PostgreSQL CHECK constraints cannot contain subqueries (including a
+-- scalar subquery over unnest() of the row's own array column), so the
+-- per-item length scan has to live in a function instead.
+-- Contract: null -> true. A non-null array must have between 1 and
+-- p_max_items elements (an empty array is NOT valid -- application code
+-- normalizes "no items" to null, never to '{}'), no null element, no
+-- blank/whitespace-only element, and no element longer than
+-- p_max_item_length. Reads only its own arguments; no table/row lookups.
+create or replace function public.is_bounded_profile_text_array(
+  p_values text[],
+  p_max_items integer,
+  p_max_item_length integer
+)
+returns boolean
+language plpgsql
+immutable
+set search_path = public, pg_temp
+as $$
+declare
+  v_count integer;
+  v_item text;
+begin
+  if p_values is null then
+    return true;
+  end if;
+
+  v_count := array_length(p_values, 1);
+
+  if v_count is null or v_count < 1 or v_count > p_max_items then
+    return false;
+  end if;
+
+  foreach v_item in array p_values loop
+    if v_item is null then
+      return false;
+    end if;
+
+    if length(btrim(v_item)) = 0 then
+      return false;
+    end if;
+
+    if length(v_item) > p_max_item_length then
+      return false;
+    end if;
+  end loop;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.is_bounded_profile_text_array(text[], integer, integer) from public;
+revoke execute on function public.is_bounded_profile_text_array(text[], integer, integer) from anon, authenticated;
+grant execute on function public.is_bounded_profile_text_array(text[], integer, integer) to service_role;
 
 create table if not exists public.tenant_sites (
   id uuid primary key default gen_random_uuid(),
@@ -63,22 +119,10 @@ create table if not exists public.tenant_sites (
     check (worker_count_band is null or length(worker_count_band) <= 40),
 
   constraint tenant_sites_major_processes_bounds_check
-    check (
-      major_processes is null
-      or (
-        array_length(major_processes, 1) <= 20
-        and coalesce((select max(length(item)) from unnest(major_processes) as item), 0) <= 80
-      )
-    ),
+    check (public.is_bounded_profile_text_array(major_processes, 20, 80)),
 
   constraint tenant_sites_major_equipment_bounds_check
-    check (
-      major_equipment is null
-      or (
-        array_length(major_equipment, 1) <= 20
-        and coalesce((select max(length(item)) from unnest(major_equipment) as item), 0) <= 80
-      )
-    )
+    check (public.is_bounded_profile_text_array(major_equipment, 20, 80))
 );
 
 -- Case/whitespace-insensitive per-tenant site name uniqueness. An
@@ -105,14 +149,15 @@ create index if not exists tenant_sites_status_idx
 
 -- Server-only table, matching tenant_registry (20260713050000). No
 -- anon/authenticated policy: all access goes through server-only code using
--- the service role key.
+-- the service role key. No delete grant: this PR has no row-delete feature
+-- -- the Owner screen only ever sets status='archived'.
 alter table public.tenant_sites enable row level security;
 
 revoke all privileges
   on table public.tenant_sites
   from public, anon, authenticated;
 
-grant select, insert, update, delete
+grant select, insert, update
   on table public.tenant_sites
   to service_role;
 
@@ -141,7 +186,7 @@ comment on column public.tenant_sites.has_worker_representative is
 -- transaction -- never two separate requests that could leave the site
 -- created but the registry unsynced, or vice versa.
 -- Locks the tenant_registry row first so this can never race with
--- set_tenant_default_site for the same tenant.
+-- set_tenant_default_site / update_tenant_site_profile for the same tenant.
 -- Always returns exactly one row:
 --   (null, false, 'tenant_not_found')       tenant_id/tenant_code mismatch
 --   (null, false, 'site_name_required')      blank site name
@@ -299,6 +344,120 @@ $$;
 revoke all on function public.set_tenant_default_site(uuid, uuid) from public;
 revoke execute on function public.set_tenant_default_site(uuid, uuid) from anon, authenticated;
 grant execute on function public.set_tenant_default_site(uuid, uuid) to service_role;
+
+-- Atomic site profile update (including renaming site_name). A direct REST
+-- PATCH on tenant_sites alone would leave tenant_registry.default_site_name
+-- stale when the renamed row is the tenant's default, so this RPC locks
+-- both rows, verifies the site belongs to the tenant, writes every profile
+-- field, and -- only when the site is currently the default -- syncs
+-- tenant_registry.default_site_name to the new name in the same
+-- transaction. It never changes is_default or status; archived sites can
+-- still have their profile edited (e.g. to fix a typo before
+-- reactivating), since an archived site is never the default (enforced by
+-- tenant_sites_default_requires_active_check) so there is nothing to
+-- resync in that case.
+-- Always returns exactly one row:
+--   (null, false, 'tenant_not_found')
+--   (null, false, 'site_not_found')
+--   (null, false, 'site_tenant_mismatch')
+--   (null, false, 'site_name_required')
+--   (null, false, 'site_name_duplicate')   another site of this tenant already has this name
+--   (id, true, 'ok')
+drop function if exists public.update_tenant_site_profile(
+  uuid, uuid, text, text, text[], text[], text, boolean, boolean
+);
+
+create function public.update_tenant_site_profile(
+  p_tenant_id uuid,
+  p_site_id uuid,
+  p_site_name text,
+  p_industry_profile text,
+  p_major_processes text[],
+  p_major_equipment text[],
+  p_worker_count_band text,
+  p_uses_external_workforce boolean,
+  p_has_worker_representative boolean
+)
+returns table (id uuid, ok boolean, reason text)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_registry_id uuid;
+  v_site_tenant_id uuid;
+  v_site_is_default boolean;
+  v_site_name text;
+begin
+  select tenant_registry.id into v_registry_id
+  from public.tenant_registry
+  where tenant_registry.id = p_tenant_id
+  for update;
+
+  if v_registry_id is null then
+    return query select null::uuid, false, 'tenant_not_found';
+    return;
+  end if;
+
+  select tenant_sites.tenant_id, tenant_sites.is_default
+    into v_site_tenant_id, v_site_is_default
+  from public.tenant_sites
+  where tenant_sites.id = p_site_id
+  for update;
+
+  if v_site_tenant_id is null then
+    return query select null::uuid, false, 'site_not_found';
+    return;
+  end if;
+
+  if v_site_tenant_id <> p_tenant_id then
+    return query select null::uuid, false, 'site_tenant_mismatch';
+    return;
+  end if;
+
+  v_site_name := btrim(coalesce(p_site_name, ''));
+
+  if v_site_name = '' then
+    return query select null::uuid, false, 'site_name_required';
+    return;
+  end if;
+
+  begin
+    update public.tenant_sites as ts
+    set site_name = v_site_name,
+        industry_profile = p_industry_profile,
+        major_processes = p_major_processes,
+        major_equipment = p_major_equipment,
+        worker_count_band = p_worker_count_band,
+        uses_external_workforce = p_uses_external_workforce,
+        has_worker_representative = p_has_worker_representative,
+        updated_at = now()
+    where ts.id = p_site_id;
+  exception when unique_violation then
+    return query select null::uuid, false, 'site_name_duplicate';
+    return;
+  end;
+
+  if v_site_is_default then
+    update public.tenant_registry as tr
+    set default_site_name = v_site_name,
+        updated_at = now()
+    where tr.id = p_tenant_id;
+  end if;
+
+  return query select p_site_id, true, 'ok';
+end;
+$$;
+
+revoke all on function public.update_tenant_site_profile(
+  uuid, uuid, text, text, text[], text[], text, boolean, boolean
+) from public;
+revoke execute on function public.update_tenant_site_profile(
+  uuid, uuid, text, text, text[], text[], text, boolean, boolean
+) from anon, authenticated;
+grant execute on function public.update_tenant_site_profile(
+  uuid, uuid, text, text, text[], text[], text, boolean, boolean
+) to service_role;
 
 -- Backfill: give every tenant that already has a default_site_name but no
 -- tenant_sites row yet a single default site. Idempotent -- the `not
