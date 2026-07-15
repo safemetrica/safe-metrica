@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getCompanyConfig, getCompanyConfigByCode } from "@/lib/company";
+import {
+  getCompanyConfig,
+  getCompanyConfigByCode,
+  type CompanyConfig,
+} from "@/lib/company";
 import RiskSharePackExportPanel from "./RiskSharePackExportPanel";
 import RiskSharePackMonthlySummary from "./RiskSharePackMonthlySummary";
 import RiskSharePackLinkPanel from "./RiskSharePackLinkPanel";
@@ -503,11 +507,24 @@ function getSingleSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-async function getRiskShareCompany(searchParams?: PageSearchParams) {
+// registryServiceMode is the tenant_registry service_mode observed while
+// resolving `company`, reused as-is (never re-queried) so a page-body
+// lookup can't silently fail open. It is null for the richi literal
+// special case and the no-param legacy cookie flow, both of which never
+// consult tenant_registry here.
+type RiskShareCompanyResolution = {
+  company: CompanyConfig;
+  registryServiceMode: string | null;
+};
+
+async function getRiskShareCompany(
+  searchParams?: PageSearchParams,
+): Promise<RiskShareCompanyResolution | null> {
   const rawCompanyQuery = getSingleSearchParam(searchParams?.company);
 
   if (rawCompanyQuery === "richi") {
-    return getCompanyConfigByCode("richi").catch(() => null);
+    const company = await getCompanyConfigByCode("richi").catch(() => null);
+    return company ? { company, registryServiceMode: null } : null;
   }
 
   if (rawCompanyQuery) {
@@ -519,10 +536,19 @@ async function getRiskShareCompany(searchParams?: PageSearchParams) {
       return null;
     }
 
-    return getCompanyConfigByCode(tenant.code).catch(() => null);
+    const company = await getCompanyConfigByCode(tenant.code).catch(
+      () => null,
+    );
+
+    if (!company) {
+      return null;
+    }
+
+    return { company, registryServiceMode: tenant.serviceMode };
   }
 
-  return getCompanyConfig().catch(() => null);
+  const company = await getCompanyConfig().catch(() => null);
+  return company ? { company, registryServiceMode: null } : null;
 }
 
 export default async function RiskSharePackManagerHomePage({
@@ -531,14 +557,28 @@ export default async function RiskSharePackManagerHomePage({
   searchParams?: Promise<PageSearchParams>;
 }) {
   const params = (await searchParams) ?? {};
-  const company = await getRiskShareCompany(params);
+  const resolution = await getRiskShareCompany(params);
 
-  if (!company) {
+  if (!resolution) {
     redirect("/login?error=tenant_required");
   }
 
+  const { company, registryServiceMode } = resolution;
+
   if (company.code === "mons") {
     redirect("/login?error=risk_share_pack_not_available");
+  }
+
+  // New tenant_registry-based SaaS tenants (service_mode "risk_share_pack",
+  // assigned only by /api/owner/tenant-onboarding/create) must render through
+  // the session/membership-guarded /risk-share/manager, not this legacy
+  // cookie/param-trusting console. registryServiceMode comes straight from
+  // the single tenant_registry lookup already performed in
+  // getRiskShareCompany() — it is never re-queried here, so a transient
+  // lookup failure can't fail this boundary open. Legacy Notion tenants and
+  // richi keep registryServiceMode === null and are untouched.
+  if (registryServiceMode === "risk_share_pack") {
+    redirect(`/risk-share/manager?company=${encodeURIComponent(company.code)}`);
   }
 
   const currentPeriod = getCurrentKstMonthPeriod();
