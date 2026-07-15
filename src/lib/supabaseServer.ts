@@ -1200,10 +1200,41 @@ async function callTenantSiteRpc(
   });
 
   if (!res.ok) {
+    const errorData = await res.json().catch(() => undefined);
+    const rawMessage =
+      errorData && typeof errorData === "object" && !Array.isArray(errorData)
+        && typeof (errorData as { message?: unknown }).message === "string"
+        ? (errorData as { message: string }).message
+        : "";
+
+    const safeMessage = rawMessage
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi, "[uuid]")
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+      .replace(/https?:\/\/\S+/gi, "[url]")
+      .slice(0, 240);
+
+    const errorCode =
+      errorData && typeof errorData === "object" && !Array.isArray(errorData)
+        && typeof (errorData as { code?: unknown }).code === "string"
+        ? (errorData as { code: string }).code
+        : null;
+
     console.error("[tenant-site-rpc] request failed", {
       rpcName,
       status: res.status,
       statusText: res.statusText,
+      errorCode,
+      safeMessage: safeMessage || null,
+      tenantIdFormatValid:
+        typeof payload.p_tenant_id === "string"
+        && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.p_tenant_id),
+      tenantCodePresent:
+        typeof payload.p_tenant_code === "string"
+        && payload.p_tenant_code.length > 0,
+      siteNameLength:
+        typeof payload.p_site_name === "string"
+          ? payload.p_site_name.length
+          : null,
     });
 
     return { ok: false, id: null, reason: "request_failed" };
