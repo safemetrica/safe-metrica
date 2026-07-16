@@ -12,6 +12,10 @@ export type TenantAuthTenantCode =
   | "unknown";
 
 export type TenantMembership = {
+  /** tenant_membership.id -- the membership row's own primary key. Re-derived
+   * from the DB on every request; never sourced from client input, a URL, or
+   * a persisted session token. */
+  membershipId: string;
   userId: string | null;
   userEmail: string;
   tenantId: string;

@@ -131,6 +131,10 @@ export type ManagerDesignerViewProps = {
   weeklyTrendFallbackLabels?: string[];
   /** Absent for roles without source-registry access (e.g. owner_internal). */
   sourceRegistryHref?: string;
+  /** Absent for roles without Share Review access (only tenant_admin /
+   * tenant_manager -- explicitly not owner_internal, unlike
+   * sourceRegistryHref above). */
+  shareReviewHref?: string;
 };
 
 const DEFAULT_WEEKLY_LABELS = ["", "", "", "", "", "", ""];
@@ -193,6 +197,7 @@ export default function ManagerDesignerView({
   safetyResources,
   weeklyTrendFallbackLabels,
   sourceRegistryHref,
+  shareReviewHref,
 }: ManagerDesignerViewProps) {
   const hasRepresentativeSignatureData = representative.status === "ok";
   const hasWeeklyTrend = Boolean(weeklyTrend && weeklyTrend.length > 0);
@@ -298,6 +303,17 @@ export default function ManagerDesignerView({
                 >
                   <iconify-icon icon="lucide:file-spreadsheet"></iconify-icon>
                   <span className="nav__txt">위험성평가 원본 관리</span>
+                </a>
+              ) : null}
+              {shareReviewHref ? (
+                <a
+                  className="nav__item"
+                  href={shareReviewHref}
+                  title="공유할 내용 확인"
+                  onClick={closeSidebar}
+                >
+                  <iconify-icon icon="lucide:list-checks"></iconify-icon>
+                  <span className="nav__txt">공유할 내용 확인</span>
                 </a>
               ) : null}
             </div>
@@ -419,6 +435,11 @@ export default function ManagerDesignerView({
                   <iconify-icon icon="lucide:calendar-days"></iconify-icon>
                   <b id="dateChipDate">{todayLabel}</b>
                 </div>
+                {shareReviewHref ? (
+                  <a className="btn btn--outline" href={shareReviewHref}>
+                    <iconify-icon icon="lucide:list-checks"></iconify-icon> 공유할 내용 확인
+                  </a>
+                ) : null}
                 <a className="btn btn--primary" href={fieldHref}>
                   <iconify-icon icon="lucide:qr-code"></iconify-icon> 현장 QR 입구
                 </a>
