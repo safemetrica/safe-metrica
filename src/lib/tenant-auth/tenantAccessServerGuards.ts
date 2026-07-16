@@ -43,6 +43,7 @@ function toTenantAuthContext(
     selectedTenantCode: membership.tenantCode,
     role: membership.role,
     membership: {
+      membershipId: membership.id,
       userId: membership.userId,
       userEmail: membership.userEmail,
       tenantId: membership.tenantId,

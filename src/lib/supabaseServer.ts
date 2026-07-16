@@ -1323,7 +1323,10 @@ export type TenantMembershipRow = {
 };
 
 export type TenantMembershipConfig = {
-  id: string | null;
+  /** tenant_membership.id -- always a non-empty membership row PK. A row
+   * without one is not treated as a valid active membership; see the
+   * fail-closed check in getActiveTenantMembershipByEmailAndCode. */
+  id: string;
   tenantId: string;
   tenantCode: string;
   userId: string | null;
@@ -1412,6 +1415,7 @@ export async function getActiveTenantMembershipByEmailAndCode(params: {
     return null;
   }
 
+  const rowId = readTenantRegistryString(row.id);
   const rowTenantId = readTenantRegistryString(row.tenant_id);
   const rowTenantCode = readTenantRegistryString(row.tenant_code);
   const rowUserEmail = normalizeTenantMembershipEmail(readTenantRegistryString(row.user_email));
@@ -1419,6 +1423,7 @@ export async function getActiveTenantMembershipByEmailAndCode(params: {
   const status = normalizeTenantMembershipStatus(row.status);
 
   if (
+    !rowId ||
     !rowTenantId ||
     rowTenantCode !== tenantCode ||
     rowUserEmail !== userEmail ||
@@ -1429,7 +1434,7 @@ export async function getActiveTenantMembershipByEmailAndCode(params: {
   }
 
   return {
-    id: readTenantRegistryString(row.id),
+    id: rowId,
     tenantId: rowTenantId,
     tenantCode: rowTenantCode,
     userId: readTenantRegistryString(row.user_id) || null,
@@ -1511,4 +1516,316 @@ export async function listActiveManagerTenantMembershipsByEmail(
   }
 
   return destinations.slice(0, ACTIVE_MANAGER_TENANT_MEMBERSHIP_LOOKUP_LIMIT);
+}
+
+export type SafeReviewedRiskShareItem = {
+  id: string;
+  companyCode: string;
+  taskName: string | null;
+  hazard: string | null;
+  currentControls: string | null;
+  improvementPlan: string | null;
+  riskLevel: string | null;
+  workerShareSummary: string | null;
+  shareStatus: string;
+  customerCheckStatus: string;
+  customerConfirmed: boolean;
+  workerVisible: boolean;
+  versionLockId: string | null;
+  reviewRevision: number;
+};
+
+export type ReviewRiskShareItemCode =
+  | "ok"
+  | "invalid_action"
+  | "validation_failed"
+  | "forbidden"
+  | "not_found"
+  | "locked"
+  | "idempotency_conflict"
+  | "stale_revision"
+  | "request_failed"
+  | "invalid_response";
+
+export type ReviewRiskShareItemResult = {
+  ok: boolean;
+  code: ReviewRiskShareItemCode;
+  replayed: boolean;
+  item: SafeReviewedRiskShareItem | null;
+  reviewEventId: string | null;
+};
+
+export type ReviewRiskShareItemAction = "include" | "edit_include" | "exclude";
+
+export type ReviewRiskShareItemParams = {
+  itemId: string;
+  companyCode: string;
+  actorMembershipId: string;
+  expectedRevision: number;
+  action: ReviewRiskShareItemAction;
+  idempotencyKey: string;
+  taskName: string | null;
+  hazard: string | null;
+  currentControls: string | null;
+  improvementPlan: string | null;
+  riskLevel: string | null;
+  workerShareSummary: string | null;
+  workerVisible: boolean | null;
+};
+
+const REVIEW_RISK_SHARE_ITEM_KNOWN_CODES = new Set<string>([
+  "ok",
+  "invalid_action",
+  "validation_failed",
+  "forbidden",
+  "not_found",
+  "locked",
+  "idempotency_conflict",
+  "stale_revision",
+]);
+
+function scrubSupabaseRpcErrorMessage(rawMessage: string): string {
+  return rawMessage
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi, "[uuid]")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+    .replace(/https?:\/\/\S+/gi, "[url]")
+    .slice(0, 240);
+}
+
+const REVIEWED_ITEM_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const REVIEWED_ITEM_COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const REVIEWED_ITEM_KNOWN_SHARE_STATUSES = new Set([
+  "draft",
+  "needs_customer_check",
+  "customer_confirmed",
+  "locked",
+  "excluded",
+]);
+const REVIEWED_ITEM_KNOWN_CUSTOMER_CHECK_STATUSES = new Set([
+  "not_requested",
+  "requested",
+  "confirmed",
+  "returned",
+]);
+
+/** Strict, fail-closed parse of the RPC's `item` snapshot. Every field is
+ * checked against its real DB shape (UUID pattern, known enum, integer
+ * revision) -- an unexpected shape here means something is wrong between
+ * this helper and the RPC's actual contract, not a value worth passing
+ * through best-effort. */
+function toSafeReviewedRiskShareItem(value: unknown): SafeReviewedRiskShareItem | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const row = value as Record<string, unknown>;
+  const id = readTenantRegistryString(row.id);
+  const companyCode = readTenantRegistryString(row.companyCode);
+  const shareStatus = readTenantRegistryString(row.shareStatus);
+  const customerCheckStatus = readTenantRegistryString(row.customerCheckStatus);
+  const reviewRevision = row.reviewRevision;
+  const versionLockId = readTenantRegistryString(row.versionLockId);
+
+  if (
+    !REVIEWED_ITEM_UUID_PATTERN.test(id) ||
+    !REVIEWED_ITEM_COMPANY_CODE_PATTERN.test(companyCode) ||
+    !REVIEWED_ITEM_KNOWN_SHARE_STATUSES.has(shareStatus) ||
+    !REVIEWED_ITEM_KNOWN_CUSTOMER_CHECK_STATUSES.has(customerCheckStatus) ||
+    typeof row.customerConfirmed !== "boolean" ||
+    typeof row.workerVisible !== "boolean" ||
+    typeof reviewRevision !== "number" ||
+    !Number.isInteger(reviewRevision) ||
+    reviewRevision < 1 ||
+    (versionLockId && !REVIEWED_ITEM_UUID_PATTERN.test(versionLockId))
+  ) {
+    return null;
+  }
+
+  const readNullableText = (input: unknown) =>
+    typeof input === "string" && input.trim() ? input : null;
+
+  return {
+    id,
+    companyCode,
+    taskName: readNullableText(row.taskName),
+    hazard: readNullableText(row.hazard),
+    currentControls: readNullableText(row.currentControls),
+    improvementPlan: readNullableText(row.improvementPlan),
+    riskLevel: readNullableText(row.riskLevel),
+    workerShareSummary: readNullableText(row.workerShareSummary),
+    shareStatus,
+    customerCheckStatus,
+    customerConfirmed: row.customerConfirmed,
+    workerVisible: row.workerVisible,
+    versionLockId: versionLockId || null,
+    reviewRevision,
+  };
+}
+
+/** Server-only call to the review_risk_share_item Postgres RPC (added in
+ * 20260716010000, privileges hardened in 20260716020000). This is the only
+ * write path onto risk_share_items for tenant Share Review: the RPC alone
+ * validates membership, locks the item row, enforces optimistic
+ * concurrency, and writes the risk_share_item_review_events audit row --
+ * this helper must never PATCH risk_share_items or insert into the audit
+ * table directly. */
+export async function reviewRiskShareItemForTenant(
+  params: ReviewRiskShareItemParams
+): Promise<ReviewRiskShareItemResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  const failClosed = (code: ReviewRiskShareItemCode): ReviewRiskShareItemResult => ({
+    ok: false,
+    code,
+    replayed: false,
+    item: null,
+    reviewEventId: null,
+  });
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return failClosed("request_failed");
+  }
+
+  let res: Response;
+
+  try {
+    res = await fetch(`${supabaseUrl}/rest/v1/rpc/review_risk_share_item`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        p_item_id: params.itemId,
+        p_company_code: params.companyCode,
+        p_actor_membership_id: params.actorMembershipId,
+        p_expected_revision: params.expectedRevision,
+        p_action: params.action,
+        p_idempotency_key: params.idempotencyKey,
+        p_task_name: params.taskName,
+        p_hazard: params.hazard,
+        p_current_controls: params.currentControls,
+        p_improvement_plan: params.improvementPlan,
+        p_risk_level: params.riskLevel,
+        p_worker_share_summary: params.workerShareSummary,
+        p_worker_visible: params.workerVisible,
+      }),
+      cache: "no-store",
+    });
+  } catch {
+    return failClosed("request_failed");
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => undefined);
+    const rawMessage =
+      errorData && typeof errorData === "object" && !Array.isArray(errorData)
+        && typeof (errorData as { message?: unknown }).message === "string"
+        ? (errorData as { message: string }).message
+        : "";
+    const errorCode =
+      errorData && typeof errorData === "object" && !Array.isArray(errorData)
+        && typeof (errorData as { code?: unknown }).code === "string"
+        ? (errorData as { code: string }).code
+        : null;
+
+    console.error("[review-risk-share-item-rpc] request failed", {
+      status: res.status,
+      statusText: res.statusText,
+      errorCode,
+      safeMessage: scrubSupabaseRpcErrorMessage(rawMessage) || null,
+      action: params.action,
+    });
+
+    return failClosed("request_failed");
+  }
+
+  const data = await res.json().catch(() => undefined);
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row || typeof row !== "object") {
+    console.error("[review-risk-share-item-rpc] unexpected response shape", {
+      responseKind: Array.isArray(data) ? "array" : typeof data,
+      rowCount: Array.isArray(data) ? data.length : undefined,
+    });
+
+    return failClosed("invalid_response");
+  }
+
+  const rawRow = row as Record<string, unknown>;
+  const code = readTenantRegistryString(rawRow.code);
+
+  if (typeof rawRow.ok !== "boolean" || typeof rawRow.replayed !== "boolean") {
+    console.error("[review-risk-share-item-rpc] ok/replayed not boolean", {
+      okType: typeof rawRow.ok,
+      replayedType: typeof rawRow.replayed,
+    });
+
+    return failClosed("invalid_response");
+  }
+
+  const ok = rawRow.ok;
+  const replayed = rawRow.replayed;
+
+  if (!REVIEW_RISK_SHARE_ITEM_KNOWN_CODES.has(code)) {
+    console.error("[review-risk-share-item-rpc] unknown result code", { code: code || null });
+
+    return failClosed("invalid_response");
+  }
+
+  // ok and code are two ways of expressing the same outcome; the RPC must
+  // never disagree with itself about whether the call succeeded.
+  if (ok !== (code === "ok")) {
+    console.error("[review-risk-share-item-rpc] ok/code disagree", { ok, code });
+
+    return failClosed("invalid_response");
+  }
+
+  const item = ok ? toSafeReviewedRiskShareItem(rawRow.item) : null;
+
+  if (ok && !item) {
+    console.error("[review-risk-share-item-rpc] ok=true with missing/malformed item snapshot");
+
+    return failClosed("invalid_response");
+  }
+
+  const reviewEventIdRaw = readTenantRegistryString(rawRow.review_event_id);
+  const reviewEventId = reviewEventIdRaw || null;
+
+  if (ok) {
+    const normalizedRequestCompanyCode = params.companyCode.trim().toLowerCase();
+    // Postgres always returns uuid columns lowercased; a client-submitted
+    // itemId may not be, so compare case-insensitively rather than risk a
+    // false invalid_response over casing alone.
+    const itemIdMatches = item!.id.toLowerCase() === params.itemId.trim().toLowerCase();
+    const companyCodeMatches = item!.companyCode === normalizedRequestCompanyCode;
+    const hasValidReviewEventId =
+      Boolean(reviewEventIdRaw) && REVIEWED_ITEM_UUID_PATTERN.test(reviewEventIdRaw);
+
+    // A successful mutation must be reporting back on the exact item and
+    // tenant this call asked about, and must carry a real audit event id --
+    // any mismatch means the response cannot be trusted to describe this
+    // request, regardless of what the RPC otherwise claims.
+    if (!itemIdMatches || !companyCodeMatches || !hasValidReviewEventId) {
+      console.error("[review-risk-share-item-rpc] ok=true response does not match the request", {
+        itemIdMatches,
+        companyCodeMatches,
+        hasValidReviewEventId,
+      });
+
+      return failClosed("invalid_response");
+    }
+  }
+
+  return {
+    ok,
+    code: code as ReviewRiskShareItemCode,
+    replayed,
+    item,
+    reviewEventId,
+  };
 }
