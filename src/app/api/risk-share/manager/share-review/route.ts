@@ -69,10 +69,7 @@ type ValidatedRequestBody = {
 };
 
 function jsonError(status: number, code: string) {
-  return NextResponse.json(
-    { ok: false, code, replayed: false, item: null, reviewEventId: null },
-    { status },
-  );
+  return NextResponse.json({ ok: false, code, replayed: false }, { status });
 }
 
 function isCrossSiteRequest(request: NextRequest): boolean {
@@ -327,14 +324,14 @@ export async function POST(request: NextRequest) {
 
   const status = RESULT_CODE_STATUS[result.code] ?? 503;
 
+  // The browser only ever needs to know whether the mutation succeeded and
+  // whether it was a replay -- it re-reads the authoritative item state via
+  // router.refresh() rather than trusting a mutation response snapshot. The
+  // RPC's item/reviewEventId/versionLockId are validated server-side (see
+  // reviewRiskShareItemForTenant / toSafeReviewedRiskShareItem) but never
+  // forwarded to the client.
   return NextResponse.json(
-    {
-      ok: result.ok,
-      code: result.code,
-      replayed: result.replayed,
-      item: result.item,
-      reviewEventId: result.reviewEventId,
-    },
+    { ok: result.ok, code: result.code, replayed: result.replayed },
     { status },
   );
 }

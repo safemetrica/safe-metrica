@@ -1592,6 +1592,28 @@ function scrubSupabaseRpcErrorMessage(rawMessage: string): string {
     .slice(0, 240);
 }
 
+const REVIEWED_ITEM_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const REVIEWED_ITEM_COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const REVIEWED_ITEM_KNOWN_SHARE_STATUSES = new Set([
+  "draft",
+  "needs_customer_check",
+  "customer_confirmed",
+  "locked",
+  "excluded",
+]);
+const REVIEWED_ITEM_KNOWN_CUSTOMER_CHECK_STATUSES = new Set([
+  "not_requested",
+  "requested",
+  "confirmed",
+  "returned",
+]);
+
+/** Strict, fail-closed parse of the RPC's `item` snapshot. Every field is
+ * checked against its real DB shape (UUID pattern, known enum, integer
+ * revision) -- an unexpected shape here means something is wrong between
+ * this helper and the RPC's actual contract, not a value worth passing
+ * through best-effort. */
 function toSafeReviewedRiskShareItem(value: unknown): SafeReviewedRiskShareItem | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
@@ -1603,16 +1625,19 @@ function toSafeReviewedRiskShareItem(value: unknown): SafeReviewedRiskShareItem 
   const shareStatus = readTenantRegistryString(row.shareStatus);
   const customerCheckStatus = readTenantRegistryString(row.customerCheckStatus);
   const reviewRevision = row.reviewRevision;
+  const versionLockId = readTenantRegistryString(row.versionLockId);
 
   if (
-    !id ||
-    !companyCode ||
-    !shareStatus ||
-    !customerCheckStatus ||
+    !REVIEWED_ITEM_UUID_PATTERN.test(id) ||
+    !REVIEWED_ITEM_COMPANY_CODE_PATTERN.test(companyCode) ||
+    !REVIEWED_ITEM_KNOWN_SHARE_STATUSES.has(shareStatus) ||
+    !REVIEWED_ITEM_KNOWN_CUSTOMER_CHECK_STATUSES.has(customerCheckStatus) ||
     typeof row.customerConfirmed !== "boolean" ||
     typeof row.workerVisible !== "boolean" ||
     typeof reviewRevision !== "number" ||
-    !Number.isFinite(reviewRevision)
+    !Number.isInteger(reviewRevision) ||
+    reviewRevision < 1 ||
+    (versionLockId && !REVIEWED_ITEM_UUID_PATTERN.test(versionLockId))
   ) {
     return null;
   }
@@ -1633,7 +1658,7 @@ function toSafeReviewedRiskShareItem(value: unknown): SafeReviewedRiskShareItem 
     customerCheckStatus,
     customerConfirmed: row.customerConfirmed,
     workerVisible: row.workerVisible,
-    versionLockId: readNullableText(row.versionLockId),
+    versionLockId: versionLockId || null,
     reviewRevision,
   };
 }

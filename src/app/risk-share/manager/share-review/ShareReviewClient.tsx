@@ -33,23 +33,14 @@ type ShareReviewClientProps = {
   overflow: boolean;
 };
 
+/** Matches the API route's minimized response exactly -- the route never
+ * returns an item snapshot, review event id, or version lock id to the
+ * browser. The client re-reads authoritative state via router.refresh()
+ * instead of trusting a mutation response body. */
 type ReviewApiResponse = {
   ok: boolean;
   code: string;
   replayed: boolean;
-  item: {
-    taskName: string | null;
-    hazard: string | null;
-    currentControls: string | null;
-    improvementPlan: string | null;
-    riskLevel: string | null;
-    workerShareSummary: string | null;
-    shareStatus: string;
-    workerVisible: boolean;
-    versionLockId: string | null;
-    reviewRevision: number;
-  } | null;
-  reviewEventId: string | null;
 };
 
 type MessageTone = "success" | "info" | "warning" | "error";
@@ -139,6 +130,67 @@ function buildPayloadSignature(
   return JSON.stringify({ action, ...fields, workerVisible });
 }
 
+/** The RPC's edit_include contract treats a null/blank optional field as
+ * "leave the current value alone" (coalesce), not "clear it" -- there is no
+ * explicit-clear contract yet (that's a separate future DB change). Blocking
+ * this client-side before submit avoids a request that silently keeps the
+ * old value while the UI would otherwise look like it succeeded. Only the
+ * four genuinely optional fields are checked; task_name/hazard are already
+ * required and enforced separately. */
+const OPTIONAL_CLEARABLE_FIELDS = [
+  "currentControls",
+  "improvementPlan",
+  "riskLevel",
+  "workerShareSummary",
+] as const;
+
+function findBlockedOptionalFieldClear(
+  item: Extract<ShareReviewClientItem, { kind: "valid" }>,
+  editValues: EditValues,
+): boolean {
+  return OPTIONAL_CLEARABLE_FIELDS.some((field) => {
+    const existing = item[field];
+    const edited = editValues[field].trim();
+    return Boolean(existing) && edited.length === 0;
+  });
+}
+
+function normalizeForComparison(value: string | null) {
+  return (value ?? "").trim();
+}
+
+/** True only when submitting would produce no real change: the item is
+ * already customer_confirmed and workerVisible would stay the same. Content
+ * fields aren't part of the include check (include never carries content),
+ * and a transition away from excluded/draft/needs_customer_check is never
+ * treated as a no-op even if the values happen to look unchanged, because
+ * the share_status transition itself is the real effect. */
+function isNoOpInclude(
+  item: Extract<ShareReviewClientItem, { kind: "valid" }>,
+  workerVisible: boolean,
+): boolean {
+  return item.shareStatus === "customer_confirmed" && workerVisible === item.workerVisible;
+}
+
+function isNoOpEditInclude(
+  item: Extract<ShareReviewClientItem, { kind: "valid" }>,
+  editValues: EditValues,
+  workerVisible: boolean,
+): boolean {
+  if (item.shareStatus !== "customer_confirmed" || workerVisible !== item.workerVisible) {
+    return false;
+  }
+
+  return (
+    editValues.taskName.trim() === normalizeForComparison(item.taskName) &&
+    editValues.hazard.trim() === normalizeForComparison(item.hazard) &&
+    editValues.currentControls.trim() === normalizeForComparison(item.currentControls) &&
+    editValues.improvementPlan.trim() === normalizeForComparison(item.improvementPlan) &&
+    editValues.riskLevel.trim() === normalizeForComparison(item.riskLevel) &&
+    editValues.workerShareSummary.trim() === normalizeForComparison(item.workerShareSummary)
+  );
+}
+
 function ShareReviewItemCard({
   item,
   apiUrl,
@@ -157,6 +209,44 @@ function ShareReviewItemCard({
 
   const badge = getStatusBadge(item);
   const locationLabel = formatSourceLocation(item.sourcePage, item.sourceRow);
+
+  // Resync local form/pending state whenever the server-confirmed item
+  // actually changes value (a real mutation -- by this RPC, by someone
+  // else, or reflected after this card's own submit + router.refresh()).
+  // This follows React's documented "adjust state during render" pattern
+  // (comparing against a stored previous value) rather than a useEffect, so
+  // there is no extra render pass and no setState-in-effect warning. The
+  // signature is built only from primitives, so a parent rerender that
+  // passes a new item object with byte-identical field values does not
+  // reset anything -- in-progress typing survives an unrelated rerender,
+  // but never survives real server-side drift. A pending idempotency key
+  // always belongs to the revision it was generated against, so it is
+  // discarded here rather than risking a replay against the wrong base
+  // state. success/stale/etc. messages are intentionally untouched --
+  // they're only ever set by submitReview itself.
+  const syncSignature = JSON.stringify([
+    item.id,
+    item.reviewRevision,
+    item.taskName,
+    item.hazard,
+    item.currentControls,
+    item.improvementPlan,
+    item.riskLevel,
+    item.workerShareSummary,
+    item.workerVisible,
+    item.shareStatus,
+    item.isLocked,
+  ]);
+  const [syncedSignature, setSyncedSignature] = useState(syncSignature);
+
+  if (syncSignature !== syncedSignature) {
+    setSyncedSignature(syncSignature);
+    setEditValues(editValuesFromItem(item));
+    setWorkerVisible(item.workerVisible);
+    setMode("view");
+    setPendingIdempotencyKey(null);
+    setPendingPayloadSignature(null);
+  }
 
   function resetEditingState() {
     setMode("view");
@@ -193,7 +283,26 @@ function ShareReviewItemCard({
       return;
     }
 
+    if (action === "edit_include" && findBlockedOptionalFieldClear(item, editValues)) {
+      setMessage({
+        tone: "error",
+        text: "기존에 입력된 선택 항목을 빈칸으로 삭제하는 기능은 현재 지원되지 않습니다. 내용을 수정하거나 운영 담당자에게 문의해 주세요.",
+      });
+      return;
+    }
+
     const submitWorkerVisible = action === "exclude" ? false : workerVisible;
+
+    if (action === "include" && isNoOpInclude(item, submitWorkerVisible)) {
+      setMessage({ tone: "info", text: "이미 확인이 완료된 항목입니다." });
+      return;
+    }
+
+    if (action === "edit_include" && isNoOpEditInclude(item, editValues, submitWorkerVisible)) {
+      setMessage({ tone: "info", text: "이미 확인이 완료된 항목입니다." });
+      return;
+    }
+
     const payloadSignature = buildPayloadSignature(action, fields, submitWorkerVisible);
 
     let idempotencyKey: string;
@@ -447,6 +556,9 @@ function ShareReviewItemCard({
               onChange={(event) => setEditValues((prev) => ({ ...prev, riskLevel: event.target.value }))}
             />
           </label>
+          <p className="muted" style={{ fontSize: "12px" }}>
+            기존 문구를 완전히 삭제하는 기능은 아직 지원되지 않습니다.
+          </p>
         </div>
       )}
 
@@ -569,7 +681,7 @@ export default function ShareReviewClient({
           </div>
         ) : null}
 
-        {listStatus === "ok" && validCount === 0 && invalidCount === 0 ? (
+        {listStatus === "ok" && !overflow && validCount === 0 && invalidCount === 0 ? (
           <div className="card card--pad">
             <p style={{ fontWeight: 800 }}>현재 확인할 공유 항목이 없습니다.</p>
             <p className="muted" style={{ marginTop: "6px", fontSize: "14px" }}>
@@ -578,7 +690,13 @@ export default function ShareReviewClient({
           </div>
         ) : null}
 
-        {listStatus === "ok"
+        {/* overflow fail-closed: the 200 rows we do have are not shown as a
+            complete, reviewable list -- the customer would otherwise see a
+            partial list with no indication anything is missing, and could
+            act on it as if it were the whole picture. No item cards, no
+            include/edit/exclude actions, until the row count is back under
+            the display cap. */}
+        {listStatus === "ok" && !overflow
           ? items.map((entry, index) =>
               entry.kind === "valid" ? (
                 <ShareReviewItemCard key={entry.id} item={entry} apiUrl={apiUrl} />
