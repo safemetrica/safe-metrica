@@ -1758,12 +1758,29 @@ export async function reviewRiskShareItemForTenant(
 
   const rawRow = row as Record<string, unknown>;
   const code = readTenantRegistryString(rawRow.code);
-  const ok = rawRow.ok === true;
-  const replayed = rawRow.replayed === true;
-  const reviewEventId = readTenantRegistryString(rawRow.review_event_id) || null;
+
+  if (typeof rawRow.ok !== "boolean" || typeof rawRow.replayed !== "boolean") {
+    console.error("[review-risk-share-item-rpc] ok/replayed not boolean", {
+      okType: typeof rawRow.ok,
+      replayedType: typeof rawRow.replayed,
+    });
+
+    return failClosed("invalid_response");
+  }
+
+  const ok = rawRow.ok;
+  const replayed = rawRow.replayed;
 
   if (!REVIEW_RISK_SHARE_ITEM_KNOWN_CODES.has(code)) {
     console.error("[review-risk-share-item-rpc] unknown result code", { code: code || null });
+
+    return failClosed("invalid_response");
+  }
+
+  // ok and code are two ways of expressing the same outcome; the RPC must
+  // never disagree with itself about whether the call succeeded.
+  if (ok !== (code === "ok")) {
+    console.error("[review-risk-share-item-rpc] ok/code disagree", { ok, code });
 
     return failClosed("invalid_response");
   }
@@ -1774,6 +1791,34 @@ export async function reviewRiskShareItemForTenant(
     console.error("[review-risk-share-item-rpc] ok=true with missing/malformed item snapshot");
 
     return failClosed("invalid_response");
+  }
+
+  const reviewEventIdRaw = readTenantRegistryString(rawRow.review_event_id);
+  const reviewEventId = reviewEventIdRaw || null;
+
+  if (ok) {
+    const normalizedRequestCompanyCode = params.companyCode.trim().toLowerCase();
+    // Postgres always returns uuid columns lowercased; a client-submitted
+    // itemId may not be, so compare case-insensitively rather than risk a
+    // false invalid_response over casing alone.
+    const itemIdMatches = item!.id.toLowerCase() === params.itemId.trim().toLowerCase();
+    const companyCodeMatches = item!.companyCode === normalizedRequestCompanyCode;
+    const hasValidReviewEventId =
+      Boolean(reviewEventIdRaw) && REVIEWED_ITEM_UUID_PATTERN.test(reviewEventIdRaw);
+
+    // A successful mutation must be reporting back on the exact item and
+    // tenant this call asked about, and must carry a real audit event id --
+    // any mismatch means the response cannot be trusted to describe this
+    // request, regardless of what the RPC otherwise claims.
+    if (!itemIdMatches || !companyCodeMatches || !hasValidReviewEventId) {
+      console.error("[review-risk-share-item-rpc] ok=true response does not match the request", {
+        itemIdMatches,
+        companyCodeMatches,
+        hasValidReviewEventId,
+      });
+
+      return failClosed("invalid_response");
+    }
   }
 
   return {

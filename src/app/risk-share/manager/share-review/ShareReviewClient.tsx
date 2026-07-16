@@ -43,6 +43,73 @@ type ReviewApiResponse = {
   replayed: boolean;
 };
 
+/** code -> the HTTP status(es) the route can legitimately pair it with.
+ * "forbidden" is the one code with two valid statuses: the route returns
+ * 401 for unauthenticated and 403 for every other forbidden reason, both
+ * carrying code "forbidden". */
+const ACCEPTABLE_STATUS_BY_CODE: Record<string, number[]> = {
+  ok: [200],
+  invalid_action: [422],
+  validation_failed: [422],
+  forbidden: [401, 403],
+  not_found: [404],
+  locked: [409],
+  idempotency_conflict: [409],
+  stale_revision: [409],
+  request_failed: [503],
+  invalid_response: [503],
+};
+
+const REVIEW_API_RESPONSE_ALLOWED_KEYS = new Set(["ok", "code", "replayed"]);
+
+/** Strict parse of the API route's response body. Anything outside the
+ * exact allowed shape -- extra/missing keys, wrong types, an unknown code,
+ * ok/code disagreeing, replayed=true without ok=true+code="ok", or a code
+ * paired with a status the route would never actually send for it -- is
+ * treated as malformed, not as a best-effort partial success. A malformed
+ * response must never be read as ok=true. */
+function parseReviewApiResponse(raw: unknown, httpStatus: number): ReviewApiResponse | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+
+  for (const key of Object.keys(raw)) {
+    if (!REVIEW_API_RESPONSE_ALLOWED_KEYS.has(key)) {
+      return null;
+    }
+  }
+
+  const row = raw as Record<string, unknown>;
+
+  if (
+    typeof row.ok !== "boolean" ||
+    typeof row.replayed !== "boolean" ||
+    typeof row.code !== "string"
+  ) {
+    return null;
+  }
+
+  const acceptableStatuses = ACCEPTABLE_STATUS_BY_CODE[row.code];
+
+  if (!acceptableStatuses) {
+    return null;
+  }
+
+  if (row.ok !== (row.code === "ok")) {
+    return null;
+  }
+
+  if (row.replayed && !(row.ok && row.code === "ok")) {
+    return null;
+  }
+
+  if (!acceptableStatuses.includes(httpStatus)) {
+    return null;
+  }
+
+  return { ok: row.ok, code: row.code, replayed: row.replayed };
+}
+
 type MessageTone = "success" | "info" | "warning" | "error";
 
 type ItemMessage = { tone: MessageTone; text: string };
@@ -155,42 +222,6 @@ function findBlockedOptionalFieldClear(
   });
 }
 
-function normalizeForComparison(value: string | null) {
-  return (value ?? "").trim();
-}
-
-/** True only when submitting would produce no real change: the item is
- * already customer_confirmed and workerVisible would stay the same. Content
- * fields aren't part of the include check (include never carries content),
- * and a transition away from excluded/draft/needs_customer_check is never
- * treated as a no-op even if the values happen to look unchanged, because
- * the share_status transition itself is the real effect. */
-function isNoOpInclude(
-  item: Extract<ShareReviewClientItem, { kind: "valid" }>,
-  workerVisible: boolean,
-): boolean {
-  return item.shareStatus === "customer_confirmed" && workerVisible === item.workerVisible;
-}
-
-function isNoOpEditInclude(
-  item: Extract<ShareReviewClientItem, { kind: "valid" }>,
-  editValues: EditValues,
-  workerVisible: boolean,
-): boolean {
-  if (item.shareStatus !== "customer_confirmed" || workerVisible !== item.workerVisible) {
-    return false;
-  }
-
-  return (
-    editValues.taskName.trim() === normalizeForComparison(item.taskName) &&
-    editValues.hazard.trim() === normalizeForComparison(item.hazard) &&
-    editValues.currentControls.trim() === normalizeForComparison(item.currentControls) &&
-    editValues.improvementPlan.trim() === normalizeForComparison(item.improvementPlan) &&
-    editValues.riskLevel.trim() === normalizeForComparison(item.riskLevel) &&
-    editValues.workerShareSummary.trim() === normalizeForComparison(item.workerShareSummary)
-  );
-}
-
 function ShareReviewItemCard({
   item,
   apiUrl,
@@ -291,18 +322,14 @@ function ShareReviewItemCard({
       return;
     }
 
+    // No client-side "nothing changed" short-circuit here: the client's
+    // local view of item state can be stale relative to the DB (another
+    // tab, another reviewer, a background refresh that hasn't landed yet).
+    // Every include/edit_include reaches the RPC, which is the only thing
+    // that can correctly tell a genuine no-op apart from a real change
+    // against a state the client doesn't yet know about -- including via
+    // stale_revision if the client's assumed base state has moved.
     const submitWorkerVisible = action === "exclude" ? false : workerVisible;
-
-    if (action === "include" && isNoOpInclude(item, submitWorkerVisible)) {
-      setMessage({ tone: "info", text: "이미 확인이 완료된 항목입니다." });
-      return;
-    }
-
-    if (action === "edit_include" && isNoOpEditInclude(item, editValues, submitWorkerVisible)) {
-      setMessage({ tone: "info", text: "이미 확인이 완료된 항목입니다." });
-      return;
-    }
-
     const payloadSignature = buildPayloadSignature(action, fields, submitWorkerVisible);
 
     let idempotencyKey: string;
@@ -339,10 +366,10 @@ function ShareReviewItemCard({
       return;
     }
 
-    let data: ReviewApiResponse | null = null;
+    let rawData: unknown;
 
     try {
-      data = (await response.json()) as ReviewApiResponse;
+      rawData = await response.json();
     } catch {
       setSubmitting(false);
       setMessage({ tone: "error", text: "요청을 처리하지 못했습니다. 입력값은 유지됩니다. 다시 시도해 주세요." });
@@ -350,6 +377,18 @@ function ShareReviewItemCard({
     }
 
     setSubmitting(false);
+
+    const data = parseReviewApiResponse(rawData, response.status);
+
+    if (!data) {
+      // Malformed response: shape/type/enum/status mismatch, or an
+      // internally inconsistent ok/code/replayed combination. Never read
+      // this as success -- keep the same idempotency key and payload so a
+      // manual retry can replay safely, exactly like an unknown network
+      // failure.
+      setMessage({ tone: "error", text: "요청을 처리하지 못했습니다. 입력값은 유지됩니다. 다시 시도해 주세요." });
+      return;
+    }
 
     switch (data.code) {
       case "ok": {
