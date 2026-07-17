@@ -448,17 +448,44 @@ comment on column public.risk_share_preparation_decisions.safe_metadata is
 -- earlier, incomplete run of an earlier draft of this same file). This
 -- migration has no ALTER-TABLE-ADD-CONSTRAINT fallback path for the main
 -- table the way some other tables in this schema do, so a stale
--- incomplete table would otherwise let this migration finish with exit
--- code 0 while quietly missing the lineage/RLS/privilege contract this
--- file exists to establish. This block is a fail-closed check, not a
--- fix-up: it never alters anything, only verifies and raises. Checks a
--- representative set of the constraints/indexes added above (the ones
--- this fix specifically introduced or corrected), not every object in
--- the file -- enough to catch a shape mismatch without turning this into
--- a full schema-diff tool.
+-- incomplete (or wrong-shaped-but-same-named) table would otherwise let
+-- this migration finish with exit code 0 while quietly missing the
+-- lineage/RLS/privilege contract this file exists to establish.
+--
+-- This block verifies *definitions*, not just names: an earlier version
+-- checked only `pg_constraint.conname`/`pg_indexes.indexname` existence,
+-- which a same-named-but-differently-defined object (e.g. a stale
+-- 2-column candidate lineage FK left over from a pre-lineage-fix version
+-- of this migration) passes trivially, since `create table if not
+-- exists` never re-examines a table it decides already exists. Every FK
+-- below is checked against its exact source/referenced table, exact
+-- ordered source/referenced column name arrays (via conkey/confkey +
+-- pg_attribute, not hardcoded attnums, so this stays correct regardless
+-- of physical column order), VALIDATED status, and ON DELETE RESTRICT.
+-- Every index below is checked against its exact table, uniqueness,
+-- valid/ready/live status, absence of an expression or partial
+-- predicate, and exact ordered column list including DESC direction
+-- (via pg_index.indoption, not pg_get_indexdef's per-column form, which
+-- does not render sort direction).
+--
+-- This block never alters anything, only verifies and raises. It checks
+-- the constraints/indexes this fix specifically introduced or corrected
+-- (lineage, decision_seq, dedup, latest-lookup), not every object in the
+-- file -- enough to catch a shape mismatch without turning this into a
+-- full schema-diff tool.
 -- =====================================================================
 
 do $$
+declare
+  v_fk record;
+  v_fk_ok boolean;
+  v_actual_source_cols name[];
+  v_actual_ref_cols name[];
+  v_idx record;
+  v_idx_ok boolean;
+  v_actual_cols text[];
+  v_priv record;
+  v_seq text;
 begin
   if to_regclass('public.risk_share_preparation_decisions') is null then
     raise exception 'risk_share_preparation_decisions postcondition failed: table does not exist';
@@ -470,6 +497,13 @@ begin
     where oid = 'public.risk_share_preparation_decisions'::regclass
   ) then
     raise exception 'risk_share_preparation_decisions postcondition failed: RLS is not enabled';
+  end if;
+
+  if (
+    select count(*) from pg_policies
+    where schemaname = 'public' and tablename = 'risk_share_preparation_decisions'
+  ) <> 0 then
+    raise exception 'risk_share_preparation_decisions postcondition failed: unexpected RLS policy present (this table must have zero policies)';
   end if;
 
   if not exists (
@@ -485,80 +519,161 @@ begin
     raise exception 'risk_share_preparation_decisions postcondition failed: decision_seq is missing or is not a GENERATED ALWAYS AS IDENTITY bigint column';
   end if;
 
-  if not exists (
-    select 1 from pg_constraint
-    where conrelid = 'public.risk_share_preparation_decisions'::regclass
-      and conname = 'risk_share_prep_decisions_candidate_lineage_fkey'
-      and contype = 'f'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: candidate lineage FK is missing';
+  if pg_get_serial_sequence('public.risk_share_preparation_decisions', 'decision_seq') is null then
+    raise exception 'risk_share_preparation_decisions postcondition failed: decision_seq has no owned sequence';
   end if;
 
-  if not exists (
-    select 1 from pg_constraint
-    where conrelid = 'public.risk_share_preparation_decisions'::regclass
-      and conname = 'risk_share_prep_decisions_item_lineage_fkey'
-      and contype = 'f'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: item lineage FK is missing';
-  end if;
+  -- ---------------------------------------------------------------
+  -- Foreign keys: exact source table, ordered source columns, exact
+  -- referenced table, ordered referenced columns, VALIDATED, RESTRICT.
+  -- ---------------------------------------------------------------
+  for v_fk in
+    select *
+    from (values
+      ('risk_share_prep_decisions_source_company_fkey',
+       'public.risk_share_preparation_decisions'::regclass,
+       array['source_id', 'company_code']::name[],
+       'public.risk_share_sources'::regclass,
+       array['id', 'company_code']::name[]),
+      ('risk_share_prep_decisions_candidate_lineage_fkey',
+       'public.risk_share_preparation_decisions'::regclass,
+       array['candidate_id', 'company_code', 'source_id']::name[],
+       'public.risk_share_item_candidates'::regclass,
+       array['id', 'company_code', 'source_id']::name[]),
+      ('risk_share_prep_decisions_item_lineage_fkey',
+       'public.risk_share_preparation_decisions'::regclass,
+       array['item_id', 'company_code', 'candidate_id', 'source_id']::name[],
+       'public.risk_share_items'::regclass,
+       array['id', 'company_code', 'candidate_id', 'source_id']::name[]),
+      ('risk_share_prep_decisions_actor_membership_company_fkey',
+       'public.risk_share_preparation_decisions'::regclass,
+       array['actor_membership_id', 'company_code']::name[],
+       'public.tenant_membership'::regclass,
+       array['id', 'tenant_code']::name[]),
+      ('risk_share_prep_decisions_initiator_membership_company_fkey',
+       'public.risk_share_preparation_decisions'::regclass,
+       array['initiated_by_membership_id', 'company_code']::name[],
+       'public.tenant_membership'::regclass,
+       array['id', 'tenant_code']::name[])
+    ) as expected(conname, conrelid, source_cols, confrelid, ref_cols)
+  loop
+    select
+      (c.contype = 'f' and c.convalidated and c.confdeltype = 'r' and c.confrelid = v_fk.confrelid),
+      (
+        select array_agg(a.attname order by k.ord)
+        from unnest(c.conkey) with ordinality as k(attnum, ord)
+        join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum
+      ),
+      (
+        select array_agg(a.attname order by k.ord)
+        from unnest(c.confkey) with ordinality as k(attnum, ord)
+        join pg_attribute a on a.attrelid = c.confrelid and a.attnum = k.attnum
+      )
+    into v_fk_ok, v_actual_source_cols, v_actual_ref_cols
+    from pg_constraint c
+    where c.conname = v_fk.conname and c.conrelid = v_fk.conrelid;
 
-  if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and tablename = 'risk_share_item_candidates'
-      and indexname = 'risk_share_candidates_id_company_source_uidx'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: candidate lineage target index is missing on risk_share_item_candidates';
-  end if;
+    if not found then
+      raise exception 'risk_share_preparation_decisions postcondition failed: % is missing', v_fk.conname;
+    end if;
 
-  if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and tablename = 'risk_share_items'
-      and indexname = 'risk_share_items_id_company_candidate_source_uidx'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: item lineage target index is missing on risk_share_items';
-  end if;
+    if not coalesce(v_fk_ok, false)
+       or v_actual_source_cols is distinct from v_fk.source_cols
+       or v_actual_ref_cols is distinct from v_fk.ref_cols then
+      raise exception 'risk_share_preparation_decisions postcondition failed: % definition mismatch', v_fk.conname;
+    end if;
+  end loop;
 
-  if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and tablename = 'risk_share_preparation_decisions'
-      and indexname = 'risk_share_prep_decisions_seq_uidx'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: decision_seq unique index is missing';
-  end if;
+  -- ---------------------------------------------------------------
+  -- Indexes: exact table, uniqueness, valid/ready/live, no expression/
+  -- predicate, exact ordered column list (DESC direction included).
+  -- ---------------------------------------------------------------
+  for v_idx in
+    select *
+    from (values
+      ('risk_share_candidates_id_company_source_uidx',
+       'public.risk_share_item_candidates'::regclass, true,
+       array['id', 'company_code', 'source_id']::text[]),
+      ('risk_share_items_id_company_candidate_source_uidx',
+       'public.risk_share_items'::regclass, true,
+       array['id', 'company_code', 'candidate_id', 'source_id']::text[]),
+      ('risk_share_prep_decisions_seq_uidx',
+       'public.risk_share_preparation_decisions'::regclass, true,
+       array['decision_seq']::text[]),
+      ('risk_share_prep_decisions_candidate_seq_idx',
+       'public.risk_share_preparation_decisions'::regclass, false,
+       array['company_code', 'candidate_id', 'decision_seq DESC']::text[]),
+      ('risk_share_prep_decisions_correlation_candidate_uidx',
+       'public.risk_share_preparation_decisions'::regclass, true,
+       array['company_code', 'correlation_id', 'candidate_id']::text[]),
+      ('risk_share_prep_decisions_idempotency_candidate_uidx',
+       'public.risk_share_preparation_decisions'::regclass, true,
+       array['company_code', 'idempotency_key', 'candidate_id']::text[])
+    ) as expected(indexname, indrelid, is_unique, expected_cols)
+  loop
+    if to_regclass('public.' || v_idx.indexname) is null then
+      raise exception 'risk_share_preparation_decisions postcondition failed: % is missing', v_idx.indexname;
+    end if;
 
-  if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and tablename = 'risk_share_preparation_decisions'
-      and indexname = 'risk_share_prep_decisions_candidate_seq_idx'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: candidate/decision_seq latest-lookup index is missing';
-  end if;
+    select
+      (
+        i.indisunique = v_idx.is_unique
+        and i.indisvalid and i.indisready and i.indislive
+        and i.indexprs is null and i.indpred is null
+        and i.indrelid = v_idx.indrelid
+      ),
+      (
+        select array_agg(
+          a.attname || case when (i.indoption[k.ord - 1] & 1) = 1 then ' DESC' else '' end
+          order by k.ord
+        )
+        from unnest(i.indkey) with ordinality as k(attnum, ord)
+        join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum
+      )
+    into v_idx_ok, v_actual_cols
+    from pg_index i
+    where i.indexrelid = ('public.' || v_idx.indexname)::regclass;
 
-  if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and tablename = 'risk_share_preparation_decisions'
-      and indexname = 'risk_share_prep_decisions_correlation_candidate_uidx'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: correlation/candidate dedup index is missing';
-  end if;
+    if not coalesce(v_idx_ok, false) or v_actual_cols is distinct from v_idx.expected_cols then
+      raise exception 'risk_share_preparation_decisions postcondition failed: % definition mismatch', v_idx.indexname;
+    end if;
+  end loop;
 
-  if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and tablename = 'risk_share_preparation_decisions'
-      and indexname = 'risk_share_prep_decisions_idempotency_candidate_uidx'
-  ) then
-    raise exception 'risk_share_preparation_decisions postcondition failed: idempotency_key/candidate dedup index is missing';
-  end if;
+  -- ---------------------------------------------------------------
+  -- Table privilege matrix.
+  -- ---------------------------------------------------------------
+  for v_priv in
+    select *
+    from (values
+      ('service_role', 'SELECT', true), ('service_role', 'INSERT', true),
+      ('service_role', 'UPDATE', false), ('service_role', 'DELETE', false),
+      ('service_role', 'TRUNCATE', false), ('service_role', 'REFERENCES', false),
+      ('service_role', 'TRIGGER', false),
+      ('anon', 'SELECT', false), ('anon', 'INSERT', false),
+      ('authenticated', 'SELECT', false), ('authenticated', 'INSERT', false),
+      ('public', 'SELECT', false)
+    ) as expected(role_name, privilege, expected_value)
+  loop
+    if has_table_privilege(v_priv.role_name, 'public.risk_share_preparation_decisions', v_priv.privilege) <> v_priv.expected_value then
+      raise exception 'risk_share_preparation_decisions postcondition failed: % % table privilege does not match the expected contract', v_priv.role_name, v_priv.privilege;
+    end if;
+  end loop;
 
-  if has_table_privilege('service_role', 'public.risk_share_preparation_decisions', 'UPDATE') then
-    raise exception 'risk_share_preparation_decisions postcondition failed: service_role has UPDATE, which this append-only ledger must never grant';
-  end if;
+  -- ---------------------------------------------------------------
+  -- decision_seq identity sequence privilege matrix.
+  -- ---------------------------------------------------------------
+  v_seq := pg_get_serial_sequence('public.risk_share_preparation_decisions', 'decision_seq');
+
+  for v_priv in
+    select *
+    from (values
+      ('service_role', 'USAGE', true), ('service_role', 'SELECT', false), ('service_role', 'UPDATE', false),
+      ('anon', 'USAGE', false), ('authenticated', 'USAGE', false), ('public', 'USAGE', false)
+    ) as expected(role_name, privilege, expected_value)
+  loop
+    if has_sequence_privilege(v_priv.role_name, v_seq, v_priv.privilege) <> v_priv.expected_value then
+      raise exception 'risk_share_preparation_decisions postcondition failed: % sequence % privilege does not match the expected contract', v_priv.role_name, v_priv.privilege;
+    end if;
+  end loop;
 end
 $$;
