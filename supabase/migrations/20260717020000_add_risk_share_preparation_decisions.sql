@@ -70,7 +70,7 @@ create table if not exists public.risk_share_preparation_decisions (
   decision text not null,
   reason_code text not null,
   policy_version integer not null,
-  input_fingerprint text not null,
+  candidate_input_fingerprint text not null,
 
   actor_type text not null,
   actor_membership_id uuid,
@@ -88,13 +88,25 @@ create table if not exists public.risk_share_preparation_decisions (
     decision in ('auto_prepared', 'manager_review_required', 'owner_exception_required')
   ),
 
+  -- MEMBERSHIP_INVALID, TENANT_MISMATCH, and SOURCE_READ_FAILED are
+  -- deliberately not in this list. All three describe structural failures
+  -- that must fail the whole batch closed before any per-candidate decision
+  -- is safe to record: an invalid/absent membership means there is no
+  -- actor identity to satisfy the actor/initiator FK contract below, a
+  -- tenant mismatch is exactly what the composite tenant FKs already
+  -- reject at the database level (recording it as a candidate-level
+  -- decision row would require the row to reference cross-tenant objects
+  -- in the first place, which those FKs make impossible), and a source
+  -- read failure can happen before any candidate_id exists at all (this
+  -- column is NOT NULL, so there is no row shape to represent "no
+  -- candidate yet"). These three belong to a future batch/source-level
+  -- exception ledger, not this per-candidate table.
   constraint risk_share_preparation_decisions_reason_code_check check (
     reason_code in (
       'AUTO_SAME_MAPPING', 'AUTO_SOURCE_FAITHFUL',
       'FIRST_TEMPLATE_REVIEW', 'LOW_CONFIDENCE', 'SOURCE_LOCATION_UNCLEAR',
       'MAPPING_CHANGED', 'ITEM_COUNT_DELTA', 'CONTENT_MEANING_CHANGED',
-      'MISSING_REQUIRED_FIELD', 'TENANT_MISMATCH', 'MEMBERSHIP_INVALID',
-      'SOURCE_READ_FAILED', 'MAPPING_CONFLICT', 'SENSITIVE_DATA_SUSPECTED',
+      'MISSING_REQUIRED_FIELD', 'MAPPING_CONFLICT', 'SENSITIVE_DATA_SUSPECTED',
       'REPEATED_PROCESSING_FAILURE'
     )
   ),
@@ -105,6 +117,22 @@ create table if not exists public.risk_share_preparation_decisions (
   -- task_name/hazard, so a candidate missing either is an exception, not a
   -- normal review queue item. Revisit only if a manager-input-only staging
   -- shape is ever added.
+  --
+  -- MAPPING_CONFLICT is scoped to a candidate that already exists (this
+  -- table never sees a candidate before it is created) whose own stored
+  -- mapping_version no longer matches the currently confirmed mapping
+  -- version for its source+sheet in risk_share_source_column_mappings --
+  -- a fact A2 can read directly from data already on the candidate row
+  -- plus that table. It is not source-level/header-level mapping conflict
+  -- before any candidate exists; that belongs to the future source/batch
+  -- exception ledger, same as the three reason codes removed above.
+  --
+  -- REPEATED_PROCESSING_FAILURE is computed by A2 as repeated distinct
+  -- owner_exception_required decisions for the same candidate_id already
+  -- present in this table (a real, queryable count once semantic dedup no
+  -- longer collapses re-evaluations into one row -- see the removal of
+  -- risk_share_preparation_decisions_semantic_uidx below), not from an
+  -- external failure counter that does not yet exist.
   constraint risk_share_preparation_decisions_decision_reason_pair_check check (
     (decision = 'auto_prepared' and reason_code in ('AUTO_SAME_MAPPING', 'AUTO_SOURCE_FAITHFUL'))
     or (decision = 'manager_review_required' and reason_code in (
@@ -112,8 +140,7 @@ create table if not exists public.risk_share_preparation_decisions (
       'MAPPING_CHANGED', 'ITEM_COUNT_DELTA', 'CONTENT_MEANING_CHANGED'
     ))
     or (decision = 'owner_exception_required' and reason_code in (
-      'MISSING_REQUIRED_FIELD', 'TENANT_MISMATCH', 'MEMBERSHIP_INVALID',
-      'SOURCE_READ_FAILED', 'MAPPING_CONFLICT', 'SENSITIVE_DATA_SUSPECTED',
+      'MISSING_REQUIRED_FIELD', 'MAPPING_CONFLICT', 'SENSITIVE_DATA_SUSPECTED',
       'REPEATED_PROCESSING_FAILURE'
     ))
   ),
@@ -140,8 +167,8 @@ create table if not exists public.risk_share_preparation_decisions (
     decision = 'owner_exception_required' or mapping_version is not null
   ),
 
-  constraint risk_share_preparation_decisions_input_fingerprint_check check (
-    input_fingerprint ~ '^[0-9a-f]{64}$'
+  constraint risk_share_preparation_decisions_candidate_input_fingerprint_check check (
+    candidate_input_fingerprint ~ '^[0-9a-f]{64}$'
   ),
 
   constraint risk_share_preparation_decisions_policy_version_check check (
@@ -223,11 +250,21 @@ create table if not exists public.risk_share_preparation_decisions (
     on delete restrict
 );
 
--- Semantic dedup: the same candidate content (input_fingerprint) evaluated
--- under the same policy_version must resolve to at most one decision row --
--- a repeat call with identical inputs is a replay, not a new decision.
-create unique index if not exists risk_share_preparation_decisions_semantic_uidx
-  on public.risk_share_preparation_decisions (company_code, candidate_id, input_fingerprint, policy_version);
+-- No semantic (candidate_id, candidate_input_fingerprint, policy_version)
+-- uniqueness in this PR: candidate_input_fingerprint only covers candidate
+-- content + mapping_version, not the full set of inputs a decision can
+-- depend on (membership/tenant validation, source processing state,
+-- mapping conflict result, confidence/rule result, sensitive-data flag,
+-- previous-version comparison, item-count delta, repeated-processing
+-- state). Two evaluations with identical candidate content and
+-- policy_version can legitimately reach different decisions once those
+-- other inputs are considered, so collapsing them into one row here would
+-- silently discard a real re-evaluation. A new correlation_id/
+-- idempotency_key always allows a fresh decision for the same candidate;
+-- only the two indexes below (dedup within one batch/request) are
+-- enforced. The full decision-input fingerprint contract is not yet
+-- defined -- do not reintroduce candidate-content-only semantic dedup
+-- until it is.
 
 -- Same batch (correlation_id) must not record the same candidate twice,
 -- even if a caller bug or retry re-submits the same candidate_ids array
@@ -244,8 +281,12 @@ create unique index if not exists risk_share_preparation_decisions_correlation_c
 create unique index if not exists risk_share_preparation_decisions_idempotency_candidate_uidx
   on public.risk_share_preparation_decisions (company_code, idempotency_key, candidate_id);
 
+-- id desc as a tie-breaker (not just created_at desc): created_at has only
+-- microsecond resolution and a fast re-evaluation (e.g. an immediate retry
+-- after a stale read) can share a timestamp with the row before it. "latest
+-- decision for this candidate" must resolve to exactly one row even then.
 create index if not exists risk_share_preparation_decisions_candidate_created_idx
-  on public.risk_share_preparation_decisions (company_code, candidate_id, created_at desc);
+  on public.risk_share_preparation_decisions (company_code, candidate_id, created_at desc, id desc);
 
 create index if not exists risk_share_preparation_decisions_source_created_idx
   on public.risk_share_preparation_decisions (company_code, source_id, created_at desc);
@@ -289,8 +330,8 @@ comment on column public.risk_share_preparation_decisions.actor_membership_id is
 comment on column public.risk_share_preparation_decisions.initiated_by_membership_id is
   'The tenant_membership that started the system evaluation which produced this decision. Null when actor_type is tenant_admin/tenant_manager, since actor_membership_id already identifies the human directly.';
 
-comment on column public.risk_share_preparation_decisions.input_fingerprint is
-  'sha256 hex of the candidate content (task_name/hazard/current_controls/improvement_plan/risk_level/worker_share_summary) plus mapping_version, computed at decision time. Not risk_share_item_candidates.source_row_signature_sha256, which only reflects the originally imported row and does not change if the candidate content is later edited.';
+comment on column public.risk_share_preparation_decisions.candidate_input_fingerprint is
+  'sha256 hex of the candidate content (task_name/hazard/current_controls/improvement_plan/risk_level/worker_share_summary) plus mapping_version, computed at decision time. Not risk_share_item_candidates.source_row_signature_sha256, which only reflects the originally imported row and does not change if the candidate content is later edited. This is a candidate-content fingerprint only, for identifying/explaining which candidate state a decision was made against -- it does not represent the full set of inputs a decision can depend on (membership/tenant validation, source/mapping state, confidence, sensitive-data flag, previous-version comparison, item-count delta, repeated-processing state), and it is not used in any uniqueness constraint on this table.';
 
 comment on column public.risk_share_preparation_decisions.safe_metadata is
   'Decision explanation metadata only: confidence bands, boolean rule flags, changed-field counts, rule result codes. Never task_name/hazard/current_controls/improvement_plan/worker_share_summary text, raw AI provider output, email, phone number, name, signature, token, URL credential, or service role information.';
