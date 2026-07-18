@@ -355,7 +355,7 @@ export default async function RiskShareManagerSourcesPage({
                     </div>
                   </div>
 
-                  <div className="mt-3">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <a
                       href={buildRiskShareLangHref(
                         "/risk-share/manager/sources/preview",
@@ -365,6 +365,16 @@ export default async function RiskShareManagerSourcesPage({
                       className="inline-flex rounded-xl border border-slate-600 px-4 py-2 text-xs font-black text-slate-200 hover:bg-slate-800"
                     >
                       열 미리보기
+                    </a>
+                    <a
+                      href={buildRiskShareLangHref(
+                        "/risk-share/manager/sources/preparation",
+                        { company: selectedTenantCode, sourceId: source.id },
+                        lang,
+                      )}
+                      className="inline-flex rounded-xl border border-slate-600 px-4 py-2 text-xs font-black text-slate-200 hover:bg-slate-800"
+                    >
+                      항목 준비 상태
                     </a>
                   </div>
                 </article>

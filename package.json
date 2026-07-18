@@ -31,6 +31,7 @@
     "verify:dashboard-hide-raw-notion-error": "node scripts/verify-dashboard-hide-raw-notion-error.mjs",
     "verify:risk-share-preparation-api": "node scripts/verify-risk-share-preparation-api-contract.mjs",
     "verify:risk-share-preparation-read-model": "node scripts/verify-risk-share-preparation-read-model-contract.mjs",
+    "verify:risk-share-preparation-ui": "node scripts/verify-risk-share-preparation-ui-contract.mjs",
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh"
   },
   "dependencies": {
