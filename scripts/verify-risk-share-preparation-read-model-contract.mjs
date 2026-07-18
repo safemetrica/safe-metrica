@@ -430,8 +430,28 @@ check(
 
 // =========================================================================
 // Confirmed Mapping tenant lineage
+//
+// Why the embedded relation must NOT also carry a company_code=eq.
+// verifiedCompanyCode filter (this is the one thing this section proves
+// the *absence* of, not the presence of): PostgREST's embedded-resource
+// filters act as a further reduction of which child rows are returned --
+// applying company_code there would make a wrong-tenant confirmed-mapping
+// row (a genuine tenant-drift anomaly worth failing closed over) silently
+// vanish from the response before the JS validation loop ever sees it,
+// collapsing it into the exact same shape as "no confirmed mappings exist
+// for this source at all". Tenant scoping for the whole call instead comes
+// from the parent risk_share_sources id+company_code filter (which
+// determines whether the source row itself is returned); every embedded
+// confirmed-mapping row that *does* come back is independently
+// re-validated against verifiedCompanyCode in JS, where a mismatch is
+// exactly as fail-closed as any other malformed row.
 // =========================================================================
 
+check(
+  "parent source query remains scoped by both id and company_code (this, not an embedded filter, is what makes the whole call tenant-safe)",
+  src.includes('query.set("id", `eq.${sourceId}`);') &&
+    src.includes('query.set("company_code", `eq.${verifiedCompanyCode}`);'),
+);
 check(
   "embedded confirmed-Mapping select includes company_code",
   src.includes(
@@ -439,13 +459,19 @@ check(
   ),
 );
 check(
-  "embedded confirmed-Mapping company_code filter is present (PostgREST-level tenant scoping, not only the JS re-check)",
-  src.includes(
-    'query.set("risk_share_source_column_mappings.company_code", `eq.${verifiedCompanyCode}`);',
-  ),
+  "embedded status=confirmed filter remains",
+  src.includes('query.set("risk_share_source_column_mappings.status", "eq.confirmed");'),
 );
 check(
-  "every confirmed-Mapping row's company_code is re-compared against verifiedCompanyCode in JS (defense-in-depth, not trusting the query filter alone)",
+  "embedded confirmed-Mapping company_code filter is absent (must not hide a wrong-tenant row from JS validation)",
+  !/query\.set\(\s*["']risk_share_source_column_mappings\.company_code["']/.test(src),
+);
+check(
+  "a comment explains why filtering company_code at the embedded level would hide tenant-drift rows before fail-closed validation",
+  /hide a wrong-tenant confirmed-mapping row|would hide.*tenant-drift|silently drop any wrong-tenant confirmed-mapping row/i.test(src),
+);
+check(
+  "every confirmed-Mapping row's company_code is compared against verifiedCompanyCode in JS (the only tenant check this data gets, since the embed itself no longer filters by tenant)",
   src.includes("const confirmedRowCompanyCode = readTrimmedString(confirmedRow.company_code);") &&
     src.includes("confirmedRowCompanyCode !== verifiedCompanyCode"),
 );
@@ -457,13 +483,36 @@ check(
   })(),
 );
 check(
-  "a malformed confirmed-Mapping row (bad company_code/status/sheet_index/mapping_version) fails the whole source lookup closed, not merely skipped",
+  "a wrong-company confirmed-Mapping row fails the whole source lookup closed (the exact tenant-drift case this correction targets)",
+  (() => {
+    const loopBlock = extractBalancedBlock(src, "for (const confirmedRow of confirmedRows) {");
+    if (!loopBlock) return false;
+    const validationBlock = extractBalancedBlock(
+      loopBlock,
+      "if (\n      confirmedRowCompanyCode !== verifiedCompanyCode ||",
+    );
+    return (
+      validationBlock !== null &&
+      // company_code must be the first disjunct checked, not folded away
+      // behind other conditions -- proves this specific field is actually
+      // part of the guard, not merely present somewhere in the function.
+      validationBlock.trimStart().startsWith("if (\n      confirmedRowCompanyCode !== verifiedCompanyCode") &&
+      validationBlock.includes("return { ok: false };") &&
+      !validationBlock.includes("continue;")
+    );
+  })(),
+);
+check(
+  "a malformed confirmed-Mapping row (bad status/sheet_index/mapping_version) fails the whole source lookup closed, not merely skipped",
   (() => {
     const loopBlock = extractBalancedBlock(src, "for (const confirmedRow of confirmedRows) {");
     if (!loopBlock) return false;
     const validationBlock = extractBalancedBlock(loopBlock, "if (\n      confirmedRowCompanyCode !== verifiedCompanyCode ||");
     return (
       validationBlock !== null &&
+      validationBlock.includes('status !== "confirmed"') &&
+      validationBlock.includes("sheetIndex === null") &&
+      validationBlock.includes("mappingVersion === null") &&
       validationBlock.includes("return { ok: false };") &&
       !validationBlock.includes("continue;")
     );
@@ -477,7 +526,7 @@ check(
   })(),
 );
 check(
-  "a genuine empty confirmed-Mapping array is still allowed (distinct from the non-array/malformed fail-closed cases)",
+  "a genuine empty confirmed-Mapping array is still allowed (distinct from the non-array/wrong-company/malformed/duplicate fail-closed cases)",
   src.includes("const confirmedRows = row.risk_share_source_column_mappings as ConfirmedMappingRow[];") &&
     !/confirmedRows\.length === 0[\s\S]{0,40}return \{ ok: false/.test(src),
 );

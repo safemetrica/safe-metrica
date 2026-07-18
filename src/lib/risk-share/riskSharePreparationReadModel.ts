@@ -260,17 +260,23 @@ function readStrictInteger(value: unknown): number | null {
 /** Builds sheet_index -> confirmed mapping_version for one source, plus the
  * source's own display facts, in a single bounded PostgREST request: the
  * base resource is risk_share_sources filtered to exactly one id+
- * company_code (at most one row), with risk_share_source_column_mappings
- * embedded and filtered to status=eq.confirmed AND company_code=eq.
- * verifiedCompanyCode (at most ~20 rows -- sheet index is DB-constrained to
- * 0..19). This is not a per-candidate query and is issued once per call,
- * independent of how many candidates the source has. Every confirmed row
- * is re-validated in JS (company_code, status, sheet_index, mapping_version,
- * no duplicate sheet_index) rather than trusting the PostgREST-level filter
- * alone; a mismatch on any of those fails the whole source lookup closed
- * (ok: false), never a silent per-row skip -- confirmed_mapping_version's
- * company_code is used only to build this internal Map and is never
- * returned outward. */
+ * company_code (at most one row) -- that parent filter is what actually
+ * scopes this whole call to one tenant. risk_share_source_column_mappings
+ * is embedded and filtered only to status=eq.confirmed (at most ~20 rows --
+ * sheet index is DB-constrained to 0..19); it is deliberately NOT also
+ * filtered by company_code at the embedded level. Embedding a
+ * company_code=eq.verifiedCompanyCode filter on the child relation would
+ * make PostgREST silently drop any wrong-tenant confirmed-mapping row
+ * before it ever reaches the JS validation below -- collapsing a genuine
+ * tenant-drift anomaly (a confirmed row that exists but belongs to a
+ * different company_code than this source's own) into the exact same
+ * shape as "no confirmed mappings at all", which is precisely the
+ * distinction this function exists to preserve. Every confirmed row this
+ * function actually receives is instead validated in JS (company_code,
+ * status, sheet_index, mapping_version, no duplicate sheet_index); a
+ * mismatch on any of those fails the whole source lookup closed (ok:
+ * false), never a silent per-row skip -- confirmed-mapping company_code is
+ * used only to run this check and is never returned outward. */
 async function fetchSourceAndConfirmedMappings(
   verifiedCompanyCode: string,
   sourceId: string,
@@ -293,13 +299,14 @@ async function fetchSourceAndConfirmedMappings(
   query.set("id", `eq.${sourceId}`);
   query.set("company_code", `eq.${verifiedCompanyCode}`);
   query.set("risk_share_source_column_mappings.status", "eq.confirmed");
-  // Defense-in-depth, matching the same discipline applied to every other
-  // embedded relationship in this module (risk_share_items/
-  // risk_share_preparation_decisions lineage checks below): the PostgREST-
-  // level filter alone is not trusted as the only tenant boundary here --
-  // every returned confirmed-mapping row is re-validated against
-  // verifiedCompanyCode in JS as well (see the fail-closed loop below).
-  query.set("risk_share_source_column_mappings.company_code", `eq.${verifiedCompanyCode}`);
+  // No embedded company_code filter here -- see the function-level comment
+  // above for why: filtering the child relation by tenant would hide a
+  // wrong-tenant confirmed row from the JS validation loop below instead of
+  // letting it be caught and fail closed. Tenant scoping for this whole
+  // call comes from the parent risk_share_sources id+company_code filter
+  // above; every embedded row this query does return is independently
+  // re-validated against verifiedCompanyCode in JS (see the fail-closed
+  // loop below).
   query.set("limit", "1");
 
   let rows: RiskShareSourceWithConfirmedMappingsRow[];
