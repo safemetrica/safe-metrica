@@ -1829,3 +1829,366 @@ export async function reviewRiskShareItemForTenant(
     reviewEventId,
   };
 }
+
+export type PrepareRiskShareItemsCandidateResultCode =
+  | "created"
+  | "replayed"
+  | "item_already_exists"
+  | "idempotency_conflict"
+  | "not_eligible"
+  | "invalid_candidate";
+
+export type PrepareRiskShareItemsStructuralCode =
+  | "invalid_request"
+  | "forbidden"
+  | "source_not_found"
+  | "too_many_candidates";
+
+export type PrepareRiskShareItemsCode =
+  | "ok"
+  | PrepareRiskShareItemsStructuralCode
+  | "request_failed"
+  | "invalid_response";
+
+export type PrepareRiskShareItemsDecision = "auto_prepared" | "owner_exception_required";
+
+export type PrepareRiskShareItemsReasonCode =
+  | "AUTO_SOURCE_FAITHFUL"
+  | "MISSING_REQUIRED_FIELD"
+  | "MAPPING_CONFLICT";
+
+export type PrepareRiskShareItemsCandidateResult = {
+  candidateId: string;
+  resultCode: PrepareRiskShareItemsCandidateResultCode;
+  decision: PrepareRiskShareItemsDecision | null;
+  reasonCode: PrepareRiskShareItemsReasonCode | null;
+  /** Internal linkage only -- validated here, never forwarded outward by
+   * the route (see the A2 preparation API's outward response allowlist). */
+  itemId: string | null;
+  decisionId: string | null;
+};
+
+export type PrepareRiskShareItemsParams = {
+  companyCode: string;
+  sourceId: string;
+  actorMembershipId: string;
+  idempotencyKey: string;
+  /** Always an explicit, non-empty, <=200-item array -- this helper never
+   * sends p_candidate_ids = null. Bulk-all-eligible processing is out of
+   * scope for the A2 preparation API. */
+  candidateIds: string[];
+};
+
+export type PrepareRiskShareItemsResult =
+  | { ok: true; code: "ok"; results: PrepareRiskShareItemsCandidateResult[] }
+  | { ok: false; code: Exclude<PrepareRiskShareItemsCode, "ok">; results: null };
+
+const PREPARE_RISK_SHARE_ITEMS_MAX_CANDIDATES = 200;
+
+const PREPARE_RISK_SHARE_ITEMS_STRUCTURAL_CODES = new Set<string>([
+  "invalid_request",
+  "forbidden",
+  "source_not_found",
+  "too_many_candidates",
+]);
+
+const PREPARE_RISK_SHARE_ITEMS_CANDIDATE_CODES = new Set<string>([
+  "created",
+  "replayed",
+  "item_already_exists",
+  "idempotency_conflict",
+  "not_eligible",
+  "invalid_candidate",
+]);
+
+const PREPARE_RISK_SHARE_ITEMS_KNOWN_DECISIONS = new Set<string>([
+  "auto_prepared",
+  "owner_exception_required",
+]);
+
+const PREPARE_RISK_SHARE_ITEMS_KNOWN_REASON_CODES = new Set<string>([
+  "AUTO_SOURCE_FAITHFUL",
+  "MISSING_REQUIRED_FIELD",
+  "MAPPING_CONFLICT",
+]);
+
+const PREPARE_RISK_SHARE_ITEMS_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type PrepareRiskShareItemsRawRow = {
+  candidate_id?: unknown;
+  decision?: unknown;
+  reason_code?: unknown;
+  item_id?: unknown;
+  decision_id?: unknown;
+  result_code?: unknown;
+};
+
+function isPrepareRiskShareItemsUuid(value: unknown): value is string {
+  return typeof value === "string" && PREPARE_RISK_SHARE_ITEMS_UUID_PATTERN.test(value);
+}
+
+type PrepareRiskShareItemsValidationResult =
+  | { ok: true; results: PrepareRiskShareItemsCandidateResult[] }
+  | { ok: false; structuralCode: PrepareRiskShareItemsStructuralCode }
+  | { ok: false; structuralCode: null };
+
+/** Strict, fail-closed validator for the prepare_risk_share_items_for_tenant
+ * RPC's raw PostgREST response. Every row shape, enum value, and
+ * candidate/decision/item linkage is checked against the RPC's actual
+ * contract (supabase/migrations/20260718010000_add_risk_share_batch_preparation_rpc.sql)
+ * before any of it is trusted -- an unexpected shape here means the RPC
+ * contract has drifted from what this helper was built against, not
+ * something worth passing through best-effort. */
+function validatePrepareRiskShareItemsResponse(
+  data: unknown,
+  requestedCandidateIds: string[],
+): PrepareRiskShareItemsValidationResult {
+  if (!Array.isArray(data) || data.length === 0) {
+    return { ok: false, structuralCode: null };
+  }
+
+  if (data.length === 1) {
+    const onlyRow = data[0];
+
+    if (onlyRow && typeof onlyRow === "object" && !Array.isArray(onlyRow)) {
+      const row = onlyRow as PrepareRiskShareItemsRawRow;
+      const resultCode = typeof row.result_code === "string" ? row.result_code : "";
+
+      if (PREPARE_RISK_SHARE_ITEMS_STRUCTURAL_CODES.has(resultCode)) {
+        if (
+          row.candidate_id !== null ||
+          row.decision !== null ||
+          row.reason_code !== null ||
+          row.item_id !== null ||
+          row.decision_id !== null
+        ) {
+          return { ok: false, structuralCode: null };
+        }
+
+        return { ok: false, structuralCode: resultCode as PrepareRiskShareItemsStructuralCode };
+      }
+    }
+  }
+
+  if (data.length > PREPARE_RISK_SHARE_ITEMS_MAX_CANDIDATES) {
+    return { ok: false, structuralCode: null };
+  }
+
+  const requestedIdSet = new Set(requestedCandidateIds.map((id) => id.toLowerCase()));
+  const seenCandidateIds = new Set<string>();
+  const results: PrepareRiskShareItemsCandidateResult[] = [];
+
+  for (const rawRow of data) {
+    if (!rawRow || typeof rawRow !== "object" || Array.isArray(rawRow)) {
+      return { ok: false, structuralCode: null };
+    }
+
+    const row = rawRow as PrepareRiskShareItemsRawRow;
+    const resultCode = typeof row.result_code === "string" ? row.result_code : "";
+
+    if (!PREPARE_RISK_SHARE_ITEMS_CANDIDATE_CODES.has(resultCode)) {
+      return { ok: false, structuralCode: null };
+    }
+
+    const candidateIdRaw = row.candidate_id;
+
+    if (!isPrepareRiskShareItemsUuid(candidateIdRaw)) {
+      return { ok: false, structuralCode: null };
+    }
+
+    const candidateId = candidateIdRaw.toLowerCase();
+
+    if (!requestedIdSet.has(candidateId) || seenCandidateIds.has(candidateId)) {
+      return { ok: false, structuralCode: null };
+    }
+
+    seenCandidateIds.add(candidateId);
+
+    const decisionRaw = row.decision;
+    const reasonCodeRaw = row.reason_code;
+    const itemIdRaw = row.item_id;
+    const decisionIdRaw = row.decision_id;
+
+    let decision: PrepareRiskShareItemsDecision | null = null;
+    let reasonCode: PrepareRiskShareItemsReasonCode | null = null;
+    let itemId: string | null = null;
+    let decisionId: string | null = null;
+
+    if (resultCode === "created" || resultCode === "replayed") {
+      if (typeof decisionRaw !== "string" || !PREPARE_RISK_SHARE_ITEMS_KNOWN_DECISIONS.has(decisionRaw)) {
+        return { ok: false, structuralCode: null };
+      }
+
+      if (
+        typeof reasonCodeRaw !== "string" ||
+        !PREPARE_RISK_SHARE_ITEMS_KNOWN_REASON_CODES.has(reasonCodeRaw)
+      ) {
+        return { ok: false, structuralCode: null };
+      }
+
+      if (!isPrepareRiskShareItemsUuid(decisionIdRaw)) {
+        return { ok: false, structuralCode: null };
+      }
+
+      decision = decisionRaw as PrepareRiskShareItemsDecision;
+      reasonCode = reasonCodeRaw as PrepareRiskShareItemsReasonCode;
+      decisionId = decisionIdRaw;
+
+      if (decision === "auto_prepared") {
+        if (reasonCode !== "AUTO_SOURCE_FAITHFUL" || !isPrepareRiskShareItemsUuid(itemIdRaw)) {
+          return { ok: false, structuralCode: null };
+        }
+
+        itemId = itemIdRaw;
+      } else {
+        if (reasonCode !== "MISSING_REQUIRED_FIELD" && reasonCode !== "MAPPING_CONFLICT") {
+          return { ok: false, structuralCode: null };
+        }
+
+        if (itemIdRaw !== null) {
+          return { ok: false, structuralCode: null };
+        }
+      }
+    } else if (resultCode === "item_already_exists") {
+      if (decisionRaw !== null || reasonCodeRaw !== null || decisionIdRaw !== null) {
+        return { ok: false, structuralCode: null };
+      }
+
+      if (!isPrepareRiskShareItemsUuid(itemIdRaw)) {
+        return { ok: false, structuralCode: null };
+      }
+
+      itemId = itemIdRaw;
+    } else {
+      if (
+        decisionRaw !== null ||
+        reasonCodeRaw !== null ||
+        itemIdRaw !== null ||
+        decisionIdRaw !== null
+      ) {
+        return { ok: false, structuralCode: null };
+      }
+    }
+
+    results.push({
+      candidateId,
+      resultCode: resultCode as PrepareRiskShareItemsCandidateResultCode,
+      decision,
+      reasonCode,
+      itemId,
+      decisionId,
+    });
+  }
+
+  if (results.length !== requestedIdSet.size) {
+    return { ok: false, structuralCode: null };
+  }
+
+  return { ok: true, results };
+}
+
+/** Server-only call to the prepare_risk_share_items_for_tenant Postgres RPC
+ * (added in 20260718010000, digest-schema-corrected in 20260718020000).
+ * This is the only write path this helper exposes onto
+ * risk_share_items/risk_share_preparation_decisions for A2 batch
+ * preparation: the RPC alone validates membership, locks the source and
+ * every candidate row, enforces idempotency-replay semantics, and writes
+ * both the item and its decision ledger row atomically -- this helper must
+ * never INSERT/UPDATE/PATCH/DELETE those tables directly. Always sends an
+ * explicit p_candidate_ids array and a hardcoded p_policy_version -- never
+ * the RPC's "all eligible" (null candidateIds) mode, which is out of scope
+ * for this API. */
+export async function prepareRiskShareItemsForTenant(
+  params: PrepareRiskShareItemsParams,
+): Promise<PrepareRiskShareItemsResult> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+
+  const failClosed = (
+    code: Exclude<PrepareRiskShareItemsCode, "ok">,
+  ): PrepareRiskShareItemsResult => ({
+    ok: false,
+    code,
+    results: null,
+  });
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return failClosed("request_failed");
+  }
+
+  if (
+    params.candidateIds.length === 0 ||
+    params.candidateIds.length > PREPARE_RISK_SHARE_ITEMS_MAX_CANDIDATES
+  ) {
+    return failClosed("request_failed");
+  }
+
+  let res: Response;
+
+  try {
+    res = await fetch(`${supabaseUrl}/rest/v1/rpc/prepare_risk_share_items_for_tenant`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        p_company_code: params.companyCode,
+        p_source_id: params.sourceId,
+        p_actor_membership_id: params.actorMembershipId,
+        p_policy_version: 1,
+        p_idempotency_key: params.idempotencyKey,
+        p_candidate_ids: params.candidateIds,
+      }),
+      cache: "no-store",
+    });
+  } catch {
+    return failClosed("request_failed");
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => undefined);
+    const rawMessage =
+      errorData && typeof errorData === "object" && !Array.isArray(errorData)
+        && typeof (errorData as { message?: unknown }).message === "string"
+        ? (errorData as { message: string }).message
+        : "";
+    const errorCode =
+      errorData && typeof errorData === "object" && !Array.isArray(errorData)
+        && typeof (errorData as { code?: unknown }).code === "string"
+        ? (errorData as { code: string }).code
+        : null;
+
+    console.error("[prepare-risk-share-items-rpc] request failed", {
+      status: res.status,
+      statusText: res.statusText,
+      errorCode,
+      safeMessage: scrubSupabaseRpcErrorMessage(rawMessage) || null,
+      requestedCandidateCount: params.candidateIds.length,
+    });
+
+    return failClosed("request_failed");
+  }
+
+  const data = await res.json().catch(() => undefined);
+  const validated = validatePrepareRiskShareItemsResponse(data, params.candidateIds);
+
+  if (!validated.ok) {
+    if (validated.structuralCode) {
+      return failClosed(validated.structuralCode);
+    }
+
+    console.error("[prepare-risk-share-items-rpc] unexpected response shape", {
+      responseKind: Array.isArray(data) ? "array" : typeof data,
+      rowCount: Array.isArray(data) ? data.length : undefined,
+      requestedCandidateCount: params.candidateIds.length,
+    });
+
+    return failClosed("invalid_response");
+  }
+
+  return { ok: true, code: "ok", results: validated.results };
+}
