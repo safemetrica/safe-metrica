@@ -20,11 +20,26 @@ import { selectSupabaseExportRows } from "@/lib/supabaseServer";
  * candidate" to the RPC itself, which is the only authoritative per-call
  * classifier. No field here is named/shaped to imply eligibility,
  * auto-preparability, or legal/safety sufficiency.
+ *
+ * Hardening in this revision: (1) decision/reason_code is validated as an
+ * exact pair, not two independently-valid enums; (2) a Decision requiring
+ * an Item must reference the *same* Item id this candidate's own
+ * risk_share_items lineage resolves to, not merely "some Item exists"
+ * (Item id itself is still never exposed outward); (3) the five mapping-
+ * provenance columns (mapping_version/sheet_index/source_row_number/
+ * source_row_signature_sha256/import_actor) are validated as an
+ * all-null-or-all-valid group, matching the DB's own
+ * risk_share_item_candidates_mapping_provenance_consistency_check
+ * constraint, before awaiting_preparation_request may be produced; (4) all
+ * DB integer fields (mapping_version, sheet_index, source_row_number,
+ * decision_seq) are parsed strictly -- a decimal, NaN, Infinity, or
+ * out-of-range value is rejected, never truncated.
  */
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SOURCE_ROW_SIGNATURE_PATTERN = /^[0-9a-f]{64}$/;
 
 /** One more than the display cap so a full page of results (exactly
  * DISPLAY_LIMIT rows) is distinguishable from a truncated one -- same
@@ -41,28 +56,37 @@ const KNOWN_REVIEWER_STATUSES = new Set([
   "needs_customer_check",
 ]);
 
-const KNOWN_DECISIONS = new Set([
-  "auto_prepared",
-  "manager_review_required",
-  "owner_exception_required",
-]);
-
-const KNOWN_REASON_CODES = new Set([
-  "AUTO_SAME_MAPPING",
-  "AUTO_SOURCE_FAITHFUL",
-  "FIRST_TEMPLATE_REVIEW",
-  "LOW_CONFIDENCE",
-  "SOURCE_LOCATION_UNCLEAR",
-  "MAPPING_CHANGED",
-  "ITEM_COUNT_DELTA",
-  "CONTENT_MEANING_CHANGED",
-  "MISSING_REQUIRED_FIELD",
-  "MAPPING_CONFLICT",
-  "SENSITIVE_DATA_SUSPECTED",
-  "REPEATED_PROCESSING_FAILURE",
-]);
+const KNOWN_IMPORT_ACTORS = new Set(["owner_console", "tenant_admin", "tenant_manager"]);
 
 const DECISIONS_REQUIRING_ITEM = new Set(["auto_prepared", "manager_review_required"]);
+
+/** Exact decision -> valid reason_code pairing, mirroring the DB's own
+ * risk_share_prep_decisions_decision_reason_pair_check constraint
+ * (20260717020000_add_risk_share_preparation_decisions.sql). A reason_code
+ * that is individually a known value but paired with the wrong decision
+ * (e.g. auto_prepared + MISSING_REQUIRED_FIELD) is exactly as invalid as an
+ * unknown reason_code -- this map is the only place reason_code validity is
+ * checked; there is no separate flat "is this a known reason_code at all"
+ * check anywhere else in this module. */
+const VALID_REASON_CODES_BY_DECISION: Readonly<Record<RiskSharePreparationDecisionValue, ReadonlySet<string>>> = {
+  auto_prepared: new Set(["AUTO_SAME_MAPPING", "AUTO_SOURCE_FAITHFUL"]),
+  manager_review_required: new Set([
+    "FIRST_TEMPLATE_REVIEW",
+    "LOW_CONFIDENCE",
+    "SOURCE_LOCATION_UNCLEAR",
+    "MAPPING_CHANGED",
+    "ITEM_COUNT_DELTA",
+    "CONTENT_MEANING_CHANGED",
+  ]),
+  owner_exception_required: new Set([
+    "MISSING_REQUIRED_FIELD",
+    "MAPPING_CONFLICT",
+    "SENSITIVE_DATA_SUSPECTED",
+    "REPEATED_PROCESSING_FAILURE",
+  ]),
+};
+
+const KNOWN_DECISIONS = new Set<string>(Object.keys(VALID_REASON_CODES_BY_DECISION));
 
 export type RiskSharePreparationCategory =
   | "awaiting_preparation_request"
@@ -100,8 +124,13 @@ export type RiskSharePreparationStateResult =
         sourceTitle: string;
         siteName: string | null;
       };
+      /** Every count here describes only the entries actually returned in
+       * `entries` (at most DISPLAY_LIMIT) -- never the full Candidate
+       * population for this source. When isComplete is false, these are
+       * counts within a truncated window, not a source-wide total; no field
+       * on this object may be read as "the full source has N candidates". */
       summary: {
-        total: number;
+        loadedTotal: number;
         awaitingPreparationRequest: number;
         recordedException: number;
         alreadyPrepared: number;
@@ -109,7 +138,13 @@ export type RiskSharePreparationStateResult =
         invalid: number;
       };
       entries: RiskSharePreparationEntry[];
+      /** True when strictly more than DISPLAY_LIMIT Candidates exist for
+       * this source (the FETCH_LIMIT-th row was present). */
       overflow: boolean;
+      /** Equivalent to !overflow, exposed directly so a caller never has to
+       * invert the overflow flag itself to know whether summary/entries
+       * describe the whole source or only a loaded window of it. */
+      isComplete: boolean;
     }
   /** A real, verified-tenant source with zero Candidates. Also used, by
    * design, for a source id that does not resolve for this tenant at all
@@ -147,6 +182,9 @@ type RiskSharePreparationCandidateRow = {
   reviewer_status?: unknown;
   mapping_version?: unknown;
   sheet_index?: unknown;
+  source_row_number?: unknown;
+  source_row_signature_sha256?: unknown;
+  import_actor?: unknown;
   risk_share_items?: unknown;
   risk_share_preparation_decisions?: unknown;
 };
@@ -182,14 +220,25 @@ function readNullableString(value: unknown): string | null {
   return text || null;
 }
 
-function readNullableInteger(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Math.trunc(value);
+/** Strict integer parse for DB integer-typed fields: a real integer number
+ * (Number.isInteger rejects a decimal, NaN, and +/-Infinity on its own) or
+ * an integer-shaped string (`^-?\d+$` rejects "1.5", "1e10", "Infinity",
+ * leading/trailing junk, and empty). Never truncates a decimal value --
+ * 1.5 and "1.5" are both rejected outright, not silently floored to 1. */
+function readStrictInteger(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? value : null;
   }
 
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (!/^-?\d+$/.test(trimmed)) {
+      return null;
+    }
+
+    const parsed = Number(trimmed);
+    return Number.isSafeInteger(parsed) ? parsed : null;
   }
 
   return null;
@@ -269,10 +318,16 @@ async function fetchSourceAndConfirmedMappings(
       continue;
     }
 
-    const sheetIndex = readNullableInteger(confirmedRow.sheet_index);
-    const mappingVersion = readNullableInteger(confirmedRow.mapping_version);
+    const sheetIndex = readStrictInteger(confirmedRow.sheet_index);
+    const mappingVersion = readStrictInteger(confirmedRow.mapping_version);
 
-    if (sheetIndex === null || sheetIndex < 0 || mappingVersion === null || mappingVersion < 1) {
+    if (
+      sheetIndex === null ||
+      sheetIndex < 0 ||
+      sheetIndex > 19 ||
+      mappingVersion === null ||
+      mappingVersion < 1
+    ) {
       continue;
     }
 
@@ -324,6 +379,9 @@ async function fetchCandidatesWithLineage(
       "reviewer_status",
       "mapping_version",
       "sheet_index",
+      "source_row_number",
+      "source_row_signature_sha256",
+      "import_actor",
       "risk_share_items!risk_share_items_candidate_id_fkey(id,company_code,source_id)",
       "risk_share_preparation_decisions!risk_share_prep_decisions_candidate_lineage_fkey(decision,reason_code,item_id,decision_seq,company_code,source_id,candidate_id)",
     ].join(","),
@@ -344,7 +402,12 @@ async function fetchCandidatesWithLineage(
   );
 }
 
-type ItemLineageResult = { ok: true; hasItem: boolean } | { ok: false };
+/** itemId is resolved and validated here for internal lineage cross-checks
+ * only (see toPreparationEntry) -- it is never placed on
+ * RiskSharePreparationEntry or any other outward-facing shape. */
+type ItemLineageResult =
+  | { ok: true; hasItem: boolean; itemId: string | null }
+  | { ok: false };
 
 function resolveItemLineage(
   raw: unknown,
@@ -356,7 +419,7 @@ function resolveItemLineage(
   }
 
   if (raw.length === 0) {
-    return { ok: true, hasItem: false };
+    return { ok: true, hasItem: false, itemId: null };
   }
 
   if (raw.length > 1) {
@@ -374,16 +437,19 @@ function resolveItemLineage(
     return { ok: false };
   }
 
-  return { ok: true, hasItem: true };
+  return { ok: true, hasItem: true, itemId: id.toLowerCase() };
 }
 
+/** decisionItemId is resolved and validated here for internal lineage
+ * cross-checks only (see toPreparationEntry) -- it is never placed on
+ * RiskSharePreparationEntry or any other outward-facing shape. */
 type DecisionLineageResult =
-  | { ok: true; decision: null; reasonCode: null }
+  | { ok: true; decision: null; reasonCode: null; decisionItemId: null }
   | {
       ok: true;
       decision: RiskSharePreparationDecisionValue;
       reasonCode: string;
-      itemPresent: boolean;
+      decisionItemId: string | null;
     }
   | { ok: false };
 
@@ -398,7 +464,7 @@ function resolveDecisionLineage(
   }
 
   if (raw.length === 0) {
-    return { ok: true, decision: null, reasonCode: null };
+    return { ok: true, decision: null, reasonCode: null, decisionItemId: null };
   }
 
   if (raw.length > 1) {
@@ -417,11 +483,32 @@ function resolveDecisionLineage(
 
   if (
     !KNOWN_DECISIONS.has(decision) ||
-    !KNOWN_REASON_CODES.has(reasonCode) ||
     companyCode !== verifiedCompanyCode ||
     decisionSourceId !== sourceId ||
     decisionCandidateId !== candidateId
   ) {
+    return { ok: false };
+  }
+
+  // Exact decision/reason_code pairing, not two independently-valid enums:
+  // a reason_code that is a known value for a *different* decision (e.g.
+  // MISSING_REQUIRED_FIELD paired with auto_prepared) is exactly as invalid
+  // as an unrecognized reason_code string.
+  const decisionValue = decision as RiskSharePreparationDecisionValue;
+
+  if (!VALID_REASON_CODES_BY_DECISION[decisionValue].has(reasonCode)) {
+    return { ok: false };
+  }
+
+  const decisionSeq = readStrictInteger(row.decision_seq);
+
+  // decision_seq is never returned outward, but its shape is still
+  // validated here: this row was selected specifically as "the row with
+  // the highest decision_seq" (embedded order=decision_seq.desc&limit=1),
+  // so a decision_seq that is not itself a valid positive integer means
+  // the embed did not return what this module's whole latest-Decision
+  // contract depends on.
+  if (decisionSeq === null || decisionSeq < 1) {
     return { ok: false };
   }
 
@@ -432,23 +519,92 @@ function resolveDecisionLineage(
     return { ok: false };
   }
 
+  const decisionItemId = itemPresent ? (itemIdRaw as string).toLowerCase() : null;
+
   // Structural presence rule mirrors the DB CHECK constraint
   // (risk_share_prep_decisions_item_presence_check): auto_prepared/
   // manager_review_required must carry an item_id, owner_exception_required
   // must not. A Decision row that disagrees with its own DB contract is
   // never trusted here.
-  const requiresItem = DECISIONS_REQUIRING_ITEM.has(decision);
+  const requiresItem = DECISIONS_REQUIRING_ITEM.has(decisionValue);
 
   if (requiresItem !== itemPresent) {
     return { ok: false };
   }
 
+  // Explicit, named restatement of the owner_exception_required half of
+  // the rule above -- kept as its own check (not only the generic
+  // requiresItem comparison) so this specific contract can never silently
+  // regress if the generic check is ever refactored.
+  if (decisionValue === "owner_exception_required" && decisionItemId !== null) {
+    return { ok: false };
+  }
+
   return {
     ok: true,
-    decision: decision as RiskSharePreparationDecisionValue,
+    decision: decisionValue,
     reasonCode,
-    itemPresent,
+    decisionItemId,
   };
+}
+
+type MappingProvenanceResult =
+  | { ok: true; complete: false }
+  | { ok: true; complete: true; mappingVersion: number; sheetIndex: number }
+  | { ok: false };
+
+/** All five mapping-provenance columns must be either all null (a manual/
+ * legacy candidate with no import lineage) or all present and individually
+ * valid -- mirrors the DB's own
+ * risk_share_item_candidates_mapping_provenance_consistency_check
+ * constraint (20260713020000_add_risk_share_candidate_source_mapping_provenance.sql).
+ * source_row_number, source_row_signature_sha256, and import_actor are
+ * read and validated here only to enforce that all-or-nothing shape --
+ * none of the three is ever exposed outward; only the derived
+ * mappingVersion/sheetIndex (used for the mappingMismatch flag and the
+ * awaiting_preparation_request gate) escape this function. */
+function resolveMappingProvenance(row: RiskSharePreparationCandidateRow): MappingProvenanceResult {
+  const mappingVersionRaw = row.mapping_version;
+  const sheetIndexRaw = row.sheet_index;
+  const sourceRowNumberRaw = row.source_row_number;
+  const sourceRowSignatureRaw = row.source_row_signature_sha256;
+  const importActorRaw = row.import_actor;
+
+  const allNull =
+    mappingVersionRaw === null &&
+    sheetIndexRaw === null &&
+    sourceRowNumberRaw === null &&
+    sourceRowSignatureRaw === null &&
+    importActorRaw === null;
+
+  if (allNull) {
+    return { ok: true, complete: false };
+  }
+
+  const mappingVersion = readStrictInteger(mappingVersionRaw);
+  const sheetIndex = readStrictInteger(sheetIndexRaw);
+  const sourceRowNumber = readStrictInteger(sourceRowNumberRaw);
+  const sourceRowSignatureValid =
+    typeof sourceRowSignatureRaw === "string" &&
+    SOURCE_ROW_SIGNATURE_PATTERN.test(sourceRowSignatureRaw);
+  const importActorValid =
+    typeof importActorRaw === "string" && KNOWN_IMPORT_ACTORS.has(importActorRaw);
+
+  if (
+    mappingVersion === null ||
+    mappingVersion < 1 ||
+    sheetIndex === null ||
+    sheetIndex < 0 ||
+    sheetIndex > 19 ||
+    sourceRowNumber === null ||
+    sourceRowNumber < 1 ||
+    !sourceRowSignatureValid ||
+    !importActorValid
+  ) {
+    return { ok: false };
+  }
+
+  return { ok: true, complete: true, mappingVersion, sheetIndex };
 }
 
 function toPreparationEntry(
@@ -468,8 +624,6 @@ function toPreparationEntry(
   const taskName = readTrimmedString(row.task_name);
   const hazard = readTrimmedString(row.hazard);
   const reviewerStatus = readTrimmedString(row.reviewer_status);
-  const mappingVersion = readNullableInteger(row.mapping_version);
-  const sheetIndex = readNullableInteger(row.sheet_index);
 
   if (
     companyCode !== verifiedCompanyCode ||
@@ -483,6 +637,12 @@ function toPreparationEntry(
   // DB level -- an empty value is a real, valid stored fact (surfaced via
   // missingRequiredField below), not a malformed row.
   if (typeof row.task_name !== "string" || typeof row.hazard !== "string") {
+    return { kind: "invalid", candidateId };
+  }
+
+  const provenance = resolveMappingProvenance(row);
+
+  if (!provenance.ok) {
     return { kind: "invalid", candidateId };
   }
 
@@ -506,22 +666,30 @@ function toPreparationEntry(
   const latestDecision = decisionLineage.decision;
   const latestReasonCode = decisionLineage.decision === null ? null : decisionLineage.reasonCode;
 
-  // Cross-check the two independent signals: a Decision requiring an item
-  // must agree with the actual risk_share_items lineage lookup, not merely
-  // with its own item_id column. Disagreement between the two is exactly
-  // the "contradictory row" case section 7A calls out and must fail
-  // closed rather than pick one signal to trust.
-  if (latestDecision !== null && DECISIONS_REQUIRING_ITEM.has(latestDecision) && !itemLineage.hasItem) {
-    return { kind: "invalid", candidateId };
+  // Exact Item-lineage cross-check: a Decision requiring an Item must
+  // point at the *same* Item id this candidate's own risk_share_items
+  // lookup resolved to -- not merely "some Item exists for this
+  // candidate". Both "no embedded Item at all" and "embedded Item id
+  // differs from the Decision's item_id" fail closed here. Neither id is
+  // ever exposed outward; this comparison exists purely to catch a
+  // contradictory row.
+  if (latestDecision !== null && DECISIONS_REQUIRING_ITEM.has(latestDecision)) {
+    if (
+      !itemLineage.hasItem ||
+      decisionLineage.decisionItemId === null ||
+      decisionLineage.decisionItemId !== itemLineage.itemId
+    ) {
+      return { kind: "invalid", candidateId };
+    }
   }
 
   const hasItem = itemLineage.hasItem;
 
   let mappingMismatch = false;
 
-  if (mappingVersion !== null && sheetIndex !== null) {
-    const confirmedVersion = confirmedMappingVersionBySheetIndex.get(sheetIndex);
-    mappingMismatch = confirmedVersion === undefined || confirmedVersion !== mappingVersion;
+  if (provenance.complete) {
+    const confirmedVersion = confirmedMappingVersionBySheetIndex.get(provenance.sheetIndex);
+    mappingMismatch = confirmedVersion === undefined || confirmedVersion !== provenance.mappingVersion;
   }
 
   const missingRequiredField = taskName.length === 0 || hazard.length === 0;
@@ -532,7 +700,9 @@ function toPreparationEntry(
     category = "already_prepared";
   } else if (latestDecision === "owner_exception_required") {
     category = "recorded_exception";
-  } else if (latestDecision === null && reviewerStatus === "pending" && mappingVersion !== null) {
+  } else if (latestDecision === null && reviewerStatus === "pending" && provenance.complete) {
+    // awaiting_preparation_request is allowed only when complete, valid
+    // mapping provenance exists -- not merely a non-null mapping_version.
     category = "awaiting_preparation_request";
   } else {
     category = "not_applicable";
@@ -629,7 +799,7 @@ export async function listRiskSharePreparationStateForSource(
   );
 
   const summary = {
-    total: entries.length,
+    loadedTotal: entries.length,
     awaitingPreparationRequest: 0,
     recordedException: 0,
     alreadyPrepared: 0,
@@ -669,5 +839,6 @@ export async function listRiskSharePreparationStateForSource(
     summary,
     entries,
     overflow,
+    isComplete: !overflow,
   };
 }

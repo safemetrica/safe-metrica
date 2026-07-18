@@ -148,6 +148,9 @@ const FORBIDDEN_ENTRY_FIELDS = [
   "safe_metadata",
   "rawPayload",
   "raw_payload",
+  "sourceRowNumber",
+  "sourceRowSignatureSha256",
+  "importActor",
 ];
 
 for (const field of FORBIDDEN_ENTRY_FIELDS) {
@@ -178,6 +181,178 @@ for (const field of FORBIDDEN_ENTRY_FIELDS) {
 check(
   "no raw DB row shape (unknown-typed raw row types) is exported",
   !/^export type \w*Row\s*=/m.test(src),
+);
+
+const validEntryReturnBlock = extractBlock(src, 'return {\n    kind: "valid",', "\n  };\n}");
+
+check(
+  "the actual valid-entry return statement (not just the type declaration) never assigns itemId/decisionItemId",
+  validEntryReturnBlock !== null &&
+    !validEntryReturnBlock.includes("itemId") &&
+    !validEntryReturnBlock.includes("decisionItemId"),
+);
+
+// =========================================================================
+// Decision/reason pair validation (exact pairing, not independent enums)
+// =========================================================================
+
+const pairMapBlock = extractBlock(
+  src,
+  "const VALID_REASON_CODES_BY_DECISION",
+  "const KNOWN_DECISIONS",
+);
+
+check("exact decision/reason pairing map is defined", pairMapBlock !== null);
+check(
+  "auto_prepared pairing is exactly AUTO_SAME_MAPPING / AUTO_SOURCE_FAITHFUL",
+  pairMapBlock?.includes('auto_prepared: new Set(["AUTO_SAME_MAPPING", "AUTO_SOURCE_FAITHFUL"])'),
+);
+check(
+  "manager_review_required pairing includes all six reason codes",
+  ["FIRST_TEMPLATE_REVIEW", "LOW_CONFIDENCE", "SOURCE_LOCATION_UNCLEAR", "MAPPING_CHANGED", "ITEM_COUNT_DELTA", "CONTENT_MEANING_CHANGED"].every(
+    (code) => pairMapBlock?.includes(`"${code}"`),
+  ),
+);
+check(
+  "owner_exception_required pairing includes all four reason codes",
+  ["MISSING_REQUIRED_FIELD", "MAPPING_CONFLICT", "SENSITIVE_DATA_SUSPECTED", "REPEATED_PROCESSING_FAILURE"].every(
+    (code) => pairMapBlock?.includes(`"${code}"`),
+  ),
+);
+check(
+  "reason_code is validated against the pairing map, not an independent flat enum",
+  src.includes("VALID_REASON_CODES_BY_DECISION[decisionValue].has(reasonCode)") &&
+    !/const KNOWN_REASON_CODES\s*=/.test(src),
+);
+
+// =========================================================================
+// Exact Item lineage cross-check (decision item id vs embedded item id)
+// =========================================================================
+
+check(
+  "Item lineage resolver returns an internal itemId (not just a hasItem boolean)",
+  src.includes("itemId: string | null") && src.includes("itemId: id.toLowerCase()"),
+);
+check(
+  "Decision lineage resolver returns an internal decisionItemId",
+  src.includes("decisionItemId: string | null") && src.includes("const decisionItemId ="),
+);
+check(
+  "decisions requiring an Item must reference the exact same Item id resolved from lineage",
+  src.includes("decisionLineage.decisionItemId !== itemLineage.itemId"),
+);
+check(
+  "decision requiring an Item but no embedded Item at all fails closed",
+  src.includes("!itemLineage.hasItem ||"),
+);
+check(
+  "owner_exception_required carrying a non-null Item id is explicitly rejected (named check, not only the generic presence check)",
+  src.includes('decisionValue === "owner_exception_required" && decisionItemId !== null'),
+);
+check(
+  "neither itemId nor decisionItemId ever appears in the entry or result type blocks",
+  entryTypeBlock !== null &&
+    resultTypeBlock !== null &&
+    !entryTypeBlock.includes("itemId") &&
+    !entryTypeBlock.includes("decisionItemId") &&
+    !resultTypeBlock.includes("itemId") &&
+    !resultTypeBlock.includes("decisionItemId"),
+);
+
+// =========================================================================
+// Full mapping provenance validation (all-null-or-all-valid, 5 columns)
+// =========================================================================
+
+check(
+  "source_row_number, source_row_signature_sha256, import_actor are read internally",
+  src.includes("row.source_row_number") &&
+    src.includes("row.source_row_signature_sha256") &&
+    src.includes("row.import_actor"),
+);
+check(
+  "source_row_signature_sha256 is validated as exactly 64 lowercase hex characters",
+  src.includes("const SOURCE_ROW_SIGNATURE_PATTERN = /^[0-9a-f]{64}$/;"),
+);
+check(
+  "import_actor is validated against the exact three known values",
+  src.includes('new Set(["owner_console", "tenant_admin", "tenant_manager"])'),
+);
+check(
+  "provenance is validated as all-null XOR all-valid, never a partial mix",
+  src.includes("const allNull =") && src.includes("resolveMappingProvenance"),
+);
+check(
+  "sheet_index provenance range is 0 through 19",
+  /sheetIndex\s*<\s*0\s*\|\|\s*\n?\s*sheetIndex\s*>\s*19/.test(src),
+);
+check(
+  "mapping_version and source_row_number both require >= 1",
+  countOccurrences(src, "< 1") >= 2,
+);
+check(
+  "source_row_number/source_row_signature_sha256/import_actor are read only inside resolveMappingProvenance (never elsewhere in the module)",
+  (() => {
+    const provenanceFn = extractBlock(src, "function resolveMappingProvenance(", "\n}\n");
+    const rest = src.replace(provenanceFn ?? "", "");
+    return (
+      provenanceFn !== null &&
+      !rest.includes("row.source_row_number") &&
+      !rest.includes("row.source_row_signature_sha256") &&
+      !rest.includes("row.import_actor")
+    );
+  })(),
+);
+check(
+  "awaiting_preparation_request requires provenance.complete, not merely a non-null mapping_version",
+  src.includes('reviewerStatus === "pending" && provenance.complete'),
+);
+
+// =========================================================================
+// Strict numeric parsing (no decimal truncation, no NaN/Infinity, no
+// out-of-range silently accepted)
+// =========================================================================
+
+check(
+  "strict integer parser exists and rejects non-integers via Number.isInteger",
+  src.includes("function readStrictInteger(") && src.includes("Number.isInteger(value)"),
+);
+check(
+  "strict integer parser rejects non-integer-shaped strings (decimals, scientific notation, Infinity)",
+  src.includes("/^-?\\d+$/.test(trimmed)"),
+);
+check(
+  "the old truncating integer parser (Math.trunc-based) is fully removed",
+  !/Math\.trunc/.test(src) && !/function readNullableInteger/.test(src),
+);
+check(
+  "decision_seq is parsed with the strict integer parser and rejected below 1",
+  src.includes("const decisionSeq = readStrictInteger(row.decision_seq);") &&
+    src.includes("decisionSeq === null || decisionSeq < 1"),
+);
+check(
+  "decision_seq is never included in the outward entry (validated internally only)",
+  entryTypeBlock !== null && !entryTypeBlock.includes("decisionSeq"),
+);
+
+// =========================================================================
+// Partial summary semantics (loaded-window, not full-source totals)
+// =========================================================================
+
+check(
+  "summary.total (ambiguous capped-count name) no longer exists",
+  !/\btotal\s*:/.test(resultTypeBlock ?? "") && !src.includes("total: entries.length"),
+);
+check(
+  "summary.loadedTotal replaces it, explicitly scoped to the loaded window",
+  resultTypeBlock?.includes("loadedTotal: number") && src.includes("loadedTotal: entries.length"),
+);
+check(
+  "summary.isComplete is derived as exactly !overflow",
+  resultTypeBlock?.includes("isComplete: boolean") && src.includes("isComplete: !overflow"),
+);
+check(
+  "a comment states loaded-window counts must not be read as full-source totals when isComplete is false",
+  /never a source-wide total|not a source-wide total|only a loaded window|not.*full-source/i.test(src),
 );
 
 // =========================================================================
@@ -218,7 +393,12 @@ check(
 check(
   "no N+1: the classification/lineage functions issue no network call per Candidate",
   (() => {
-    const fnNames = ["resolveItemLineage", "resolveDecisionLineage", "toPreparationEntry"];
+    const fnNames = [
+      "resolveItemLineage",
+      "resolveDecisionLineage",
+      "resolveMappingProvenance",
+      "toPreparationEntry",
+    ];
     return fnNames.every((fnName) => {
       const block = extractBlock(src, `function ${fnName}(`, "\n}\n");
       return (
@@ -250,7 +430,7 @@ if (classifyBlock !== null) {
   const hasItemIndex = classifyBlock.indexOf("if (hasItem)");
   const exceptionIndex = classifyBlock.indexOf('latestDecision === "owner_exception_required"');
   const awaitingIndex = classifyBlock.indexOf(
-    'latestDecision === null && reviewerStatus === "pending" && mappingVersion !== null',
+    'latestDecision === null && reviewerStatus === "pending" && provenance.complete',
   );
   const notApplicableIndex = classifyBlock.indexOf('category = "not_applicable"');
 
@@ -282,12 +462,16 @@ check(
 );
 
 // =========================================================================
-// F. Pure-state matrix (independent JS mirror of the precedence + flag
-// rules, run against 13 synthetic cases). This cannot import the .ts
-// module directly (path-alias resolution requires the Next.js build
-// pipeline, not plain node), so it mirrors the same rules and relies on
-// the static ordering/field checks above to keep the mirror honest against
-// the real implementation.
+// F. Pure-state matrix. IMPORTANT: this is an independent JS mirror of the
+// precedence/pairing/lineage/provenance/numeric rules, NOT an execution of
+// the real TypeScript classifier -- this script cannot import the .ts
+// module directly (its `@/lib/...` path alias only resolves through the
+// Next.js build pipeline, not plain node, and adding a TS loader/dependency
+// is out of scope for this PR). The mirror is kept honest against the real
+// implementation only by the static source-text checks above (exact
+// pairing map contents, exact guard expressions, exact constant values) --
+// a mismatch between this mirror and the real module's actual behavior is
+// not something running this script alone can detect.
 // =========================================================================
 
 const DECISIONS_REQUIRING_ITEM = new Set(["auto_prepared", "manager_review_required"]);
@@ -298,33 +482,130 @@ const KNOWN_REVIEWER_STATUSES = new Set([
   "excluded",
   "needs_customer_check",
 ]);
-const KNOWN_DECISIONS = new Set(["auto_prepared", "manager_review_required", "owner_exception_required"]);
+const KNOWN_IMPORT_ACTORS = new Set(["owner_console", "tenant_admin", "tenant_manager"]);
+const SOURCE_ROW_SIGNATURE_PATTERN = /^[0-9a-f]{64}$/;
+
+const VALID_REASON_CODES_BY_DECISION = {
+  auto_prepared: new Set(["AUTO_SAME_MAPPING", "AUTO_SOURCE_FAITHFUL"]),
+  manager_review_required: new Set([
+    "FIRST_TEMPLATE_REVIEW",
+    "LOW_CONFIDENCE",
+    "SOURCE_LOCATION_UNCLEAR",
+    "MAPPING_CHANGED",
+    "ITEM_COUNT_DELTA",
+    "CONTENT_MEANING_CHANGED",
+  ]),
+  owner_exception_required: new Set([
+    "MISSING_REQUIRED_FIELD",
+    "MAPPING_CONFLICT",
+    "SENSITIVE_DATA_SUSPECTED",
+    "REPEATED_PROCESSING_FAILURE",
+  ]),
+};
+
+function readStrictIntegerMirror(value) {
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!/^-?\d+$/.test(trimmed)) return null;
+    const parsed = Number(trimmed);
+    return Number.isSafeInteger(parsed) ? parsed : null;
+  }
+  return null;
+}
 
 function pickLatestDecisionRow(decisionRows) {
   // Mirrors what the DB-side embed (order=decision_seq.desc&limit=1) is
   // contracted to already do -- this function exists only so this script
-  // can prove case 10 (highest decision_seq wins) without a live DB.
+  // can prove the "highest decision_seq wins" case without a live DB.
   if (decisionRows.length === 0) return null;
   return decisionRows.reduce((max, row) => (row.decision_seq > max.decision_seq ? row : max));
 }
 
-function classifyMirror({ hasItemRows, decisionRows, reviewerStatus, taskName, hazard, mappingVersion, confirmedMappingVersion }) {
+function resolveMappingProvenanceMirror({ mappingVersion, sheetIndex, sourceRowNumber, sourceRowSignature, importActor }) {
+  const allNull =
+    mappingVersion === null &&
+    sheetIndex === null &&
+    sourceRowNumber === null &&
+    sourceRowSignature === null &&
+    importActor === null;
+
+  if (allNull) {
+    return { ok: true, complete: false };
+  }
+
+  const parsedMappingVersion = readStrictIntegerMirror(mappingVersion);
+  const parsedSheetIndex = readStrictIntegerMirror(sheetIndex);
+  const parsedSourceRowNumber = readStrictIntegerMirror(sourceRowNumber);
+  const signatureValid = typeof sourceRowSignature === "string" && SOURCE_ROW_SIGNATURE_PATTERN.test(sourceRowSignature);
+  const importActorValid = typeof importActor === "string" && KNOWN_IMPORT_ACTORS.has(importActor);
+
+  if (
+    parsedMappingVersion === null || parsedMappingVersion < 1 ||
+    parsedSheetIndex === null || parsedSheetIndex < 0 || parsedSheetIndex > 19 ||
+    parsedSourceRowNumber === null || parsedSourceRowNumber < 1 ||
+    !signatureValid ||
+    !importActorValid
+  ) {
+    return { ok: false };
+  }
+
+  return { ok: true, complete: true, mappingVersion: parsedMappingVersion, sheetIndex: parsedSheetIndex };
+}
+
+/** Full-fidelity provenance defaults for cases that only care about a
+ * different dimension of the contract -- a valid, complete mapped
+ * provenance unless a test case explicitly overrides one field. */
+const COMPLETE_PROVENANCE = {
+  mappingVersion: 3,
+  sheetIndex: 1,
+  sourceRowNumber: 7,
+  sourceRowSignature: "a".repeat(64),
+  importActor: "tenant_manager",
+};
+const ALL_NULL_PROVENANCE = {
+  mappingVersion: null,
+  sheetIndex: null,
+  sourceRowNumber: null,
+  sourceRowSignature: null,
+  importActor: null,
+};
+
+function classifyMirror({ itemRows, decisionRows, reviewerStatus, taskName, hazard, provenance, confirmedMappingVersion }) {
   if (!KNOWN_REVIEWER_STATUSES.has(reviewerStatus)) {
     return { kind: "invalid" };
   }
 
-  if (hasItemRows.length > 1) {
+  if (itemRows.length > 1) {
     return { kind: "invalid" };
   }
 
-  const hasItem = hasItemRows.length === 1;
+  const hasItem = itemRows.length === 1;
+  const itemId = hasItem ? itemRows[0].id : null;
+
+  const provenanceResult = resolveMappingProvenanceMirror(provenance);
+
+  if (!provenanceResult.ok) {
+    return { kind: "invalid" };
+  }
 
   const latestRow = pickLatestDecisionRow(decisionRows);
 
   let latestDecision = null;
 
   if (latestRow) {
-    if (!KNOWN_DECISIONS.has(latestRow.decision)) {
+    if (!Object.prototype.hasOwnProperty.call(VALID_REASON_CODES_BY_DECISION, latestRow.decision)) {
+      return { kind: "invalid" };
+    }
+
+    if (!VALID_REASON_CODES_BY_DECISION[latestRow.decision].has(latestRow.reason_code)) {
+      return { kind: "invalid" };
+    }
+
+    const decisionSeq = readStrictIntegerMirror(latestRow.decision_seq);
+    if (decisionSeq === null || decisionSeq < 1) {
       return { kind: "invalid" };
     }
 
@@ -335,16 +616,23 @@ function classifyMirror({ hasItemRows, decisionRows, reviewerStatus, taskName, h
       return { kind: "invalid" };
     }
 
-    if (requiresItem && !hasItem) {
+    if (latestRow.decision === "owner_exception_required" && latestRow.item_id !== null) {
       return { kind: "invalid" };
+    }
+
+    if (requiresItem) {
+      if (!hasItem || latestRow.item_id !== itemId) {
+        return { kind: "invalid" };
+      }
     }
 
     latestDecision = latestRow.decision;
   }
 
   let mappingMismatch = false;
-  if (mappingVersion !== null) {
-    mappingMismatch = confirmedMappingVersion === undefined || confirmedMappingVersion !== mappingVersion;
+  if (provenanceResult.complete) {
+    mappingMismatch =
+      confirmedMappingVersion === undefined || confirmedMappingVersion !== provenanceResult.mappingVersion;
   }
 
   const missingRequiredField = taskName.trim().length === 0 || hazard.trim().length === 0;
@@ -354,7 +642,7 @@ function classifyMirror({ hasItemRows, decisionRows, reviewerStatus, taskName, h
     category = "already_prepared";
   } else if (latestDecision === "owner_exception_required") {
     category = "recorded_exception";
-  } else if (latestDecision === null && reviewerStatus === "pending" && mappingVersion !== null) {
+  } else if (latestDecision === null && reviewerStatus === "pending" && provenanceResult.complete) {
     category = "awaiting_preparation_request";
   } else {
     category = "not_applicable";
@@ -364,86 +652,207 @@ function classifyMirror({ hasItemRows, decisionRows, reviewerStatus, taskName, h
 }
 
 const pureCases = [
+  // --- baseline precedence (unchanged from the original 13 cases) -------
   {
-    name: "1. no Decision + pending + mapping version",
-    input: { hasItemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "no Decision + pending + complete mapping provenance",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "valid", category: "awaiting_preparation_request" },
   },
   {
-    name: "2. owner exception with no Item",
-    input: { hasItemRows: [], decisionRows: [{ decision_seq: 1, decision: "owner_exception_required", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "owner exception with no Item",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 1, decision: "owner_exception_required", reason_code: "MISSING_REQUIRED_FIELD", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "valid", category: "recorded_exception" },
   },
   {
-    name: "3. old owner exception plus Item (hasItem wins precedence)",
-    input: { hasItemRows: [{}], decisionRows: [{ decision_seq: 1, decision: "owner_exception_required", item_id: null }], reviewerStatus: "excluded", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "old owner exception plus Item (hasItem wins precedence)",
+    input: { itemRows: [{ id: "item-1" }], decisionRows: [{ decision_seq: 1, decision: "owner_exception_required", reason_code: "MAPPING_CONFLICT", item_id: null }], reviewerStatus: "excluded", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "valid", category: "already_prepared" },
   },
   {
-    name: "4. auto_prepared with Item",
-    input: { hasItemRows: [{}], decisionRows: [{ decision_seq: 2, decision: "auto_prepared", item_id: "item-1" }], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "auto_prepared with matching Item id",
+    input: { itemRows: [{ id: "item-1" }], decisionRows: [{ decision_seq: 2, decision: "auto_prepared", reason_code: "AUTO_SOURCE_FAITHFUL", item_id: "item-1" }], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "valid", category: "already_prepared" },
   },
   {
-    name: "5. auto_prepared without Item -> invalid",
-    input: { hasItemRows: [], decisionRows: [{ decision_seq: 2, decision: "auto_prepared", item_id: "item-1" }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "auto_prepared without any embedded Item -> invalid",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 2, decision: "auto_prepared", reason_code: "AUTO_SOURCE_FAITHFUL", item_id: "item-1" }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "invalid" },
   },
   {
-    name: "6. non-pending Candidate, no decision, no item",
-    input: { hasItemRows: [], decisionRows: [], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "non-pending Candidate, no decision, no item",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "valid", category: "not_applicable" },
   },
   {
-    name: "7. missing mapping provenance (mapping_version null)",
-    input: { hasItemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", mappingVersion: null, confirmedMappingVersion: undefined },
-    expect: { kind: "valid", category: "not_applicable" },
-  },
-  {
-    name: "8. malformed reviewer_status",
-    input: { hasItemRows: [], decisionRows: [], reviewerStatus: "bogus_status", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "malformed reviewer_status",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "bogus_status", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "invalid" },
   },
   {
-    name: "9. unknown Decision value",
-    input: { hasItemRows: [], decisionRows: [{ decision_seq: 1, decision: "bogus_decision", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "unknown Decision value",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 1, decision: "bogus_decision", reason_code: "MISSING_REQUIRED_FIELD", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "invalid" },
   },
   {
-    name: "10. multiple Decisions -- highest decision_seq wins",
+    name: "multiple Decisions -- highest decision_seq wins",
     input: {
-      hasItemRows: [],
+      itemRows: [],
       decisionRows: [
-        { decision_seq: 1, decision: "owner_exception_required", item_id: null },
-        { decision_seq: 5, decision: "owner_exception_required", item_id: null },
-        { decision_seq: 3, decision: "owner_exception_required", item_id: null },
+        { decision_seq: 1, decision: "owner_exception_required", reason_code: "MISSING_REQUIRED_FIELD", item_id: null },
+        { decision_seq: 5, decision: "owner_exception_required", reason_code: "MAPPING_CONFLICT", item_id: null },
+        { decision_seq: 3, decision: "owner_exception_required", reason_code: "SENSITIVE_DATA_SUSPECTED", item_id: null },
       ],
       reviewerStatus: "pending",
       taskName: "task",
       hazard: "hazard",
-      mappingVersion: 3,
+      provenance: COMPLETE_PROVENANCE,
       confirmedMappingVersion: 3,
     },
     expect: { kind: "valid", category: "recorded_exception" },
-    extra: (result, input) => {
-      const winner = pickLatestDecisionRow(input.decisionRows);
-      return winner.decision_seq === 5;
-    },
+    extra: (result, input) => pickLatestDecisionRow(input.decisionRows).decision_seq === 5,
   },
   {
-    name: "11. missing taskName flag",
-    input: { hasItemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "missing taskName flag",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "valid", category: "awaiting_preparation_request", missingRequiredField: true },
   },
   {
-    name: "12. missing hazard flag",
-    input: { hasItemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "  ", mappingVersion: 3, confirmedMappingVersion: 3 },
+    name: "missing hazard flag",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "  ", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
     expect: { kind: "valid", category: "awaiting_preparation_request", missingRequiredField: true },
   },
   {
-    name: "13. mapping mismatch flag",
-    input: { hasItemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", mappingVersion: 3, confirmedMappingVersion: 4 },
+    name: "mapping mismatch flag",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 4 },
     expect: { kind: "valid", category: "awaiting_preparation_request", mappingMismatch: true },
+  },
+
+  // --- section 3: decision/reason pair validation ------------------------
+  {
+    name: "pair: auto_prepared + AUTO_SAME_MAPPING (valid pairing)",
+    input: { itemRows: [{ id: "item-1" }], decisionRows: [{ decision_seq: 1, decision: "auto_prepared", reason_code: "AUTO_SAME_MAPPING", item_id: "item-1" }], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "valid", category: "already_prepared" },
+  },
+  {
+    name: "pair: manager_review_required + LOW_CONFIDENCE (valid pairing)",
+    input: { itemRows: [{ id: "item-1" }], decisionRows: [{ decision_seq: 1, decision: "manager_review_required", reason_code: "LOW_CONFIDENCE", item_id: "item-1" }], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "valid", category: "already_prepared" },
+  },
+  {
+    name: "pair: owner_exception_required + SENSITIVE_DATA_SUSPECTED (valid pairing)",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 1, decision: "owner_exception_required", reason_code: "SENSITIVE_DATA_SUSPECTED", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "valid", category: "recorded_exception" },
+  },
+  {
+    name: "pair: auto_prepared + MISSING_REQUIRED_FIELD -> invalid (explicit required case)",
+    input: { itemRows: [{ id: "item-1" }], decisionRows: [{ decision_seq: 1, decision: "auto_prepared", reason_code: "MISSING_REQUIRED_FIELD", item_id: "item-1" }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "pair: owner_exception_required + AUTO_SOURCE_FAITHFUL -> invalid (explicit required case)",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 1, decision: "owner_exception_required", reason_code: "AUTO_SOURCE_FAITHFUL", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "pair: manager_review_required + MAPPING_CONFLICT -> invalid (explicit required case)",
+    input: { itemRows: [{ id: "item-1" }], decisionRows: [{ decision_seq: 1, decision: "manager_review_required", reason_code: "MAPPING_CONFLICT", item_id: "item-1" }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+
+  // --- section 4: exact Item lineage --------------------------------------
+  {
+    name: "lineage: Decision item_id matches embedded Item id exactly",
+    input: { itemRows: [{ id: "item-42" }], decisionRows: [{ decision_seq: 1, decision: "auto_prepared", reason_code: "AUTO_SOURCE_FAITHFUL", item_id: "item-42" }], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "valid", category: "already_prepared" },
+  },
+  {
+    name: "lineage: Decision points to a different Item id -> invalid",
+    input: { itemRows: [{ id: "item-42" }], decisionRows: [{ decision_seq: 1, decision: "auto_prepared", reason_code: "AUTO_SOURCE_FAITHFUL", item_id: "item-99" }], reviewerStatus: "accepted", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "lineage: Decision requires Item but no embedded Item -> invalid",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 1, decision: "manager_review_required", reason_code: "LOW_CONFIDENCE", item_id: "item-1" }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "lineage: owner_exception_required carrying an Item id -> invalid",
+    input: { itemRows: [{ id: "item-1" }], decisionRows: [{ decision_seq: 1, decision: "owner_exception_required", reason_code: "MISSING_REQUIRED_FIELD", item_id: "item-1" }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+
+  // --- section 5: full mapping provenance validation ----------------------
+  {
+    name: "provenance: all-null manual candidate is valid, not_applicable",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: ALL_NULL_PROVENANCE, confirmedMappingVersion: undefined },
+    expect: { kind: "valid", category: "not_applicable" },
+  },
+  {
+    name: "provenance: complete valid mapped provenance -> awaiting_preparation_request",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "valid", category: "awaiting_preparation_request" },
+  },
+  {
+    name: "provenance: mapping_version present without sheet_index -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, sheetIndex: null }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "provenance: missing source_row_number -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, sourceRowNumber: null }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "provenance: malformed signature (not 64 lowercase hex) -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, sourceRowSignature: "ABCDEF" }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "provenance: unknown import_actor -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, importActor: "bogus_actor" }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "provenance: out-of-range sheet_index (20) -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, sheetIndex: 20 }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "provenance: mapping_version zero -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, mappingVersion: 0 }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+
+  // --- section 6: strict numeric parsing ----------------------------------
+  {
+    name: "numeric: mapping_version = 1.5 (decimal) -> invalid, not truncated to 1",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, mappingVersion: 1.5 }, confirmedMappingVersion: 1 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: 'numeric: mapping_version = "1.5" (decimal string) -> invalid',
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, mappingVersion: "1.5" }, confirmedMappingVersion: 1 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "numeric: sheet_index = NaN -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, sheetIndex: NaN }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "numeric: sheet_index = Infinity -> invalid",
+    input: { itemRows: [], decisionRows: [], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: { ...COMPLETE_PROVENANCE, sheetIndex: Infinity }, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "numeric: decision_seq = 0 -> invalid",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 0, decision: "owner_exception_required", reason_code: "MISSING_REQUIRED_FIELD", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
+  },
+  {
+    name: "numeric: decision_seq = 1.5 (decimal) -> invalid",
+    input: { itemRows: [], decisionRows: [{ decision_seq: 1.5, decision: "owner_exception_required", reason_code: "MISSING_REQUIRED_FIELD", item_id: null }], reviewerStatus: "pending", taskName: "task", hazard: "hazard", provenance: COMPLETE_PROVENANCE, confirmedMappingVersion: 3 },
+    expect: { kind: "invalid" },
   },
 ];
 
