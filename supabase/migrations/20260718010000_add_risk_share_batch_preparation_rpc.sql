@@ -8,6 +8,19 @@
 -- existing Owner create-from-candidate route, risk_share_candidate_review_
 -- events, review_risk_share_item, or create_risk_share_version_lock.
 --
+-- This migration deletes no database object under any circumstance,
+-- including a same-named function it does not recognize: the deployment
+-- precondition immediately below fails the whole migration closed via
+-- RAISE EXCEPTION if any unexpected prepare_risk_share_items_for_tenant
+-- overload exists, rather than dropping and replacing it. CREATE OR
+-- REPLACE only ever runs against the one exact signature this file
+-- defines -- either because no function with this name existed yet, or
+-- because the exact signature already existed (an idempotent re-run of
+-- this same migration). p_candidate_ids also rejects a NULL element
+-- anywhere inside a non-empty array (invalid_request, section 1 below) --
+-- not the same input as p_candidate_ids itself being NULL, which still
+-- means "all eligible candidates for the source".
+--
 -- A2 v1 is preparation, not publish:
 --   - worker_visible is never set true here.
 --   - customer_confirmed is never set true here.
@@ -65,9 +78,27 @@
 -- (not_eligible / invalid_candidate / item_already_exists /
 -- idempotency_conflict / any structural code).
 
+-- Fail-closed precondition, not an auto-repair: this migration must never
+-- delete or replace a function it did not itself define the shape of. An
+-- earlier draft of this block queried pg_proc for every function named
+-- prepare_risk_share_items_for_tenant and DROP FUNCTION'd any whose
+-- argument types did not match -- destructive, and silently so: a
+-- differently-shaped function under this exact name (a hotfix, a v2 draft
+-- being tested, anything not authored by this migration) would have been
+-- deleted with no confirmation, contradicting this file's own "additive
+-- only" header. That auto-drop is removed. The only two states this
+-- migration proceeds past are: no function with this name exists yet, or
+-- exactly one exists and it already has the exact expected signature (a
+-- re-run of this same migration). Any other state -- one or more
+-- differently-shaped overloads, with or without the exact signature also
+-- present -- aborts the whole migration via exception before CREATE OR
+-- REPLACE runs and before anything is touched. The error message below
+-- intentionally carries no function definition, argument values, or
+-- customer data -- only the fact that the precondition failed.
 do $$
 declare
-  v_proc record;
+  v_total_count integer;
+  v_exact_count integer;
   v_expected_argtypes oid[] := array[
     'text'::regtype::oid,
     'uuid'::regtype::oid,
@@ -77,20 +108,31 @@ declare
     '_uuid'::regtype::oid
   ];
 begin
-  for v_proc in
-    select p.oid, p.proargtypes
-    from pg_proc p
-    join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public'
-      and p.proname = 'prepare_risk_share_items_for_tenant'
-  loop
-    if v_proc.proargtypes::oid[] <> v_expected_argtypes then
-      execute format(
-        'drop function public.prepare_risk_share_items_for_tenant(%s)',
-        pg_get_function_identity_arguments(v_proc.oid)
-      );
-    end if;
-  end loop;
+  select count(*) into v_total_count
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'prepare_risk_share_items_for_tenant';
+
+  select count(*) into v_exact_count
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'prepare_risk_share_items_for_tenant'
+    -- proargtypes is oidvector, not oid[]; casting it directly to oid[]
+    -- preserves oidvector's native 0-based subscripting ([0:5]=...), and
+    -- Postgres array equality is bound-sensitive -- a [0:5] array never
+    -- equals an ordinary (1-based) array literal even with identical
+    -- elements in the same order (verified, disposable Postgres 16).
+    -- array(select unnest(...)) re-collects the elements into a normal
+    -- 1-based array so this comparison actually compares values, not
+    -- incidental subscript bounds.
+    and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes;
+
+  if not (v_total_count = 0 or (v_total_count = 1 and v_exact_count = 1)) then
+    raise exception
+      'prepare_risk_share_items_for_tenant precondition failed: unexpected overload exists';
+  end if;
 end
 $$;
 
@@ -184,6 +226,35 @@ begin
   -- An explicit empty array is a distinct, malformed request -- not the
   -- same as omitting p_candidate_ids (which means "all eligible").
   if p_candidate_ids is not null and coalesce(array_length(p_candidate_ids, 1), 0) = 0 then
+    return query select null::uuid, null::text, null::text, null::uuid, null::uuid, 'invalid_request'::text;
+    return;
+  end if;
+
+  -- A multi-dimensional array (verified, disposable Postgres 16: `uuid[]`
+  -- accepts any dimensionality at the type level, and array_position
+  -- raises "searching for elements in multidimensional arrays is not
+  -- supported" rather than returning a value) is rejected explicitly and
+  -- gracefully here, before array_position is ever called on it below --
+  -- every other malformed-input case in this function returns an
+  -- invalid_request row rather than letting a raw Postgres error escape,
+  -- and this is no exception to that contract. array_ndims returns null
+  -- for a null or empty array (already handled above) and the actual
+  -- dimension count otherwise, so coalescing to 1 only affects the cases
+  -- already excluded by this point.
+  if p_candidate_ids is not null and coalesce(array_ndims(p_candidate_ids), 1) > 1 then
+    return query select null::uuid, null::text, null::text, null::uuid, null::uuid, 'invalid_request'::text;
+    return;
+  end if;
+
+  -- A NULL element inside an otherwise non-empty array (ARRAY[NULL],
+  -- ARRAY[valid_uuid, NULL], ...) is malformed input, not "no candidate" --
+  -- silently dropping it via array_agg(distinct x) below would let a
+  -- caller bug quietly shrink its own batch instead of failing loudly.
+  -- array_position(array, null) is verified (disposable Postgres 16) to
+  -- correctly locate a NULL element and return its subscript, unlike
+  -- `x = ANY(array)`, which can never match NULL under standard SQL
+  -- three-valued logic.
+  if p_candidate_ids is not null and array_position(p_candidate_ids, null) is not null then
     return query select null::uuid, null::text, null::text, null::uuid, null::uuid, 'invalid_request'::text;
     return;
   end if;
@@ -514,18 +585,77 @@ comment on function public.prepare_risk_share_items_for_tenant(
 
 do $$
 declare
-  v_fn_count integer;
+  v_total_count integer;
+  v_exact_count integer;
+  v_fn record;
   v_priv record;
+  v_expected_argtypes oid[] := array[
+    'text'::regtype::oid,
+    'uuid'::regtype::oid,
+    'uuid'::regtype::oid,
+    'int4'::regtype::oid,
+    'text'::regtype::oid,
+    '_uuid'::regtype::oid
+  ];
+  v_expected_allargtypes oid[] := array[
+    'text'::regtype::oid, 'uuid'::regtype::oid, 'uuid'::regtype::oid,
+    'int4'::regtype::oid, 'text'::regtype::oid, '_uuid'::regtype::oid,
+    'uuid'::regtype::oid, 'text'::regtype::oid, 'text'::regtype::oid,
+    'uuid'::regtype::oid, 'uuid'::regtype::oid, 'text'::regtype::oid
+  ];
+  -- 't' (table), not 'o' (out): verified, disposable Postgres 16 -- a
+  -- RETURNS TABLE(...) column's proargmodes entry is 't', which is
+  -- distinct from a plain OUT parameter's 'o'.
+  v_expected_argmodes "char"[] := array['i','i','i','i','i','i','t','t','t','t','t','t']::"char"[];
 begin
-  select count(*) into v_fn_count
+  select count(*) into v_total_count
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and p.proname = 'prepare_risk_share_items_for_tenant';
 
-  if v_fn_count <> 1 then
+  select count(*) into v_exact_count
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'prepare_risk_share_items_for_tenant'
+    -- See the precondition block above for why unnest+re-collect is
+    -- required here instead of a direct oidvector::oid[] comparison.
+    and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes;
+
+  if v_total_count <> 1 or v_exact_count <> 1 then
     raise exception
-      'prepare_risk_share_items_for_tenant postcondition failed: expected exactly 1 function overload, found %',
-      v_fn_count;
+      'prepare_risk_share_items_for_tenant postcondition failed: expected exactly 1 function with the exact signature, found total=%, exact=%',
+      v_total_count, v_exact_count;
+  end if;
+
+  select p.prokind, p.proretset, p.proallargtypes, p.proargmodes
+    into v_fn
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'prepare_risk_share_items_for_tenant'
+    -- See the precondition block above for why unnest+re-collect is
+    -- required here instead of a direct oidvector::oid[] comparison.
+    and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes;
+
+  if v_fn.prokind <> 'f' then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: prokind is not a plain function';
+  end if;
+
+  if v_fn.proretset is distinct from true then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: function does not return a set (RETURNS TABLE expected)';
+  end if;
+
+  if v_fn.proallargtypes::oid[] is distinct from v_expected_allargtypes then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: RETURNS TABLE column type shape does not match';
+  end if;
+
+  if v_fn.proargmodes is distinct from v_expected_argmodes then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: argument in/out mode shape does not match';
   end if;
 
   for v_priv in
