@@ -21,6 +21,24 @@
 -- not the same input as p_candidate_ids itself being NULL, which still
 -- means "all eligible candidates for the source".
 --
+-- Idempotency contract, precisely (not "a new key always permits a fresh
+-- decision" -- that is only true for a candidate that has not yet
+-- produced an item):
+--   - Same idempotency_key, same candidate content (fingerprint matches
+--     the stored decision): replayed. No new write.
+--   - Same idempotency_key, different candidate content (fingerprint
+--     differs): idempotency_conflict. No new write.
+--   - New idempotency_key, candidate has no item yet (owner_exception_
+--     required so far, or never evaluated): a fresh decision is possible
+--     and may reach a different outcome than before -- e.g. a candidate
+--     content fix can turn a prior owner_exception_required into
+--     auto_prepared under the new key.
+--   - New idempotency_key, candidate already has an item (a prior call --
+--     under any key -- already resolved it to auto_prepared): item_
+--     already_exists. No new Decision is ever recorded once an item
+--     exists for a candidate, regardless of key or content changes. A2 v1
+--     never regenerates, updates, or re-decides an already-prepared item.
+--
 -- A2 v1 is preparation, not publish:
 --   - worker_visible is never set true here.
 --   - customer_confirmed is never set true here.
@@ -95,10 +113,45 @@
 -- REPLACE runs and before anything is touched. The error message below
 -- intentionally carries no function definition, argument values, or
 -- customer data -- only the fact that the precondition failed.
+--
+-- Trusted owner + direct-grant contract, checked only when the exact
+-- signature already exists (an idempotent re-run): CREATE OR REPLACE
+-- FUNCTION never changes an existing function's owner or resets its ACL --
+-- both persist across a re-run exactly as they were, even under a
+-- superuser-run re-application (verified, disposable Postgres 16: a
+-- function whose owner was reassigned to an unrelated role, or which had
+-- EXECUTE granted directly to an unrelated role, kept both after a clean
+-- re-run of the unmodified original version of this migration). A
+-- postcondition alone cannot fix this -- it can only detect and fail loud
+-- after the fact, by which point CREATE OR REPLACE has already run against
+-- a function this migration does not have exclusive control over. So this
+-- is checked here, before CREATE OR REPLACE, not only after:
+--   - Owner must equal current_user (the trusted role actually applying
+--     this migration). A mismatch aborts before anything is touched --
+--     never auto-corrected via ALTER OWNER, since silently reassigning
+--     ownership of a function this migration did not create is exactly
+--     the kind of auto-repair section 2 above already rejects for DROP.
+--   - No direct EXECUTE grant may exist on any grantee other than the
+--     owner itself or service_role. aclexplode(coalesce(proacl,
+--     acldefault('f', proowner))) is required, not proacl alone: a
+--     function that has never had an explicit REVOKE/GRANT run against it
+--     has proacl = null (verified, disposable Postgres 16) and relies on
+--     acldefault('f', proowner) to expose Postgres's implicit default --
+--     EXECUTE granted to PUBLIC -- which a bare `proacl is null` check
+--     would miss entirely. Grantee 0 in the exploded result is PUBLIC;
+--     since it is never equal to a real role's OID, comparing against
+--     (owner OID, service_role OID) already catches it with no special
+--     case. This never auto-repairs via REVOKE either -- it aborts before
+--     CREATE OR REPLACE runs, leaving the pre-existing grant untouched for
+--     an operator to investigate.
 do $$
 declare
   v_total_count integer;
   v_exact_count integer;
+  v_existing_owner oid;
+  v_current_user_oid oid := current_user::regrole::oid;
+  v_service_role_oid oid := 'service_role'::regrole::oid;
+  v_unexpected_acl_count integer;
   v_expected_argtypes oid[] := array[
     'text'::regtype::oid,
     'uuid'::regtype::oid,
@@ -132,6 +185,35 @@ begin
   if not (v_total_count = 0 or (v_total_count = 1 and v_exact_count = 1)) then
     raise exception
       'prepare_risk_share_items_for_tenant precondition failed: unexpected overload exists';
+  end if;
+
+  if v_total_count = 1 and v_exact_count = 1 then
+    select p.proowner into v_existing_owner
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'prepare_risk_share_items_for_tenant'
+      and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes;
+
+    if v_existing_owner <> v_current_user_oid then
+      raise exception
+        'prepare_risk_share_items_for_tenant precondition failed: function owner does not match migration role';
+    end if;
+
+    select count(*) into v_unexpected_acl_count
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace,
+    lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) as a
+    where n.nspname = 'public'
+      and p.proname = 'prepare_risk_share_items_for_tenant'
+      and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes
+      and a.privilege_type = 'EXECUTE'
+      and a.grantee not in (v_existing_owner, v_service_role_oid);
+
+    if v_unexpected_acl_count > 0 then
+      raise exception
+        'prepare_risk_share_items_for_tenant precondition failed: unexpected execute grant exists';
+    end if;
   end if;
 end
 $$;
@@ -568,6 +650,18 @@ revoke execute on function public.prepare_risk_share_items_for_tenant(
   text, uuid, uuid, integer, text, uuid[]
 ) from anon, authenticated;
 
+-- Reset service_role to exactly EXECUTE, nothing more, before granting it --
+-- not because this migration has ever granted it anything else, but so
+-- this statement sequence does not silently depend on service_role
+-- carrying no other privilege on this function from any source (default
+-- privileges, role membership, a future edit to this file). No custom
+-- role is named here: a fresh CREATE has no prior grants to reset by
+-- definition, and a re-run's unexpected-grant case is already rejected by
+-- the precondition above before this point is ever reached.
+revoke all on function public.prepare_risk_share_items_for_tenant(
+  text, uuid, uuid, integer, text, uuid[]
+) from service_role;
+
 grant execute on function public.prepare_risk_share_items_for_tenant(
   text, uuid, uuid, integer, text, uuid[]
 ) to service_role;
@@ -607,6 +701,10 @@ declare
   -- RETURNS TABLE(...) column's proargmodes entry is 't', which is
   -- distinct from a plain OUT parameter's 'o'.
   v_expected_argmodes "char"[] := array['i','i','i','i','i','i','t','t','t','t','t','t']::"char"[];
+  v_current_user_oid oid := current_user::regrole::oid;
+  v_service_role_oid oid := 'service_role'::regrole::oid;
+  v_unexpected_acl_count integer;
+  v_service_role_grantable boolean;
 begin
   select count(*) into v_total_count
   from pg_proc p
@@ -628,7 +726,7 @@ begin
       v_total_count, v_exact_count;
   end if;
 
-  select p.prokind, p.proretset, p.proallargtypes, p.proargmodes
+  select p.prokind, p.proretset, p.proallargtypes, p.proargmodes, p.proowner, p.prosecdef
     into v_fn
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
@@ -656,6 +754,61 @@ begin
   if v_fn.proargmodes is distinct from v_expected_argmodes then
     raise exception
       'prepare_risk_share_items_for_tenant postcondition failed: argument in/out mode shape does not match';
+  end if;
+
+  -- Trusted owner + SECURITY DEFINER contract, verified after CREATE OR
+  -- REPLACE the same way the precondition verified it before -- CREATE OR
+  -- REPLACE never touches an existing function's owner or ACL, so this
+  -- check is only meaningful in combination with the precondition above,
+  -- not a substitute for it (by the time a postcondition failure is
+  -- raised, CREATE OR REPLACE has already run against whatever was there).
+  if v_fn.proowner <> v_current_user_oid then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: function owner does not match migration role';
+  end if;
+
+  if v_fn.prosecdef is distinct from true then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: SECURITY DEFINER is not set';
+  end if;
+
+  -- Full direct-EXECUTE-grant enumeration, not just the four named-role
+  -- booleans below: has_function_privilege for service_role/anon/
+  -- authenticated/public only proves those four roles have the right
+  -- boolean answer, and says nothing about a fifth, unnamed role holding
+  -- a direct grant this migration never revoked because it never knew to
+  -- look for it. aclexplode(coalesce(proacl, acldefault('f', proowner)))
+  -- enumerates every actual grantee; grantee 0 is PUBLIC and is never
+  -- equal to a real role OID, so it is caught by the same owner/
+  -- service_role allowlist with no special case.
+  select count(*) into v_unexpected_acl_count
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace,
+  lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) as a
+  where n.nspname = 'public'
+    and p.proname = 'prepare_risk_share_items_for_tenant'
+    and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes
+    and a.privilege_type = 'EXECUTE'
+    and a.grantee not in (v_current_user_oid, v_service_role_oid);
+
+  if v_unexpected_acl_count > 0 then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: unexpected execute grant exists';
+  end if;
+
+  select a.is_grantable into v_service_role_grantable
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace,
+  lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) as a
+  where n.nspname = 'public'
+    and p.proname = 'prepare_risk_share_items_for_tenant'
+    and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes
+    and a.privilege_type = 'EXECUTE'
+    and a.grantee = v_service_role_oid;
+
+  if v_service_role_grantable is distinct from false then
+    raise exception
+      'prepare_risk_share_items_for_tenant postcondition failed: service_role EXECUTE grant is WITH GRANT OPTION';
   end if;
 
   for v_priv in
