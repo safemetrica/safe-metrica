@@ -29,6 +29,7 @@
     "verify:risk-approval-read-id-normalization": "node scripts/verify-risk-approval-read-id-normalization.mjs",
     "verify:dashboard-notion-query-soft-fail": "node scripts/verify-dashboard-notion-query-soft-fail.mjs",
     "verify:dashboard-hide-raw-notion-error": "node scripts/verify-dashboard-hide-raw-notion-error.mjs",
+    "verify:risk-share-preparation-api": "node scripts/verify-risk-share-preparation-api-contract.mjs",
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh"
   },
   "dependencies": {
