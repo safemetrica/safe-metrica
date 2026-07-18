@@ -65,15 +65,30 @@
 --     REPLACE's own body validation
 -- =====================================================================
 
+-- Independent audit (SM-RISK-A2-DIGEST-FIX-001 re-audit) found this
+-- precondition weaker than the postcondition below: it verified overload
+-- count, owner, search_path, unexpected-grantee, and extensions.digest
+-- availability, but not prokind/proretset/RETURNS TABLE shape/
+-- SECURITY DEFINER/exact service_role grant state. Without those checks,
+-- a function tampered into SECURITY INVOKER, missing its service_role
+-- grant, granted WITH GRANT OPTION, or reshaped to a different RETURNS
+-- TABLE would pass this precondition, get silently overwritten by
+-- CREATE OR REPLACE, and have its ACL silently "fixed" by the REVOKE/
+-- GRANT sequence below -- auto-repair of exactly the kind this migration
+-- (and 20260718010000's own precondition) exists to refuse. This block
+-- now checks every property CREATE OR REPLACE could otherwise silently
+-- paper over, mirroring the postcondition's checks one-for-one, before
+-- CREATE OR REPLACE ever runs.
 do $$
 declare
   v_total_count integer;
   v_exact_count integer;
-  v_existing_owner oid;
-  v_existing_config text[];
+  v_fn record;
   v_current_user_oid oid := current_user::regrole::oid;
   v_service_role_oid oid := 'service_role'::regrole::oid;
   v_unexpected_acl_count integer;
+  v_service_role_acl_count integer;
+  v_service_role_grantable boolean;
   v_expected_argtypes oid[] := array[
     'text'::regtype::oid,
     'uuid'::regtype::oid,
@@ -82,6 +97,13 @@ declare
     'text'::regtype::oid,
     '_uuid'::regtype::oid
   ];
+  v_expected_allargtypes oid[] := array[
+    'text'::regtype::oid, 'uuid'::regtype::oid, 'uuid'::regtype::oid,
+    'int4'::regtype::oid, 'text'::regtype::oid, '_uuid'::regtype::oid,
+    'uuid'::regtype::oid, 'text'::regtype::oid, 'text'::regtype::oid,
+    'uuid'::regtype::oid, 'uuid'::regtype::oid, 'text'::regtype::oid
+  ];
+  v_expected_argmodes "char"[] := array['i','i','i','i','i','i','t','t','t','t','t','t']::"char"[];
 begin
   if to_regprocedure('extensions.digest(text, text)') is null then
     raise exception
@@ -111,19 +133,45 @@ begin
       v_total_count, v_exact_count;
   end if;
 
-  select p.proowner, p.proconfig into v_existing_owner, v_existing_config
+  select p.prokind, p.proretset, p.proallargtypes, p.proargmodes, p.proowner, p.prosecdef, p.proconfig
+    into v_fn
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public'
     and p.proname = 'prepare_risk_share_items_for_tenant'
     and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes;
 
-  if v_existing_owner <> v_current_user_oid then
+  if v_fn.prokind <> 'f' then
+    raise exception
+      'prepare_risk_share_items_for_tenant digest-fix precondition failed: existing object prokind is not a plain function';
+  end if;
+
+  if v_fn.proretset is distinct from true then
+    raise exception
+      'prepare_risk_share_items_for_tenant digest-fix precondition failed: existing function does not return a set (RETURNS TABLE expected)';
+  end if;
+
+  if v_fn.proallargtypes::oid[] is distinct from v_expected_allargtypes then
+    raise exception
+      'prepare_risk_share_items_for_tenant digest-fix precondition failed: existing RETURNS TABLE column type shape does not match';
+  end if;
+
+  if v_fn.proargmodes is distinct from v_expected_argmodes then
+    raise exception
+      'prepare_risk_share_items_for_tenant digest-fix precondition failed: existing argument in/out mode shape does not match';
+  end if;
+
+  if v_fn.proowner <> v_current_user_oid then
     raise exception
       'prepare_risk_share_items_for_tenant digest-fix precondition failed: function owner does not match migration role';
   end if;
 
-  if v_existing_config is distinct from array['search_path=public, pg_temp'] then
+  if v_fn.prosecdef is distinct from true then
+    raise exception
+      'prepare_risk_share_items_for_tenant digest-fix precondition failed: existing function is not SECURITY DEFINER';
+  end if;
+
+  if v_fn.proconfig is distinct from array['search_path=public, pg_temp'] then
     raise exception
       'prepare_risk_share_items_for_tenant digest-fix precondition failed: existing search_path configuration does not match the expected public, pg_temp contract';
   end if;
@@ -136,11 +184,38 @@ begin
     and p.proname = 'prepare_risk_share_items_for_tenant'
     and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes
     and a.privilege_type = 'EXECUTE'
-    and a.grantee not in (v_existing_owner, v_service_role_oid);
+    and a.grantee not in (v_fn.proowner, v_service_role_oid);
 
   if v_unexpected_acl_count > 0 then
     raise exception
       'prepare_risk_share_items_for_tenant digest-fix precondition failed: unexpected execute grant exists';
+  end if;
+
+  -- service_role's own direct EXECUTE grant must already be exactly
+  -- right -- present, and not WITH GRANT OPTION -- before this migration
+  -- touches anything. The REVOKE/GRANT sequence after CREATE OR REPLACE
+  -- below exists to reapply this migration's own privilege guarantee on
+  -- a function it just replaced, not to silently repair a pre-existing
+  -- privilege drift on a function this precondition has not yet approved
+  -- touching at all.
+  select count(*), bool_or(a.is_grantable) into v_service_role_acl_count, v_service_role_grantable
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace,
+  lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) as a
+  where n.nspname = 'public'
+    and p.proname = 'prepare_risk_share_items_for_tenant'
+    and array(select unnest(p.proargtypes::oid[])) = v_expected_argtypes
+    and a.privilege_type = 'EXECUTE'
+    and a.grantee = v_service_role_oid;
+
+  if v_service_role_acl_count <> 1 then
+    raise exception
+      'prepare_risk_share_items_for_tenant digest-fix precondition failed: service_role does not have exactly one direct EXECUTE grant';
+  end if;
+
+  if v_service_role_grantable is distinct from false then
+    raise exception
+      'prepare_risk_share_items_for_tenant digest-fix precondition failed: service_role EXECUTE grant is WITH GRANT OPTION';
   end if;
 end
 $$;
