@@ -33,7 +33,13 @@ import { selectSupabaseExportRows } from "@/lib/supabaseServer";
  * constraint, before awaiting_preparation_request may be produced; (4) all
  * DB integer fields (mapping_version, sheet_index, source_row_number,
  * decision_seq) are parsed strictly -- a decimal, NaN, Infinity, or
- * out-of-range value is rejected, never truncated.
+ * out-of-range value is rejected, never truncated; (5) confirmed-mapping
+ * embedded rows (used only to compute the mappingMismatch flag) are
+ * cross-checked against verifiedCompanyCode and fail the whole source
+ * lookup closed on any mismatch, non-array embed, malformed row, or
+ * duplicate sheet_index -- never silently skipped; (6) summary.isComplete
+ * lives inside summary (not as a top-level sibling), so the completeness
+ * caveat always travels with the counts it qualifies.
  */
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -126,11 +132,19 @@ export type RiskSharePreparationStateResult =
       };
       /** Every count here describes only the entries actually returned in
        * `entries` (at most DISPLAY_LIMIT) -- never the full Candidate
-       * population for this source. When isComplete is false, these are
-       * counts within a truncated window, not a source-wide total; no field
-       * on this object may be read as "the full source has N candidates". */
+       * population for this source. When summary.isComplete is false, these
+       * are counts within a truncated window, not a source-wide total; no
+       * field on this object may be read as "the full source has N
+       * candidates". */
       summary: {
         loadedTotal: number;
+        /** Equivalent to !overflow, nested inside summary (not top-level)
+         * so it travels with the counts it qualifies -- a caller reading
+         * `summary` in isolation (e.g. logging, a UI badge) always has the
+         * completeness caveat attached to the same object as the counts,
+         * rather than needing to separately thread the sibling `overflow`
+         * field through. */
+        isComplete: boolean;
         awaitingPreparationRequest: number;
         recordedException: number;
         alreadyPrepared: number;
@@ -139,12 +153,10 @@ export type RiskSharePreparationStateResult =
       };
       entries: RiskSharePreparationEntry[];
       /** True when strictly more than DISPLAY_LIMIT Candidates exist for
-       * this source (the FETCH_LIMIT-th row was present). */
+       * this source (the FETCH_LIMIT-th row was present). Retained at the
+       * top level alongside summary.isComplete (its exact negation) for
+       * callers that only care about the raw truncation signal. */
       overflow: boolean;
-      /** Equivalent to !overflow, exposed directly so a caller never has to
-       * invert the overflow flag itself to know whether summary/entries
-       * describe the whole source or only a loaded window of it. */
-      isComplete: boolean;
     }
   /** A real, verified-tenant source with zero Candidates. Also used, by
    * design, for a source id that does not resolve for this tenant at all
@@ -200,6 +212,7 @@ type ConfirmedMappingRow = {
   sheet_index?: unknown;
   mapping_version?: unknown;
   status?: unknown;
+  company_code?: unknown;
 };
 
 function normalizeStrictCompanyCode(rawCompanyCode: string): string | null {
@@ -248,10 +261,16 @@ function readStrictInteger(value: unknown): number | null {
  * source's own display facts, in a single bounded PostgREST request: the
  * base resource is risk_share_sources filtered to exactly one id+
  * company_code (at most one row), with risk_share_source_column_mappings
- * embedded and filtered to status=eq.confirmed (at most ~20 rows -- sheet
- * index is DB-constrained to 0..19). This is not a per-candidate query and
- * is issued once per call, independent of how many candidates the source
- * has. */
+ * embedded and filtered to status=eq.confirmed AND company_code=eq.
+ * verifiedCompanyCode (at most ~20 rows -- sheet index is DB-constrained to
+ * 0..19). This is not a per-candidate query and is issued once per call,
+ * independent of how many candidates the source has. Every confirmed row
+ * is re-validated in JS (company_code, status, sheet_index, mapping_version,
+ * no duplicate sheet_index) rather than trusting the PostgREST-level filter
+ * alone; a mismatch on any of those fails the whole source lookup closed
+ * (ok: false), never a silent per-row skip -- confirmed_mapping_version's
+ * company_code is used only to build this internal Map and is never
+ * returned outward. */
 async function fetchSourceAndConfirmedMappings(
   verifiedCompanyCode: string,
   sourceId: string,
@@ -269,11 +288,18 @@ async function fetchSourceAndConfirmedMappings(
   const query = new URLSearchParams();
   query.set(
     "select",
-    "id,source_title,site_name,risk_share_source_column_mappings!risk_share_source_column_mappings_source_id_fkey(sheet_index,mapping_version,status)",
+    "id,source_title,site_name,risk_share_source_column_mappings!risk_share_source_column_mappings_source_id_fkey(sheet_index,mapping_version,status,company_code)",
   );
   query.set("id", `eq.${sourceId}`);
   query.set("company_code", `eq.${verifiedCompanyCode}`);
   query.set("risk_share_source_column_mappings.status", "eq.confirmed");
+  // Defense-in-depth, matching the same discipline applied to every other
+  // embedded relationship in this module (risk_share_items/
+  // risk_share_preparation_decisions lineage checks below): the PostgREST-
+  // level filter alone is not trusted as the only tenant boundary here --
+  // every returned confirmed-mapping row is re-validated against
+  // verifiedCompanyCode in JS as well (see the fail-closed loop below).
+  query.set("risk_share_source_column_mappings.company_code", `eq.${verifiedCompanyCode}`);
   query.set("limit", "1");
 
   let rows: RiskShareSourceWithConfirmedMappingsRow[];
@@ -302,33 +328,46 @@ async function fetchSourceAndConfirmedMappings(
     return { ok: false };
   }
 
-  const confirmedRows = Array.isArray(row.risk_share_source_column_mappings)
-    ? (row.risk_share_source_column_mappings as ConfirmedMappingRow[])
-    : [];
+  // A non-array embedded value is itself a malformed response shape -- it
+  // is never silently treated as "no confirmed mappings" (that is what a
+  // real empty array means, and the two must stay distinguishable).
+  if (!Array.isArray(row.risk_share_source_column_mappings)) {
+    return { ok: false };
+  }
 
+  const confirmedRows = row.risk_share_source_column_mappings as ConfirmedMappingRow[];
   const confirmedMappingVersionBySheetIndex = new Map<number, number>();
 
   for (const confirmedRow of confirmedRows) {
-    if (readTrimmedString(confirmedRow.status) !== "confirmed") {
-      // Defensive: the embedded filter above should already guarantee
-      // this, but a malformed/unexpected row is skipped rather than
-      // trusted, not treated as a whole-query failure -- confirmed-mapping
-      // data is used only to compute a boolean mismatch flag, never
-      // returned to the browser directly.
-      continue;
-    }
-
+    const confirmedRowCompanyCode = readTrimmedString(confirmedRow.company_code);
+    const status = readTrimmedString(confirmedRow.status);
     const sheetIndex = readStrictInteger(confirmedRow.sheet_index);
     const mappingVersion = readStrictInteger(confirmedRow.mapping_version);
 
+    // Every field is validated together; a single malformed or
+    // wrong-tenant confirmed-mapping row fails the whole source lookup
+    // closed (not skipped) -- confirmed-mapping data feeds the
+    // mappingMismatch flag for every Candidate in this source, so a row
+    // that cannot be trusted here must not be silently dropped from the
+    // map it builds.
     if (
+      confirmedRowCompanyCode !== verifiedCompanyCode ||
+      status !== "confirmed" ||
       sheetIndex === null ||
       sheetIndex < 0 ||
       sheetIndex > 19 ||
       mappingVersion === null ||
       mappingVersion < 1
     ) {
-      continue;
+      return { ok: false };
+    }
+
+    if (confirmedMappingVersionBySheetIndex.has(sheetIndex)) {
+      // More than one confirmed row for the same sheet_index is a
+      // contradiction (there is supposed to be at most one confirmed
+      // mapping per source+sheet at any time) -- fail closed rather than
+      // silently keep whichever row happened to be seen first/last.
+      return { ok: false };
     }
 
     confirmedMappingVersionBySheetIndex.set(sheetIndex, mappingVersion);
@@ -800,6 +839,7 @@ export async function listRiskSharePreparationStateForSource(
 
   const summary = {
     loadedTotal: entries.length,
+    isComplete: !overflow,
     awaitingPreparationRequest: 0,
     recordedException: 0,
     alreadyPrepared: 0,
@@ -839,6 +879,5 @@ export async function listRiskSharePreparationStateForSource(
     summary,
     entries,
     overflow,
-    isComplete: !overflow,
   };
 }

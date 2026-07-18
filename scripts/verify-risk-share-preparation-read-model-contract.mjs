@@ -25,6 +25,30 @@ function extractBlock(text, startMarker, endMarker) {
   return text.slice(start, end === -1 ? undefined : end);
 }
 
+/** Finds `startMarker`, then the first `{` at or after it, and returns the
+ * text from `startMarker` through that brace's exact matching close
+ * (by depth-counting, not a naive endMarker string) -- used wherever a
+ * check must prove something is *nested inside* a specific object/type
+ * block, not merely present somewhere later in the file. */
+function extractBalancedBlock(text, startMarker) {
+  if (text === null) return null;
+  const start = text.indexOf(startMarker);
+  if (start === -1) return null;
+  const braceStart = text.indexOf("{", start);
+  if (braceStart === -1) return null;
+  let depth = 0;
+  for (let i = braceStart; i < text.length; i += 1) {
+    if (text[i] === "{") depth += 1;
+    else if (text[i] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
 function countOccurrences(text, needle) {
   if (!needle) return 0;
   let count = 0;
@@ -346,13 +370,131 @@ check(
   "summary.loadedTotal replaces it, explicitly scoped to the loaded window",
   resultTypeBlock?.includes("loadedTotal: number") && src.includes("loadedTotal: entries.length"),
 );
+
+// isComplete must be proven *nested inside* the summary type block and the
+// runtime summary object literal -- a plain substring check (as an earlier
+// version of this script used) would pass just as happily whether
+// isComplete is nested in summary or sitting as a top-level sibling field,
+// since both shapes contain the same "isComplete: boolean" / "isComplete:
+// !overflow" substrings somewhere in the file. Balanced-brace extraction is
+// required to actually distinguish the two shapes.
+const okVariantTypeBlock = extractBalancedBlock(
+  src,
+  "export type RiskSharePreparationStateResult =",
+);
+const summaryTypeSubBlock = extractBalancedBlock(okVariantTypeBlock ?? "", "summary: {");
+const okVariantTypeOutsideSummary =
+  okVariantTypeBlock !== null && summaryTypeSubBlock !== null
+    ? okVariantTypeBlock.replace(summaryTypeSubBlock, "")
+    : null;
+
+const summaryConstBlock = extractBalancedBlock(src, "const summary = {");
+const returnOkBlock = extractBalancedBlock(src, 'return {\n    status: "ok",');
+
 check(
-  "summary.isComplete is derived as exactly !overflow",
-  resultTypeBlock?.includes("isComplete: boolean") && src.includes("isComplete: !overflow"),
+  "summary type sub-block is located (summary: { ... } inside the ok variant)",
+  summaryTypeSubBlock !== null,
+);
+check(
+  "summary.isComplete: boolean is declared inside the summary type sub-block",
+  summaryTypeSubBlock?.includes("isComplete: boolean"),
+);
+check(
+  "isComplete does not also appear as a top-level sibling field in the ok result type (outside the summary sub-block)",
+  // Prose comments mentioning "summary.isComplete" legitimately appear
+  // outside the summary sub-block (e.g. explaining overflow's relationship
+  // to it) -- the field-declaration pattern "isComplete:" is what would
+  // actually indicate a regressed top-level sibling field.
+  okVariantTypeOutsideSummary !== null && !okVariantTypeOutsideSummary.includes("isComplete:"),
+);
+check(
+  "the runtime summary object literal (const summary = {...}) is located",
+  summaryConstBlock !== null,
+);
+check(
+  "isComplete: !overflow is set inside the runtime summary object literal, not elsewhere",
+  summaryConstBlock?.includes("isComplete: !overflow"),
+);
+check(
+  "the final returned ok object is located and assigns summary only by reference (no inline isComplete override)",
+  returnOkBlock !== null && returnOkBlock.includes("summary,") && !returnOkBlock.includes("isComplete"),
+);
+check(
+  "exactly two isComplete: field declarations exist in the whole module (the summary type field and its one runtime assignment) -- a third would mean it leaked back out as a top-level sibling field/assignment",
+  countOccurrences(src, "isComplete:") === 2,
 );
 check(
   "a comment states loaded-window counts must not be read as full-source totals when isComplete is false",
   /never a source-wide total|not a source-wide total|only a loaded window|not.*full-source/i.test(src),
+);
+
+// =========================================================================
+// Confirmed Mapping tenant lineage
+// =========================================================================
+
+check(
+  "embedded confirmed-Mapping select includes company_code",
+  src.includes(
+    "risk_share_source_column_mappings!risk_share_source_column_mappings_source_id_fkey(sheet_index,mapping_version,status,company_code)",
+  ),
+);
+check(
+  "embedded confirmed-Mapping company_code filter is present (PostgREST-level tenant scoping, not only the JS re-check)",
+  src.includes(
+    'query.set("risk_share_source_column_mappings.company_code", `eq.${verifiedCompanyCode}`);',
+  ),
+);
+check(
+  "every confirmed-Mapping row's company_code is re-compared against verifiedCompanyCode in JS (defense-in-depth, not trusting the query filter alone)",
+  src.includes("const confirmedRowCompanyCode = readTrimmedString(confirmedRow.company_code);") &&
+    src.includes("confirmedRowCompanyCode !== verifiedCompanyCode"),
+);
+check(
+  "a non-array embedded confirmed-Mapping value fails the whole source lookup closed (never silently treated as an empty list)",
+  (() => {
+    const block = extractBalancedBlock(src, "if (!Array.isArray(row.risk_share_source_column_mappings)) {");
+    return block !== null && block.includes('ok: false');
+  })(),
+);
+check(
+  "a malformed confirmed-Mapping row (bad company_code/status/sheet_index/mapping_version) fails the whole source lookup closed, not merely skipped",
+  (() => {
+    const loopBlock = extractBalancedBlock(src, "for (const confirmedRow of confirmedRows) {");
+    if (!loopBlock) return false;
+    const validationBlock = extractBalancedBlock(loopBlock, "if (\n      confirmedRowCompanyCode !== verifiedCompanyCode ||");
+    return (
+      validationBlock !== null &&
+      validationBlock.includes("return { ok: false };") &&
+      !validationBlock.includes("continue;")
+    );
+  })(),
+);
+check(
+  "duplicate confirmed-Mapping rows for the same sheet_index fail the whole source lookup closed",
+  (() => {
+    const block = extractBalancedBlock(src, "if (confirmedMappingVersionBySheetIndex.has(sheetIndex)) {");
+    return block !== null && block.includes("return { ok: false };");
+  })(),
+);
+check(
+  "a genuine empty confirmed-Mapping array is still allowed (distinct from the non-array/malformed fail-closed cases)",
+  src.includes("const confirmedRows = row.risk_share_source_column_mappings as ConfirmedMappingRow[];") &&
+    !/confirmedRows\.length === 0[\s\S]{0,40}return \{ ok: false/.test(src),
+);
+check(
+  "confirmed-Mapping company_code is read only inside fetchSourceAndConfirmedMappings and is never placed on the outward result",
+  (() => {
+    const fnBlock = extractBlock(src, "async function fetchSourceAndConfirmedMappings(", "\nasync function fetchCandidatesWithLineage(");
+    const rest = fnBlock ? src.replace(fnBlock, "") : src;
+    return (
+      fnBlock !== null &&
+      fnBlock.includes("confirmedRow.company_code") &&
+      !rest.includes("confirmedRow.company_code") &&
+      resultTypeBlock !== null &&
+      !resultTypeBlock.includes("confirmedRowCompanyCode") &&
+      !/mappingCompanyCode/i.test(resultTypeBlock)
+    );
+  })(),
 );
 
 // =========================================================================
