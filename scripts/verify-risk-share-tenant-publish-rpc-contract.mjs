@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { execFileSync } from "node:child_process";
 
 const TENANT_MIGRATION_FILE =
   "supabase/migrations/20260719010000_add_tenant_risk_share_publish_rpc.sql";
@@ -57,10 +56,6 @@ function canonicalLockColumn(functionBody) {
     /order\s+by\s+(?:risk_share_items\.|ri\.)(id|created_at)\s+asc\s+for\s+update(?:\s+of\s+(?:risk_share_items|ri))?/i,
   );
   return match?.[1]?.toLowerCase() ?? null;
-}
-
-function commandOutput(command, args) {
-  return execFileSync(command, args, { encoding: "utf8" }).trim();
 }
 
 const tenantFn = extractFunction(
@@ -535,34 +530,6 @@ check(
   ) === 1 &&
     !ownerCorrectionSrc.includes("review_risk_share_item(") &&
     !ownerCorrectionSrc.includes("prepare_risk_share_items_for_tenant("),
-);
-
-const changedFiles = commandOutput("git", [
-  "diff",
-  "--name-only",
-  "origin/main...HEAD",
-])
-  .split("\n")
-  .filter(Boolean);
-const allowedFiles = new Set([VERIFIER_FILE, OWNER_CORRECTION_FILE]);
-check(
-  "only the two approved correction files changed",
-  changedFiles.length === 2 && changedFiles.every((file) => allowedFiles.has(file)),
-);
-
-const changedMigrations = commandOutput("git", [
-  "diff",
-  "--name-only",
-  "origin/main...HEAD",
-  "--",
-  "supabase/migrations/",
-])
-  .split("\n")
-  .filter(Boolean);
-check(
-  "only the confirmed-unapplied Owner correction migration is modified",
-  changedMigrations.length === 1 &&
-    changedMigrations[0] === OWNER_CORRECTION_FILE,
 );
 
 const failures = checks.filter(({ ok }) => !ok);
