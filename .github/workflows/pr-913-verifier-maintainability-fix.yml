@@ -1,0 +1,116 @@
+name: PR 913 verifier maintainability fix
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    if: github.head_ref == 'fix/align-tenant-publish-postcondition-alias'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/align-tenant-publish-postcondition-alias
+          fetch-depth: 0
+
+      - name: Apply verifier-only maintainability fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/verify-risk-share-tenant-publish-rpc-contract.mjs')
+          text = path.read_text()
+
+          import_line = 'import { execFileSync } from "node:child_process";\n'
+          if text.count(import_line) != 1:
+              raise SystemExit('expected exactly one child_process import')
+          text = text.replace(import_line, '')
+
+          function_block = '''function commandOutput(command, args) {
+            return execFileSync(command, args, { encoding: "utf8" }).trim();
+          }
+
+          '''
+          if text.count(function_block) != 1:
+              raise SystemExit('expected exactly one commandOutput helper')
+          text = text.replace(function_block, '')
+
+          start_marker = 'const changedFiles = commandOutput("git", ['
+          end_marker = 'const failures = checks.filter(({ ok }) => !ok);'
+          start = text.find(start_marker)
+          end = text.find(end_marker)
+          if start < 0 or end < 0 or end <= start:
+              raise SystemExit('PR-specific diff block markers not found')
+          text = text[:start] + text[end:]
+
+          for forbidden in [
+              'origin/main...HEAD',
+              'commandOutput(',
+              'execFileSync',
+              'changedFiles.length',
+              'changedMigrations.length',
+          ]:
+              if forbidden in text:
+                  raise SystemExit(f'forbidden PR-specific verifier dependency remains: {forbidden}')
+
+          path.write_text(text)
+          PY
+
+      - name: Commit verifier fix locally
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/verify-risk-share-tenant-publish-rpc-contract.mjs
+          git commit -m "test: make tenant publish verifier branch-independent"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies and ripgrep
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+          npm ci
+
+      - name: Run full verification
+        shell: bash
+        run: |
+          npm run verify:risk-share-tenant-publish-rpc
+          npm run verify:risk-share-preparation-read-model
+          npm run verify:risk-share-preparation-api
+          npm run verify:risk-share-preparation-ui
+          npm run smoke:legacy-routes
+          npm run build
+          git diff --check origin/main...HEAD
+          test "$(git diff --name-only origin/main...HEAD | sort)" = "$(printf '%s\n' scripts/verify-risk-share-tenant-publish-rpc-contract.mjs supabase/migrations/20260719020000_align_risk_share_publish_lock_order.sql .github/workflows/pr-913-verifier-maintainability-fix.yml | sort)"
+
+      - name: Prove verifier passes with main-like zero diff
+        shell: bash
+        run: |
+          test "$(grep -c 'origin/main\.\.\.HEAD' scripts/verify-risk-share-tenant-publish-rpc-contract.mjs || true)" -eq 0
+          test "$(grep -c 'commandOutput' scripts/verify-risk-share-tenant-publish-rpc-contract.mjs || true)" -eq 0
+          test "$(grep -c 'execFileSync' scripts/verify-risk-share-tenant-publish-rpc-contract.mjs || true)" -eq 0
+          git update-ref refs/remotes/origin/main HEAD
+          test -z "$(git diff --name-only origin/main...HEAD)"
+          npm run verify:risk-share-tenant-publish-rpc
+
+      - name: Push verified verifier commit
+        shell: bash
+        run: |
+          git push origin HEAD:fix/align-tenant-publish-postcondition-alias
