@@ -296,6 +296,38 @@ check(
     ownerCorrectionSrc.includes("to service_role;"),
 );
 
+const ownerApplyTimeLockRegex =
+  /order\s+by\s+risk_share_items\.id\s+asc\s+for\s+update\s+of\s+risk_share_items/i;
+const tenantApplyTimeLockRegex =
+  /order\s+by\s+ri\.id\s+asc\s+for\s+update\s+of\s+ri/i;
+
+check(
+  "Owner apply-time regex matches the actual Owner function body",
+  ownerApplyTimeLockRegex.test(ownerFn ?? ""),
+);
+check(
+  "tenant apply-time regex matches the actual aliased tenant function body",
+  tenantApplyTimeLockRegex.test(tenantFn ?? ""),
+);
+check(
+  "Owner correction migration checks the exact Owner lock expression",
+  ownerCorrectionSrc.includes(
+    "v_owner_definition !~* 'order by[[:space:]]+risk_share_items\\.id[[:space:]]+asc[[:space:]]+for update of risk_share_items'",
+  ),
+);
+check(
+  "Owner correction migration checks the exact tenant alias expression",
+  ownerCorrectionSrc.includes(
+    "v_tenant_definition !~* 'order by[[:space:]]+ri\\.id[[:space:]]+asc[[:space:]]+for update of ri'",
+  ),
+);
+check(
+  "tenant apply-time check no longer requires the unaliased table name",
+  !ownerCorrectionSrc.includes(
+    "v_tenant_definition !~* 'order by[[:space:]]+risk_share_items\\.id[[:space:]]+asc[[:space:]]+for update of risk_share_items'",
+  ),
+);
+
 // E. Durable idempotency.
 check(
   "idempotency lookup is tenant-key scoped",
@@ -512,15 +544,10 @@ const changedFiles = commandOutput("git", [
 ])
   .split("\n")
   .filter(Boolean);
-const allowedFiles = new Set([
-  "package.json",
-  VERIFIER_FILE,
-  TENANT_MIGRATION_FILE,
-  OWNER_CORRECTION_FILE,
-]);
+const allowedFiles = new Set([VERIFIER_FILE, OWNER_CORRECTION_FILE]);
 check(
-  "only the four approved PR files changed",
-  changedFiles.length === 4 && changedFiles.every((file) => allowedFiles.has(file)),
+  "only the two approved correction files changed",
+  changedFiles.length === 2 && changedFiles.every((file) => allowedFiles.has(file)),
 );
 
 const changedMigrations = commandOutput("git", [
@@ -533,11 +560,9 @@ const changedMigrations = commandOutput("git", [
   .split("\n")
   .filter(Boolean);
 check(
-  "no existing main migration modified",
-  changedMigrations.length === 2 &&
-    changedMigrations.every((file) =>
-      [TENANT_MIGRATION_FILE, OWNER_CORRECTION_FILE].includes(file),
-    ),
+  "only the confirmed-unapplied Owner correction migration is modified",
+  changedMigrations.length === 1 &&
+    changedMigrations[0] === OWNER_CORRECTION_FILE,
 );
 
 const failures = checks.filter(({ ok }) => !ok);

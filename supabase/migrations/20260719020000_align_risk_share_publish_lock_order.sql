@@ -261,7 +261,7 @@ begin
       'align_risk_share_publish_lock_order: Owner RPC does not use risk_share_items.id ASC FOR UPDATE';
   end if;
 
-  if v_tenant_definition !~* 'order by[[:space:]]+risk_share_items\.id[[:space:]]+asc[[:space:]]+for update of risk_share_items' then
+  if v_tenant_definition !~* 'order by[[:space:]]+ri\.id[[:space:]]+asc[[:space:]]+for update of ri' then
     raise exception
       'align_risk_share_publish_lock_order: tenant RPC does not use risk_share_items.id ASC FOR UPDATE';
   end if;
