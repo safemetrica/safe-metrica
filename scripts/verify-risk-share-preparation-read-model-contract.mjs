@@ -1068,6 +1068,221 @@ for (const testCase of pureCases) {
 }
 
 // =========================================================================
+// G. Item lineage to-one embed shape resolution (PostgREST cardinality)
+// =========================================================================
+//
+// risk_share_items.candidate_id carries a UNIQUE constraint, so PostgREST
+// resolves risk_share_items as a to-one relationship: a non-match embeds as
+// `null` (not `[]`), and a match embeds as a bare row object (not a
+// one-element array). resolveItemLineage must accept both the to-one shapes
+// and the array shapes exercised by prior contract fixtures, while still
+// failing closed on every other shape. Kept honest against the real
+// implementation only by the static source-text checks below (same caveat
+// as the classifyMirror pure-state matrix above).
+
+check(
+  "resolveItemLineage: null raw is handled before the array/object branches",
+  (() => {
+    const fn = extractBalancedBlock(src, "function resolveItemLineage(");
+    return fn !== null && fn.indexOf("raw === null") !== -1 && fn.indexOf("raw === null") < fn.indexOf("Array.isArray(raw)");
+  })(),
+);
+check(
+  "resolveItemLineage: a bare non-array object is accepted as exactly one Item row",
+  src.includes('} else if (typeof raw === "object") {\n    item = raw as RiskShareItemLineageRow;'),
+);
+check(
+  "resolveItemLineage: a one-element array's row is checked for object shape before being treated as an Item row",
+  src.includes('if (onlyRow === null || typeof onlyRow !== "object" || Array.isArray(onlyRow)) {'),
+);
+check(
+  "resolveItemLineage: string/number/boolean/undefined raw is rejected, never guessed at",
+  src.includes("return { ok: false };\n  }\n\n  const id = readTrimmedString(item.id);"),
+);
+check(
+  "resolveItemLineage: an array of more than one Item row is still rejected",
+  (() => {
+    const fn = extractBalancedBlock(src, "function resolveItemLineage(");
+    return fn !== null && fn.includes("raw.length > 1");
+  })(),
+);
+check(
+  "resolveItemLineage: id/company_code/source_id are read exactly once, validated identically regardless of which shape produced `item`",
+  (() => {
+    const fn = extractBalancedBlock(src, "function resolveItemLineage(");
+    return (
+      fn !== null &&
+      countOccurrences(fn, "item.id") === 1 &&
+      countOccurrences(fn, "item.company_code") === 1 &&
+      countOccurrences(fn, "item.source_id") === 1
+    );
+  })(),
+);
+check(
+  "Array.isArray validation was not simply removed -- the array branch (empty/one/many) is still fully present alongside the new to-one handling",
+  (() => {
+    const fn = extractBalancedBlock(src, "function resolveItemLineage(");
+    return (
+      fn !== null &&
+      fn.includes("Array.isArray(raw)") &&
+      fn.includes("raw.length === 0") &&
+      fn.includes("raw.length > 1")
+    );
+  })(),
+);
+
+/** Executable JS mirror of resolveItemLineage -- proves the accepted/
+ * rejected shape matrix actually behaves as specified, not just that the
+ * expected substrings are present in the source. */
+function resolveItemLineageMirror(raw, verifiedCompanyCode, sourceId) {
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const readTrimmed = (value) => (typeof value === "string" ? value.trim() : "");
+
+  if (raw === null) {
+    return { ok: true, hasItem: false, itemId: null };
+  }
+
+  let item;
+
+  if (Array.isArray(raw)) {
+    if (raw.length === 0) {
+      return { ok: true, hasItem: false, itemId: null };
+    }
+    if (raw.length > 1) {
+      return { ok: false };
+    }
+    const onlyRow = raw[0];
+    if (onlyRow === null || typeof onlyRow !== "object" || Array.isArray(onlyRow)) {
+      return { ok: false };
+    }
+    item = onlyRow;
+  } else if (typeof raw === "object") {
+    item = raw;
+  } else {
+    return { ok: false };
+  }
+
+  const id = readTrimmed(item.id);
+  const companyCode = readTrimmed(item.company_code);
+  const itemSourceId = readTrimmed(item.source_id);
+
+  if (!uuidPattern.test(id) || companyCode !== verifiedCompanyCode || itemSourceId !== sourceId) {
+    return { ok: false };
+  }
+
+  return { ok: true, hasItem: true, itemId: id.toLowerCase() };
+}
+
+const VALID_ITEM_UUID = "11111111-1111-4111-8111-111111111111";
+const OTHER_ITEM_UUID = "22222222-2222-4222-8222-222222222222";
+const LINEAGE_COMPANY = "test-risk-pack-01";
+const LINEAGE_SOURCE = "source-1";
+const VALID_ITEM_ROW = { id: VALID_ITEM_UUID, company_code: LINEAGE_COMPANY, source_id: LINEAGE_SOURCE };
+
+const itemLineageCases = [
+  {
+    name: "raw === null -> accepted as no Item (PostgREST to-one non-match)",
+    input: [null, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: true, hasItem: false, itemId: null },
+  },
+  {
+    name: "raw is a bare to-one object -> accepted as exactly one Item",
+    input: [VALID_ITEM_ROW, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: true, hasItem: true, itemId: VALID_ITEM_UUID.toLowerCase() },
+  },
+  {
+    name: "raw is an empty array -> still accepted as no Item (existing fixture compatibility)",
+    input: [[], LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: true, hasItem: false, itemId: null },
+  },
+  {
+    name: "raw is a one-element array -> still accepted as exactly one Item (existing fixture compatibility)",
+    input: [[VALID_ITEM_ROW], LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: true, hasItem: true, itemId: VALID_ITEM_UUID.toLowerCase() },
+  },
+  {
+    name: "raw is a two-element array -> rejected",
+    input: [
+      [VALID_ITEM_ROW, { id: OTHER_ITEM_UUID, company_code: LINEAGE_COMPANY, source_id: LINEAGE_SOURCE }],
+      LINEAGE_COMPANY,
+      LINEAGE_SOURCE,
+    ],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a string -> rejected",
+    input: ["not-an-object", LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a number -> rejected",
+    input: [42, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a boolean -> rejected",
+    input: [true, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is undefined -> rejected",
+    input: [undefined, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a malformed object (missing id) -> rejected",
+    input: [{ company_code: LINEAGE_COMPANY, source_id: LINEAGE_SOURCE }, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a to-one object with an invalid UUID -> rejected",
+    input: [{ ...VALID_ITEM_ROW, id: "not-a-uuid" }, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a to-one object with the wrong tenant (company_code) -> rejected",
+    input: [{ ...VALID_ITEM_ROW, company_code: "other-tenant" }, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a to-one object with the wrong source_id -> rejected",
+    input: [{ ...VALID_ITEM_ROW, source_id: "other-source" }, LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a one-element array containing a non-object element -> rejected",
+    input: [["not-an-object"], LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+  {
+    name: "raw is a one-element array containing null -> rejected",
+    input: [[null], LINEAGE_COMPANY, LINEAGE_SOURCE],
+    expect: { ok: false },
+  },
+];
+
+for (const testCase of itemLineageCases) {
+  const result = resolveItemLineageMirror(...testCase.input);
+  let ok = result.ok === testCase.expect.ok;
+  if (ok && testCase.expect.hasItem !== undefined) {
+    ok = result.hasItem === testCase.expect.hasItem;
+  }
+  if (ok && testCase.expect.itemId !== undefined) {
+    ok = result.itemId === testCase.expect.itemId;
+  }
+  check(`item lineage shape resolution: ${testCase.name}`, ok);
+}
+
+check(
+  "Item id is never exposed on RiskSharePreparationEntry (re-checked after the to-one lineage fix)",
+  entryTypeBlock !== null && !entryTypeBlock.includes("itemId"),
+);
+check(
+  "Decision-to-Item exact lineage comparison remains enforced (re-checked after the to-one lineage fix)",
+  src.includes("decisionLineage.decisionItemId !== itemLineage.itemId"),
+);
+
+// =========================================================================
 // Discriminated status handling (zero-state vs failure vs malformed row)
 // =========================================================================
 
