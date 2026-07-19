@@ -20,346 +20,259 @@ function check(name, ok) {
   checks.push({ name, ok: Boolean(ok) });
 }
 
-function blockBetween(source, startMarker, endMarker) {
+function sourceBlock(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
   if (start === -1) return "";
   const end = source.indexOf(endMarker, start + startMarker.length);
   return source.slice(start, end === -1 ? undefined : end);
 }
 
-// ---------------------------------------------------------------------
-// A. Route and request validation
-// ---------------------------------------------------------------------
-
-check("fixed Manager Publish route exists", fs.existsSync(ROUTE_FILE));
-check("route is force-dynamic", route.includes('export const dynamic = "force-dynamic"'));
+// A. Exact request contract and bounded input.
+check("route file exists", fs.existsSync(ROUTE_FILE));
+check("helper file exists", fs.existsSync(HELPER_FILE));
+check("route is dynamic", route.includes('export const dynamic = "force-dynamic"'));
 check("route disables revalidation", route.includes("export const revalidate = 0"));
 check(
-  "object root required",
+  "plain object body required",
   route.includes('typeof raw !== "object" || Array.isArray(raw)'),
 );
-check(
-  "unknown body keys rejected through exact allowlist",
-  route.includes("ALLOWED_BODY_FIELDS.has(key)"),
-);
+check("unknown body keys rejected", route.includes("ALLOWED_BODY_FIELDS.has(key)"));
 
-const allowedFields = [
-  "lockMonth",
-  "lockTitle",
-  "notes",
-  "itemIds",
-  "idempotencyKey",
-];
-const allowedBlock = blockBetween(
-  route,
-  "const ALLOWED_BODY_FIELDS = new Set([",
-  "]);",
-);
+const allowedFields = ["lockMonth", "lockTitle", "notes", "itemIds", "idempotencyKey"];
+const allowedBlock = sourceBlock(route, "const ALLOWED_BODY_FIELDS = new Set([", "]);");
 for (const field of allowedFields) {
-  check(`allowed request field present: ${field}`, allowedBlock.includes(`"${field}"`));
+  check(`allowed field: ${field}`, allowedBlock.includes(`"${field}"`));
 }
 check(
-  "allowlist contains exactly five quoted fields",
-  (allowedBlock.match(/"[A-Za-z]+"/g) ?? []).length === allowedFields.length,
+  "allowlist has exactly five entries",
+  (allowedBlock.match(/"[A-Za-z]+"/g) ?? []).length === 5,
 );
 
 const forbiddenFields = [
-  "company",
-  "companyCode",
-  "tenantCode",
-  "tenantId",
-  "actorMembershipId",
-  "membershipId",
-  "userId",
-  "email",
-  "role",
-  "actorRole",
-  "serviceRoleKey",
-  "supabaseServiceRoleKey",
-  "authorization",
-  "credential",
-  "workerVisible",
-  "customerConfirmed",
-  "customerCheckStatus",
-  "shareStatus",
-  "versionLockId",
-  "lockedBy",
-  "publishAction",
-  "previousVersionId",
-  "contentSourceVersionId",
-  "supersededAt",
-  "itemCount",
-  "workerVisibleCount",
+  "company", "companyCode", "tenantCode", "tenantId",
+  "actorMembershipId", "membershipId", "userId", "email", "role", "actorRole",
+  "serviceRoleKey", "supabaseServiceRoleKey", "authorization", "credential",
+  "workerVisible", "customerConfirmed", "customerCheckStatus", "shareStatus",
+  "versionLockId", "lockedBy", "publishAction", "previousVersionId",
+  "contentSourceVersionId", "supersededAt", "itemCount", "workerVisibleCount",
 ];
-const forbiddenBlock = blockBetween(
+const forbiddenBlock = sourceBlock(
   route,
   "const FORBIDDEN_BODY_FIELDS = [",
   "] as const;",
 );
 for (const field of forbiddenFields) {
-  check(`forbidden request field rejected: ${field}`, forbiddenBlock.includes(`"${field}"`));
+  check(`forbidden field: ${field}`, forbiddenBlock.includes(`"${field}"`));
 }
+check("forbidden presence is rejected", route.includes("forbiddenField in body"));
 check(
-  "forbidden fields are rejected by presence",
-  route.includes("forbiddenField in body"),
-);
-check(
-  "16KB body cap checks header and actual UTF-8 bytes",
+  "16KB header and actual-byte body cap",
   route.includes("MAX_BODY_BYTES = 16 * 1024") &&
     route.includes('request.headers.get("content-length")') &&
     route.includes('Buffer.byteLength(rawBodyText, "utf8")'),
 );
 check(
-  "lock month uses exact YYYY-MM month range",
+  "exact valid YYYY-MM required",
   route.includes("LOCK_MONTH_PATTERN") &&
     route.includes("(0[1-9]|1[0-2])") &&
     route.includes("LOCK_MONTH_PATTERN.test(lockMonth)"),
 );
 check(
-  "lock title is trimmed and bounded 1-160",
-  route.includes("const lockTitle = lockTitleRaw.trim()") &&
+  "lock title trim and 1-160 bound",
+  route.includes("lockTitleRaw.trim()") &&
     route.includes("lockTitle.length < 1") &&
     route.includes("lockTitle.length > 160"),
 );
+check("lock title control chars rejected", route.includes("CONTROL_CHARACTER_PATTERN.test(lockTitle)"));
 check(
-  "lock title control characters rejected",
-  route.includes("CONTROL_CHARACTER_PATTERN.test(lockTitle)"),
-);
-check(
-  "notes accepts omitted/null and normalizes blank to null",
+  "notes omitted/null allowed and blank normalized",
   route.includes("body.notes !== undefined && body.notes !== null") &&
     route.includes("notes = normalizedNotes || null"),
 );
 check(
-  "notes bounded at 500 and control characters rejected",
+  "notes max 500 and control chars rejected",
   route.includes("normalizedNotes.length > 500") &&
     route.includes("CONTROL_CHARACTER_PATTERN.test(normalizedNotes)"),
 );
 check(
-  "idempotency key trimmed and bounded 1-200",
+  "idempotency key trim and 1-200 bound",
   route.includes("idempotencyKeyRaw.trim()") &&
     route.includes("idempotencyKey.length < 1 || idempotencyKey.length > 200"),
 );
+check("itemIds must be array", route.includes("!Array.isArray(itemIdsRaw)"));
 check(
-  "itemIds must be an array",
-  route.includes("!Array.isArray(itemIdsRaw)"),
-);
-check(
-  "itemIds must be explicit non-empty and at most 200",
+  "explicit item selection 1-200",
   route.includes("itemIdsRaw.length < 1") &&
     route.includes("itemIdsRaw.length > MAX_ITEM_IDS") &&
     route.includes("MAX_ITEM_IDS = 200"),
 );
 check(
-  "every item ID must be a UUID string",
+  "item UUID validation",
   route.includes('typeof rawItemId !== "string" || !UUID_PATTERN.test(rawItemId)'),
 );
 check(
-  "duplicate item IDs rejected case-insensitively",
+  "case-insensitive duplicate item rejection",
   route.includes("rawItemId.toLowerCase()") &&
     route.includes("seenItemIds.has(normalizedItemId)"),
 );
 check(
-  "no bulk-all mode in route",
-  !/itemIds\s*:\s*null/.test(route) && !/p_item_ids\s*:\s*null/.test(route),
+  "bulk-all mode absent",
+  !/itemIds\s*:\s*null/.test(route) && !/p_item_ids\s*:\s*null/.test(helper),
 );
 
-// ---------------------------------------------------------------------
-// B. Same-origin, tenant and membership boundary
-// ---------------------------------------------------------------------
-
+// B. Same-origin, session, tenant and role boundary.
 check(
-  "same-origin protection checks sec-fetch-site",
+  "sec-fetch-site cross-site rejected",
   route.includes('request.headers.get("sec-fetch-site")') &&
     route.includes('secFetchSite === "cross-site"'),
 );
 check(
-  "same-origin protection compares Origin with request origin",
+  "Origin mismatch rejected",
   route.includes('request.headers.get("origin")') &&
     route.includes("origin !== request.nextUrl.origin"),
 );
 check(
-  "active Risk Share tenant resolver is used",
+  "canonical active tenant resolver used",
   route.includes("resolveActiveRiskSharePublicTenant(rawCompanyCode)"),
 );
 check(
-  "current-session tenant access guard is used",
+  "current session access guard used",
   route.includes("requireTenantAccessForCurrentSession({"),
 );
 check(
-  "only tenant_admin and tenant_manager are allowed",
+  "exact tenant roles allowed",
   route.includes('allowedRoles: ["tenant_admin", "tenant_manager"]'),
 );
+check("owner_internal excluded", !route.includes('"owner_internal"'));
+check("selected tenant rechecked", route.includes("selectedTenantCode !== tenantCode"));
 check(
-  "owner_internal is absent from route role contract",
-  !route.includes('"owner_internal"'),
-);
-check(
-  "selected tenant is defensively compared with resolved tenant",
-  route.includes("selectedTenantCode !== tenantCode"),
-);
-check(
-  "exact role is defensively rechecked",
+  "exact role defensively rechecked",
   route.includes('role !== "tenant_admin" && role !== "tenant_manager"'),
 );
 check(
-  "membership ID comes from server-derived access context",
+  "membership PK derived from server context",
   route.includes("tenantAccessResult.context.membership.membershipId"),
 );
 check(
-  "body cannot supply tenant, membership or role",
+  "body never supplies tenant/membership/role",
   !/validatedBody\.(company|companyCode|tenantCode|tenantId|membershipId|actorMembershipId|role)/.test(route),
 );
 check(
-  "unauthenticated is safely mapped to 401 forbidden",
+  "unauthenticated safely returns 401 forbidden",
   route.includes('tenantAccessResult.reason === "unauthenticated"') &&
     route.includes('jsonError(401, "forbidden")'),
 );
-check(
-  "resolved but unauthorized access is 403",
-  route.includes('jsonError(403, "forbidden")'),
-);
 
-// ---------------------------------------------------------------------
-// C. Server-only RPC helper
-// ---------------------------------------------------------------------
-
+// C. Dedicated server-only service-role RPC boundary.
 check("helper is server-only", helper.startsWith('import "server-only";'));
 check(
-  "route imports the dedicated publish helper",
+  "route imports dedicated helper",
   route.includes('from "@/lib/risk-share/riskShareTenantPublish"'),
 );
 check(
-  "exact tenant Publish RPC endpoint used",
+  "exact publish RPC endpoint",
   helper.includes("/rest/v1/rpc/publish_risk_share_version_for_tenant"),
 );
 check(
-  "service-role key is read only in server helper",
+  "service-role key remains helper-only",
   helper.includes("getSupabaseServiceRoleKey()") &&
     !route.includes("SUPABASE_SERVICE_ROLE_KEY"),
 );
 check(
-  "verified tenant and membership are passed to helper",
-  route.includes("companyCode: selectedTenantCode") &&
-    route.includes("actorMembershipId,"),
+  "server-confirmed tenant and membership passed",
+  route.includes("companyCode: selectedTenantCode") && route.includes("actorMembershipId,"),
 );
 
-const rpcPayloadBlock = blockBetween(
-  helper,
-  "body: JSON.stringify({",
-  "}),\n        cache:",
-);
-const expectedRpcFields = [
-  "p_company_code",
-  "p_actor_membership_id",
-  "p_lock_month",
-  "p_lock_title",
-  "p_notes",
-  "p_item_ids",
-  "p_idempotency_key",
+const payloadBlock = sourceBlock(helper, "body: JSON.stringify({", "}),\n        cache:");
+const rpcFields = [
+  "p_company_code", "p_actor_membership_id", "p_lock_month", "p_lock_title",
+  "p_notes", "p_item_ids", "p_idempotency_key",
 ];
-for (const field of expectedRpcFields) {
-  check(`RPC payload contains exact field: ${field}`, rpcPayloadBlock.includes(`${field}:`));
+for (const field of rpcFields) {
+  check(`RPC field: ${field}`, payloadBlock.includes(`${field}:`));
 }
 check(
-  "RPC payload has no client-derived actor role or publish state",
-  !/p_(actor_role|worker_visible|publish_action|version_lock_id|previous_version_id)/.test(rpcPayloadBlock),
+  "no caller actor-role or publish-state RPC field",
+  !/p_(actor_role|worker_visible|publish_action|version_lock_id|previous_version_id|content_source_version_id)/.test(payloadBlock),
 );
 check(
-  "helper never sends a null item array",
+  "helper sends explicit item array only",
   helper.includes("p_item_ids: params.itemIds") &&
     helper.includes("params.itemIds.length < 1") &&
     !/p_item_ids\s*:\s*null/.test(helper),
 );
 check(
-  "helper has no direct write path to publish tables",
+  "no direct table write endpoint",
   !/\/rest\/v1\/(risk_share_items|risk_share_version_locks|risk_share_version_items|tenant_membership)/.test(helper),
 );
 check(
-  "RPC request is no-store and asks for representation",
-  helper.includes('Prefer: "return=representation"') &&
-    helper.includes('cache: "no-store"'),
+  "no-store representation RPC call",
+  helper.includes('Prefer: "return=representation"') && helper.includes('cache: "no-store"'),
 );
 
-// ---------------------------------------------------------------------
-// D. Fail-closed RPC response validation
-// ---------------------------------------------------------------------
-
+// D. Strict response parser and durable outcome checks.
 check(
-  "response must be an exact one-row array",
+  "exact one-row response required",
   helper.includes("!Array.isArray(data) || data.length !== 1"),
 );
 check(
-  "response row must be a plain object",
+  "plain response object required",
   helper.includes('typeof rawRow !== "object" || Array.isArray(rawRow)'),
 );
 check(
-  "ok and replayed must be booleans",
+  "exact response field allowlist",
+  helper.includes("RAW_RESPONSE_FIELDS") &&
+    helper.includes("rawKeys.length !== RAW_RESPONSE_FIELDS.size") &&
+    helper.includes("rawKeys.some((key) => !RAW_RESPONSE_FIELDS.has(key))"),
+);
+for (const field of ["ok", "code", "replayed", "version_lock_id", "item_count", "worker_visible_count"]) {
+  check(`response field allowlisted: ${field}`, helper.includes(`"${field}"`));
+}
+check(
+  "ok and replayed booleans",
   helper.includes('typeof row.ok !== "boolean"') &&
     helper.includes('typeof row.replayed !== "boolean"'),
 );
 const businessCodes = [
-  "ok",
-  "validation_failed",
-  "forbidden",
-  "selection_mismatch",
-  "active_month_exists",
-  "idempotency_conflict",
+  "ok", "validation_failed", "forbidden", "selection_mismatch",
+  "active_month_exists", "idempotency_conflict",
 ];
 for (const code of businessCodes) {
-  check(`known RPC code allowlisted: ${code}`, helper.includes(`"${code}"`));
+  check(`business code allowlisted: ${code}`, helper.includes(`"${code}"`));
 }
+check("ok/code agreement enforced", helper.includes('ok !== (code === "ok")'));
 check(
-  "ok boolean must agree with code",
-  helper.includes('ok !== (code === "ok")'),
-);
-check(
-  "counts must be integers",
+  "integer counts required",
   helper.includes("Number.isInteger(itemCount)") &&
     helper.includes("Number.isInteger(workerVisibleCount)"),
 );
 check(
-  "successful response requires a valid Version UUID",
+  "success requires Version UUID",
   helper.includes('typeof row.version_lock_id !== "string"') &&
     helper.includes("!UUID_PATTERN.test(row.version_lock_id)"),
 );
+check("success count equals requested count", helper.includes("itemCount !== requestedItemCount"));
 check(
-  "successful item count must match explicit request count",
-  helper.includes("itemCount !== requestedItemCount"),
-);
-check(
-  "successful item count remains within 1-200",
+  "success count bounded 1-200",
   helper.includes("itemCount < 1") && helper.includes("itemCount > 200"),
 );
 check(
-  "worker-visible count is bounded by item count",
+  "worker-visible count bounded",
   helper.includes("workerVisibleCount < 0") &&
     helper.includes("workerVisibleCount > itemCount"),
 );
+check("failure cannot replay", /if \(\s*replayed \|\|/.test(helper));
 check(
-  "failed response cannot claim replay",
-  helper.includes("if (\n    replayed ||"),
-);
-check(
-  "failed response must carry null Version ID and zero counts",
+  "failure requires null Version and zero counts",
   helper.includes("row.version_lock_id !== null") &&
     helper.includes("itemCount !== 0") &&
     helper.includes("workerVisibleCount !== 0"),
 );
-check(
-  "network and backend HTTP failures fail closed",
-  helper.includes('return failClosed("request_failed")'),
-);
-check(
-  "malformed response fails closed",
-  helper.includes('return failClosed("invalid_response")'),
-);
+check("request failures fail closed", helper.includes('failClosed("request_failed")'));
+check("malformed responses fail closed", helper.includes('failClosed("invalid_response")'));
 
-// ---------------------------------------------------------------------
-// E. HTTP and outward data minimization
-// ---------------------------------------------------------------------
-
-const expectedStatuses = {
+// E. HTTP mapping and browser data minimization.
+const statusMap = {
   ok: 200,
   validation_failed: 422,
   forbidden: 403,
@@ -369,89 +282,75 @@ const expectedStatuses = {
   request_failed: 503,
   invalid_response: 503,
 };
-for (const [code, status] of Object.entries(expectedStatuses)) {
-  check(
-    `HTTP mapping ${code} -> ${status}`,
-    new RegExp(`${code}:\\s*${status}`).test(route),
-  );
+for (const [code, status] of Object.entries(statusMap)) {
+  check(`HTTP ${code} -> ${status}`, new RegExp(`${code}:\\s*${status}`).test(route));
 }
 check(
-  "error response has only safe outcome fields",
+  "safe error envelope only",
   route.includes("{ ok: false, code, replayed: false }"),
 );
-const successBlock = blockBetween(
+const successBlock = sourceBlock(
   route,
   "return NextResponse.json(\n    {\n      ok: true,",
   "    { status: 200 },",
 );
-check("success response includes replay flag", successBlock.includes("replayed: result.replayed"));
-check("success response includes item count", successBlock.includes("itemCount: result.itemCount"));
+check("success returns replayed", successBlock.includes("replayed: result.replayed"));
+check("success returns item count", successBlock.includes("itemCount: result.itemCount"));
 check(
-  "success response includes worker-visible count",
+  "success returns worker-visible count",
   successBlock.includes("workerVisibleCount: result.workerVisibleCount"),
 );
+check("Version UUID not exposed", !successBlock.includes("versionLockId"));
 check(
-  "Version UUID is not exposed in success response",
-  !successBlock.includes("versionLockId"),
-);
-check(
-  "raw RPC object is never returned",
+  "raw helper result not exposed",
   !route.includes("NextResponse.json(result") && !route.includes("NextResponse.json({ ...result"),
 );
 
-// ---------------------------------------------------------------------
-// F. Log and credential safety
-// ---------------------------------------------------------------------
-
+// F. Log, secret and scope safety.
 check(
-  "backend error messages are scrubbed before logging",
-  helper.includes("scrubRpcErrorMessage(rawMessage)"),
+  "global UUID redaction pattern used",
+  helper.includes("UUID_REDACTION_PATTERN") &&
+    helper.includes('.replace(UUID_REDACTION_PATTERN, "[uuid]")'),
 );
+check("backend message scrubbed", helper.includes("scrubRpcErrorMessage(rawMessage)"));
 check(
-  "logs use requested item count rather than Item UUID array",
+  "only item count logged",
   helper.includes("requestedItemCount: params.itemIds.length") &&
     !/console\.(error|warn|log)\([\s\S]{0,260}itemIds\s*:/i.test(helper),
 );
 check(
-  "raw idempotency key is not logged",
-  !/console\.(error|warn|log)\([\s\S]{0,300}idempotencyKey/i.test(helper) &&
-    !/console\.(error|warn|log)\([\s\S]{0,300}idempotencyKey/i.test(route),
+  "idempotency key not logged",
+  !/console\.(error|warn|log)\([\s\S]{0,300}idempotencyKey/i.test(helper + route),
 );
 check(
-  "tenant and membership identifiers are not logged",
-  !/console\.(error|warn|log)\([\s\S]{0,300}(companyCode|tenantCode|actorMembershipId|membershipId)/i.test(helper) &&
-    !/console\.(error|warn|log)\([\s\S]{0,300}(companyCode|tenantCode|actorMembershipId|membershipId)/i.test(route),
+  "tenant/membership IDs not logged",
+  !/console\.(error|warn|log)\([\s\S]{0,300}(companyCode|tenantCode|actorMembershipId|membershipId)/i.test(helper + route),
 );
 check(
-  "lock title and notes are not logged",
+  "title and notes not logged",
   !/console\.(error|warn|log)\([\s\S]{0,300}(lockTitle|notes)/i.test(helper),
 );
 check(
-  "service-role credential is never returned or logged",
+  "credential not returned or logged",
   !/NextResponse[\s\S]{0,300}(serviceRole|authorization|credential)/i.test(route) &&
     !/console\.(error|warn|log)\([\s\S]{0,300}(supabaseServiceRoleKey|Authorization)/i.test(helper),
 );
-
-// ---------------------------------------------------------------------
-// G. Scope and script registration
-// ---------------------------------------------------------------------
-
 check(
-  "package script is registered exactly",
-  packageJson.scripts?.["verify:risk-share-manager-publish-api"] ===
-    "node scripts/verify-risk-share-manager-publish-api-contract.mjs",
-);
-check(
-  "route contains no migration, RLS or direct SQL logic",
+  "no SQL/migration/RLS implementation in route",
   !/(create\s+table|alter\s+table|create\s+policy|enable\s+row\s+level\s+security|select\s+.+from\s+public\.)/i.test(route),
 );
 check(
-  "helper contains no publish eligibility reimplementation",
-  !/(share_status|customer_check_status|customer_confirmed|review_revision|version_lock_id\s+is\s+null)/i.test(helper),
+  "no eligibility algorithm in helper",
+  !/(share_status|customer_check_status|customer_confirmed|review_revision|worker_visible\s+is\s+not\s+null)/i.test(helper),
 );
 check(
-  "API does not implement republish, rollback or supersede",
-  !/(republish|rollback|supersede)/i.test(route + helper),
+  "no republish/rollback/supersede RPC arguments",
+  !/(p_publish_action|p_previous_version_id|p_content_source_version_id|p_superseded_at)/i.test(helper),
+);
+check(
+  "package verifier registered",
+  packageJson.scripts?.["verify:risk-share-manager-publish-api"] ===
+    "node scripts/verify-risk-share-manager-publish-api-contract.mjs",
 );
 
 const failed = checks.filter((entry) => !entry.ok);
@@ -462,9 +361,7 @@ console.log(`\n${checks.length - failed.length}/${checks.length} checks passed`)
 
 if (failed.length > 0) {
   console.error(`\nFAILED CHECKS (${failed.length}):`);
-  for (const entry of failed) {
-    console.error(`  - ${entry.name}`);
-  }
+  for (const entry of failed) console.error(`  - ${entry.name}`);
   process.exit(1);
 }
 
