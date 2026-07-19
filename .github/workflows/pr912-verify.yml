@@ -36,7 +36,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --silent
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ripgrep
+          npm ci --silent
 
       - name: Run complete verification and capture logs
         shell: bash
