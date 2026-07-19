@@ -38,48 +38,53 @@ jobs:
       - name: Install dependencies
         run: npm ci --silent
 
-      - name: Capture tenant publish RPC contract
+      - name: Run complete verification and capture logs
         shell: bash
         run: |
           set +e
-          npm run verify:risk-share-tenant-publish-rpc > /tmp/tenant-publish-verify.log 2>&1
-          echo "$?" > /tmp/tenant-publish-verify.status
+          mkdir -p /tmp/pr912-verify
+
+          run_check() {
+            name="$1"
+            shift
+            echo "RUN $name"
+            "$@" > "/tmp/pr912-verify/${name}.log" 2>&1
+            status=$?
+            echo "$status" > "/tmp/pr912-verify/${name}.status"
+            echo "EXIT $name=$status"
+          }
+
+          run_check tenant-publish npm run verify:risk-share-tenant-publish-rpc
+          run_check preparation-read npm run verify:risk-share-preparation-read-model
+          run_check preparation-api npm run verify:risk-share-preparation-api
+          run_check preparation-ui npm run verify:risk-share-preparation-ui
+          run_check legacy-smoke npm run smoke:legacy-routes
+          run_check build npm run build
+          run_check diff-check git diff --check origin/main...HEAD
+
           exit 0
 
-      - name: Upload tenant publish verifier log
+      - name: Upload complete verification logs
         uses: actions/upload-artifact@v4
         with:
-          name: pr912-tenant-publish-verifier
-          path: |
-            /tmp/tenant-publish-verify.log
-            /tmp/tenant-publish-verify.status
+          name: pr912-full-verification
+          path: /tmp/pr912-verify
           if-no-files-found: error
           retention-days: 1
 
-      - name: Enforce tenant publish RPC contract
+      - name: Enforce complete verification
         shell: bash
         run: |
-          status="$(cat /tmp/tenant-publish-verify.status)"
-          if [ "$status" -ne 0 ]; then
-            tail -120 /tmp/tenant-publish-verify.log
-            exit "$status"
-          fi
-          tail -8 /tmp/tenant-publish-verify.log
-
-      - name: Preparation read model contract
-        run: npm run verify:risk-share-preparation-read-model
-
-      - name: Preparation API contract
-        run: npm run verify:risk-share-preparation-api
-
-      - name: Preparation UI contract
-        run: npm run verify:risk-share-preparation-ui
-
-      - name: Legacy route smoke
-        run: npm run smoke:legacy-routes
-
-      - name: Production build
-        run: npm run build
-
-      - name: Diff check
-        run: git diff --check origin/main...HEAD
+          set +e
+          failed=0
+          for status_file in /tmp/pr912-verify/*.status; do
+            name="$(basename "$status_file" .status)"
+            status="$(cat "$status_file")"
+            echo "$name=$status"
+            if [ "$status" -ne 0 ]; then
+              echo "=== $name failure ==="
+              tail -120 "/tmp/pr912-verify/${name}.log"
+              failed=1
+            fi
+          done
+          exit "$failed"
