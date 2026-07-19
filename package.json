@@ -32,6 +32,7 @@
     "verify:risk-share-preparation-api": "node scripts/verify-risk-share-preparation-api-contract.mjs",
     "verify:risk-share-preparation-read-model": "node scripts/verify-risk-share-preparation-read-model-contract.mjs",
     "verify:risk-share-preparation-ui": "node scripts/verify-risk-share-preparation-ui-contract.mjs",
+    "verify:risk-share-tenant-publish-rpc": "node scripts/verify-risk-share-tenant-publish-rpc-contract.mjs",
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh"
   },
   "dependencies": {
