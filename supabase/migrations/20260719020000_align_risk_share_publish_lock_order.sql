@@ -237,7 +237,6 @@ declare
   v_tenant_oid oid;
   v_owner_definition text;
   v_tenant_definition text;
-  v_owner_acl aclitem[];
 begin
   v_owner_oid := to_regprocedure(
     'public.create_risk_share_version_lock(text,text,text,text,text,text,text,boolean,uuid[],text)'
@@ -251,10 +250,8 @@ begin
       'align_risk_share_publish_lock_order: required Owner or tenant publish RPC is missing';
   end if;
 
-  select pg_get_functiondef(v_owner_oid), p.proacl
-  into v_owner_definition, v_owner_acl
-  from pg_proc p
-  where p.oid = v_owner_oid;
+  select pg_get_functiondef(v_owner_oid)
+  into v_owner_definition;
 
   select pg_get_functiondef(v_tenant_oid)
   into v_tenant_definition;
@@ -284,9 +281,26 @@ begin
 
   if not has_function_privilege('service_role', v_owner_oid, 'EXECUTE')
      or has_function_privilege('anon', v_owner_oid, 'EXECUTE')
-     or has_function_privilege('authenticated', v_owner_oid, 'EXECUTE')
-     or has_function_privilege('public', v_owner_oid, 'EXECUTE') then
+     or has_function_privilege('authenticated', v_owner_oid, 'EXECUTE') then
     raise exception
       'align_risk_share_publish_lock_order: Owner RPC execute privilege contract changed';
+  end if;
+
+  if exists (
+    select 1
+    from pg_proc p
+    cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+    left join pg_roles grantee_role on grantee_role.oid = acl.grantee
+    where p.oid = v_owner_oid
+      and acl.privilege_type = 'EXECUTE'
+      and acl.grantee <> p.proowner
+      and (
+        acl.grantee = 0
+        or grantee_role.rolname is distinct from 'service_role'
+        or acl.is_grantable
+      )
+  ) then
+    raise exception
+      'align_risk_share_publish_lock_order: Owner RPC has PUBLIC/unexpected/grant-option EXECUTE privilege';
   end if;
 end $$;
