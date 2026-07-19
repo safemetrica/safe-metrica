@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feat/add-tenant-risk-share-publish-rpc
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
