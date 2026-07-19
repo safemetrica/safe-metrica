@@ -1,9 +1,9 @@
 import fs from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 const TENANT_MIGRATION_FILE =
   "supabase/migrations/20260719010000_add_tenant_risk_share_publish_rpc.sql";
-const LOCK_ORDER_MIGRATION_FILE =
+const OWNER_CORRECTION_FILE =
   "supabase/migrations/20260719020000_align_risk_share_publish_lock_order.sql";
 const OWNER_BASELINE_FILE =
   "supabase/migrations/20260717010000_snapshot_owner_created_risk_share_versions.sql";
@@ -11,45 +11,37 @@ const VERIFIER_FILE = "scripts/verify-risk-share-tenant-publish-rpc-contract.mjs
 
 const REQUIRED_FILES = [
   TENANT_MIGRATION_FILE,
-  LOCK_ORDER_MIGRATION_FILE,
+  OWNER_CORRECTION_FILE,
   OWNER_BASELINE_FILE,
 ];
 
 for (const file of REQUIRED_FILES) {
   if (!fs.existsSync(file)) {
-    console.error(`FAIL: missing file - ${file}`);
+    console.error(`FAIL: missing required file: ${file}`);
     process.exit(1);
   }
 }
 
 const tenantSrc = fs.readFileSync(TENANT_MIGRATION_FILE, "utf8");
-const lockOrderSrc = fs.readFileSync(LOCK_ORDER_MIGRATION_FILE, "utf8");
+const ownerCorrectionSrc = fs.readFileSync(OWNER_CORRECTION_FILE, "utf8");
 const ownerBaselineSrc = fs.readFileSync(OWNER_BASELINE_FILE, "utf8");
 const checks = [];
 
-function check(name, ok) {
-  checks.push({ name, ok: Boolean(ok) });
+function check(name, condition) {
+  checks.push({ name, ok: Boolean(condition) });
 }
 
-function countOccurrences(text, needle) {
+function count(text, needle) {
   if (!needle) return 0;
-  let count = 0;
-  let index = 0;
-  for (;;) {
-    const found = text.indexOf(needle, index);
-    if (found === -1) break;
-    count += 1;
-    index = found + needle.length;
-  }
-  return count;
+  return text.split(needle).length - 1;
 }
 
-function extractBetween(text, startMarker, endMarker) {
-  const start = text.indexOf(startMarker);
-  if (start === -1) return null;
-  const end = text.indexOf(endMarker, start + startMarker.length);
-  if (end === -1) return null;
-  return text.slice(start, end + endMarker.length);
+function extractFunction(text, marker) {
+  const start = text.indexOf(marker);
+  if (start < 0) return null;
+  const end = text.indexOf("\n$$;", start);
+  if (end < 0) return null;
+  return text.slice(start, end + 4);
 }
 
 function normalizeSql(text) {
@@ -60,48 +52,40 @@ function normalizeSql(text) {
     .toLowerCase();
 }
 
-function canonicalRiskShareItemLockOrder(functionBody) {
+function canonicalLockColumn(functionBody) {
   const match = functionBody?.match(
-    /order by\s+risk_share_items\.(id|created_at)\s+asc\s+for update of risk_share_items/i,
+    /order\s+by\s+(?:risk_share_items\.|ri\.)(id|created_at)\s+asc\s+for\s+update(?:\s+of\s+(?:risk_share_items|ri))?/i,
   );
   return match?.[1]?.toLowerCase() ?? null;
 }
 
-function lockOrdersMatch(leftBody, rightBody) {
-  const left = canonicalRiskShareItemLockOrder(leftBody);
-  const right = canonicalRiskShareItemLockOrder(rightBody);
-  return left !== null && right !== null && left === right;
+function commandOutput(command, args) {
+  return execFileSync(command, args, { encoding: "utf8" }).trim();
 }
 
-const tenantFnBody = extractBetween(
+const tenantFn = extractFunction(
   tenantSrc,
   "create or replace function public.publish_risk_share_version_for_tenant(",
-  "\n$$;",
 );
-const ownerFnBody = extractBetween(
-  lockOrderSrc,
+const ownerFn = extractFunction(
+  ownerCorrectionSrc,
   "create or replace function public.create_risk_share_version_lock(",
-  "\n$$;",
 );
-const ownerBaselineFnBody = extractBetween(
+const ownerBaselineFn = extractFunction(
   ownerBaselineSrc,
   "create or replace function public.create_risk_share_version_lock(",
-  "\n$$;",
 );
 
-// =========================================================================
-// A. Files, exact function identities, and return contracts
-// =========================================================================
-
-check("tenant publish migration exists", fs.existsSync(TENANT_MIGRATION_FILE));
-check("additive Owner lock-order migration exists", fs.existsSync(LOCK_ORDER_MIGRATION_FILE));
-check("unchanged Owner baseline migration exists", fs.existsSync(OWNER_BASELINE_FILE));
-check("tenant function body located", tenantFnBody !== null);
-check("Owner replacement function body located", ownerFnBody !== null);
-check("Owner baseline function body located", ownerBaselineFnBody !== null);
+// A. Exact identities and scope.
+check("tenant migration exists", fs.existsSync(TENANT_MIGRATION_FILE));
+check("Owner correction migration exists", fs.existsSync(OWNER_CORRECTION_FILE));
+check("Owner baseline exists", fs.existsSync(OWNER_BASELINE_FILE));
+check("tenant function body found", tenantFn !== null);
+check("Owner correction function body found", ownerFn !== null);
+check("Owner baseline function body found", ownerBaselineFn !== null);
 
 check(
-  "exact tenant function name and argument list",
+  "exact tenant argument signature",
   tenantSrc.includes(
     "create or replace function public.publish_risk_share_version_for_tenant(\n" +
       "  p_company_code text,\n" +
@@ -115,7 +99,7 @@ check(
   ),
 );
 check(
-  "exact tenant RETURNS TABLE shape",
+  "exact tenant return shape",
   tenantSrc.includes(
     "returns table (\n" +
       "  ok boolean,\n" +
@@ -128,324 +112,357 @@ check(
   ),
 );
 check(
-  "exact Owner function name and argument list preserved",
-  lockOrderSrc.includes(
-    "create or replace function public.create_risk_share_version_lock(\n" +
-      "  p_company_code text,\n" +
-      "  p_company_name text,\n" +
-      "  p_site_name text,\n" +
-      "  p_source_title text,\n" +
-      "  p_lock_title text,\n" +
-      "  p_lock_month text,\n" +
-      "  p_notes text,\n" +
-      "  p_worker_visible boolean,\n" +
-      "  p_item_ids uuid[],\n" +
-      "  p_locked_by text\n" +
-      ")",
-  ),
+  "only one tenant RPC definition in migration",
+  count(
+    tenantSrc,
+    "create or replace function public.publish_risk_share_version_for_tenant(",
+  ) === 1,
 );
 check(
-  "exact Owner return shape preserved",
-  ownerFnBody?.includes(
-    "returns table (id uuid, item_count integer, duplicate_lock boolean, selection_mismatch boolean)",
-  ),
+  "tenant migration fail-closes unexpected overloads",
+  tenantSrc.includes("unexpected overload exists") &&
+    tenantSrc.includes("v_total_count = 0") &&
+    tenantSrc.includes("v_total_count = 1 and v_exact_count = 1"),
 );
 
-// =========================================================================
-// B. Tenant security posture and membership boundary
-// =========================================================================
-
-const TENANT_SIGNATURE =
-  "public.publish_risk_share_version_for_tenant(\n  text, uuid, text, text, text, uuid[], text\n)";
-
-check("tenant RPC LANGUAGE plpgsql", tenantFnBody?.includes("language plpgsql"));
-check("tenant RPC SECURITY DEFINER", tenantFnBody?.includes("security definer"));
+// B. SECURITY DEFINER and tenant boundary.
+check("tenant RPC language is plpgsql", tenantFn?.includes("language plpgsql"));
+check("tenant RPC is SECURITY DEFINER", tenantFn?.includes("security definer"));
 check(
-  "tenant RPC search_path fixed",
-  tenantFnBody?.includes("set search_path = public, pg_temp"),
+  "tenant RPC has fixed search_path",
+  tenantFn?.includes("set search_path = public, pg_temp"),
 );
 check(
-  "tenant RPC owner explicitly postgres",
-  tenantSrc.includes(`alter function ${TENANT_SIGNATURE} owner to postgres;`),
+  "membership row is locked FOR SHARE",
+  tenantFn?.includes("from public.tenant_membership tm") &&
+    tenantFn?.includes("for share;"),
 );
 check(
-  "tenant RPC PUBLIC revoked",
-  tenantSrc.includes(`revoke all on function ${TENANT_SIGNATURE} from public;`),
+  "active tenant_admin or tenant_manager membership required",
+  tenantFn?.includes("v_membership_status <> 'active'") &&
+    tenantFn?.includes("v_membership_role not in ('tenant_admin', 'tenant_manager')"),
 );
 check(
-  "tenant RPC anon/authenticated/service_role reset before grant",
-  tenantSrc.includes(
-    `revoke all on function ${TENANT_SIGNATURE} from anon, authenticated, service_role;`,
-  ),
-);
-check(
-  "tenant RPC service_role-only grant",
-  tenantSrc.includes(`grant execute on function ${TENANT_SIGNATURE} to service_role;`) &&
-    !/grant execute on function public\.publish_risk_share_version_for_tenant[\s\S]*?to\s+(public|anon|authenticated)\s*;/i.test(
-      tenantSrc,
-    ),
-);
-check(
-  "membership read from tenant_membership FOR SHARE",
-  tenantFnBody?.includes("from public.tenant_membership") && tenantFnBody?.includes("for share"),
-);
-check("active membership required", tenantFnBody?.includes("v_membership_status <> 'active'"));
-check(
-  "tenant_admin or tenant_manager required",
-  tenantFnBody?.includes("v_membership_role not in ('tenant_admin', 'tenant_manager')"),
-);
-check(
-  "membership tenant_code must equal canonical company_code",
-  tenantFnBody?.includes("v_membership_tenant_code <> v_company_code"),
+  "membership tenant must equal canonical company",
+  tenantFn?.includes("v_membership_tenant_code <> v_company_code"),
 );
 check(
   "membership failures collapse to forbidden",
-  (() => {
-    const guard = extractBetween(tenantFnBody ?? "", "if not found", "'forbidden'");
-    return (
-      guard?.includes("v_membership_status <> 'active'") &&
-      guard?.includes("v_membership_role not in") &&
-      guard?.includes("v_membership_tenant_code <> v_company_code")
-    );
-  })(),
+  count(tenantFn ?? "", "'forbidden'::text") === 1,
 );
-
-// =========================================================================
-// C. Explicit Item selection, eligibility, and tenant-scoped fail-closed read
-// =========================================================================
-
 check(
-  "empty/null selection rejected",
-  tenantFnBody?.includes(
-    "if p_item_ids is null or coalesce(array_length(p_item_ids, 1), 0) = 0 then",
+  "SECURITY DEFINER advisory functions are pg_catalog-qualified",
+  tenantFn?.includes("pg_catalog.pg_advisory_xact_lock(") &&
+    tenantFn?.includes("pg_catalog.hashtextextended("),
+);
+check(
+  "advisory lock is namespaced by canonical company",
+  tenantFn?.includes(
+    "'publish_risk_share_version_for_tenant:' || v_company_code",
   ),
 );
-check("multi-dimensional arrays rejected", tenantFnBody?.includes("array_ndims(p_item_ids)"));
+
+// C. Input validation.
 check(
-  "NULL array element rejected",
-  tenantFnBody?.includes("array_position(p_item_ids, null) is not null"),
+  "company code canonicalization and allowlist",
+  tenantFn?.includes("lower(btrim(coalesce(p_company_code, '')))") &&
+    tenantFn?.includes("^[a-z0-9][a-z0-9-]{0,63}$"),
 );
 check(
-  "duplicate ids rejected after distinct canonicalization",
-  tenantFnBody?.includes("array_agg(distinct x order by x)") &&
-    tenantFnBody?.includes("v_requested_count <> v_requested_raw_count"),
+  "lock month validates YYYY-MM and month range",
+  tenantFn?.includes("^[0-9]{4}-(0[1-9]|1[0-2])$"),
 );
-check("200 Item cap enforced", tenantFnBody?.includes("v_requested_count > 200"));
+check(
+  "lock title is 1-160 characters",
+  tenantFn?.includes("char_length(v_lock_title) not between 1 and 160"),
+);
+check(
+  "lock title rejects control characters",
+  tenantFn?.includes("v_lock_title ~ v_control_char_pattern"),
+);
+check(
+  "notes are null-or-500 and reject control characters",
+  tenantFn?.includes("char_length(v_notes) > 500") &&
+    tenantFn?.includes("v_notes ~ v_control_char_pattern"),
+);
+check(
+  "idempotency key is canonical 1-200",
+  tenantFn?.includes("btrim(coalesce(p_idempotency_key, ''))") &&
+    tenantFn?.includes("char_length(v_idempotency_key) not between 1 and 200"),
+);
+check(
+  "selection rejects null empty multidimensional and null elements",
+  tenantFn?.includes("p_item_ids is null") &&
+    tenantFn?.includes("array_length(p_item_ids, 1)") &&
+    tenantFn?.includes("array_ndims(p_item_ids)") &&
+    tenantFn?.includes("array_position(p_item_ids, null)"),
+);
+check(
+  "selection rejects duplicates and enforces 1-200",
+  tenantFn?.includes("array_agg(distinct requested_id order by requested_id)") &&
+    tenantFn?.includes("v_requested_count <> v_requested_raw_count") &&
+    tenantFn?.includes("v_requested_count not between 1 and 200"),
+);
 check(
   "empty selection never means publish all",
-  !/v_requested_count\s*=\s*0\s+or\s+risk_share_items\.id\s*=\s*any/i.test(
-    tenantFnBody ?? "",
+  !/v_requested_count\s*=\s*0\s+or\s+(?:risk_share_items\.|ri\.)id\s*=\s*any/i.test(
+    tenantFn ?? "",
   ),
 );
 
-const selectionCte = extractBetween(tenantFnBody ?? "", "with locked_items as (", ")\n  select");
-check(
-  "eligible selection scoped to verified tenant",
-  selectionCte?.includes("risk_share_items.company_code = v_company_code"),
+// D. Item selection, cross-tenant fail-closed, and lock order.
+const tenantSelection = tenantFn?.slice(
+  tenantFn.indexOf("with locked_items as ("),
+  tenantFn.indexOf("-- 6. Create the Version"),
 );
 check(
-  "eligible selection requires requested Item ids",
-  selectionCte?.includes("risk_share_items.id = any(v_item_ids)"),
+  "selection is scoped to canonical tenant and explicit ids",
+  tenantSelection?.includes("ri.company_code = v_company_code") &&
+    tenantSelection?.includes("ri.id = any(v_item_ids)"),
 );
 check(
-  "eligible selection requires customer-confirmed state",
-  selectionCte?.includes("share_status = 'customer_confirmed'") &&
-    selectionCte?.includes("customer_check_status = 'confirmed'") &&
-    selectionCte?.includes("customer_confirmed = true"),
+  "selection requires customer-confirmed unlocked state",
+  tenantSelection?.includes("ri.share_status = 'customer_confirmed'") &&
+    tenantSelection?.includes("ri.customer_check_status = 'confirmed'") &&
+    tenantSelection?.includes("ri.customer_confirmed = true") &&
+    tenantSelection?.includes("ri.version_lock_id is null"),
 );
 check(
-  "eligible selection requires unlocked Item",
-  selectionCte?.includes("version_lock_id is null"),
+  "selection requires structural and revision validity",
+  tenantSelection?.includes("btrim(coalesce(ri.task_name, '')) <> ''") &&
+    tenantSelection?.includes("btrim(coalesce(ri.hazard, '')) <> ''") &&
+    tenantSelection?.includes("ri.review_revision >= 1") &&
+    tenantSelection?.includes("ri.worker_visible is not null"),
 );
 check(
-  "eligible selection requires nonblank task and hazard",
-  selectionCte?.includes("btrim(coalesce(risk_share_items.task_name, '')) <> ''") &&
-    selectionCte?.includes("btrim(coalesce(risk_share_items.hazard, '')) <> ''"),
+  "eligible count exactly equals requested count",
+  tenantFn?.includes("v_item_count <> v_requested_count") &&
+    count(tenantFn ?? "", "'selection_mismatch'::text") === 1,
 );
 check(
-  "eligible count must exactly equal requested count",
-  tenantFnBody?.includes("v_item_count <> v_requested_count") &&
-    countOccurrences(tenantFnBody ?? "", "'selection_mismatch'") === 1,
+  "tenant publish locks Items in id ASC",
+  canonicalLockColumn(tenantFn) === "id",
+);
+check(
+  "Owner publish locks Items in id ASC",
+  canonicalLockColumn(ownerFn) === "id",
+);
+check(
+  "tenant and Owner lock orders match",
+  canonicalLockColumn(tenantFn) !== null &&
+    canonicalLockColumn(tenantFn) === canonicalLockColumn(ownerFn),
+);
+check(
+  "neither publish path locks by created_at",
+  canonicalLockColumn(tenantFn) !== "created_at" &&
+    canonicalLockColumn(ownerFn) !== "created_at",
 );
 
-// =========================================================================
-// D. Cross-path lock-order parity and explicit regression checks
-// =========================================================================
-
-check(
-  "tenant publish locks risk_share_items in id ASC order",
-  canonicalRiskShareItemLockOrder(tenantFnBody) === "id",
+const tenantLockMutant = (tenantFn ?? "").replace(
+  /order\s+by\s+ri\.id\s+asc/i,
+  "order by ri.created_at asc",
 );
-check(
-  "Owner publish replacement locks risk_share_items in id ASC order",
-  canonicalRiskShareItemLockOrder(ownerFnBody) === "id",
-);
-check(
-  "tenant and Owner publish paths use the same canonical row-lock order",
-  lockOrdersMatch(tenantFnBody, ownerFnBody),
-);
-check(
-  "tenant publish no longer uses created_at as row-lock order",
-  !/order by\s+risk_share_items\.created_at\s+asc\s+for update of risk_share_items/i.test(
-    tenantFnBody ?? "",
-  ),
-);
-check(
-  "Owner publish no longer uses created_at as row-lock order",
-  !/order by\s+risk_share_items\.created_at\s+asc\s+for update of risk_share_items/i.test(
-    ownerFnBody ?? "",
-  ),
-);
-
-const tenantCreatedAtMutant = (tenantFnBody ?? "").replace(
-  /order by\s+risk_share_items\.id\s+asc/i,
-  "order by risk_share_items.created_at asc",
-);
-const ownerCreatedAtMutant = (ownerFnBody ?? "").replace(
-  /order by\s+risk_share_items\.id\s+asc/i,
+const ownerLockMutant = (ownerFn ?? "").replace(
+  /order\s+by\s+risk_share_items\.id\s+asc/i,
   "order by risk_share_items.created_at asc",
 );
 check(
-  "regression: reverting only tenant path to created_at is detected",
-  !lockOrdersMatch(tenantCreatedAtMutant, ownerFnBody),
+  "regression catches tenant-only lock-order reversal",
+  canonicalLockColumn(tenantLockMutant) !== canonicalLockColumn(ownerFn),
 );
 check(
-  "regression: reverting only Owner path to created_at is detected",
-  !lockOrdersMatch(tenantFnBody, ownerCreatedAtMutant),
+  "regression catches Owner-only lock-order reversal",
+  canonicalLockColumn(tenantFn) !== canonicalLockColumn(ownerLockMutant),
 );
 
-const expectedOwnerBody = normalizeSql(
-  (ownerBaselineFnBody ?? "").replace(
-    /order by\s+risk_share_items\.created_at\s+asc/i,
+const expectedOwner = normalizeSql(
+  (ownerBaselineFn ?? "").replace(
+    /order\s+by\s+risk_share_items\.created_at\s+asc/i,
     "order by risk_share_items.id asc",
   ),
 );
 check(
-  "Owner replacement differs from the prior Owner function only by canonical row-lock order",
-  ownerBaselineFnBody !== null &&
-    ownerFnBody !== null &&
-    normalizeSql(ownerFnBody) === expectedOwnerBody,
+  "Owner replacement differs only by canonical row-lock order",
+  ownerBaselineFn !== null &&
+    ownerFn !== null &&
+    normalizeSql(ownerFn) === expectedOwner,
 );
 check(
-  "Owner replacement preserves function security attributes",
-  ownerFnBody?.includes("language plpgsql") &&
-    ownerFnBody?.includes("security definer") &&
-    ownerFnBody?.includes("set search_path = public, pg_temp"),
+  "Owner correction preserves security and service-role-only contract",
+  ownerFn?.includes("security definer") &&
+    ownerFn?.includes("set search_path = public, pg_temp") &&
+    ownerCorrectionSrc.includes("owner to postgres") &&
+    ownerCorrectionSrc.includes("from anon, authenticated, service_role") &&
+    ownerCorrectionSrc.includes("to service_role;"),
+);
+
+// E. Durable idempotency.
+check(
+  "idempotency lookup is tenant-key scoped",
+  tenantFn?.includes("vl.company_code = v_company_code") &&
+    tenantFn?.includes("vl.idempotency_key = v_idempotency_key"),
 );
 check(
-  "Owner replacement preserves service_role-only privilege statements",
-  lockOrderSrc.includes(
-    "grant execute on function public.create_risk_share_version_lock(\n" +
-      "  text, text, text, text, text, text, text, boolean, uuid[], text\n" +
-      ") to service_role;",
-  ) &&
-    lockOrderSrc.includes(
-      "revoke all on function public.create_risk_share_version_lock(\n" +
-        "  text, text, text, text, text, text, text, boolean, uuid[], text\n" +
-        ") from anon, authenticated, service_role;",
+  "exact replay requires active publish action and matching actor metadata",
+  tenantFn?.includes("v_existing_lock.lock_status = 'active'") &&
+    tenantFn?.includes("v_existing_lock.publish_action = 'publish'") &&
+    tenantFn?.includes("v_existing_lock.actor_membership_id = p_actor_membership_id") &&
+    tenantFn?.includes("v_existing_lock.lock_month = v_lock_month") &&
+    tenantFn?.includes("v_existing_lock.lock_title = v_lock_title") &&
+    tenantFn?.includes("coalesce(v_existing_lock.notes, '') = coalesce(v_notes, '')"),
+);
+check(
+  "replay re-derives snapshot count worker-visible count and Item set",
+  tenantFn?.includes("v_replay_snapshot_count") &&
+    tenantFn?.includes("v_replay_snapshot_worker_visible_count") &&
+    tenantFn?.includes("v_stored_item_ids"),
+);
+check(
+  "replay re-derives live locked count worker-visible count and Item set",
+  tenantFn?.includes("v_replay_live_item_count") &&
+    tenantFn?.includes("v_replay_live_worker_visible_count") &&
+    tenantFn?.includes("v_replay_live_item_ids"),
+);
+check(
+  "replay compares stored counts to durable counts",
+  tenantFn?.includes("v_existing_lock.item_count = v_replay_snapshot_count") &&
+    tenantFn?.includes("v_existing_lock.item_count = v_replay_live_item_count") &&
+    tenantFn?.includes(
+      "v_existing_lock.worker_visible_count =\n         v_replay_snapshot_worker_visible_count",
+    ) &&
+    tenantFn?.includes(
+      "v_existing_lock.worker_visible_count =\n         v_replay_live_worker_visible_count",
     ),
 );
 check(
-  "correction migration checks both deployed function definitions for id ASC lock order",
-  countOccurrences(lockOrderSrc, "does not use risk_share_items.id ASC FOR UPDATE") === 2,
+  "replay compares exact snapshot and live Item sets",
+  tenantFn?.includes("v_stored_item_ids = v_item_ids") &&
+    tenantFn?.includes("v_replay_live_item_ids = v_item_ids"),
+);
+check(
+  "same-key durable mismatch returns idempotency conflict",
+  count(tenantFn ?? "", "'idempotency_conflict'::text") === 1,
 );
 
-// =========================================================================
-// E. Tenant concurrency, idempotency, atomic snapshot, and Item linkage
-// =========================================================================
-
+// F. Atomic Version, snapshot, live Item linkage, and actor audit.
 check(
-  "tenant advisory transaction lock is namespaced by canonical company_code",
-  /pg_advisory_xact_lock\(\s*\n\s*hashtextextended\('publish_risk_share_version_for_tenant:'\s*\|\|\s*v_company_code,\s*0\)\s*\n\s*\);/.test(
-    tenantFnBody ?? "",
-  ),
+  "Version stores verified role actor and idempotency metadata",
+  tenantFn?.includes("locked_by,") &&
+    tenantFn?.includes("v_membership_role,") &&
+    tenantFn?.includes("actor_membership_id,") &&
+    tenantFn?.includes("idempotency_key,") &&
+    tenantFn?.includes("publish_action,") &&
+    tenantFn?.includes("'publish',"),
 );
 check(
-  "advisory lock follows membership validation",
-  (tenantFnBody?.indexOf("from public.tenant_membership") ?? -1) <
-    (tenantFnBody?.indexOf("pg_advisory_xact_lock(") ?? -1),
+  "v1 Version leaves chain and rollback fields null",
+  tenantFn?.includes("previous_version_id,") &&
+    tenantFn?.includes("content_source_version_id,") &&
+    tenantFn?.includes("superseded_at,") &&
+    count(tenantFn ?? "", "    null,") >= 3,
 );
 check(
-  "idempotency lookup precedes Item locking and Version insert",
+  "active month conflict is atomic",
+  tenantFn?.includes(
+    "on conflict (company_code, lock_month)\n    where lock_status = 'active'",
+  ) && tenantFn?.includes("'active_month_exists'::text"),
+);
+check(
+  "snapshot copies existing per-Item worker_visible and review revision",
+  tenantFn?.includes("ri.worker_visible,") &&
+    tenantFn?.includes("ri.review_revision") &&
+    !tenantFn?.includes("p_worker_visible"),
+);
+check(
+  "live Item update never overwrites worker_visible or review content",
   (() => {
-    const idem = tenantFnBody?.indexOf("select * into v_existing_lock") ?? -1;
-    const itemLock = tenantFnBody?.indexOf("with locked_items as (") ?? -1;
-    const insert = tenantFnBody?.indexOf("insert into public.risk_share_version_locks (") ?? -1;
-    return idem !== -1 && itemLock !== -1 && insert !== -1 && idem < itemLock && itemLock < insert;
-  })(),
-);
-check(
-  "idempotency replay compares active status actor month title notes count and exact snapshot Item set",
-  tenantFnBody?.includes("v_existing_lock.lock_status = 'active'") &&
-    tenantFnBody?.includes("v_existing_lock.actor_membership_id = p_actor_membership_id") &&
-    tenantFnBody?.includes("v_existing_lock.lock_month = v_lock_month") &&
-    tenantFnBody?.includes("v_existing_lock.lock_title = v_lock_title") &&
-    tenantFnBody?.includes("coalesce(v_existing_lock.notes, '') = coalesce(v_notes, '')") &&
-    tenantFnBody?.includes("v_existing_lock.item_count = v_requested_count") &&
-    tenantFnBody?.includes("v_stored_item_ids = v_item_ids"),
-);
-check(
-  "same-key mismatch returns idempotency_conflict",
-  tenantFnBody?.includes("'idempotency_conflict'::text"),
-);
-check(
-  "active month conflict uses partial-index ON CONFLICT",
-  tenantFnBody?.includes(
-    "on conflict (company_code, lock_month) where lock_status = 'active'",
-  ) && tenantFnBody?.includes("'active_month_exists'::text"),
-);
-check(
-  "publish Version stores actor, idempotency key, and publish action",
-  tenantFnBody?.includes("actor_membership_id,") &&
-    tenantFnBody?.includes("idempotency_key,") &&
-    tenantFnBody?.includes("publish_action,") &&
-    tenantFnBody?.includes("'publish',"),
-);
-check(
-  "snapshot copies each Item worker_visible value",
-  tenantFnBody?.includes("ri.worker_visible,") && !tenantFnBody?.includes("p_worker_visible"),
-);
-check(
-  "tenant Item UPDATE never overwrites worker_visible",
-  (() => {
-    const update = extractBetween(
-      tenantFnBody ?? "",
-      "update public.risk_share_items\n  set share_status = 'locked',",
-      "risk_share_items.company_code = v_company_code;",
+    const start = tenantFn?.indexOf("update public.risk_share_items ri") ?? -1;
+    const end = tenantFn?.indexOf("get diagnostics v_item_update_count", start) ?? -1;
+    if (start < 0 || end < 0) return false;
+    const update = tenantFn.slice(start, end);
+    return (
+      !update.includes("worker_visible") &&
+      !update.includes("task_name") &&
+      !update.includes("hazard") &&
+      !update.includes("review_revision") &&
+      update.includes("version_lock_id = v_lock_id")
     );
-    return update !== null && !update.includes("worker_visible");
   })(),
 );
 check(
-  "snapshot insert count raises on mismatch",
-  tenantFnBody?.includes("v_snapshot_insert_count <> v_item_count") &&
-    tenantFnBody?.includes("snapshot insert count % does not match"),
+  "snapshot and Item write row counts are enforced",
+  tenantFn?.includes("v_snapshot_insert_count <> v_item_count") &&
+    tenantFn?.includes("v_item_update_count <> v_item_count"),
 );
 check(
-  "Item update count raises on mismatch",
-  tenantFnBody?.includes("v_item_update_count <> v_item_count") &&
-    tenantFnBody?.includes("item update count % does not match"),
+  "success re-derives exact snapshot count visibility and Item set",
+  tenantFn?.includes("v_final_snapshot_count") &&
+    tenantFn?.includes("v_final_snapshot_worker_visible_count") &&
+    tenantFn?.includes("v_final_snapshot_item_ids") &&
+    tenantFn?.includes("v_final_snapshot_item_ids <> v_item_ids"),
 );
 check(
-  "final snapshot count raises on mismatch",
-  tenantFnBody?.includes("v_final_snapshot_count <> v_item_count"),
+  "success re-derives live locked count confirmation linkage and Item set",
+  tenantFn?.includes("v_final_live_item_count") &&
+    tenantFn?.includes("v_final_live_customer_confirmed_count") &&
+    tenantFn?.includes("v_final_live_item_ids") &&
+    tenantFn?.includes("ri.version_lock_id = v_lock_id") &&
+    tenantFn?.includes("ri.share_status = 'locked'") &&
+    tenantFn?.includes("ri.customer_check_status = 'confirmed'") &&
+    tenantFn?.includes("v_final_live_customer_confirmed_count <> v_item_count"),
 );
 check(
-  "final worker-visible count raises on mismatch",
-  tenantFnBody?.includes(
-    "v_final_worker_visible_count <> v_eligible_worker_visible_count",
-  ),
+  "success proves selected worker_visible values did not change",
+  tenantFn?.includes("v_final_live_worker_visible_ids") &&
+    tenantFn?.includes("v_eligible_worker_visible_ids") &&
+    tenantFn?.includes("v_final_live_worker_visible_ids <> v_eligible_worker_visible_ids"),
 );
 check(
-  "tenant path has at least four rollback-on-impossible-state exception guards",
-  countOccurrences(tenantFnBody ?? "", "raise exception") >= 4,
+  "impossible postcondition mismatches abort by exception",
+  count(tenantFn ?? "", "raise exception") >= 4,
 );
 
-// =========================================================================
-// F. Response/out-of-scope boundaries and PR scope
-// =========================================================================
+// G. Apply-time identity and privilege postconditions.
+check(
+  "migration checks exact overload count and signature",
+  tenantSrc.includes("v_total_count <> 1 or v_exact_count <> 1") &&
+    tenantSrc.includes("overload/signature mismatch"),
+);
+check(
+  "migration checks exact identity arguments and return contract",
+  tenantSrc.includes("pg_get_function_identity_arguments(v_rpc_oid)") &&
+    tenantSrc.includes("pg_get_function_result(v_rpc_oid)") &&
+    tenantSrc.includes("argument/return mismatch"),
+);
+check(
+  "migration checks postgres owner SECURITY DEFINER and search_path",
+  tenantSrc.includes("r.rolname = 'postgres'") &&
+    tenantSrc.includes("p.prosecdef") &&
+    tenantSrc.includes("p.proconfig = array['search_path=public, pg_temp']::text[]"),
+);
+check(
+  "migration checks service_role-only direct execution",
+  tenantSrc.includes("has_function_privilege('service_role', v_rpc_oid, 'EXECUTE')") &&
+    tenantSrc.includes("has_function_privilege('anon', v_rpc_oid, 'EXECUTE')") &&
+    tenantSrc.includes("has_function_privilege('authenticated', v_rpc_oid, 'EXECUTE')"),
+);
+check(
+  "migration rejects PUBLIC unexpected grantees and grant option",
+  tenantSrc.includes("aclexplode(coalesce(p.proacl, acldefault('f', p.proowner)))") &&
+    tenantSrc.includes("acl.grantee = 0") &&
+    tenantSrc.includes("grantee_role.rolname is distinct from 'service_role'") &&
+    tenantSrc.includes("acl.is_grantable"),
+);
+check(
+  "tenant RPC explicitly owned by postgres and granted only to service_role",
+  tenantSrc.includes(") owner to postgres;") &&
+    tenantSrc.includes(") from public;") &&
+    tenantSrc.includes(") from anon, authenticated, service_role;") &&
+    tenantSrc.includes(") to service_role;"),
+);
 
-const KNOWN_CODES = [
+// H. Response and scope boundaries.
+const normalCodes = [
   "ok",
   "validation_failed",
   "forbidden",
@@ -453,95 +470,86 @@ const KNOWN_CODES = [
   "active_month_exists",
   "idempotency_conflict",
 ];
-for (const code of KNOWN_CODES) {
-  check(`response code present: ${code}`, tenantFnBody?.includes(`'${code}'`));
+for (const code of normalCodes) {
+  check(`normal response code present: ${code}`, tenantFn?.includes(`'${code}'`));
 }
 check(
   "no unexpected normal response code",
-  [...(tenantFnBody ?? "").matchAll(/'([a-z_]+)'::text/g)].every((match) =>
-    KNOWN_CODES.includes(match[1]),
+  [...(tenantFn ?? "").matchAll(/'([a-z_]+)'::text/g)].every((match) =>
+    normalCodes.includes(match[1]),
   ),
 );
 check(
-  "tenant function does not implement republish rollback or supersede",
-  !/'republish'|'rollback'/.test(tenantFnBody ?? "") &&
-    !/superseded_at\s*=/.test(tenantFnBody ?? "") &&
-    !/previous_version_id/.test(tenantFnBody ?? "") &&
-    !/content_source_version_id/.test(tenantFnBody ?? ""),
+  "tenant RPC does not implement republish rollback supersede or reactivation",
+  !/'republish'|'rollback'/.test(tenantFn ?? "") &&
+    !/update\s+public\.risk_share_version_locks/i.test(tenantFn ?? "") &&
+    !/delete\s+from\s+public\.risk_share_version_locks/i.test(tenantFn ?? ""),
 );
 check(
-  "no migration introduces RLS policy DDL",
-  !/create policy/i.test(tenantSrc) && !/create policy/i.test(lockOrderSrc),
+  "migrations introduce no RLS policy DDL",
+  !/create\s+policy/i.test(tenantSrc) &&
+    !/create\s+policy/i.test(ownerCorrectionSrc),
 );
 check(
-  "no function is dropped",
-  !/drop function/i.test(tenantSrc) && !/drop function/i.test(lockOrderSrc),
+  "migrations drop no functions or tables",
+  !/drop\s+function|drop\s+table/i.test(tenantSrc) &&
+    !/drop\s+function|drop\s+table/i.test(ownerCorrectionSrc),
 );
 check(
-  "correction migration replaces only the Owner Version Lock RPC",
-  countOccurrences(
-    lockOrderSrc,
+  "Owner correction replaces only the Owner Version Lock RPC",
+  count(
+    ownerCorrectionSrc,
     "create or replace function public.create_risk_share_version_lock(",
   ) === 1 &&
-    !lockOrderSrc.includes("create or replace function public.review_risk_share_item(") &&
-    !lockOrderSrc.includes(
-      "create or replace function public.prepare_risk_share_items_for_tenant(",
+    !ownerCorrectionSrc.includes("review_risk_share_item(") &&
+    !ownerCorrectionSrc.includes("prepare_risk_share_items_for_tenant("),
+);
+
+const changedFiles = commandOutput("git", [
+  "diff",
+  "--name-only",
+  "origin/main...HEAD",
+])
+  .split("\n")
+  .filter(Boolean);
+const allowedFiles = new Set([
+  "package.json",
+  VERIFIER_FILE,
+  TENANT_MIGRATION_FILE,
+  OWNER_CORRECTION_FILE,
+]);
+check(
+  "only the four approved PR files changed",
+  changedFiles.length === 4 && changedFiles.every((file) => allowedFiles.has(file)),
+);
+
+const changedMigrations = commandOutput("git", [
+  "diff",
+  "--name-only",
+  "origin/main...HEAD",
+  "--",
+  "supabase/migrations/",
+])
+  .split("\n")
+  .filter(Boolean);
+check(
+  "no existing main migration modified",
+  changedMigrations.length === 2 &&
+    changedMigrations.every((file) =>
+      [TENANT_MIGRATION_FILE, OWNER_CORRECTION_FILE].includes(file),
     ),
 );
 
-check(
-  "only allowed PR files changed",
-  (() => {
-    try {
-      const output = execSync("git diff --name-only origin/main...HEAD", {
-        encoding: "utf8",
-      }).trim();
-      const changed = output ? output.split("\n") : [];
-      const allowed = new Set([
-        "package.json",
-        VERIFIER_FILE,
-        TENANT_MIGRATION_FILE,
-        LOCK_ORDER_MIGRATION_FILE,
-      ]);
-      return changed.length === 4 && changed.every((file) => allowed.has(file));
-    } catch {
-      return true;
-    }
-  })(),
-);
-check(
-  "no existing migration modified",
-  (() => {
-    try {
-      const output = execSync(
-        "git diff --name-only origin/main...HEAD -- supabase/migrations/",
-        { encoding: "utf8" },
-      ).trim();
-      const changed = output ? output.split("\n") : [];
-      const allowed = new Set([TENANT_MIGRATION_FILE, LOCK_ORDER_MIGRATION_FILE]);
-      return changed.length === 2 && changed.every((file) => allowed.has(file));
-    } catch {
-      return true;
-    }
-  })(),
-);
-
-// =========================================================================
-// Summary
-// =========================================================================
-
-const failed = checks.filter((item) => !item.ok);
-for (const item of checks) {
-  console.log(`${item.ok ? "PASS" : "FAIL"}: ${item.name}`);
+const failures = checks.filter(({ ok }) => !ok);
+for (const { name, ok } of checks) {
+  console.log(`${ok ? "PASS" : "FAIL"}: ${name}`);
 }
-console.log(`\n${checks.length - failed.length}/${checks.length} checks passed`);
+console.log(`\n${checks.length - failures.length}/${checks.length} checks passed`);
 
-if (failed.length > 0) {
-  console.error(`\nFAILED CHECKS (${failed.length}):`);
-  for (const item of failed) {
-    console.error(`  - ${item.name}`);
-  }
+if (failures.length > 0) {
+  console.error(`\nFAILED CHECKS (${failures.length})`);
+  for (const { name } of failures) console.error(`  - ${name}`);
   process.exit(1);
 }
 
-console.log("\nAll tenant publish and cross-path lock-order contract checks passed.");
+console.log("\nAll tenant publish RPC and cross-path contract checks passed.");
