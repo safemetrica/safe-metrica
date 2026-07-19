@@ -42,6 +42,8 @@ type RawPublishRiskShareVersionRow = {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REDACTION_PATTERN =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
 
 const KNOWN_RPC_CODES = new Set<PublishRiskShareVersionCode>([
   "ok",
@@ -50,6 +52,15 @@ const KNOWN_RPC_CODES = new Set<PublishRiskShareVersionCode>([
   "selection_mismatch",
   "active_month_exists",
   "idempotency_conflict",
+]);
+
+const RAW_RESPONSE_FIELDS = new Set([
+  "ok",
+  "code",
+  "replayed",
+  "version_lock_id",
+  "item_count",
+  "worker_visible_count",
 ]);
 
 function getSupabaseUrl() {
@@ -62,7 +73,7 @@ function getSupabaseServiceRoleKey() {
 
 function scrubRpcErrorMessage(rawMessage: string): string {
   return rawMessage
-    .replace(UUID_PATTERN, "[uuid]")
+    .replace(UUID_REDACTION_PATTERN, "[uuid]")
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
     .replace(/https?:\/\/\S+/gi, "[url]")
     .slice(0, 240);
@@ -92,6 +103,15 @@ function validatePublishRiskShareVersionResponse(
   const rawRow = data[0];
 
   if (!rawRow || typeof rawRow !== "object" || Array.isArray(rawRow)) {
+    return failClosed("invalid_response");
+  }
+
+  const rawKeys = Object.keys(rawRow);
+
+  if (
+    rawKeys.length !== RAW_RESPONSE_FIELDS.size ||
+    rawKeys.some((key) => !RAW_RESPONSE_FIELDS.has(key))
+  ) {
     return failClosed("invalid_response");
   }
 
