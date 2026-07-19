@@ -14,10 +14,6 @@ on:
 permissions:
   contents: read
 
-actions:
-  # No repository write or deployment permission is needed by this temporary
-  # verification harness.
-
 jobs:
   verify:
     runs-on: ubuntu-latest
