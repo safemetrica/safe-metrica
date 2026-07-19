@@ -460,21 +460,44 @@ function resolveItemLineage(
   verifiedCompanyCode: string,
   sourceId: string,
 ): ItemLineageResult {
-  if (!Array.isArray(raw)) {
-    return { ok: false };
-  }
-
-  if (raw.length === 0) {
+  // risk_share_items.candidate_id carries a UNIQUE constraint, so PostgREST
+  // resolves this embed as a to-one relationship: no match is `null` (not
+  // `[]`), and a match is a bare row object (not a one-element array). Both
+  // the to-one shapes and the array shapes from existing contract fixtures
+  // are accepted here -- they describe the exact same set of possible
+  // states (no Item / exactly one Item), never a looser one.
+  if (raw === null) {
     return { ok: true, hasItem: false, itemId: null };
   }
 
-  if (raw.length > 1) {
-    // risk_share_items.candidate_id is unique at the DB level -- more than
-    // one embedded row is a contradiction, not a value worth guessing at.
+  let item: RiskShareItemLineageRow;
+
+  if (Array.isArray(raw)) {
+    if (raw.length === 0) {
+      return { ok: true, hasItem: false, itemId: null };
+    }
+
+    if (raw.length > 1) {
+      // risk_share_items.candidate_id is unique at the DB level -- more than
+      // one embedded row is a contradiction, not a value worth guessing at.
+      return { ok: false };
+    }
+
+    const onlyRow = raw[0];
+
+    if (onlyRow === null || typeof onlyRow !== "object" || Array.isArray(onlyRow)) {
+      return { ok: false };
+    }
+
+    item = onlyRow as RiskShareItemLineageRow;
+  } else if (typeof raw === "object") {
+    item = raw as RiskShareItemLineageRow;
+  } else {
+    // string / number / boolean / undefined -- not a shape PostgREST ever
+    // returns for this embed, never guessed at.
     return { ok: false };
   }
 
-  const item = raw[0] as RiskShareItemLineageRow;
   const id = readTrimmedString(item.id);
   const companyCode = readTrimmedString(item.company_code);
   const itemSourceId = readTrimmedString(item.source_id);
