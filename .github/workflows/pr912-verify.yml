@@ -1,0 +1,49 @@
+name: PR 912 full verification
+
+on:
+  push:
+    branches:
+      - feat/add-tenant-risk-share-publish-rpc
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tenant publish RPC contract
+        run: npm run verify:risk-share-tenant-publish-rpc
+
+      - name: Preparation read model contract
+        run: npm run verify:risk-share-preparation-read-model
+
+      - name: Preparation API contract
+        run: npm run verify:risk-share-preparation-api
+
+      - name: Preparation UI contract
+        run: npm run verify:risk-share-preparation-ui
+
+      - name: Legacy route smoke
+        run: npm run smoke:legacy-routes
+
+      - name: Production build
+        run: npm run build
+
+      - name: Diff check
+        run: git diff --check origin/main...HEAD
