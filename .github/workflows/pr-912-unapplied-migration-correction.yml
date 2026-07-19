@@ -4,12 +4,20 @@ on:
   push:
     branches:
       - fix/align-tenant-publish-postcondition-alias
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
 
 jobs:
   correct-and-verify:
+    if: github.head_ref == 'fix/align-tenant-publish-postcondition-alias' || github.ref_name == 'fix/align-tenant-publish-postcondition-alias'
     runs-on: ubuntu-latest
     services:
       postgres:
