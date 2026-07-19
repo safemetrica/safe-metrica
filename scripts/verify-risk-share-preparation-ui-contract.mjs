@@ -357,6 +357,119 @@ check(
     /요청 상태를 확인할 수 없습니다/.test(client),
 );
 
+// =========================================================================
+// G. Badge wording must not imply guaranteed/automatic eligibility
+// =========================================================================
+//
+// The Read Model only shows that a manager may submit a preparation
+// request -- it does not determine final eligibility or guarantee
+// preparation success (the existing RPC remains the sole authoritative
+// per-call classifier). "준비 가능" ("preparable"/"ready") standalone
+// reads as a guarantee; "준비 요청 가능" ("request-eligible") does not.
+
+check(
+  'the bare "준비 가능" badge string is never used as a standalone badge (only as part of "준비 요청 가능")',
+  !client.replace(/준비 요청 가능/g, "").includes("준비 가능"),
+);
+check(
+  'the bare "준비 가능 · 확인 필요" badge string is never used (only "준비 요청 가능 · 확인 필요")',
+  !client.includes("준비 가능 · 확인 필요") || client.includes("준비 요청 가능 · 확인 필요"),
+);
+check(
+  '"준비 요청 가능" wording is present for the plain awaiting_preparation_request badge',
+  client.includes("준비 요청 가능"),
+);
+check(
+  '"준비 요청 가능 · 확인 필요" wording is present for the mappingMismatch/missingRequiredField badge',
+  client.includes("준비 요청 가능 · 확인 필요"),
+);
+check(
+  "the CategoryBadge awaiting_preparation_request branch never renders the bare eligibility-implying strings",
+  (() => {
+    const badgeFnBlock = extractBalancedBlock(client, "function CategoryBadge(");
+    if (badgeFnBlock === null) return false;
+    const withoutCorrectStrings = badgeFnBlock
+      .replace(/준비 요청 가능 · 확인 필요/g, "")
+      .replace(/준비 요청 가능/g, "");
+    return !withoutCorrectStrings.includes("준비 가능");
+  })(),
+);
+
+// =========================================================================
+// H. serverStateSignature must cover every action-relevant authoritative field
+// =========================================================================
+//
+// Any drift in a field that determines whether/how a preparation request
+// can be submitted (page-level gating fields, or per-entry selectability/
+// display fields) must invalidate pending selection, the pending
+// idempotency key, and per-row mutation feedback -- otherwise a stale
+// selection or idempotency key could be reused against server state it was
+// never computed against.
+
+const signatureBlock = extractBalancedBlock(client, "const serverStateSignature = useMemo(");
+
+check("serverStateSignature block exists", signatureBlock !== null);
+
+const REQUIRED_SIGNATURE_PAGE_FIELDS = ["sourceId", "listStatus", "overflow", "summary?.isComplete"];
+
+for (const field of REQUIRED_SIGNATURE_PAGE_FIELDS) {
+  check(
+    `serverStateSignature includes page-level field: ${field}`,
+    signatureBlock?.includes(field) ?? false,
+  );
+}
+
+const REQUIRED_SIGNATURE_ENTRY_FIELDS = [
+  "entry.kind",
+  "entry.candidateId",
+  "entry.taskName",
+  "entry.hazard",
+  "entry.reviewerStatus",
+  "entry.category",
+  "entry.hasItem",
+  "entry.latestDecision",
+  "entry.latestReasonCode",
+  "entry.mappingMismatch",
+  "entry.missingRequiredField",
+];
+
+for (const field of REQUIRED_SIGNATURE_ENTRY_FIELDS) {
+  check(
+    `serverStateSignature includes per-entry field: ${field}`,
+    signatureBlock?.includes(field) ?? false,
+  );
+}
+
+check(
+  "serverStateSignature is a dependency of the resync effect/branch that clears pending state",
+  client.includes("if (serverStateSignature !== syncedServerStateSignature) {"),
+);
+
+const resyncBlock = extractBalancedBlock(client, "if (serverStateSignature !== syncedServerStateSignature) {");
+
+check("resync block exists", resyncBlock !== null);
+check(
+  "resync clears selectedCandidateIds",
+  resyncBlock?.includes("setSelectedCandidateIds(new Set())") ?? false,
+);
+check(
+  "resync clears pendingIdempotencyKey",
+  resyncBlock?.includes("setPendingIdempotencyKey(null)") ?? false,
+);
+check(
+  "resync clears pendingSelectionSignature",
+  resyncBlock?.includes("setPendingSelectionSignature(null)") ?? false,
+);
+check(
+  "resync clears resultByCandidateId",
+  resyncBlock?.includes("setResultByCandidateId(new Map())") ?? false,
+);
+check(
+  "no useEffect was introduced for the resync (adjust-state-during-render pattern preserved)",
+  !/\buseEffect\s*\(/.test(client) &&
+    !/import\s*\{[^}]*\buseEffect\b[^}]*\}\s*from\s*["']react["']/.test(client),
+);
+
 function countAtLeastOnce(text, needle) {
   return text.includes(needle);
 }

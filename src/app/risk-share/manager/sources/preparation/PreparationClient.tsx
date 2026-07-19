@@ -382,11 +382,11 @@ function CategoryBadge({ entry }: { entry: Extract<PreparationClientEntry, { kin
   if (entry.category === "awaiting_preparation_request") {
     return entry.mappingMismatch || entry.missingRequiredField ? (
       <span className={`${BADGE_BASE_CLASS} border-amber-500/40 bg-amber-500/10 text-amber-200`}>
-        준비 가능 · 확인 필요
+        준비 요청 가능 · 확인 필요
       </span>
     ) : (
       <span className={`${BADGE_BASE_CLASS} border-emerald-500/40 bg-emerald-500/10 text-emerald-200`}>
-        준비 가능
+        준비 요청 가능
       </span>
     );
   }
@@ -436,21 +436,38 @@ export default function PreparationClient({
   // both are checked here rather than trusting only one.
   const actionsAllowed = listStatus === "ok" && !overflow && summary !== null && summary.isComplete;
 
-  // Server state (entries) changing -- a real refetch after a mutation, or
-  // any other server-side drift -- must reset local selection/pending-key
-  // state, per "clear the idempotency key after authoritative state has
-  // changed". Adjust-state-during-render (no useEffect), same pattern as
+  // Server state changing -- a real refetch after a mutation, or any other
+  // server-side drift in any action-relevant authoritative field (page-level
+  // or per-entry) -- must reset local selection/pending-key state, per
+  // "clear the idempotency key after authoritative state has changed".
+  // Adjust-state-during-render (no useEffect), same pattern as
   // ShareReviewClient's per-item resync.
   const serverStateSignature = useMemo(
     () =>
-      JSON.stringify(
-        entries.map((entry) =>
+      JSON.stringify({
+        sourceId,
+        listStatus,
+        overflow,
+        summaryIsComplete: summary?.isComplete ?? null,
+        entries: entries.map((entry) =>
           entry.kind === "valid"
-            ? [entry.candidateId, entry.category, entry.hasItem, entry.latestDecision]
-            : ["invalid", entry.candidateId],
+            ? [
+                entry.kind,
+                entry.candidateId,
+                entry.taskName,
+                entry.hazard,
+                entry.reviewerStatus,
+                entry.category,
+                entry.hasItem,
+                entry.latestDecision,
+                entry.latestReasonCode,
+                entry.mappingMismatch,
+                entry.missingRequiredField,
+              ]
+            : [entry.kind, entry.candidateId],
         ),
-      ),
-    [entries],
+      }),
+    [sourceId, listStatus, overflow, summary?.isComplete, entries],
   );
   const [syncedServerStateSignature, setSyncedServerStateSignature] = useState(serverStateSignature);
 
