@@ -47,23 +47,18 @@ jobs:
           verifier_path = Path("scripts/verify-risk-share-tenant-publish-rpc-contract.mjs")
 
           migration = migration_path.read_text()
-          old_tenant_check = "  if v_tenant_definition !~* 'order by[[:space:]]+risk_share_items\\.id[[:space:]]+asc[[:space:]]+for update of risk_share_items' then"
-          new_tenant_check = "  if v_tenant_definition !~* 'order by[[:space:]]+ri\\.id[[:space:]]+asc[[:space:]]+for update of ri' then"
-          if migration.count(old_tenant_check) != 1:
-              raise SystemExit("expected exactly one old tenant apply-time lock-order check")
-          migration = migration.replace(old_tenant_check, new_tenant_check)
+          old_tenant_expr = "v_tenant_definition !~* 'order by[[:space:]]+risk_share_items\\.id[[:space:]]+asc[[:space:]]+for update of risk_share_items'"
+          new_tenant_expr = "v_tenant_definition !~* 'order by[[:space:]]+ri\\.id[[:space:]]+asc[[:space:]]+for update of ri'"
+          if migration.count(old_tenant_expr) != 1:
+              raise SystemExit(f"expected one old tenant apply-time expression, found {migration.count(old_tenant_expr)}")
+          migration = migration.replace(old_tenant_expr, new_tenant_expr)
           migration_path.write_text(migration)
 
           verifier = verifier_path.read_text()
-          anchor = '''check(
-            "Owner correction preserves security and service-role-only contract",
-            ownerFn?.includes("security definer") &&
-              ownerFn?.includes("set search_path = public, pg_temp") &&
-              ownerCorrectionSrc.includes("owner to postgres") &&
-              ownerCorrectionSrc.includes("from anon, authenticated, service_role") &&
-              ownerCorrectionSrc.includes("to service_role;"),
-          );
-          '''
+          durable_marker = "\n// E. Durable idempotency.\n"
+          if verifier.count(durable_marker) != 1:
+              raise SystemExit("durable idempotency marker not found exactly once")
+
           addition = '''
           const ownerApplyTimeLockRegex =
             /order\\s+by\\s+risk_share_items\\.id\\s+asc\\s+for\\s+update\\s+of\\s+risk_share_items/i;
@@ -97,48 +92,27 @@ jobs:
             ),
           );
           '''
-          if verifier.count(anchor) != 1:
-              raise SystemExit("verifier insertion anchor not found exactly once")
-          verifier = verifier.replace(anchor, anchor + addition)
+          verifier = verifier.replace(durable_marker, "\n" + addition + durable_marker)
 
-          old_scope = '''const allowedFiles = new Set([
-            "package.json",
-            VERIFIER_FILE,
-            TENANT_MIGRATION_FILE,
-            OWNER_CORRECTION_FILE,
-          ]);
-          check(
-            "only the four approved PR files changed",
-            changedFiles.length === 4 && changedFiles.every((file) => allowedFiles.has(file)),
-          );
-          '''
-          new_scope = '''const allowedFiles = new Set([VERIFIER_FILE, OWNER_CORRECTION_FILE]);
+          changed_files_start = verifier.index("const changedFiles = commandOutput")
+          allowed_start = verifier.index("const allowedFiles = new Set([", changed_files_start)
+          allowed_end = verifier.index("\n\nconst changedMigrations", allowed_start)
+          new_allowed = '''const allowedFiles = new Set([VERIFIER_FILE, OWNER_CORRECTION_FILE]);
           check(
             "only the two approved correction files changed",
             changedFiles.length === 2 && changedFiles.every((file) => allowedFiles.has(file)),
-          );
-          '''
-          if verifier.count(old_scope) != 1:
-              raise SystemExit("old changed-file scope assertion not found exactly once")
-          verifier = verifier.replace(old_scope, new_scope)
+          );'''
+          verifier = verifier[:allowed_start] + new_allowed + verifier[allowed_end:]
 
-          old_migration_scope = '''check(
-            "no existing main migration modified",
-            changedMigrations.length === 2 &&
-              changedMigrations.every((file) =>
-                [TENANT_MIGRATION_FILE, OWNER_CORRECTION_FILE].includes(file),
-              ),
-          );
-          '''
-          new_migration_scope = '''check(
+          changed_migrations_start = verifier.index("const changedMigrations = commandOutput")
+          migration_check_start = verifier.index('check(\n  "no existing main migration modified"', changed_migrations_start)
+          migration_check_end = verifier.index("\n\nconst failures", migration_check_start)
+          new_migration_check = '''check(
             "only the confirmed-unapplied Owner correction migration is modified",
             changedMigrations.length === 1 &&
               changedMigrations[0] === OWNER_CORRECTION_FILE,
-          );
-          '''
-          if verifier.count(old_migration_scope) != 1:
-              raise SystemExit("old migration scope assertion not found exactly once")
-          verifier = verifier.replace(old_migration_scope, new_migration_scope)
+          );'''
+          verifier = verifier[:migration_check_start] + new_migration_check + verifier[migration_check_end:]
           verifier_path.write_text(verifier)
           PY
 
