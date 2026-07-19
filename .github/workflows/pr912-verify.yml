@@ -21,6 +21,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Remove temporary workflow from local verification diff
+        shell: bash
+        run: |
+          git config user.name "SafeMetrica Verification"
+          git config user.email "verification@safemetrica.invalid"
+          git rm --quiet .github/workflows/pr912-verify.yml
+          git commit --quiet -m "temp: remove verification harness from diff"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
