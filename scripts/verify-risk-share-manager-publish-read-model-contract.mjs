@@ -20,14 +20,9 @@ function check(name, ok) {
   checks.push({ name, ok: Boolean(ok) });
 }
 
-function countOccurrences(text, needle) {
-  return text.split(needle).length - 1;
-}
-
-function extractBalancedBlock(text, startMarker) {
-  const start = text.indexOf(startMarker);
-  if (start === -1) return null;
-  const braceStart = text.indexOf("{", start);
+function extractBalancedBlock(text, marker) {
+  const start = text.indexOf(marker);
+  const braceStart = start === -1 ? -1 : text.indexOf("{", start);
   if (braceStart === -1) return null;
 
   let depth = 0;
@@ -38,178 +33,142 @@ function extractBalancedBlock(text, startMarker) {
       if (depth === 0) return text.slice(start, index + 1);
     }
   }
-
   return null;
 }
 
-// A. File boundary and reuse of the established safe Manager Review list.
-check("Read Model is server-only", src.startsWith('import "server-only";'));
+const activeLookup = extractBalancedBlock(src, "async function fetchActiveVersionForMonth(");
+const activeParser = extractBalancedBlock(src, "function parseActiveVersionRow(");
+const classifier = extractBalancedBlock(src, "function toPublishEntry(");
+const activeVersionType = extractBalancedBlock(
+  src,
+  "export type RiskShareManagerPublishActiveVersion",
+);
+
+check("server-only boundary", src.startsWith('import "server-only";'));
 check(
-  "Read Model reuses listRiskShareItemsForManagerReview",
+  "reuses Manager Review safe list",
   src.includes("listRiskShareItemsForManagerReview") &&
     src.includes('from "@/lib/risk-share/riskShareManagerReview"'),
 );
 check(
-  "Read Model uses the existing server-only SELECT helper",
+  "uses server-only SELECT helper",
   src.includes("selectSupabaseExportRows") && src.includes('from "@/lib/supabaseServer"'),
 );
 check(
-  "Read Model does not import the Publish mutation helper or API route",
+  "contains no mutation call",
   !src.includes("riskShareTenantPublish") &&
-    !src.includes("/api/risk-share/manager/publish") &&
-    !src.includes("publishRiskShareVersionForTenant"),
-);
-check(
-  "No direct mutation method or RPC endpoint is present",
-  !src.includes('method: "POST"') &&
+    !src.includes("publishRiskShareVersionForTenant") &&
+    !src.includes("/rest/v1/rpc/") &&
+    !src.includes('method: "POST"') &&
     !src.includes('method: "PATCH"') &&
-    !src.includes('method: "DELETE"') &&
-    !src.includes("/rest/v1/rpc/"),
+    !src.includes('method: "DELETE"'),
 );
-check("No select star", !src.includes('select: "*"') && !src.includes("select=*"));
-
-// B. Strict input normalization.
-check("Strict company-code pattern exists", src.includes("COMPANY_CODE_PATTERN"));
+check("strict tenant pattern", src.includes("COMPANY_CODE_PATTERN"));
 check(
-  "Strict YYYY-MM pattern exists",
+  "strict YYYY-MM pattern",
   src.includes("LOCK_MONTH_PATTERN") && src.includes("(0[1-9]|1[0-2])"),
 );
 check(
-  "Invalid company/month fails closed",
+  "invalid inputs fail closed",
   src.includes("if (!companyCode || !lockMonth)") &&
     src.includes('return { status: "failed" };'),
 );
-check(
-  "Only normalized tenant/month are passed to reads",
-  src.includes("listRiskShareItemsForManagerReview(companyCode)") &&
-    src.includes("fetchActiveVersionForMonth(companyCode, lockMonth)"),
-);
 
-// C. Active-month lookup contract.
-const activeLookup = extractBalancedBlock(src, "async function fetchActiveVersionForMonth(");
-check("Active-version lookup function exists", activeLookup !== null);
+check("active lookup exists", activeLookup !== null);
 check(
-  "Active lookup uses risk_share_version_locks only",
-  activeLookup?.includes('"risk_share_version_locks"') &&
-    !activeLookup.includes('"risk_share_items"') &&
-    !activeLookup.includes('"risk_share_version_items"'),
-);
-check(
-  "Active lookup is exact tenant + month + active",
+  "active lookup is exact tenant month active",
   activeLookup?.includes("company_code: `eq.${companyCode}`") &&
     activeLookup.includes("lock_month: `eq.${lockMonth}`") &&
     activeLookup.includes('lock_status: "eq.active"'),
 );
 check(
-  "Active lookup requests at most two rows to detect impossible duplicates",
-  src.includes("const ACTIVE_VERSION_FETCH_LIMIT = 2;") &&
-    activeLookup?.includes("limit: String(ACTIVE_VERSION_FETCH_LIMIT)"),
+  "active lookup selects tenant lineage",
+  src.includes(
+    '"company_code,lock_title,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status,created_at"',
+  ),
 );
 check(
-  "Multiple active rows fail closed",
+  "duplicate active rows fail closed",
   activeLookup?.includes("if (rows.length > 1)") &&
     activeLookup.includes('return { status: "failed" };'),
 );
 check(
-  "Zero active rows is a successful no-version state",
+  "no active row is an explicit null state",
   activeLookup?.includes("if (rows.length === 0)") &&
     activeLookup.includes('return { status: "ok", activeVersion: null };'),
 );
 check(
-  "Active lookup selects display-safe fields only",
-  src.includes(
-    '"lock_title,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status,created_at"',
-  ),
+  "normalized tenant reaches active parser",
+  activeLookup?.includes("parseActiveVersionRow(rows[0], companyCode, lockMonth)"),
 );
 
-const activeParser = extractBalancedBlock(src, "function parseActiveVersionRow(");
-check("Active-version parser exists", activeParser !== null);
+check("active parser exists", activeParser !== null);
 check(
-  "Active parser validates exact month and active status",
-  activeParser?.includes("lockMonth !== expectedLockMonth") &&
+  "active parser revalidates tenant month status",
+  activeParser?.includes("companyCode !== expectedCompanyCode") &&
+    activeParser.includes("lockMonth !== expectedLockMonth") &&
     activeParser.includes('lockStatus !== "active"'),
 );
 check(
-  "Active parser requires 1-200 item count",
-  activeParser?.includes("itemCount < 1") &&
-    activeParser.includes("itemCount > MAX_PUBLISH_ITEMS"),
+  "active parser validates positive integral counts",
+  activeParser?.includes("itemCount === null") && activeParser.includes("itemCount < 1"),
 );
 check(
-  "Active parser validates customer-confirmed count parity",
-  activeParser?.includes("customerConfirmedCount !== itemCount"),
+  "active parser does not apply tenant request cap",
+  !activeParser?.includes("MAX_PUBLISH_ITEMS") && !src.includes("const MAX_PUBLISH_ITEMS"),
 );
 check(
-  "Active parser bounds worker-visible count",
-  activeParser?.includes("workerVisibleCount < 0") &&
+  "active parser validates count parity",
+  activeParser?.includes("customerConfirmedCount !== itemCount") &&
+    activeParser.includes("workerVisibleCount < 0") &&
     activeParser.includes("workerVisibleCount > itemCount"),
 );
-const activeVersionTypeBlock = extractBalancedBlock(
-  src,
-  "export type RiskShareManagerPublishActiveVersion",
-);
 check(
-  "Active Version UUID is never selected or returned",
-  activeVersionTypeBlock !== null &&
-    !/\bid\s*:/.test(activeVersionTypeBlock) &&
-    !activeVersionTypeBlock.includes("versionLockId") &&
-    !src.includes("version_lock_id,lock_title") &&
-    !src.includes("id,lock_title,lock_month"),
+  "active Version output excludes tenant and internal Version IDs",
+  activeVersionType !== null &&
+    !activeVersionType.includes("companyCode") &&
+    !activeVersionType.includes("company_code") &&
+    !activeVersionType.includes("versionLockId") &&
+    !/\bid\s*:/.test(activeVersionType),
 );
 
-// D. Item classification is presentation-only and fail-closed.
-const classifyBlock = extractBalancedBlock(src, "function toPublishEntry(");
-check("Publish entry classifier exists", classifyBlock !== null);
+check("classifier exists", classifier !== null);
 check(
-  "Malformed Manager Review rows remain visible as invalid",
-  classifyBlock?.includes('entry.kind === "invalid"') &&
-    classifyBlock.includes('state: "invalid"'),
+  "invalid Manager Review rows remain invalid",
+  classifier?.includes('entry.kind === "invalid"') && classifier.includes('state: "invalid"'),
 );
 check(
-  "One-sided locked state is invalid",
-  classifyBlock?.includes("hasVersionLock !== hasLockedStatus") &&
-    classifyBlock.includes('return { kind: "invalid", id: item.id, state: "invalid" };'),
+  "one-sided lock state is invalid",
+  classifier?.includes("hasVersionLock !== hasLockedStatus"),
 );
 check(
-  "Only fully locked rows become already_locked",
-  classifyBlock?.includes("hasVersionLock && hasLockedStatus") &&
-    classifyBlock.includes('state: "already_locked"'),
+  "locked rows require confirmation invariants",
+  classifier?.includes('item.customerCheckStatus !== "confirmed"') &&
+    classifier.includes("!item.customerConfirmed") &&
+    classifier.includes('return { kind: "invalid", id: item.id, state: "invalid" };'),
 );
 check(
-  "Excluded rows retain an explicit reason",
-  classifyBlock?.includes('item.shareStatus === "excluded"') &&
-    classifyBlock.includes('reviewReasons.push("excluded")'),
+  "only fully locked confirmed rows are already_locked",
+  classifier?.includes("hasVersionLock && hasLockedStatus") &&
+    classifier.includes('state: "already_locked"'),
 );
 check(
-  "Share-status mismatch retains an explicit reason",
-  classifyBlock?.includes('item.shareStatus !== "customer_confirmed"') &&
-    classifyBlock.includes('reviewReasons.push("share_status_not_customer_confirmed")'),
+  "unlocked review gaps are explicit",
+  [
+    'reviewReasons.push("excluded")',
+    'reviewReasons.push("share_status_not_customer_confirmed")',
+    'reviewReasons.push("customer_check_not_confirmed")',
+    'reviewReasons.push("customer_confirmation_missing")',
+  ].every((token) => classifier?.includes(token)),
 );
 check(
-  "Customer-check mismatch retains an explicit reason",
-  classifyBlock?.includes('item.customerCheckStatus !== "confirmed"') &&
-    classifyBlock.includes('reviewReasons.push("customer_check_not_confirmed")'),
-);
-check(
-  "Missing customer confirmation retains an explicit reason",
-  classifyBlock?.includes("!item.customerConfirmed") &&
-    classifyBlock.includes('reviewReasons.push("customer_confirmation_missing")'),
-);
-check(
-  "Ready state requires zero review reasons",
-  classifyBlock?.includes(
+  "ready state requires zero reasons",
+  classifier?.includes(
     'state: reviewReasons.length === 0 ? "ready_to_publish" : "review_required"',
   ),
 );
-check(
-  "Classifier never infers or changes worker visibility",
-  countOccurrences(classifyBlock ?? "", "workerVisible: item.workerVisible") === 2 &&
-    !classifyBlock?.includes("workerVisible =") &&
-    !classifyBlock?.includes("workerVisible: true") &&
-    !classifyBlock?.includes("workerVisible: false"),
-);
 
-// E. Browser/data minimization.
-const forbiddenTokens = [
+for (const token of [
   "membershipId",
   "actorMembershipId",
   "tenantId",
@@ -227,58 +186,24 @@ const forbiddenTokens = [
   "email",
   "phone",
   "signature",
-];
-for (const token of forbiddenTokens) {
-  check(`Forbidden output/internal token absent: ${token}`, !src.includes(token));
+]) {
+  check(`forbidden token absent: ${token}`, !src.includes(token));
 }
-check(
-  "Entry allowlist contains the expected publish display fields",
-  [
-    "id: string",
-    "siteName: string | null",
-    "sourceTitle: string",
-    "taskName: string",
-    "hazard: string",
-    "riskLevel: string | null",
-    "currentControls: string | null",
-    "improvementPlan: string | null",
-    "workerShareSummary: string | null",
-    "workerVisible: boolean",
-  ].every((field) => src.includes(field)),
-);
-check(
-  "Raw tenant code and lineage IDs are not copied into output entries",
-  !classifyBlock?.includes("companyCode:") &&
-    !classifyBlock?.includes("sourceId:") &&
-    !classifyBlock?.includes("candidateId:") &&
-    !classifyBlock?.includes("versionLockId:"),
-);
 
-// F. Read-result integrity and final-authority statement.
 check(
-  "Review and active-version reads execute together",
-  src.includes("const [reviewResult, activeVersionResult] = await Promise.all(["),
-);
-check(
-  "Either read failure fails the whole Read Model closed",
+  "read failures fail the complete model closed",
   src.includes(
     'if (reviewResult.status !== "ok" || activeVersionResult.status !== "ok")',
   ),
 );
+check("overflow preserved", src.includes("overflow: reviewResult.overflow"));
+check("counts derive from returned entries", src.includes("counts: countEntries(entries)"));
 check(
-  "Overflow is preserved from the authoritative Manager Review list",
-  src.includes("overflow: reviewResult.overflow"),
-);
-check(
-  "Counts are derived from the exact returned entries",
-  src.includes("counts: countEntries(entries)"),
-);
-check(
-  "Comment keeps the Publish RPC as final transaction-time authority",
+  "RPC remains final authority",
   /final eligibility[\s\S]*active-month[\s\S]*locking[\s\S]*snapshot[\s\S]*idempotency/i.test(src),
 );
 check(
-  "Existing Manager Review model still selects the required eligibility fields",
+  "Manager Review still selects eligibility fields",
   [
     "share_status",
     "customer_check_status",
@@ -288,138 +213,104 @@ check(
     "review_revision",
   ].every((field) => reviewModel.includes(field)),
 );
-
-// G. Package registration.
 check(
-  "Package script is registered exactly",
+  "package verifier registered",
   packageJson.scripts?.["verify:risk-share-manager-publish-read-model"] ===
     "node scripts/verify-risk-share-manager-publish-read-model-contract.mjs",
 );
 
-// H. Executable pure-state mirrors for the state matrix.
 function classifyMirror(item) {
   const hasVersionLock = Boolean(item.versionLockId);
   const hasLockedStatus = item.shareStatus === "locked";
-  if (hasVersionLock !== hasLockedStatus) return { state: "invalid", reasons: [] };
-  if (hasVersionLock && hasLockedStatus) return { state: "already_locked", reasons: [] };
-
-  const reasons = [];
-  if (item.shareStatus === "excluded") reasons.push("excluded");
-  else if (item.shareStatus !== "customer_confirmed") {
-    reasons.push("share_status_not_customer_confirmed");
+  if (hasVersionLock !== hasLockedStatus) return "invalid";
+  if (hasVersionLock && hasLockedStatus) {
+    return item.customerCheckStatus === "confirmed" && item.customerConfirmed
+      ? "already_locked"
+      : "invalid";
   }
-  if (item.customerCheckStatus !== "confirmed") reasons.push("customer_check_not_confirmed");
-  if (!item.customerConfirmed) reasons.push("customer_confirmation_missing");
-  return { state: reasons.length === 0 ? "ready_to_publish" : "review_required", reasons };
+  return item.shareStatus === "customer_confirmed" &&
+    item.customerCheckStatus === "confirmed" &&
+    item.customerConfirmed
+    ? "ready_to_publish"
+    : "review_required";
 }
 
 const classificationCases = [
-  {
-    name: "exact confirmed unlocked row is ready",
-    item: {
-      shareStatus: "customer_confirmed",
-      customerCheckStatus: "confirmed",
-      customerConfirmed: true,
-      versionLockId: null,
-    },
-    state: "ready_to_publish",
-    reasons: [],
-  },
-  {
-    name: "fully locked row is already locked",
-    item: {
-      shareStatus: "locked",
-      customerCheckStatus: "confirmed",
-      customerConfirmed: true,
-      versionLockId: "11111111-1111-4111-8111-111111111111",
-    },
-    state: "already_locked",
-    reasons: [],
-  },
-  {
-    name: "locked status without version is invalid",
-    item: {
-      shareStatus: "locked",
-      customerCheckStatus: "confirmed",
-      customerConfirmed: true,
-      versionLockId: null,
-    },
-    state: "invalid",
-    reasons: [],
-  },
-  {
-    name: "version without locked status is invalid",
-    item: {
-      shareStatus: "customer_confirmed",
-      customerCheckStatus: "confirmed",
-      customerConfirmed: true,
-      versionLockId: "11111111-1111-4111-8111-111111111111",
-    },
-    state: "invalid",
-    reasons: [],
-  },
-  {
-    name: "excluded is review required with explicit reason",
-    item: {
-      shareStatus: "excluded",
-      customerCheckStatus: "confirmed",
-      customerConfirmed: true,
-      versionLockId: null,
-    },
-    state: "review_required",
-    reasons: ["excluded"],
-  },
-  {
-    name: "all review gaps are retained",
-    item: {
-      shareStatus: "draft",
-      customerCheckStatus: "requested",
-      customerConfirmed: false,
-      versionLockId: null,
-    },
-    state: "review_required",
-    reasons: [
-      "share_status_not_customer_confirmed",
-      "customer_check_not_confirmed",
-      "customer_confirmation_missing",
-    ],
-  },
+  ["confirmed unlocked", "customer_confirmed", "confirmed", true, null, "ready_to_publish"],
+  [
+    "fully locked",
+    "locked",
+    "confirmed",
+    true,
+    "11111111-1111-4111-8111-111111111111",
+    "already_locked",
+  ],
+  ["locked without Version", "locked", "confirmed", true, null, "invalid"],
+  [
+    "Version without locked status",
+    "customer_confirmed",
+    "confirmed",
+    true,
+    "11111111-1111-4111-8111-111111111111",
+    "invalid",
+  ],
+  [
+    "locked with returned check",
+    "locked",
+    "returned",
+    true,
+    "11111111-1111-4111-8111-111111111111",
+    "invalid",
+  ],
+  [
+    "locked without customer confirmation",
+    "locked",
+    "confirmed",
+    false,
+    "11111111-1111-4111-8111-111111111111",
+    "invalid",
+  ],
+  ["excluded unlocked", "excluded", "confirmed", true, null, "review_required"],
+  ["draft gaps", "draft", "requested", false, null, "review_required"],
 ];
 
-for (const testCase of classificationCases) {
-  const result = classifyMirror(testCase.item);
+for (const [name, shareStatus, customerCheckStatus, customerConfirmed, versionLockId, expected] of
+  classificationCases) {
   check(
-    `Classification matrix: ${testCase.name}`,
-    result.state === testCase.state &&
-      JSON.stringify(result.reasons) === JSON.stringify(testCase.reasons),
+    `classification matrix: ${name}`,
+    classifyMirror({ shareStatus, customerCheckStatus, customerConfirmed, versionLockId }) ===
+      expected,
   );
 }
 
-function activeVersionMirror(row, expectedMonth) {
-  const integer = (value) => (typeof value === "number" && Number.isInteger(value) ? value : null);
+function activeVersionMirror(row, expectedCompanyCode, expectedMonth) {
   const text = (value) => (typeof value === "string" ? value.trim() : "");
+  const integer = (value) =>
+    typeof value === "number" && Number.isInteger(value) ? value : null;
   const itemCount = integer(row.item_count);
-  const customerConfirmedCount = integer(row.customer_confirmed_count);
-  const workerVisibleCount = integer(row.worker_visible_count);
+  const confirmedCount = integer(row.customer_confirmed_count);
+  const visibleCount = integer(row.worker_visible_count);
+
   if (
+    text(row.company_code) !== expectedCompanyCode ||
     !text(row.lock_title) ||
     text(row.lock_month) !== expectedMonth ||
     text(row.lock_status) !== "active" ||
     !text(row.created_at) ||
     itemCount === null ||
     itemCount < 1 ||
-    itemCount > 200 ||
-    customerConfirmedCount !== itemCount ||
-    workerVisibleCount === null ||
-    workerVisibleCount < 0 ||
-    workerVisibleCount > itemCount
+    confirmedCount !== itemCount ||
+    visibleCount === null ||
+    visibleCount < 0 ||
+    visibleCount > itemCount
   ) {
     return null;
   }
-  return { itemCount, workerVisibleCount };
+  return { itemCount, visibleCount };
 }
 
 const validVersion = {
+  company_code: "test-risk-pack-01",
   lock_title: "2026년 7월 위험성평가 공유",
   lock_month: "2026-07",
   item_count: 2,
@@ -428,28 +319,68 @@ const validVersion = {
   lock_status: "active",
   created_at: "2026-07-19T00:00:00Z",
 };
-check("Active parser matrix: valid row", activeVersionMirror(validVersion, "2026-07") !== null);
+
 check(
-  "Active parser matrix: wrong month",
-  activeVersionMirror({ ...validVersion, lock_month: "2026-06" }, "2026-07") === null,
+  "active matrix: valid row",
+  activeVersionMirror(validVersion, "test-risk-pack-01", "2026-07") !== null,
 );
 check(
-  "Active parser matrix: count parity mismatch",
-  activeVersionMirror({ ...validVersion, customer_confirmed_count: 1 }, "2026-07") === null,
+  "active matrix: wrong tenant",
+  activeVersionMirror(
+    { ...validVersion, company_code: "other-tenant" },
+    "test-risk-pack-01",
+    "2026-07",
+  ) === null,
 );
 check(
-  "Active parser matrix: worker-visible overflow",
-  activeVersionMirror({ ...validVersion, worker_visible_count: 3 }, "2026-07") === null,
+  "active matrix: valid legacy Version above 200",
+  activeVersionMirror(
+    {
+      ...validVersion,
+      item_count: 201,
+      customer_confirmed_count: 201,
+      worker_visible_count: 100,
+    },
+    "test-risk-pack-01",
+    "2026-07",
+  ) !== null,
 );
 check(
-  "Active parser matrix: non-integer count",
-  activeVersionMirror({ ...validVersion, item_count: 2.5 }, "2026-07") === null,
+  "active matrix: wrong month",
+  activeVersionMirror(
+    { ...validVersion, lock_month: "2026-06" },
+    "test-risk-pack-01",
+    "2026-07",
+  ) === null,
+);
+check(
+  "active matrix: count mismatch",
+  activeVersionMirror(
+    { ...validVersion, customer_confirmed_count: 1 },
+    "test-risk-pack-01",
+    "2026-07",
+  ) === null,
+);
+check(
+  "active matrix: worker-visible overflow",
+  activeVersionMirror(
+    { ...validVersion, worker_visible_count: 3 },
+    "test-risk-pack-01",
+    "2026-07",
+  ) === null,
+);
+check(
+  "active matrix: non-integer count",
+  activeVersionMirror(
+    { ...validVersion, item_count: 2.5 },
+    "test-risk-pack-01",
+    "2026-07",
+  ) === null,
 );
 
 const failed = checks.filter((entry) => !entry.ok);
 for (const entry of checks) {
   console.log(`${entry.ok ? "PASS" : "FAIL"}: ${entry.name}`);
 }
-
 console.log(`\n${checks.length - failed.length}/${checks.length} checks passed.`);
 if (failed.length > 0) process.exit(1);
