@@ -112,7 +112,7 @@ check(
   "revision decimal strings validated without number conversion",
   route.includes('typeof rawRevision !== "string"') &&
     route.includes('!/^[1-9][0-9]*$/.test(rawRevision)') &&
-    route.includes("BigInt(rawRevision) > 9223372036854775807n"),
+    route.includes("BigInt(rawRevision) > BigInt("9223372036854775807")"),
 );
 check(
   "explicit item selection 1-200",
