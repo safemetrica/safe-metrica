@@ -102,6 +102,7 @@ type RiskShareParticipationRawPayload = {
 
 type RiskShareParticipationSummaryRow = {
   version_lock_id?: string | null;
+  manager_review_status?: string | null;
   raw_payload: RiskShareParticipationRawPayload | null;
 };
 
@@ -115,6 +116,9 @@ type RiskShareParticipationSummary = {
     versionLinkedMonthly: number;
     versionUnlinkedMonthly: number;
     confirmedVersionCount: number;
+    reviewUnreviewed: number;
+    reviewInProgress: number;
+    reviewCompleted: number;
   };
 };
 
@@ -127,7 +131,7 @@ async function fetchRiskShareMonthlyParticipationSummary(
   period: { createdAtGte: string; createdAtLt: string }
 ): Promise<RiskShareParticipationSummary> {
   const query = new URLSearchParams();
-  query.set("select", "version_lock_id,raw_payload");
+  query.set("select", "version_lock_id,manager_review_status,raw_payload");
   query.set("tenant_code", `eq.${companyCode}`);
   query.set("raw_payload->>source", `eq.${RISK_SHARE_PARTICIPATION_SOURCE}`);
   query.append("created_at", `gte.${period.createdAtGte}`);
@@ -148,6 +152,9 @@ async function fetchRiskShareMonthlyParticipationSummary(
           versionId,
         ),
       );
+    const versionLinkedRows = monthlyRows.filter((row) =>
+      linkedVersionIds.includes(row.version_lock_id || ""),
+    );
 
     return {
       status: "ok",
@@ -159,6 +166,15 @@ async function fetchRiskShareMonthlyParticipationSummary(
         versionLinkedMonthly: linkedVersionIds.length,
         versionUnlinkedMonthly: monthlyRows.length - linkedVersionIds.length,
         confirmedVersionCount: new Set(linkedVersionIds.map((id) => id.toLowerCase())).size,
+        reviewUnreviewed: versionLinkedRows.filter(
+          (row) => !row.manager_review_status || row.manager_review_status === "unreviewed",
+        ).length,
+        reviewInProgress: versionLinkedRows.filter(
+          (row) => row.manager_review_status === "in_review",
+        ).length,
+        reviewCompleted: versionLinkedRows.filter(
+          (row) => row.manager_review_status === "completed",
+        ).length,
       },
     };
   } catch (error) {
@@ -174,6 +190,9 @@ async function fetchRiskShareMonthlyParticipationSummary(
         versionLinkedMonthly: 0,
         versionUnlinkedMonthly: 0,
         confirmedVersionCount: 0,
+        reviewUnreviewed: 0,
+        reviewInProgress: 0,
+        reviewCompleted: 0,
       },
     };
   }
@@ -345,6 +364,9 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
         versionLinkedMonthly: participationSummary.counts.versionLinkedMonthly,
         versionUnlinkedMonthly: participationSummary.counts.versionUnlinkedMonthly,
         confirmedVersionCount: participationSummary.counts.confirmedVersionCount,
+        reviewUnreviewed: participationSummary.counts.reviewUnreviewed,
+        reviewInProgress: participationSummary.counts.reviewInProgress,
+        reviewCompleted: participationSummary.counts.reviewCompleted,
       }}
       monthlyTrendFallbackLabels={getLastFiveMonthLabels()}
     />

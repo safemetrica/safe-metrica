@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getDefaultTenantSiteConfigByTenantCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
+import { listManagerConfirmationReviews } from "@/lib/risk-share/riskShareManagerConfirmationReview";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
@@ -292,6 +293,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
   const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
+  const confirmationReviewHref = buildRiskShareLangHref("/risk-share/manager/confirmations", { company: companyCode }, lang);
   const fieldHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, lang);
   const currentPeriod = getCurrentKstMonthDatePeriod();
   const monthLabel = getMonthLabelFromPeriod(currentPeriod);
@@ -367,6 +369,12 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     currentPeriod,
   );
   const siteProfileSummary = await fetchTenantSiteProfileSummary(tenantCode);
+  const confirmationReviews = await listManagerConfirmationReviews(tenantCode).catch(() => []);
+  const reviewStatus = [
+    { label: "미검토", value: confirmationReviews.filter((row) => row.reviewStatus === "unreviewed").length, colorVar: "--c3" },
+    { label: "검토 중", value: confirmationReviews.filter((row) => row.reviewStatus === "in_review").length, colorVar: "--c1" },
+    { label: "검토 완료", value: confirmationReviews.filter((row) => row.reviewStatus === "completed").length, colorVar: "--c2" },
+  ];
 
   const monthlyConfirmationCount = participationSummary.counts.monthly;
   const preworkConfirmationCount = participationSummary.counts.prework;
@@ -392,6 +400,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       companyLabel={companyLabel}
       managerHref={managerHref}
       monthlyHref={monthlyHref}
+      confirmationReviewHref={confirmationReviewHref}
       fieldHref={fieldHref}
       monthLabel={monthLabel}
       todayLabel={getTodayKstLabel()}
@@ -419,6 +428,16 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
         signatureNotSubmittedCount,
         status: representativeSubmissionSummary.status,
       }}
+      reviewStatus={reviewStatus}
+      recentSubmissions={confirmationReviews.slice(0, 10).map((row) => ({
+        category: "공유확인",
+        categoryBadgeClass: "b-blue",
+        submitterLabel: "근로자 확인",
+        detail: row.title,
+        submittedAtLabel: row.createdAt,
+        statusLabel: row.reviewStatus === "completed" ? "검토 완료" : row.reviewStatus === "in_review" ? "검토 중" : "미검토",
+        statusBadgeClass: row.reviewStatus === "completed" ? "b-green" : row.reviewStatus === "in_review" ? "b-blue" : "b-orange",
+      }))}
       userDisplayName={userDisplayName}
       userEmail={userEmail}
       avatarInitial={avatarInitial}
