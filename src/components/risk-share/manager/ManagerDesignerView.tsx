@@ -98,6 +98,7 @@ export type ManagerDesignerViewProps = {
   companyLabel: string;
   managerHref: string;
   monthlyHref: string;
+  confirmationReviewHref: string;
   fieldHref: string;
   monthLabel: string;
   todayLabel: string;
@@ -176,6 +177,7 @@ export default function ManagerDesignerView({
   companyLabel,
   managerHref,
   monthlyHref,
+  confirmationReviewHref,
   fieldHref,
   monthLabel,
   todayLabel,
@@ -260,11 +262,11 @@ export default function ManagerDesignerView({
 
             <div className="nav__section">
               <div className="nav__label">안전운영</div>
-              <div className="nav__item is-disabled" title="위험성평가 공유확인">
+              <a className="nav__item" href={confirmationReviewHref} title="위험성평가 공유확인" onClick={closeSidebar}>
                 <iconify-icon icon="lucide:share-2"></iconify-icon>
                 <span className="nav__txt">위험성평가 공유확인</span>
                 <NavBadge status={statuses.monthly} count={counts.monthly} />
-              </div>
+              </a>
               <div className="nav__item is-disabled" title="작업 전 안전확인">
                 <iconify-icon icon="lucide:clipboard-check"></iconify-icon>
                 <span className="nav__txt">작업 전 안전확인</span>
