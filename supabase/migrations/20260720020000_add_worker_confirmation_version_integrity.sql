@@ -65,7 +65,7 @@ begin
 end
 $$;
 
-do $
+do $$
 begin
   if not exists (
     select 1
@@ -77,7 +77,7 @@ begin
       unique (tenant_code, confirmation_idempotency_key);
   end if;
 end
-$;
+$$;
 
 create index if not exists
   field_participation_tenant_version_created_idx
