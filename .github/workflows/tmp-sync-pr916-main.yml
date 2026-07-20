@@ -1,4 +1,4 @@
-name: Temporary sync PR 916 with main
+name: Temporary verify PR 916 revision integration
 
 on:
   push:
@@ -8,22 +8,59 @@ on:
       - ".github/workflows/tmp-sync-pr916-main.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  sync:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
-      - name: Checkout PR branch
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: feat/add-manager-publish-ui
           fetch-depth: 0
-      - name: Merge current main without history rewrite
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Contract verifiers
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git merge --no-edit origin/main
-          git push origin HEAD:feat/add-manager-publish-ui
+          npm run verify:risk-share-manager-publish-revision-integration
+          npm run verify:risk-share-manager-publish-api
+          npm run verify:risk-share-manager-publish-read-model
+          npm run verify:risk-share-manager-publish-ui
+          npm run verify:risk-share-tenant-publish-revision-guard
+          npm run verify:risk-share-tenant-publish-rpc
+      - name: Targeted lint
+        run: >
+          npx eslint
+          src/lib/risk-share/riskShareManagerReview.ts
+          src/lib/risk-share/riskShareManagerPublishReadModel.ts
+          src/app/risk-share/manager/share-review/publish/page.tsx
+          src/app/risk-share/manager/share-review/publish/PublishClient.tsx
+          src/app/api/risk-share/manager/publish/route.ts
+          src/lib/risk-share/riskShareTenantPublish.ts
+          scripts/verify-risk-share-manager-publish-revision-integration.mjs
+          scripts/verify-risk-share-manager-publish-api-contract.mjs
+          scripts/verify-risk-share-manager-publish-read-model-contract.mjs
+          scripts/verify-risk-share-manager-publish-ui-contract.mjs
+      - name: Build
+        run: npm run build
+      - name: Caller and legacy RPC inspection
+        run: |
+          echo "API callers"
+          git grep -n "/api/risk-share/manager/publish" -- ':!scripts/**' || true
+          echo "Legacy RPC application references"
+          if git grep -n 'rpc/publish_risk_share_version_for_tenant`' -- 'src/**'; then
+            exit 1
+          fi
+          echo "Checked RPC application references"
+          git grep -n "rpc/publish_risk_share_version_for_tenant_checked" -- 'src/**'
+      - name: Diff check
+        run: |
+          git diff --check origin/main...HEAD
+          test -z "$(git diff --name-only origin/main...HEAD | grep '^supabase/' || true)"
