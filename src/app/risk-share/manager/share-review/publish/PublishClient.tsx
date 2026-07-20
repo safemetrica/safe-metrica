@@ -27,6 +27,8 @@ export type PublishClientEntry =
       improvementPlan: string | null;
       workerShareSummary: string | null;
       workerVisible: boolean;
+      /** Canonical PostgreSQL bigint decimal text; never convert to number. */
+      reviewRevision: string;
       state: PublishClientEntryState;
       reviewReasons: PublishClientReviewReason[];
     }
@@ -282,8 +284,21 @@ export default function PublishClient({
     [readyEntries],
   );
   const selectedSorted = useMemo(() => [...selectedIds].sort(), [selectedIds]);
-  const selectedWorkerVisibleCount = selectedSorted.reduce(
-    (count, itemId) => count + (readyById.get(itemId)?.workerVisible ? 1 : 0),
+  const selectedEntries = useMemo(
+    () => selectedSorted.map((itemId) => readyById.get(itemId) ?? null),
+    [readyById, selectedSorted],
+  );
+  const selectedExpectedReviewRevisions = selectedEntries.map(
+    (entry) => entry?.reviewRevision ?? "",
+  );
+  const selectedPairsAreValid =
+    selectedEntries.every(
+      (entry) =>
+        entry !== null && /^[1-9][0-9]*$/.test(entry.reviewRevision),
+    ) &&
+    selectedExpectedReviewRevisions.length === selectedSorted.length;
+  const selectedWorkerVisibleCount = selectedEntries.reduce(
+    (count, entry) => count + (entry?.workerVisible ? 1 : 0),
     0,
   );
 
@@ -294,7 +309,7 @@ export default function PublishClient({
     readStatus,
     entries.map((entry) =>
       entry.kind === "valid"
-        ? [entry.id, entry.state, entry.workerVisible, entry.reviewReasons]
+        ? [entry.id, entry.reviewRevision, entry.state, entry.workerVisible, entry.reviewReasons]
         : [entry.id, "invalid"],
     ),
   ]);
@@ -314,6 +329,7 @@ export default function PublishClient({
     !blocked &&
     !submitting &&
     selectedSorted.length > 0 &&
+    selectedPairsAreValid &&
     lockTitle.trim().length > 0;
 
   function toggleSelection(itemId: string, checked: boolean) {
@@ -343,6 +359,7 @@ export default function PublishClient({
       lockTitle: normalizedTitle,
       notes: normalizedNotes,
       itemIds: selectedSorted,
+      expectedReviewRevisions: selectedExpectedReviewRevisions,
     });
     const confirmed = window.confirm(
       `${lockMonth} 공유본으로 ${selectedSorted.length}건을 게시합니다. 게시 후 선택 항목은 잠기며, 근로자별 확인 기록은 별도 단계에서 수집됩니다. 계속하시겠습니까?`,
@@ -377,6 +394,7 @@ export default function PublishClient({
           lockTitle: normalizedTitle,
           notes: normalizedNotes,
           itemIds: selectedSorted,
+          expectedReviewRevisions: selectedExpectedReviewRevisions,
           idempotencyKey,
         }),
       });
