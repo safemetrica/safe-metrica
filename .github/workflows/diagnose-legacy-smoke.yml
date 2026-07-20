@@ -1,0 +1,26 @@
+name: Diagnose Legacy Route Smoke
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run legacy route smoke with full output
+        shell: bash
+        run: |
+          set +e
+          npm run smoke:legacy-routes 2>&1 | tee /tmp/legacy-smoke.log
+          status=${PIPESTATUS[0]}
+          echo "SMOKE_EXIT=$status"
+          echo "--- LAST 80 LINES ---"
+          tail -80 /tmp/legacy-smoke.log
+          exit "$status"
