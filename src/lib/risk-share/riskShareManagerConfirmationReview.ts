@@ -67,6 +67,9 @@ export async function updateManagerConfirmationReview(input: {
     || !STATUSES.has(input.expectedStatus)
     || !(["in_review", "completed"] as string[]).includes(input.nextStatus)
     || input.actionNote.length > 500
+    || (input.expectedStatus === "unreviewed" && input.nextStatus !== "in_review")
+    || (input.expectedStatus === "in_review" && input.nextStatus !== "completed")
+    || input.expectedStatus === "completed"
   ) {
     return { ok: false as const, code: "validation_failed" };
   }
