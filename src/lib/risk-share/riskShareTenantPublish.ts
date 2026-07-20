@@ -216,7 +216,7 @@ export async function publishRiskShareVersionForTenantChecked(
       !UUID_PATTERN.test(itemId) ||
       seenItemIds.has(normalizedItemId) ||
       !/^[1-9][0-9]*$/.test(revision) ||
-      BigInt(revision) > 9223372036854775807n
+      BigInt(revision) > BigInt("9223372036854775807")
     ) {
       return failClosed("request_failed");
     }
