@@ -250,6 +250,7 @@ function toPublishEntry(
     improvementPlan: item.improvementPlan,
     workerShareSummary: item.workerShareSummary,
     workerVisible: item.workerVisible,
+    reviewRevision: item.reviewRevisionText,
     state: reviewReasons.length === 0 ? "ready_to_publish" : "review_required",
     reviewReasons,
   };
