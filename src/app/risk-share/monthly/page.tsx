@@ -95,11 +95,13 @@ const RISK_SHARE_MONTHLY_SUMMARY_LIMIT = 500;
 
 type RiskShareParticipationRawPayload = {
   mode?: string;
+  version_lock_id?: string | null;
   signature_present?: boolean | string | null;
   signature_url?: string | null;
 };
 
 type RiskShareParticipationSummaryRow = {
+  version_lock_id?: string | null;
   raw_payload: RiskShareParticipationRawPayload | null;
 };
 
@@ -110,6 +112,9 @@ type RiskShareParticipationSummary = {
     prework: number;
     monthlySignatureConfirmed: number;
     preworkSignatureConfirmed: number;
+    versionLinkedMonthly: number;
+    versionUnlinkedMonthly: number;
+    confirmedVersionCount: number;
   };
 };
 
@@ -122,7 +127,7 @@ async function fetchRiskShareMonthlyParticipationSummary(
   period: { createdAtGte: string; createdAtLt: string }
 ): Promise<RiskShareParticipationSummary> {
   const query = new URLSearchParams();
-  query.set("select", "raw_payload");
+  query.set("select", "version_lock_id,raw_payload");
   query.set("tenant_code", `eq.${companyCode}`);
   query.set("raw_payload->>source", `eq.${RISK_SHARE_PARTICIPATION_SOURCE}`);
   query.append("created_at", `gte.${period.createdAtGte}`);
@@ -136,6 +141,13 @@ async function fetchRiskShareMonthlyParticipationSummary(
     );
     const monthlyRows = rows.filter((row) => row.raw_payload?.mode === "monthly");
     const preworkRows = rows.filter((row) => row.raw_payload?.mode === "prework");
+    const linkedVersionIds = monthlyRows
+      .map((row) => row.version_lock_id || row.raw_payload?.version_lock_id || "")
+      .filter((versionId) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          versionId,
+        ),
+      );
 
     return {
       status: "ok",
@@ -144,6 +156,9 @@ async function fetchRiskShareMonthlyParticipationSummary(
         prework: preworkRows.length,
         monthlySignatureConfirmed: monthlyRows.filter((row) => hasParticipationSignature(row.raw_payload)).length,
         preworkSignatureConfirmed: preworkRows.filter((row) => hasParticipationSignature(row.raw_payload)).length,
+        versionLinkedMonthly: linkedVersionIds.length,
+        versionUnlinkedMonthly: monthlyRows.length - linkedVersionIds.length,
+        confirmedVersionCount: new Set(linkedVersionIds.map((id) => id.toLowerCase())).size,
       },
     };
   } catch (error) {
@@ -151,7 +166,15 @@ async function fetchRiskShareMonthlyParticipationSummary(
 
     return {
       status: message.includes("configuration is missing") ? "not_configured" : "failed",
-      counts: { monthly: 0, prework: 0, monthlySignatureConfirmed: 0, preworkSignatureConfirmed: 0 },
+      counts: {
+        monthly: 0,
+        prework: 0,
+        monthlySignatureConfirmed: 0,
+        preworkSignatureConfirmed: 0,
+        versionLinkedMonthly: 0,
+        versionUnlinkedMonthly: 0,
+        confirmedVersionCount: 0,
+      },
     };
   }
 }
@@ -319,6 +342,9 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
         representative: representativeSubmissionSummary.totalCount,
         signatureConfirmed: representativeSubmissionSummary.signatureConfirmedCount,
         signatureNotSubmitted: representativeSubmissionSummary.signatureNotSubmittedCount,
+        versionLinkedMonthly: participationSummary.counts.versionLinkedMonthly,
+        versionUnlinkedMonthly: participationSummary.counts.versionUnlinkedMonthly,
+        confirmedVersionCount: participationSummary.counts.confirmedVersionCount,
       }}
       monthlyTrendFallbackLabels={getLastFiveMonthLabels()}
     />
