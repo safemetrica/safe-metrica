@@ -5,7 +5,7 @@ npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and cont
 npm warn deprecated fstream@1.0.12: This package is no longer supported.
 npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
 
-added 538 packages, and audited 539 packages in 11s
+added 538 packages, and audited 539 packages in 10s
 
 160 packages are looking for funding
   run `npm fund` for details
@@ -482,23 +482,19 @@ https://nextjs.org/telemetry
 ▲ Next.js 16.2.4 (Turbopack)
 
   Creating an optimized production build ...
-✓ Compiled successfully in 11.2s
+✓ Compiled successfully in 11.6s
   Running TypeScript ...
 Failed to type check.
 
-./src/app/risk-share/manager/share-review/page.tsx:117:9
-Type error: Type '({ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; ... 6 more ...; reviewRevision: string; } | { ...; })[]' is not assignable to type 'ShareReviewClientItem[]'.
-  Type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; ... 6 more ...; reviewRevision: string; } | { ...; }' is not assignable to type 'ShareReviewClientItem'.
-    Type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; ... 6 more ...; reviewRevision: string; }' is not assignable to type 'ShareReviewClientItem'.
-      Type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; ... 6 more ...; reviewRevision: string; }' is not assignable to type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; ... 6 more ...; reviewRevision: number; }'.
-        Types of property 'reviewRevision' are incompatible.
-          Type 'string' is not assignable to type 'number'.
+./src/lib/risk-share/riskShareManagerPublishReadModel.ts:241:3
+Type error: Type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; workerShareSummary: string | null; workerVisible: boolean; state: "ready_to_publish" | "review_required"; reviewReason...' is not assignable to type 'RiskShareManagerPublishEntry'.
+  Property 'reviewRevision' is missing in type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; workerShareSummary: string | null; workerVisible: boolean; state: "ready_to_publish" | "review_required"; reviewReason...' but required in type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; ... 4 more ...; reviewReasons: RiskShareManagerPublishReviewReason[]; }'.
 
-  [90m115 |[0m   [36mconst[0m listResult = [36mawait[0m listRiskShareItemsForManagerReview(selectedTenantCode);
-  [90m116 |[0m
-[31m[1m>[0m [90m117 |[0m   [36mconst[0m clientItems: [33mShareReviewClientItem[0m[] =
-  [90m    |[0m         [31m[1m^[0m
-  [90m118 |[0m     listResult.status === [32m"ok"[0m
-  [90m119 |[0m       ? listResult.entries.map((entry) =>
-  [90m120 |[0m           entry.kind === [32m"valid"[0m
+  [90m239 |[0m   }
+  [90m240 |[0m
+[31m[1m>[0m [90m241 |[0m   [36mreturn[0m {
+  [90m    |[0m   [31m[1m^[0m
+  [90m242 |[0m     kind: [32m"valid"[0m,
+  [90m243 |[0m     id: item.id,
+  [90m244 |[0m     siteName: item.siteName,
 Next.js build worker exited with code: 1 and signal: null
