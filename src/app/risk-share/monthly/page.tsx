@@ -142,7 +142,7 @@ async function fetchRiskShareMonthlyParticipationSummary(
     const monthlyRows = rows.filter((row) => row.raw_payload?.mode === "monthly");
     const preworkRows = rows.filter((row) => row.raw_payload?.mode === "prework");
     const linkedVersionIds = monthlyRows
-      .map((row) => row.version_lock_id || row.raw_payload?.version_lock_id || "")
+      .map((row) => row.version_lock_id || "")
       .filter((versionId) =>
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
           versionId,
