@@ -5,7 +5,7 @@ npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and cont
 npm warn deprecated fstream@1.0.12: This package is no longer supported.
 npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
 
-added 538 packages, and audited 539 packages in 10s
+added 538 packages, and audited 539 packages in 11s
 
 160 packages are looking for funding
   run `npm fund` for details
@@ -482,19 +482,146 @@ https://nextjs.org/telemetry
 ▲ Next.js 16.2.4 (Turbopack)
 
   Creating an optimized production build ...
-✓ Compiled successfully in 11.6s
+✓ Compiled successfully in 12.5s
   Running TypeScript ...
-Failed to type check.
+  Finished TypeScript in 12.0s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/40) ...
+  Generating static pages using 3 workers (10/40) 
+  Generating static pages using 3 workers (20/40) 
+  Generating static pages using 3 workers (30/40) 
+✓ Generating static pages using 3 workers (40/40) in 453ms
+  Finalizing page optimization ...
 
-./src/lib/risk-share/riskShareManagerPublishReadModel.ts:241:3
-Type error: Type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; workerShareSummary: string | null; workerVisible: boolean; state: "ready_to_publish" | "review_required"; reviewReason...' is not assignable to type 'RiskShareManagerPublishEntry'.
-  Property 'reviewRevision' is missing in type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; workerShareSummary: string | null; workerVisible: boolean; state: "ready_to_publish" | "review_required"; reviewReason...' but required in type '{ kind: "valid"; id: string; siteName: string | null; sourceTitle: string; taskName: string; hazard: string; riskLevel: string | null; currentControls: string | null; improvementPlan: string | null; ... 4 more ...; reviewReasons: RiskShareManagerPublishReviewReason[]; }'.
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/admin/export
+├ ƒ /api/admin/export/customer-csv
+├ ƒ /api/ai-diagnosis
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/contractor/mons/submit
+├ ƒ /api/contractor/submissions/review
+├ ƒ /api/field-ai-brief
+├ ƒ /api/field/anonymous-feedback/submit
+├ ƒ /api/field/participation/submit
+├ ƒ /api/field/voice/status
+├ ƒ /api/kosha-data
+├ ƒ /api/manager/representative-confirmation-links/create
+├ ƒ /api/manager/representative-confirmation-links/revoke
+├ ƒ /api/owner/login
+├ ƒ /api/owner/risk-share-candidates/create
+├ ƒ /api/owner/risk-share-candidates/status
+├ ƒ /api/owner/risk-share-items/create-from-candidate
+├ ƒ /api/owner/risk-share-items/customer-check
+├ ƒ /api/owner/risk-share-source-intake/submit
+├ ƒ /api/owner/risk-share-version-locks/create
+├ ƒ /api/owner/risk-share/sources/candidates
+├ ƒ /api/owner/risk-share/sources/mapping
+├ ƒ /api/owner/risk-share/sources/upload
+├ ƒ /api/owner/select
+├ ƒ /api/owner/tenant-onboarding/activate
+├ ƒ /api/owner/tenant-onboarding/create
+├ ƒ /api/owner/tenant-onboarding/membership/create
+├ ƒ /api/owner/tenant-onboarding/sites
+├ ƒ /api/risk-approval
+├ ƒ /api/risk-report-pdf
+├ ƒ /api/risk-share/anonymous/submit
+├ ƒ /api/risk-share/manager/preparation
+├ ƒ /api/risk-share/manager/publish
+├ ƒ /api/risk-share/manager/share-review
+├ ƒ /api/risk-share/manager/sources/mapping
+├ ƒ /api/risk-share/manager/sources/upload
+├ ƒ /api/risk-share/participation/submit
+├ ƒ /api/risk-share/representative/submit
+├ ƒ /api/risk-share/visitor/submit
+├ ƒ /api/safety-news
+├ ƒ /api/tbm/voice-submit
+├ ƒ /api/weather
+├ ƒ /api/worker-representative/confirmation/submit
+├ ○ /ceo-home
+├ ○ /contractor-status
+├ ƒ /contractor/mons
+├ ○ /contractor/mons/submit
+├ ○ /contractor/mons/submitted
+├ ƒ /dashboard
+├ ƒ /ebm
+├ ƒ /ebm/[id]
+├ ƒ /field
+├ ƒ /field/anonymous-feedback
+├ ƒ /field/participation
+├ ƒ /field/participation/risk-summary
+├ ƒ /field/participation/submitted
+├ ƒ /field/representative-confirmation
+├ ƒ /field/voice
+├ ƒ /home
+├ ○ /inspection-education
+├ ○ /kosha
+├ ƒ /login
+├ ƒ /manager/representative-confirmations
+├ ƒ /manager/risk-share
+├ ƒ /monthly-report
+├ ƒ /monthly-report/risk-share
+├ ƒ /owner
+├ ƒ /owner/bubblemon-mons
+├ ƒ /owner/risk-share-activation
+├ ƒ /owner/risk-share-activation/candidates
+├ ƒ /owner/risk-share-activation/candidates/new
+├ ƒ /owner/risk-share-activation/share-items
+├ ƒ /owner/risk-share-activation/source-intake
+├ ƒ /owner/risk-share-activation/version-lock
+├ ƒ /owner/risk-share/sources
+├ ƒ /owner/risk-share/sources/mapping
+├ ƒ /owner/risk-share/sources/preview
+├ ƒ /owner/tenant-onboarding
+├ ƒ /owner/tenant-onboarding/draft
+├ ○ /partner-demo
+├ ○ /partner-demo/ceo
+├ ○ /partner-demo/field-participation
+├ ○ /partner-demo/manager
+├ ○ /partner-demo/tbm
+├ ○ /partner-demo/worker
+├ ƒ /partner/gaon
+├ ƒ /partner/gaon/onboarding
+├ ƒ /privacy
+├ ƒ /ptw
+├ ƒ /ptw/[id]
+├ ƒ /risk
+├ ƒ /risk-share/anonymous
+├ ƒ /risk-share/field
+├ ƒ /risk-share/manager
+├ ƒ /risk-share/manager/settings/site-profile
+├ ƒ /risk-share/manager/share-review
+├ ƒ /risk-share/manager/share-review/publish
+├ ƒ /risk-share/manager/sources
+├ ƒ /risk-share/manager/sources/mapping
+├ ƒ /risk-share/manager/sources/preparation
+├ ƒ /risk-share/manager/sources/preview
+├ ƒ /risk-share/monthly
+├ ƒ /risk-share/participation
+├ ƒ /risk-share/representative
+├ ƒ /risk-share/visitor
+├ ƒ /risk/report
+├ ƒ /select-tenant
+├ ƒ /site-manager
+├ ƒ /tbm
+├ ƒ /tbm/[id]
+├ ƒ /tenant/[tenantCode]/manager
+├ ƒ /terms
+├ ○ /test/uiux/index
+├ ○ /trial/richi
+├ ○ /trial/richi/manager
+├ ○ /trial/richi/summary
+└ ○ /worker-home
 
-  [90m239 |[0m   }
-  [90m240 |[0m
-[31m[1m>[0m [90m241 |[0m   [36mreturn[0m {
-  [90m    |[0m   [31m[1m^[0m
-  [90m242 |[0m     kind: [32m"valid"[0m,
-  [90m243 |[0m     id: item.id,
-  [90m244 |[0m     siteName: item.siteName,
-Next.js build worker exited with code: 1 and signal: null
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+.github/workflows/tmp-sync-pr916-main.yml:37:            npx eslint               src/lib/risk-share/riskShareManagerReview.ts               src/lib/risk-share/riskShareManagerPublishReadModel.ts               src/app/risk-share/manager/share-review/publish/page.tsx               src/app/risk-share/manager/share-review/publish/PublishClient.tsx               src/app/api/risk-share/manager/publish/route.ts               src/lib/risk-share/riskShareTenantPublish.ts               scripts/verify-risk-share-manager-publish-revision-integration.mjs               scripts/verify-risk-share-manager-publish-api-contract.mjs               scripts/verify-risk-share-manager-publish-read-model-contract.mjs               scripts/verify-risk-share-manager-publish-ui-contract.mjs &&
+.github/workflows/tmp-sync-pr916-main.yml:39:            git grep -n "/api/risk-share/manager/publish" -- ':!scripts/**' &&
+.tmp-pr916-revision-verify-log:531:├ ƒ /api/risk-share/manager/publish
+src/app/risk-share/manager/share-review/publish/PublishClient.tsx:263:    () => `/api/risk-share/manager/publish?company=${encodeURIComponent(companyCode)}`,
+src/lib/risk-share/riskShareTenantPublish.ts:231:      `${supabaseUrl}/rest/v1/rpc/publish_risk_share_version_for_tenant_checked`,
