@@ -65,13 +65,19 @@ begin
 end
 $$;
 
-create unique index if not exists
-  field_participation_tenant_confirmation_idempotency_uidx
-  on public.field_participation_submissions (
-    tenant_code,
-    confirmation_idempotency_key
-  )
-  where confirmation_idempotency_key is not null;
+do $
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'field_participation_tenant_confirmation_idempotency_key'
+  ) then
+    alter table public.field_participation_submissions
+      add constraint field_participation_tenant_confirmation_idempotency_key
+      unique (tenant_code, confirmation_idempotency_key);
+  end if;
+end
+$;
 
 create index if not exists
   field_participation_tenant_version_created_idx
