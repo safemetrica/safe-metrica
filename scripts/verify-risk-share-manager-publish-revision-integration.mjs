@@ -28,13 +28,13 @@ check(
 );
 check(
   "review parser accepts canonical positive decimal text only",
-  source.review.includes("reviewRevision: string") &&
-    source.review.includes("/^[1-9][0-9]*$/.test(reviewRevision)") &&
-    !source.review.includes("Number(reviewRevision)"),
+  source.review.includes("reviewRevisionText: string") &&
+    source.review.includes("/^[1-9][0-9]*$/.test(reviewRevisionText)") &&
+    !source.review.includes("Number(reviewRevisionText)"),
 );
 check(
   "read model preserves review revision",
-  source.readModel.includes("reviewRevision: item.reviewRevision"),
+  source.readModel.includes("reviewRevision: item.reviewRevisionText"),
 );
 check(
   "server page preserves review revision",
