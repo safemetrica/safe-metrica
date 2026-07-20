@@ -1,0 +1,46 @@
+name: Temporary inspect Version integrity paths
+
+on:
+  push:
+    branches:
+      - work/version-integrity-inspect-20260720
+    paths:
+      - ".github/workflows/tmp-version-integrity-inspect.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/version-integrity-inspect-20260720
+          fetch-depth: 0
+      - name: Inspect repository paths and contracts
+        run: |
+          {
+            echo "=== MAIN ==="
+            git rev-parse HEAD
+            echo "=== RELEVANT FILES ==="
+            find src scripts supabase -type f | sort | grep -Ei 'risk.share|snapshot|confirm|particip|monthly|version|worker' || true
+            echo "=== VERSION REFERENCES ==="
+            git grep -n -E 'version_lock_id|source_review_revision|risk_share_version_items|risk_share_version_locks' -- src scripts || true
+            echo "=== PUBLIC READ REFERENCES ==="
+            git grep -n -E 'risk-share/(field|participation|visitor|anonymous)|worker_visible|public.*risk|Snapshot|snapshot' -- src scripts || true
+            echo "=== CONFIRMATION REFERENCES ==="
+            git grep -n -E 'confirm|acknowledg|participation|submit|idempot' -- src/app/risk-share src/lib/risk-share scripts || true
+            echo "=== MONTHLY REFERENCES ==="
+            git grep -n -E 'monthly|month|result|report' -- src/app/risk-share src/lib/risk-share scripts || true
+            echo "=== API ROUTES ==="
+            find src/app/api -type f | sort || true
+            echo "=== URL REFERENCES ==="
+            git grep -n -E 'https://|vercel.app|safemetrica' -- src .env.example README.md 2>/dev/null || true
+          } > .tmp-version-integrity-inspect-log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .tmp-version-integrity-inspect-log
+          git commit -m "chore: record temporary Version integrity inspection"
+          git push origin HEAD:work/version-integrity-inspect-20260720
