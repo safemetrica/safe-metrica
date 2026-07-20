@@ -102,7 +102,16 @@ export default async function RiskShareManagerShareReviewPage({
     );
   }
 
-  const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: selectedTenantCode }, lang);
+  const managerHref = buildRiskShareLangHref(
+    "/risk-share/manager",
+    { company: selectedTenantCode },
+    lang,
+  );
+  const publishHref = buildRiskShareLangHref(
+    "/risk-share/manager/share-review/publish",
+    { company: selectedTenantCode },
+    lang,
+  );
   const listResult = await listRiskShareItemsForManagerReview(selectedTenantCode);
 
   const clientItems: ShareReviewClientItem[] =
@@ -133,6 +142,29 @@ export default async function RiskShareManagerShareReviewPage({
 
   return (
     <SiteProfileShell>
+      <div className="content" style={{ padding: "20px 24px 0", overflowX: "hidden" }}>
+        <div
+          className="card card--pad"
+          style={{
+            maxWidth: "860px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "12px",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <p style={{ fontWeight: 900 }}>검토가 끝났다면 공유본 게시로 이동하세요.</p>
+            <p className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>
+              게시할 항목은 다음 화면에서 다시 직접 선택합니다.
+            </p>
+          </div>
+          <a className="btn btn--primary" href={publishHref}>
+            공유본 게시 준비
+          </a>
+        </div>
+      </div>
       <ShareReviewClient
         companyCode={selectedTenantCode}
         lang={lang}
