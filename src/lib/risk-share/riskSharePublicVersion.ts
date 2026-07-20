@@ -39,8 +39,9 @@ type VersionLockRow = {
   worker_visible_count?: number | null;
 };
 
-type LockedItemRow = {
-  id?: string | null;
+type SnapshotItemRow = {
+  source_item_id?: string | null;
+  position?: number | null;
   task_name?: string | null;
   hazard?: string | null;
   risk_level?: string | null;
@@ -70,38 +71,36 @@ async function fetchActiveVersionLock(companyCode: string): Promise<VersionLockR
   return rows[0] ?? null;
 }
 
-async function fetchWorkerVisibleLockedItems(
+async function fetchWorkerVisibleSnapshotItems(
   companyCode: string,
   versionLockId: string,
-): Promise<LockedItemRow[]> {
+): Promise<SnapshotItemRow[]> {
   const query = new URLSearchParams({
     select:
-      "id,task_name,hazard,risk_level,current_controls,improvement_plan,worker_share_summary",
+      "source_item_id,position,task_name,hazard,risk_level,current_controls,improvement_plan,worker_share_summary",
     company_code: `eq.${companyCode}`,
     version_lock_id: `eq.${versionLockId}`,
-    share_status: "eq.locked",
-    customer_confirmed: "eq.true",
     worker_visible: "eq.true",
-    order: "created_at.asc,id.asc",
+    order: "position.asc,source_item_id.asc",
     limit: String(RISK_SHARE_PUBLIC_VERSION_ITEM_FETCH_LIMIT),
   });
 
-  return selectSupabaseExportRows<LockedItemRow>("risk_share_items", query);
+  return selectSupabaseExportRows<SnapshotItemRow>(
+    "risk_share_version_items",
+    query,
+  );
 }
 
 /**
  * Resolves the single current worker-facing Version Lock for a tenant, plus
- * its worker-visible locked items. "Current" is the most recently created
+ * its worker-visible immutable snapshot items. "Current" is the most recently created
  * active lock for the company_code -- risk_share_version_locks allows at
  * most one active lock per company_code+lock_month (partial unique index),
  * but a company can still have multiple different months active at once, so
- * ties across months are broken deterministically by created_at desc. Only
- * share_status=locked / customer_confirmed=true / worker_visible=true rows
- * scoped to that exact lock id are returned -- this is the same worker
- * exposure condition the create_risk_share_version_lock RPC enforces when it
- * attaches items to a lock. Only worker-safe fields are selected; raw_payload,
- * customer_note, owner_note, and other internal/Owner-only fields are never
- * read here.
+ * ties across months are broken deterministically by created_at desc. Only worker_visible=true rows from risk_share_version_items scoped to
+ * that exact lock id are returned. The live risk_share_items table is never
+ * read, so later review or status changes cannot alter what a worker sees.
+ * Only worker-safe snapshot fields are selected.
  *
  * Fail-closed on data integrity problems rather than silently truncating or
  * skipping rows: the item query asks for one row more than the display/limit
@@ -121,7 +120,7 @@ export async function resolveActiveRiskSharePublicVersion(
       return { ok: false, reason: "no_share" };
     }
 
-    const itemRows = await fetchWorkerVisibleLockedItems(companyCode, lockRow.id);
+    const itemRows = await fetchWorkerVisibleSnapshotItems(companyCode, lockRow.id);
 
     if (itemRows.length > RISK_SHARE_PUBLIC_VERSION_ITEM_LIMIT) {
       return { ok: false, reason: "invalid_share" };
@@ -130,7 +129,7 @@ export async function resolveActiveRiskSharePublicVersion(
     const seenItemIds = new Set<string>();
 
     for (const row of itemRows) {
-      const id = readText(row.id);
+      const id = readText(row.source_item_id);
       const taskName = readText(row.task_name);
       const hazard = readText(row.hazard);
 
@@ -156,7 +155,7 @@ export async function resolveActiveRiskSharePublicVersion(
     }
 
     const items: RiskSharePublicVersionItem[] = itemRows.map((row) => ({
-      id: readText(row.id),
+      id: readText(row.source_item_id),
       taskName: readText(row.task_name),
       hazard: readText(row.hazard),
       riskLevel: readText(row.risk_level) || null,
