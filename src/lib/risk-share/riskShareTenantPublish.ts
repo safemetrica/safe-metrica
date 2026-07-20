@@ -10,13 +10,15 @@ export type PublishRiskShareVersionCode =
   | "request_failed"
   | "invalid_response";
 
-export type PublishRiskShareVersionParams = {
+export type PublishRiskShareVersionCheckedParams = {
   companyCode: string;
   actorMembershipId: string;
   lockMonth: string;
   lockTitle: string;
   notes: string | null;
   itemIds: string[];
+  /** Canonical positive PostgreSQL bigint decimal strings, paired by index. */
+  expectedReviewRevisions: string[];
   idempotencyKey: string;
 };
 
@@ -180,13 +182,13 @@ function validatePublishRiskShareVersionResponse(
   return failClosed(code as Exclude<PublishRiskShareVersionCode, "ok">);
 }
 
-/** Server-only boundary for public.publish_risk_share_version_for_tenant.
- * The RPC alone re-validates membership, locks the explicit Item set,
- * enforces active-month/idempotency rules, writes the Version snapshot, and
- * locks live Items atomically. This helper must never write those tables
- * directly or reproduce eligibility logic in TypeScript. */
-export async function publishRiskShareVersionForTenant(
-  params: PublishRiskShareVersionParams,
+/** Server-only boundary for
+ * public.publish_risk_share_version_for_tenant_checked.
+ * The RPC re-validates membership and the transaction-time Item revisions,
+ * locks the explicit Item set, enforces active-month/idempotency rules,
+ * writes the Version snapshot, and locks live Items atomically. */
+export async function publishRiskShareVersionForTenantChecked(
+  params: PublishRiskShareVersionCheckedParams,
 ): Promise<PublishRiskShareVersionResult> {
   const supabaseUrl = getSupabaseUrl();
   const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
@@ -195,15 +197,38 @@ export async function publishRiskShareVersionForTenant(
     return failClosed("request_failed");
   }
 
-  if (params.itemIds.length < 1 || params.itemIds.length > 200) {
+  if (
+    params.itemIds.length < 1 ||
+    params.itemIds.length > 200 ||
+    params.itemIds.length !== params.expectedReviewRevisions.length
+  ) {
     return failClosed("request_failed");
+  }
+
+  const seenItemIds = new Set<string>();
+
+  for (let index = 0; index < params.itemIds.length; index += 1) {
+    const itemId = params.itemIds[index];
+    const revision = params.expectedReviewRevisions[index];
+    const normalizedItemId = itemId.toLowerCase();
+
+    if (
+      !UUID_PATTERN.test(itemId) ||
+      seenItemIds.has(normalizedItemId) ||
+      !/^[1-9][0-9]*$/.test(revision) ||
+      BigInt(revision) > 9223372036854775807n
+    ) {
+      return failClosed("request_failed");
+    }
+
+    seenItemIds.add(normalizedItemId);
   }
 
   let response: Response;
 
   try {
     response = await fetch(
-      `${supabaseUrl}/rest/v1/rpc/publish_risk_share_version_for_tenant`,
+      `${supabaseUrl}/rest/v1/rpc/publish_risk_share_version_for_tenant_checked`,
       {
         method: "POST",
         headers: {
@@ -219,6 +244,7 @@ export async function publishRiskShareVersionForTenant(
           p_lock_title: params.lockTitle,
           p_notes: params.notes,
           p_item_ids: params.itemIds,
+          p_expected_review_revisions: params.expectedReviewRevisions,
           p_idempotency_key: params.idempotencyKey,
         }),
         cache: "no-store",
@@ -241,7 +267,7 @@ export async function publishRiskShareVersionForTenant(
         ? (errorData as { code: string }).code
         : null;
 
-    console.error("[tenant-risk-share-publish-rpc] request failed", {
+    console.error("[tenant-risk-share-publish-checked-rpc] request failed", {
       status: response.status,
       statusText: response.statusText,
       errorCode,
@@ -259,7 +285,7 @@ export async function publishRiskShareVersionForTenant(
   );
 
   if (result.code === "invalid_response") {
-    console.error("[tenant-risk-share-publish-rpc] unexpected response shape", {
+    console.error("[tenant-risk-share-publish-checked-rpc] unexpected response shape", {
       responseKind: Array.isArray(data) ? "array" : typeof data,
       rowCount: Array.isArray(data) ? data.length : undefined,
       requestedItemCount: params.itemIds.length,
