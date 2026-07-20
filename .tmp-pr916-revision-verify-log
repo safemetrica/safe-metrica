@@ -1,0 +1,499 @@
+npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated fstream@1.0.12: This package is no longer supported.
+npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+added 538 packages, and audited 539 packages in 15s
+
+160 packages are looking for funding
+  run `npm fund` for details
+
+9 vulnerabilities (1 low, 6 moderate, 2 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+> safe-metrica@0.1.0 verify:risk-share-manager-publish-revision-integration
+> node scripts/verify-risk-share-manager-publish-revision-integration.mjs
+
+PASS: PostgREST read casts bigint to text at the wire boundary
+PASS: review parser accepts canonical positive decimal text only
+PASS: read model preserves review revision
+PASS: server page preserves review revision
+PASS: client pairs sorted Item ids and revisions by index
+PASS: idempotency identity includes expected revisions
+PASS: API requires equal parallel arrays
+PASS: API validates positive in-range bigint decimal strings
+PASS: API forwards caller revisions without a database reread
+PASS: helper calls checked RPC only
+PASS: helper sends bigint array argument as decimal strings
+PASS: helper repeats pair validation fail-closed
+PASS: JSON wire mirror preserves revision above Number.MAX_SAFE_INTEGER
+PASS: mirror accepts bigint-safe ordered pairs
+PASS: mirror rejects mismatched lengths
+PASS: mirror rejects duplicate Item ids
+PASS: mirror rejects null revision
+PASS: mirror rejects zero revision
+PASS: mirror rejects negative revision
+PASS: mirror rejects overflow bigint
+
+20/20 checks passed.
+
+> safe-metrica@0.1.0 verify:risk-share-manager-publish-api
+> node scripts/verify-risk-share-manager-publish-api-contract.mjs
+
+PASS: route file exists
+PASS: helper file exists
+PASS: route is dynamic
+PASS: route disables revalidation
+PASS: plain object body required
+PASS: unknown body keys rejected
+PASS: allowed field: lockMonth
+PASS: allowed field: lockTitle
+PASS: allowed field: notes
+PASS: allowed field: itemIds
+PASS: allowed field: expectedReviewRevisions
+PASS: allowed field: idempotencyKey
+PASS: allowlist has exactly six entries
+PASS: forbidden field: company
+PASS: forbidden field: companyCode
+PASS: forbidden field: tenantCode
+PASS: forbidden field: tenantId
+PASS: forbidden field: actorMembershipId
+PASS: forbidden field: membershipId
+PASS: forbidden field: userId
+PASS: forbidden field: email
+PASS: forbidden field: role
+PASS: forbidden field: actorRole
+PASS: forbidden field: serviceRoleKey
+PASS: forbidden field: supabaseServiceRoleKey
+PASS: forbidden field: authorization
+PASS: forbidden field: credential
+PASS: forbidden field: workerVisible
+PASS: forbidden field: customerConfirmed
+PASS: forbidden field: customerCheckStatus
+PASS: forbidden field: shareStatus
+PASS: forbidden field: versionLockId
+PASS: forbidden field: lockedBy
+PASS: forbidden field: publishAction
+PASS: forbidden field: previousVersionId
+PASS: forbidden field: contentSourceVersionId
+PASS: forbidden field: supersededAt
+PASS: forbidden field: itemCount
+PASS: forbidden field: workerVisibleCount
+PASS: forbidden presence is rejected
+PASS: 16KB header and actual-byte body cap
+PASS: exact valid YYYY-MM required
+PASS: lock title trim and 1-160 bound
+PASS: lock title control chars rejected
+PASS: notes omitted/null allowed and blank normalized
+PASS: notes max 500 and control chars rejected
+PASS: idempotency key trim and 1-200 bound
+PASS: itemIds must be array
+PASS: revision array required and paired by length
+PASS: revision decimal strings validated without number conversion
+PASS: explicit item selection 1-200
+PASS: item UUID validation
+PASS: case-insensitive duplicate item rejection
+PASS: bulk-all mode absent
+PASS: sec-fetch-site cross-site rejected
+PASS: Origin mismatch rejected
+PASS: canonical active tenant resolver used
+PASS: current session access guard used
+PASS: exact tenant roles allowed
+PASS: owner_internal excluded
+PASS: selected tenant rechecked
+PASS: exact role defensively rechecked
+PASS: membership PK derived from server context
+PASS: body never supplies tenant/membership/role
+PASS: unauthenticated safely returns 401 forbidden
+PASS: helper is server-only
+PASS: route imports dedicated helper
+PASS: exact checked publish RPC endpoint
+PASS: service-role key remains helper-only
+PASS: server-confirmed tenant and membership passed
+PASS: RPC field: p_company_code
+PASS: RPC field: p_actor_membership_id
+PASS: RPC field: p_lock_month
+PASS: RPC field: p_lock_title
+PASS: RPC field: p_notes
+PASS: RPC field: p_item_ids
+PASS: RPC field: p_expected_review_revisions
+PASS: RPC field: p_idempotency_key
+PASS: no caller actor-role or publish-state RPC field
+PASS: helper sends explicit item array only
+PASS: no direct table write endpoint
+PASS: no-store representation RPC call
+PASS: exact one-row response required
+PASS: plain response object required
+PASS: exact response field allowlist
+PASS: response field allowlisted: ok
+PASS: response field allowlisted: code
+PASS: response field allowlisted: replayed
+PASS: response field allowlisted: version_lock_id
+PASS: response field allowlisted: item_count
+PASS: response field allowlisted: worker_visible_count
+PASS: ok and replayed booleans
+PASS: business code allowlisted: ok
+PASS: business code allowlisted: validation_failed
+PASS: business code allowlisted: forbidden
+PASS: business code allowlisted: selection_mismatch
+PASS: business code allowlisted: active_month_exists
+PASS: business code allowlisted: idempotency_conflict
+PASS: ok/code agreement enforced
+PASS: integer counts required
+PASS: success requires Version UUID
+PASS: success count equals requested count
+PASS: success count bounded 1-200
+PASS: worker-visible count bounded
+PASS: failure cannot replay
+PASS: failure requires null Version and zero counts
+PASS: request failures fail closed
+PASS: malformed responses fail closed
+PASS: HTTP ok -> 200
+PASS: HTTP validation_failed -> 422
+PASS: HTTP forbidden -> 403
+PASS: HTTP selection_mismatch -> 409
+PASS: HTTP active_month_exists -> 409
+PASS: HTTP idempotency_conflict -> 409
+PASS: HTTP request_failed -> 503
+PASS: HTTP invalid_response -> 503
+PASS: safe error envelope only
+PASS: success returns replayed
+PASS: success returns item count
+PASS: success returns worker-visible count
+PASS: Version UUID not exposed
+PASS: raw helper result not exposed
+PASS: global UUID redaction pattern used
+PASS: backend message scrubbed
+PASS: only item count logged
+PASS: idempotency key not logged
+PASS: tenant/membership IDs not logged
+PASS: title and notes not logged
+PASS: credential not returned or logged
+PASS: no SQL/migration/RLS implementation in route
+PASS: no eligibility algorithm in helper
+PASS: no republish/rollback/supersede RPC arguments
+PASS: package verifier registered
+
+133/133 checks passed
+
+All Manager Publish API contract checks passed.
+
+> safe-metrica@0.1.0 verify:risk-share-manager-publish-read-model
+> node scripts/verify-risk-share-manager-publish-read-model-contract.mjs
+
+PASS: server-only boundary
+PASS: reuses Manager Review safe list
+PASS: uses server-only SELECT helper
+PASS: contains no mutation call
+PASS: strict tenant pattern
+PASS: strict YYYY-MM pattern
+PASS: invalid inputs fail closed
+PASS: active lookup exists
+PASS: active lookup is exact tenant month active
+PASS: active lookup selects tenant lineage
+PASS: duplicate active rows fail closed
+PASS: no active row is an explicit null state
+PASS: normalized tenant reaches active parser
+PASS: active parser exists
+PASS: active parser revalidates tenant month status
+PASS: active parser validates positive integral counts
+PASS: active parser does not apply tenant request cap
+PASS: active parser validates count parity
+PASS: active Version output excludes tenant and internal Version IDs
+PASS: classifier exists
+PASS: invalid Manager Review rows remain invalid
+PASS: one-sided lock state is invalid
+PASS: locked rows require confirmation invariants
+PASS: only fully locked confirmed rows are already_locked
+PASS: unlocked review gaps are explicit
+PASS: ready state requires zero reasons
+PASS: forbidden token absent: membershipId
+PASS: forbidden token absent: actorMembershipId
+PASS: forbidden token absent: tenantId
+PASS: forbidden token absent: candidateId
+PASS: forbidden token absent: sourceId
+PASS: forbidden token absent: idempotencyKey
+PASS: forbidden token absent: raw_payload
+PASS: forbidden token absent: rawPayload
+PASS: forbidden token absent: ownerNote
+PASS: forbidden token absent: customerNote
+PASS: forbidden token absent: filePathname
+PASS: forbidden token absent: fileChecksum
+PASS: forbidden token absent: authorization
+PASS: forbidden token absent: serviceRoleKey
+PASS: forbidden token absent: email
+PASS: forbidden token absent: phone
+PASS: forbidden token absent: signature
+PASS: read failures fail the complete model closed
+PASS: overflow preserved
+PASS: counts derive from returned entries
+PASS: RPC remains final authority
+PASS: Manager Review still selects eligibility fields
+PASS: review revision stays canonical bigint text
+PASS: package verifier registered
+PASS: classification matrix: confirmed unlocked
+PASS: classification matrix: fully locked
+PASS: classification matrix: locked without Version
+PASS: classification matrix: Version without locked status
+PASS: classification matrix: locked with returned check
+PASS: classification matrix: locked without customer confirmation
+PASS: classification matrix: excluded unlocked
+PASS: classification matrix: draft gaps
+PASS: active matrix: valid row
+PASS: active matrix: wrong tenant
+PASS: active matrix: valid legacy Version above 200
+PASS: active matrix: wrong month
+PASS: active matrix: count mismatch
+PASS: active matrix: worker-visible overflow
+PASS: active matrix: non-integer count
+
+65/65 checks passed.
+
+> safe-metrica@0.1.0 verify:risk-share-manager-publish-ui
+> node scripts/verify-risk-share-manager-publish-ui-contract.mjs
+
+PASS: page is dynamic
+PASS: page uses current KST month only
+PASS: page resolves active tenant
+PASS: page requires manager role
+PASS: page rechecks selected tenant and role
+PASS: page reads publish state with server tenant
+PASS: page contains no mutation call
+PASS: share review links to dedicated publish page
+PASS: client boundary
+PASS: client uses exact publish API
+PASS: selection starts empty
+PASS: only ready entries become selectable
+PASS: active Version blocks publish
+PASS: overflow and failed reads block publish
+PASS: publish requires explicit confirmation
+PASS: server page passes canonical review revisions
+PASS: client keeps Item and revision pairs in canonical Item order
+PASS: revision participates in server and idempotency signatures
+PASS: idempotency key is reused for an identical payload
+PASS: authoritative refresh follows uncertain and terminal states
+PASS: success response count is checked against the selection
+PASS: success and failure responses use exact key sets
+PASS: known API errors have customer-safe handling
+PASS: uncertain responses retain retry identity
+PASS: read model remains the UI data source
+PASS: API still omits internal Version UUID
+PASS: forbidden commercialization phrase absent: 법적 의무 충족
+PASS: forbidden commercialization phrase absent: 과태료 방지
+PASS: forbidden commercialization phrase absent: 면책
+PASS: forbidden commercialization phrase absent: 근로자 참여 완료
+PASS: forbidden commercialization phrase absent: QR 확인을 근로자 참여로
+PASS: package verifier registered
+PASS: response parser matrix: fresh success
+PASS: response parser matrix: replay success
+PASS: response parser matrix: selection mismatch
+PASS: response parser matrix: active month
+PASS: response parser matrix: wrong success count
+PASS: response parser matrix: extra success field
+PASS: response parser matrix: wrong error status
+PASS: response parser matrix: unknown code
+
+40/40 checks passed.
+
+> safe-metrica@0.1.0 verify:risk-share-tenant-publish-revision-guard
+> node scripts/verify-risk-share-tenant-publish-revision-guard-contract.mjs
+
+PASS: legacy tenant migration exists
+PASS: Owner lock-order migration exists
+PASS: checked migration exists
+PASS: legacy tenant function found
+PASS: Owner function found
+PASS: checked function found
+PASS: checked migration defines exactly one checked RPC
+PASS: checked migration does not replace the legacy tenant RPC
+PASS: checked migration does not replace the Owner RPC
+PASS: checked migration has exact additive signature
+PASS: checked RPC preserves legacy return shape
+PASS: checked migration fail-closes unexpected overloads
+PASS: canonical review revision SSOT is bigint
+PASS: canonical snapshot revision SSOT is bigint NOT NULL
+PASS: checked RPC uses bigint revision arrays end-to-end
+PASS: checked migration validates actual bigint NOT NULL revision columns
+PASS: checked migration validates the exact live Owner RPC prerequisite
+PASS: checked RPC language is plpgsql
+PASS: checked RPC is SECURITY DEFINER
+PASS: checked RPC has fixed search_path
+PASS: checked RPC re-derives and locks membership
+PASS: checked RPC requires active tenant admin or manager
+PASS: checked and legacy tenant RPCs share the same advisory namespace
+PASS: checked advisory functions are pg_catalog-qualified
+PASS: checked RPC rejects null empty multidimensional and null-element arrays
+PASS: checked RPC requires equal Item and revision lengths
+PASS: checked RPC canonicalizes Item/revision pairs together
+PASS: checked RPC rejects duplicate Items and enforces 1-200
+PASS: checked RPC requires positive integer revisions
+PASS: mirror canonicalizes unsorted Item/revision pairs
+PASS: mirror rejects mismatched array lengths
+PASS: mirror rejects duplicate Item ids
+PASS: mirror rejects non-positive revisions
+PASS: mirror preserves a revision above the int4 maximum
+PASS: mirror rejects over-200 selection
+PASS: checked selection is scoped to canonical tenant and explicit requested ids
+PASS: checked selection requires the same publish eligibility contract
+PASS: checked selection compares transaction-time review revision
+PASS: checked selection locks Items in canonical id order
+PASS: legacy tenant and Owner paths retain canonical id lock order
+PASS: all three publish paths use the same Item lock order
+PASS: fresh revision mismatch fails as selection_mismatch
+PASS: replay derives snapshot Item and review-revision arrays
+PASS: replay derives live Item and review-revision arrays
+PASS: replay compares exact Item and revision arrays
+PASS: same-key revision drift returns idempotency_conflict
+PASS: mirror accepts exact snapshot/live revision replay
+PASS: mirror rejects snapshot revision drift
+PASS: mirror rejects live revision drift
+PASS: mirror rejects Item-set drift
+PASS: checked snapshot stores source review revision
+PASS: final snapshot parity includes expected revisions
+PASS: final live parity includes expected revisions
+PASS: snapshot and live mutation counts are enforced
+PASS: live Item update does not alter review content revision or visibility
+PASS: apply-time checks exact checked and legacy function counts
+PASS: apply-time checks exact checked arguments and result
+PASS: apply-time checks postgres owner security definer and search_path
+PASS: checked RPC is service-role-only with no grant option
+PASS: apply-time checks shared advisory namespace and lock order
+PASS: apply-time checks fresh and replay revision guards
+PASS: checked normal response code present: ok
+PASS: checked normal response code present: validation_failed
+PASS: checked normal response code present: forbidden
+PASS: checked normal response code present: selection_mismatch
+PASS: checked normal response code present: active_month_exists
+PASS: checked normal response code present: idempotency_conflict
+PASS: checked RPC has no unexpected normal response code
+PASS: checked migration introduces no RLS or schema-table change
+PASS: checked migration drops no function or table
+PASS: checked RPC does not implement republish rollback supersede or reactivation
+
+71/71 checks passed
+
+All tenant publish revision-guard contract checks passed.
+
+> safe-metrica@0.1.0 verify:risk-share-tenant-publish-rpc
+> node scripts/verify-risk-share-tenant-publish-rpc-contract.mjs
+
+PASS: tenant migration exists
+PASS: Owner correction migration exists
+PASS: Owner baseline exists
+PASS: tenant function body found
+PASS: Owner correction function body found
+PASS: Owner baseline function body found
+PASS: exact tenant argument signature
+PASS: exact tenant return shape
+PASS: only one tenant RPC definition in migration
+PASS: tenant migration fail-closes unexpected overloads
+PASS: tenant RPC language is plpgsql
+PASS: tenant RPC is SECURITY DEFINER
+PASS: tenant RPC has fixed search_path
+PASS: membership row is locked FOR SHARE
+PASS: active tenant_admin or tenant_manager membership required
+PASS: membership tenant must equal canonical company
+PASS: membership failures collapse to forbidden
+PASS: SECURITY DEFINER advisory functions are pg_catalog-qualified
+PASS: advisory lock is namespaced by canonical company
+PASS: company code canonicalization and allowlist
+PASS: lock month validates YYYY-MM and month range
+PASS: lock title is 1-160 characters
+PASS: lock title rejects control characters
+PASS: notes are null-or-500 and reject control characters
+PASS: idempotency key is canonical 1-200
+PASS: selection rejects null empty multidimensional and null elements
+PASS: selection rejects duplicates and enforces 1-200
+PASS: empty selection never means publish all
+PASS: selection is scoped to canonical tenant and explicit ids
+PASS: selection requires customer-confirmed unlocked state
+PASS: selection requires structural and revision validity
+PASS: eligible count exactly equals requested count
+PASS: tenant publish locks Items in id ASC
+PASS: Owner publish locks Items in id ASC
+PASS: tenant and Owner lock orders match
+PASS: neither publish path locks by created_at
+PASS: regression catches tenant-only lock-order reversal
+PASS: regression catches Owner-only lock-order reversal
+PASS: Owner replacement differs only by canonical row-lock order
+PASS: Owner correction preserves security and service-role-only contract
+PASS: Owner apply-time regex matches the actual Owner function body
+PASS: tenant apply-time regex matches the actual aliased tenant function body
+PASS: Owner correction migration checks the exact Owner lock expression
+PASS: Owner correction migration checks the exact tenant alias expression
+PASS: tenant apply-time check no longer requires the unaliased table name
+PASS: idempotency lookup is tenant-key scoped
+PASS: exact replay requires active publish action and matching actor metadata
+PASS: replay re-derives snapshot count worker-visible count and Item set
+PASS: replay re-derives live locked count worker-visible count and Item set
+PASS: replay compares stored counts to durable counts
+PASS: replay compares exact snapshot and live Item sets
+PASS: same-key durable mismatch returns idempotency conflict
+PASS: Version stores verified role actor and idempotency metadata
+PASS: v1 Version leaves chain and rollback fields null
+PASS: active month conflict is atomic
+PASS: snapshot copies existing per-Item worker_visible and review revision
+PASS: live Item update never overwrites worker_visible or review content
+PASS: snapshot and Item write row counts are enforced
+PASS: success re-derives exact snapshot count visibility and Item set
+PASS: success re-derives live locked count confirmation linkage and Item set
+PASS: success proves selected worker_visible values did not change
+PASS: impossible postcondition mismatches abort by exception
+PASS: migration checks exact overload count and signature
+PASS: migration checks exact identity arguments and return contract
+PASS: migration checks postgres owner SECURITY DEFINER and search_path
+PASS: migration checks service_role-only direct execution
+PASS: migration rejects PUBLIC unexpected grantees and grant option
+PASS: tenant RPC explicitly owned by postgres and granted only to service_role
+PASS: normal response code present: ok
+PASS: normal response code present: validation_failed
+PASS: normal response code present: forbidden
+PASS: normal response code present: selection_mismatch
+PASS: normal response code present: active_month_exists
+PASS: normal response code present: idempotency_conflict
+PASS: no unexpected normal response code
+PASS: tenant RPC does not implement republish rollback supersede or reactivation
+PASS: migrations introduce no RLS policy DDL
+PASS: migrations drop no functions or tables
+PASS: Owner correction replaces only the Owner Version Lock RPC
+
+79/79 checks passed
+
+All tenant publish RPC and cross-path contract checks passed.
+
+> safe-metrica@0.1.0 build
+> next build
+
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+▲ Next.js 16.2.4 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 11.7s
+  Running TypeScript ...
+Failed to type check.
+
+./src/app/api/risk-share/manager/publish/route.ts:206:29
+Type error: BigInt literals are not available when targeting lower than ES2020.
+
+  [90m204 |[0m       [36mtypeof[0m rawRevision !== [32m"string"[0m ||
+  [90m205 |[0m       ![35m/^[1-9][0-9]*$/[0m.test(rawRevision) ||
+[31m[1m>[0m [90m206 |[0m       [33mBigInt[0m(rawRevision) > [35m9223372036854775807[0mn
+  [90m    |[0m                             [31m[1m^[0m
+  [90m207 |[0m     ) {
+  [90m208 |[0m       [36mreturn[0m [36mnull[0m;
+  [90m209 |[0m     }
+Next.js build worker exited with code: 1 and signal: null
