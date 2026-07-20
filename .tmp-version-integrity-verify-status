@@ -1,0 +1,8 @@
+head=f0e7530923f3690ebaac53d971ed0e666cc45d44
+main=3f4679c8b5695772186c6e92979c170cd054fd76
+contract=PASS
+migration_parse=PASS
+lint=PASS
+build=PASS
+diff_check=PASS
+legacy_scope=PASS
