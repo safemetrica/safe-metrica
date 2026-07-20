@@ -26,6 +26,9 @@ export type MonthlyKpiCounts = {
   representative: number;
   signatureConfirmed: number;
   signatureNotSubmitted: number;
+  versionLinkedMonthly: number;
+  versionUnlinkedMonthly: number;
+  confirmedVersionCount: number;
 };
 
 export type MonthlyTrendPoint = {
@@ -474,6 +477,32 @@ export default function MonthlyDesignerView({
                     </li>
                   </ul>
                 </div>
+              </article>
+            </section>
+
+            <section className="mt-18">
+              <article className="card card--pad">
+                <h3>
+                  <iconify-icon icon="lucide:git-commit-horizontal"></iconify-icon>{" "}
+                  게시 Version 연결
+                </h3>
+                <p className="muted" style={{ marginTop: "8px" }}>
+                  이번 달 공유확인 {counts.monthly}건 중 게시 Version에 연결된 기록은{" "}
+                  <b>{counts.versionLinkedMonthly}건</b>이며, 확인된 Version은{" "}
+                  <b>{counts.confirmedVersionCount}개</b>입니다.
+                </p>
+                <p
+                  className="muted"
+                  style={{
+                    marginTop: "6px",
+                    color:
+                      counts.versionUnlinkedMonthly > 0
+                        ? "var(--danger)"
+                        : "var(--text-3)",
+                  }}
+                >
+                  Version 미연결 기록 {counts.versionUnlinkedMonthly}건
+                </p>
               </article>
             </section>
 
