@@ -5,6 +5,79 @@
 -- publish functions unchanged. No API, UI, RLS, auth, middleware, fixture,
 -- republish, rollback, supersede, or Production data write is included.
 
+-- Apply-time prerequisite validation against the actual database contract.
+-- The checked RPC depends on the existing bigint review/snapshot ledgers and
+-- on deterministic Owner/tenant Item row-lock parity. Fail before creating
+-- the new function if any prerequisite is missing or has drifted.
+do $$
+declare
+  v_item_revision_type oid;
+  v_item_revision_not_null boolean;
+  v_snapshot_revision_type oid;
+  v_snapshot_revision_not_null boolean;
+  v_owner_oid oid;
+  v_owner_total_count integer;
+  v_owner_definition text;
+begin
+  select a.atttypid, a.attnotnull
+  into v_item_revision_type, v_item_revision_not_null
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public'
+    and c.relname = 'risk_share_items'
+    and a.attname = 'review_revision'
+    and a.attnum > 0
+    and not a.attisdropped;
+
+  if v_item_revision_type is distinct from 'bigint'::regtype::oid
+     or v_item_revision_not_null is distinct from true then
+    raise exception
+      'publish_risk_share_version_for_tenant_checked prerequisite failed: risk_share_items.review_revision must be bigint NOT NULL';
+  end if;
+
+  select a.atttypid, a.attnotnull
+  into v_snapshot_revision_type, v_snapshot_revision_not_null
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public'
+    and c.relname = 'risk_share_version_items'
+    and a.attname = 'source_review_revision'
+    and a.attnum > 0
+    and not a.attisdropped;
+
+  if v_snapshot_revision_type is distinct from 'bigint'::regtype::oid
+     or v_snapshot_revision_not_null is distinct from true then
+    raise exception
+      'publish_risk_share_version_for_tenant_checked prerequisite failed: risk_share_version_items.source_review_revision must be bigint NOT NULL';
+  end if;
+
+  select count(*) into v_owner_total_count
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'create_risk_share_version_lock';
+
+  v_owner_oid := to_regprocedure(
+    'public.create_risk_share_version_lock(text,text,text,text,text,text,text,boolean,uuid[],text)'
+  )::oid;
+
+  if v_owner_total_count <> 1 or v_owner_oid is null then
+    raise exception
+      'publish_risk_share_version_for_tenant_checked prerequisite failed: Owner RPC overload/signature mismatch';
+  end if;
+
+  v_owner_definition := pg_get_functiondef(v_owner_oid);
+
+  if v_owner_definition !~*
+       'order by[[:space:]]+risk_share_items\.id[[:space:]]+asc[[:space:]]+for update of risk_share_items' then
+    raise exception
+      'publish_risk_share_version_for_tenant_checked prerequisite failed: Owner RPC Item lock order mismatch';
+  end if;
+end
+$$;
+
 -- Fail closed if an unexpected checked-RPC overload already exists.
 do $$
 declare
@@ -17,7 +90,7 @@ declare
     'text'::regtype::oid,
     'text'::regtype::oid,
     'uuid[]'::regtype::oid,
-    'integer[]'::regtype::oid,
+    'bigint[]'::regtype::oid,
     'text'::regtype::oid
   ];
 begin
@@ -51,7 +124,7 @@ create or replace function public.publish_risk_share_version_for_tenant_checked(
   p_lock_title text,
   p_notes text,
   p_item_ids uuid[],
-  p_expected_review_revisions integer[],
+  p_expected_review_revisions bigint[],
   p_idempotency_key text
 )
 returns table (
@@ -80,7 +153,7 @@ declare
   v_requested_count integer;
   v_distinct_item_count integer;
   v_item_ids uuid[];
-  v_expected_review_revisions integer[];
+  v_expected_review_revisions bigint[];
 
   v_membership_role text;
   v_membership_status text;
@@ -88,16 +161,16 @@ declare
 
   v_existing_lock public.risk_share_version_locks%rowtype;
   v_stored_item_ids uuid[];
-  v_stored_review_revisions integer[];
+  v_stored_review_revisions bigint[];
   v_replay_snapshot_count integer;
   v_replay_snapshot_worker_visible_count integer;
   v_replay_live_item_ids uuid[];
-  v_replay_live_review_revisions integer[];
+  v_replay_live_review_revisions bigint[];
   v_replay_live_item_count integer;
   v_replay_live_worker_visible_count integer;
 
   v_eligible_ids uuid[];
-  v_eligible_review_revisions integer[];
+  v_eligible_review_revisions bigint[];
   v_eligible_worker_visible_ids uuid[];
   v_eligible_worker_visible_count integer;
   v_item_count integer;
@@ -109,11 +182,11 @@ declare
   v_final_snapshot_count integer;
   v_final_snapshot_worker_visible_count integer;
   v_final_snapshot_item_ids uuid[];
-  v_final_snapshot_review_revisions integer[];
+  v_final_snapshot_review_revisions bigint[];
   v_final_live_item_count integer;
   v_final_live_customer_confirmed_count integer;
   v_final_live_item_ids uuid[];
-  v_final_live_review_revisions integer[];
+  v_final_live_review_revisions bigint[];
   v_final_live_worker_visible_ids uuid[];
 begin
   -- 1. Canonical input validation.
@@ -256,7 +329,7 @@ begin
       ),
       coalesce(
         array_agg(vi.source_review_revision order by vi.source_item_id),
-        '{}'::integer[]
+        '{}'::bigint[]
       )
     into
       v_replay_snapshot_count,
@@ -273,7 +346,7 @@ begin
       coalesce(array_agg(ri.id order by ri.id), '{}'::uuid[]),
       coalesce(
         array_agg(ri.review_revision order by ri.id),
-        '{}'::integer[]
+        '{}'::bigint[]
       )
     into
       v_replay_live_item_count,
@@ -354,7 +427,7 @@ begin
     coalesce(array_agg(li.id order by li.id), '{}'::uuid[]),
     coalesce(
       array_agg(li.review_revision order by li.id),
-      '{}'::integer[]
+      '{}'::bigint[]
     ),
     coalesce(
       array_agg(li.id order by li.id) filter (where li.worker_visible = true),
@@ -496,7 +569,7 @@ begin
     ),
     coalesce(
       array_agg(vi.source_review_revision order by vi.source_item_id),
-      '{}'::integer[]
+      '{}'::bigint[]
     )
   into
     v_final_snapshot_count,
@@ -523,7 +596,7 @@ begin
     coalesce(array_agg(ri.id order by ri.id), '{}'::uuid[]),
     coalesce(
       array_agg(ri.review_revision order by ri.id),
-      '{}'::integer[]
+      '{}'::bigint[]
     ),
     coalesce(
       array_agg(ri.id order by ri.id)
@@ -564,19 +637,19 @@ end;
 $$;
 
 alter function public.publish_risk_share_version_for_tenant_checked(
-  text, uuid, text, text, text, uuid[], integer[], text
+  text, uuid, text, text, text, uuid[], bigint[], text
 ) owner to postgres;
 
 revoke all on function public.publish_risk_share_version_for_tenant_checked(
-  text, uuid, text, text, text, uuid[], integer[], text
+  text, uuid, text, text, text, uuid[], bigint[], text
 ) from public;
 
 revoke all on function public.publish_risk_share_version_for_tenant_checked(
-  text, uuid, text, text, text, uuid[], integer[], text
+  text, uuid, text, text, text, uuid[], bigint[], text
 ) from anon, authenticated, service_role;
 
 grant execute on function public.publish_risk_share_version_for_tenant_checked(
-  text, uuid, text, text, text, uuid[], integer[], text
+  text, uuid, text, text, text, uuid[], bigint[], text
 ) to service_role;
 
 -- Apply-time checked-RPC and legacy compatibility postconditions.
@@ -598,7 +671,7 @@ declare
     'text'::regtype::oid,
     'text'::regtype::oid,
     'uuid[]'::regtype::oid,
-    'integer[]'::regtype::oid,
+    'bigint[]'::regtype::oid,
     'text'::regtype::oid
   ];
   v_legacy_argtypes oid[] := array[
@@ -664,7 +737,7 @@ begin
     and array(select unnest(p.proargtypes::oid[])) = v_legacy_argtypes;
 
   if pg_get_function_identity_arguments(v_checked_oid) <>
-       'p_company_code text, p_actor_membership_id uuid, p_lock_month text, p_lock_title text, p_notes text, p_item_ids uuid[], p_expected_review_revisions integer[], p_idempotency_key text'
+       'p_company_code text, p_actor_membership_id uuid, p_lock_month text, p_lock_title text, p_notes text, p_item_ids uuid[], p_expected_review_revisions bigint[], p_idempotency_key text'
      or lower(pg_get_function_result(v_checked_oid)) <>
        lower(
          'TABLE(ok boolean, code text, replayed boolean, version_lock_id uuid, item_count integer, worker_visible_count integer)'
@@ -754,6 +827,6 @@ end
 $$;
 
 comment on function public.publish_risk_share_version_for_tenant_checked(
-  text, uuid, text, text, text, uuid[], integer[], text
+  text, uuid, text, text, text, uuid[], bigint[], text
 ) is
   'Tenant Manager publish checked v1. Requires an explicit 1-200 Item set with matching expected review revisions, revalidates tenant membership, locks Items in canonical id order, writes one immutable Version snapshot, preserves worker_visible, and records the membership actor. Server-only; no republish, rollback, or automatic selection.';

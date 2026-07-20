@@ -4,6 +4,10 @@ const LEGACY_TENANT_FILE =
   "supabase/migrations/20260719010000_add_tenant_risk_share_publish_rpc.sql";
 const OWNER_CORRECTION_FILE =
   "supabase/migrations/20260719020000_align_risk_share_publish_lock_order.sql";
+const REVIEW_CONTRACT_FILE =
+  "supabase/migrations/20260716010000_add_risk_share_item_review_contract.sql";
+const SNAPSHOT_FOUNDATION_FILE =
+  "supabase/migrations/20260717000000_add_risk_share_version_snapshot_foundation.sql";
 const CHECKED_MIGRATION_FILE =
   "supabase/migrations/20260720010000_add_tenant_risk_share_publish_revision_guard.sql";
 const LEGACY_VERIFIER_FILE =
@@ -12,6 +16,8 @@ const LEGACY_VERIFIER_FILE =
 const REQUIRED_FILES = [
   LEGACY_TENANT_FILE,
   OWNER_CORRECTION_FILE,
+  REVIEW_CONTRACT_FILE,
+  SNAPSHOT_FOUNDATION_FILE,
   CHECKED_MIGRATION_FILE,
   LEGACY_VERIFIER_FILE,
 ];
@@ -25,6 +31,8 @@ for (const file of REQUIRED_FILES) {
 
 const legacySrc = fs.readFileSync(LEGACY_TENANT_FILE, "utf8");
 const ownerSrc = fs.readFileSync(OWNER_CORRECTION_FILE, "utf8");
+const reviewSrc = fs.readFileSync(REVIEW_CONTRACT_FILE, "utf8");
+const snapshotSrc = fs.readFileSync(SNAPSHOT_FOUNDATION_FILE, "utf8");
 const checkedSrc = fs.readFileSync(CHECKED_MIGRATION_FILE, "utf8");
 const checks = [];
 
@@ -139,7 +147,7 @@ check(
       "  p_lock_title text,\n" +
       "  p_notes text,\n" +
       "  p_item_ids uuid[],\n" +
-      "  p_expected_review_revisions integer[],\n" +
+      "  p_expected_review_revisions bigint[],\n" +
       "  p_idempotency_key text\n" +
       ")",
   ),
@@ -162,6 +170,52 @@ check(
   checkedSrc.includes("unexpected overload exists") &&
     checkedSrc.includes("v_total_count = 0") &&
     checkedSrc.includes("v_total_count = 1 and v_exact_count = 1"),
+);
+
+// A1. Actual revision-ledger and Owner prerequisites.
+check(
+  "canonical review revision SSOT is bigint",
+  reviewSrc.includes(
+    "add column if not exists review_revision bigint not null default 1;",
+  ) && reviewSrc.includes("p_expected_revision bigint"),
+);
+check(
+  "canonical snapshot revision SSOT is bigint NOT NULL",
+  snapshotSrc.includes("source_review_revision bigint not null"),
+);
+check(
+  "checked RPC uses bigint revision arrays end-to-end",
+  checkedSrc.includes("p_expected_review_revisions bigint[]") &&
+    checkedSrc.includes("v_expected_review_revisions bigint[]") &&
+    checkedSrc.includes("v_stored_review_revisions bigint[]") &&
+    checkedSrc.includes("v_replay_live_review_revisions bigint[]") &&
+    checkedSrc.includes("v_eligible_review_revisions bigint[]") &&
+    checkedSrc.includes("v_final_snapshot_review_revisions bigint[]") &&
+    checkedSrc.includes("v_final_live_review_revisions bigint[]") &&
+    checkedSrc.includes("'{}'::bigint[]") &&
+    !checkedSrc.includes("integer[]"),
+);
+check(
+  "checked migration validates actual bigint NOT NULL revision columns",
+  checkedSrc.includes("from pg_attribute a") &&
+    checkedSrc.includes("c.relname = 'risk_share_items'") &&
+    checkedSrc.includes("a.attname = 'review_revision'") &&
+    checkedSrc.includes("c.relname = 'risk_share_version_items'") &&
+    checkedSrc.includes("a.attname = 'source_review_revision'") &&
+    checkedSrc.includes("is distinct from 'bigint'::regtype::oid") &&
+    checkedSrc.includes("is distinct from true"),
+);
+check(
+  "checked migration validates the exact live Owner RPC prerequisite",
+  checkedSrc.includes(
+    "public.create_risk_share_version_lock(text,text,text,text,text,text,text,boolean,uuid[],text)",
+  ) &&
+    checkedSrc.includes("v_owner_total_count <> 1") &&
+    checkedSrc.includes("v_owner_oid is null") &&
+    checkedSrc.includes("v_owner_definition := pg_get_functiondef(v_owner_oid)") &&
+    checkedSrc.includes(
+      "risk_share_items\\.id[[:space:]]+asc[[:space:]]+for update of risk_share_items",
+    ),
 );
 
 // B. SECURITY DEFINER and tenant boundary.
@@ -251,6 +305,11 @@ check(
 check(
   "mirror rejects non-positive revisions",
   canonicalizePairs(["item-a"], [0]) === null,
+);
+check(
+  "mirror preserves a revision above the int4 maximum",
+  JSON.stringify(canonicalizePairs(["item-a"], [2147483648])) ===
+    JSON.stringify({ itemIds: ["item-a"], expectedRevisions: [2147483648] }),
 );
 check(
   "mirror rejects over-200 selection",
