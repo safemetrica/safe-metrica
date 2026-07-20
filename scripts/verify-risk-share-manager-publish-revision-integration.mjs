@@ -58,7 +58,7 @@ check(
 check(
   "API validates positive in-range bigint decimal strings",
   source.route.includes("!/^[1-9][0-9]*$/.test(rawRevision)") &&
-    source.route.includes("BigInt(rawRevision) > 9223372036854775807n"),
+    source.route.includes("BigInt(rawRevision) > BigInt("9223372036854775807")"),
 );
 check(
   "API forwards caller revisions without a database reread",
@@ -78,7 +78,7 @@ check(
   "helper repeats pair validation fail-closed",
   source.helper.includes("params.itemIds.length !== params.expectedReviewRevisions.length") &&
     source.helper.includes("seenItemIds.has(normalizedItemId)") &&
-    source.helper.includes("BigInt(revision) > 9223372036854775807n"),
+    source.helper.includes("BigInt(revision) > BigInt("9223372036854775807")"),
 );
 
 const unsafeRevision = "9007199254740993";
@@ -88,7 +88,7 @@ const wire = JSON.parse(
 check(
   "JSON wire mirror preserves revision above Number.MAX_SAFE_INTEGER",
   wire[0].review_revision_text === unsafeRevision &&
-    BigInt(wire[0].review_revision_text) === 9007199254740993n,
+    BigInt(wire[0].review_revision_text) === BigInt("9007199254740993"),
 );
 
 function validatePairs(itemIds, revisions) {
@@ -108,7 +108,7 @@ function validatePairs(itemIds, revisions) {
       seen.has(normalized) ||
       typeof revision !== "string" ||
       !/^[1-9][0-9]*$/.test(revision) ||
-      BigInt(revision) > 9223372036854775807n
+      BigInt(revision) > BigInt("9223372036854775807")
     ) return false;
     seen.add(normalized);
     return true;
