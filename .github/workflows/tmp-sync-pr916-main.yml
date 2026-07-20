@@ -1,0 +1,29 @@
+name: Temporary sync PR 916 with main
+
+on:
+  push:
+    branches:
+      - feat/add-manager-publish-ui
+    paths:
+      - ".github/workflows/tmp-sync-pr916-main.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/add-manager-publish-ui
+          fetch-depth: 0
+      - name: Merge current main without history rewrite
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+          git push origin HEAD:feat/add-manager-publish-ui
