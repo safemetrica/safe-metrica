@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { listRiskShareItemsForManagerReview } from "@/lib/risk-share/riskShareManagerReview";
+import SiteProfileShell from "@/app/risk-share/manager/settings/site-profile/SiteProfileShell";
+import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
+import { listRiskShareManagerPublishState } from "@/lib/risk-share/riskShareManagerPublishReadModel";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
-import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
-import SiteProfileShell from "@/app/risk-share/manager/settings/site-profile/SiteProfileShell";
-import ShareReviewClient, { type ShareReviewClientItem } from "./ShareReviewClient";
+import PublishClient, {
+  type PublishClientActiveVersion,
+  type PublishClientEntry,
+} from "./PublishClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "공유할 내용 확인 | SafeMetrica",
+  title: "공유본 게시 | SafeMetrica",
   robots: {
     index: false,
     follow: false,
@@ -23,6 +26,27 @@ type PageSearchParams = Record<string, string | string[] | undefined>;
 
 function readSearchParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function getCurrentKstMonth(): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+
+  if (!year || !month) {
+    throw new Error("Unable to resolve the current KST month");
+  }
+
+  return `${year}-${month}`;
+}
+
+function buildDefaultLockTitle(lockMonth: string): string {
+  const [year, month] = lockMonth.split("-");
+  return `${year}년 ${Number(month)}월 위험성평가 공유`;
 }
 
 function ErrorShell({ title, message }: { title: string; message: string }) {
@@ -41,7 +65,7 @@ function ErrorShell({ title, message }: { title: string; message: string }) {
   );
 }
 
-export default async function RiskShareManagerShareReviewPage({
+export default async function RiskShareManagerPublishPage({
   searchParams,
 }: {
   searchParams?: Promise<PageSearchParams>;
@@ -49,9 +73,8 @@ export default async function RiskShareManagerShareReviewPage({
   const params = (await searchParams) ?? {};
   const rawCompanyCode = readSearchParam(params.company);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
-
-  const shareReviewHref = buildRiskShareLangHref(
-    "/risk-share/manager/share-review",
+  const publishHref = buildRiskShareLangHref(
+    "/risk-share/manager/share-review/publish",
     { company: rawCompanyCode },
     lang,
   );
@@ -61,14 +84,13 @@ export default async function RiskShareManagerShareReviewPage({
   if (!tenantResolution.ok) {
     return (
       <ErrorShell
-        title="공유할 내용 확인 화면을 열 수 없습니다."
+        title="공유본 게시 화면을 열 수 없습니다."
         message="등록된 고객사 코드가 필요합니다. 관리자 홈에서 다시 접속해 주세요."
       />
     );
   }
 
   const tenantCode = tenantResolution.tenant.code;
-
   const tenantAccessResult = await requireTenantAccessForCurrentSession({
     tenantCode,
     allowedRoles: ["tenant_admin", "tenant_manager"],
@@ -76,7 +98,7 @@ export default async function RiskShareManagerShareReviewPage({
 
   if (!tenantAccessResult.ok) {
     if (tenantAccessResult.reason === "unauthenticated") {
-      redirect(`/login?callbackUrl=${encodeURIComponent(shareReviewHref)}`);
+      redirect(`/login?callbackUrl=${encodeURIComponent(publishHref)}`);
     }
 
     return (
@@ -102,76 +124,68 @@ export default async function RiskShareManagerShareReviewPage({
     );
   }
 
+  const lockMonth = getCurrentKstMonth();
+  const readResult = await listRiskShareManagerPublishState(selectedTenantCode, lockMonth);
   const managerHref = buildRiskShareLangHref(
     "/risk-share/manager",
     { company: selectedTenantCode },
     lang,
   );
-  const publishHref = buildRiskShareLangHref(
-    "/risk-share/manager/share-review/publish",
+  const reviewHref = buildRiskShareLangHref(
+    "/risk-share/manager/share-review",
     { company: selectedTenantCode },
     lang,
   );
-  const listResult = await listRiskShareItemsForManagerReview(selectedTenantCode);
 
-  const clientItems: ShareReviewClientItem[] =
-    listResult.status === "ok"
-      ? listResult.entries.map((entry) =>
+  const entries: PublishClientEntry[] =
+    readResult.status === "ok"
+      ? readResult.entries.map((entry) =>
           entry.kind === "valid"
             ? {
                 kind: "valid" as const,
-                id: entry.item.id,
-                siteName: entry.item.siteName,
-                sourceTitle: entry.item.sourceTitle,
-                taskName: entry.item.taskName,
-                hazard: entry.item.hazard,
-                riskLevel: entry.item.riskLevel,
-                currentControls: entry.item.currentControls,
-                improvementPlan: entry.item.improvementPlan,
-                workerShareSummary: entry.item.workerShareSummary,
-                shareStatus: entry.item.shareStatus,
-                workerVisible: entry.item.workerVisible,
-                isLocked: entry.item.shareStatus === "locked" || entry.item.versionLockId !== null,
-                sourcePage: entry.item.sourcePage,
-                sourceRow: entry.item.sourceRow,
-                reviewRevision: entry.item.reviewRevision,
+                id: entry.id,
+                siteName: entry.siteName,
+                sourceTitle: entry.sourceTitle,
+                taskName: entry.taskName,
+                hazard: entry.hazard,
+                riskLevel: entry.riskLevel,
+                currentControls: entry.currentControls,
+                improvementPlan: entry.improvementPlan,
+                workerShareSummary: entry.workerShareSummary,
+                workerVisible: entry.workerVisible,
+                reviewRevision: entry.reviewRevision,
+                state: entry.state,
+                reviewReasons: entry.reviewReasons,
               }
             : { kind: "invalid" as const, id: entry.id },
         )
       : [];
 
+  const activeVersion: PublishClientActiveVersion | null =
+    readResult.status === "ok" ? readResult.activeVersion : null;
+
   return (
     <SiteProfileShell>
-      <div className="content" style={{ padding: "20px 24px 0", overflowX: "hidden" }}>
-        <div
-          className="card card--pad"
-          style={{
-            maxWidth: "860px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <p style={{ fontWeight: 900 }}>검토가 끝났다면 공유본 게시로 이동하세요.</p>
-            <p className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>
-              게시할 항목은 다음 화면에서 다시 직접 선택합니다.
-            </p>
-          </div>
-          <a className="btn btn--primary" href={publishHref}>
-            공유본 게시 준비
-          </a>
-        </div>
-      </div>
-      <ShareReviewClient
+      <PublishClient
         companyCode={selectedTenantCode}
-        lang={lang}
+        lockMonth={lockMonth}
+        defaultLockTitle={buildDefaultLockTitle(lockMonth)}
         managerHref={managerHref}
-        listStatus={listResult.status}
-        items={clientItems}
-        overflow={listResult.status === "ok" ? listResult.overflow : false}
+        reviewHref={reviewHref}
+        readStatus={readResult.status}
+        entries={entries}
+        activeVersion={activeVersion}
+        overflow={readResult.status === "ok" ? readResult.overflow : false}
+        counts={
+          readResult.status === "ok"
+            ? readResult.counts
+            : {
+                readyToPublish: 0,
+                alreadyLocked: 0,
+                reviewRequired: 0,
+                invalid: 0,
+              }
+        }
       />
     </SiteProfileShell>
   );

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import {
-  publishRiskShareVersionForTenant,
+  publishRiskShareVersionForTenantChecked,
   type PublishRiskShareVersionCode,
 } from "@/lib/risk-share/riskShareTenantPublish";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
@@ -22,6 +22,7 @@ const ALLOWED_BODY_FIELDS = new Set([
   "lockTitle",
   "notes",
   "itemIds",
+  "expectedReviewRevisions",
   "idempotencyKey",
 ]);
 
@@ -62,6 +63,7 @@ type ValidatedRequestBody = {
   lockTitle: string;
   notes: string | null;
   itemIds: string[];
+  expectedReviewRevisions: string[];
   idempotencyKey: string;
 };
 
@@ -172,8 +174,18 @@ function validateRequestBody(raw: unknown): ValidatedRequestBody | null {
     return null;
   }
 
+  const expectedReviewRevisionsRaw = body.expectedReviewRevisions;
+
+  if (
+    !Array.isArray(expectedReviewRevisionsRaw) ||
+    expectedReviewRevisionsRaw.length !== itemIdsRaw.length
+  ) {
+    return null;
+  }
+
   const seenItemIds = new Set<string>();
   const itemIds: string[] = [];
+  const expectedReviewRevisions: string[] = [];
 
   for (const rawItemId of itemIdsRaw) {
     if (typeof rawItemId !== "string" || !UUID_PATTERN.test(rawItemId)) {
@@ -186,8 +198,19 @@ function validateRequestBody(raw: unknown): ValidatedRequestBody | null {
       return null;
     }
 
+    const rawRevision = expectedReviewRevisionsRaw[itemIds.length];
+
+    if (
+      typeof rawRevision !== "string" ||
+      !/^[1-9][0-9]*$/.test(rawRevision) ||
+      BigInt(rawRevision) > BigInt("9223372036854775807")
+    ) {
+      return null;
+    }
+
     seenItemIds.add(normalizedItemId);
-    itemIds.push(rawItemId);
+    itemIds.push(normalizedItemId);
+    expectedReviewRevisions.push(rawRevision);
   }
 
   return {
@@ -195,6 +218,7 @@ function validateRequestBody(raw: unknown): ValidatedRequestBody | null {
     lockTitle,
     notes,
     itemIds,
+    expectedReviewRevisions,
     idempotencyKey,
   };
 }
@@ -285,13 +309,14 @@ export async function POST(request: NextRequest) {
     return jsonError(403, "forbidden");
   }
 
-  const result = await publishRiskShareVersionForTenant({
+  const result = await publishRiskShareVersionForTenantChecked({
     companyCode: selectedTenantCode,
     actorMembershipId,
     lockMonth: validatedBody.lockMonth,
     lockTitle: validatedBody.lockTitle,
     notes: validatedBody.notes,
     itemIds: validatedBody.itemIds,
+    expectedReviewRevisions: validatedBody.expectedReviewRevisions,
     idempotencyKey: validatedBody.idempotencyKey,
   });
 

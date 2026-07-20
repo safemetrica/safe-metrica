@@ -38,14 +38,17 @@ check(
 );
 check("unknown body keys rejected", route.includes("ALLOWED_BODY_FIELDS.has(key)"));
 
-const allowedFields = ["lockMonth", "lockTitle", "notes", "itemIds", "idempotencyKey"];
+const allowedFields = [
+  "lockMonth", "lockTitle", "notes", "itemIds",
+  "expectedReviewRevisions", "idempotencyKey",
+];
 const allowedBlock = sourceBlock(route, "const ALLOWED_BODY_FIELDS = new Set([", "]);");
 for (const field of allowedFields) {
   check(`allowed field: ${field}`, allowedBlock.includes(`"${field}"`));
 }
 check(
-  "allowlist has exactly five entries",
-  (allowedBlock.match(/"[A-Za-z]+"/g) ?? []).length === 5,
+  "allowlist has exactly six entries",
+  (allowedBlock.match(/"[A-Za-z]+"/g) ?? []).length === 6,
 );
 
 const forbiddenFields = [
@@ -100,6 +103,17 @@ check(
     route.includes("idempotencyKey.length < 1 || idempotencyKey.length > 200"),
 );
 check("itemIds must be array", route.includes("!Array.isArray(itemIdsRaw)"));
+check(
+  "revision array required and paired by length",
+  route.includes("!Array.isArray(expectedReviewRevisionsRaw)") &&
+    route.includes("expectedReviewRevisionsRaw.length !== itemIdsRaw.length"),
+);
+check(
+  "revision decimal strings validated without number conversion",
+  route.includes('typeof rawRevision !== "string"') &&
+    route.includes('!/^[1-9][0-9]*$/.test(rawRevision)') &&
+    route.includes('BigInt(rawRevision) > BigInt("9223372036854775807")'),
+);
 check(
   "explicit item selection 1-200",
   route.includes("itemIdsRaw.length < 1") &&
@@ -170,8 +184,9 @@ check(
   route.includes('from "@/lib/risk-share/riskShareTenantPublish"'),
 );
 check(
-  "exact publish RPC endpoint",
-  helper.includes("/rest/v1/rpc/publish_risk_share_version_for_tenant"),
+  "exact checked publish RPC endpoint",
+  helper.includes("/rest/v1/rpc/publish_risk_share_version_for_tenant_checked") &&
+    !helper.includes("`/rest/v1/rpc/publish_risk_share_version_for_tenant`"),
 );
 check(
   "service-role key remains helper-only",
@@ -186,7 +201,7 @@ check(
 const payloadBlock = sourceBlock(helper, "body: JSON.stringify({", "}),\n        cache:");
 const rpcFields = [
   "p_company_code", "p_actor_membership_id", "p_lock_month", "p_lock_title",
-  "p_notes", "p_item_ids", "p_idempotency_key",
+  "p_notes", "p_item_ids", "p_expected_review_revisions", "p_idempotency_key",
 ];
 for (const field of rpcFields) {
   check(`RPC field: ${field}`, payloadBlock.includes(`${field}:`));
@@ -198,6 +213,7 @@ check(
 check(
   "helper sends explicit item array only",
   helper.includes("p_item_ids: params.itemIds") &&
+    helper.includes("p_expected_review_revisions: params.expectedReviewRevisions") &&
     helper.includes("params.itemIds.length < 1") &&
     !/p_item_ids\s*:\s*null/.test(helper),
 );
@@ -341,7 +357,7 @@ check(
 );
 check(
   "no eligibility algorithm in helper",
-  !/(share_status|customer_check_status|customer_confirmed|review_revision|worker_visible\s+is\s+not\s+null)/i.test(helper),
+  !/(share_status|customer_check_status|customer_confirmed|worker_visible\s+is\s+not\s+null)/i.test(helper),
 );
 check(
   "no republish/rollback/supersede RPC arguments",

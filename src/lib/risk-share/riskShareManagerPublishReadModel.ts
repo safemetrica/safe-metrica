@@ -34,6 +34,8 @@ export type RiskShareManagerPublishEntry =
       improvementPlan: string | null;
       workerShareSummary: string | null;
       workerVisible: boolean;
+      /** Canonical PostgreSQL bigint decimal text. */
+      reviewRevision: string;
       state: RiskShareManagerPublishEntryState;
       reviewReasons: RiskShareManagerPublishReviewReason[];
     }
@@ -214,6 +216,7 @@ function toPublishEntry(
       improvementPlan: item.improvementPlan,
       workerShareSummary: item.workerShareSummary,
       workerVisible: item.workerVisible,
+      reviewRevision: item.reviewRevisionText,
       state: "already_locked",
       reviewReasons: [],
     };
@@ -247,6 +250,7 @@ function toPublishEntry(
     improvementPlan: item.improvementPlan,
     workerShareSummary: item.workerShareSummary,
     workerVisible: item.workerVisible,
+    reviewRevision: item.reviewRevisionText,
     state: reviewReasons.length === 0 ? "ready_to_publish" : "review_required",
     reviewReasons,
   };
@@ -280,7 +284,7 @@ function countEntries(entries: RiskShareManagerPublishEntry[]): RiskShareManager
  * The caller must pass the server-confirmed selectedTenantCode, never a raw
  * browser/query value. This function does not publish, does not call the
  * Publish RPC, and does not recreate the RPC's transaction-time authority:
- * `publish_risk_share_version_for_tenant` remains the final eligibility,
+ * `publish_risk_share_version_for_tenant_checked` remains the final eligibility,
  * active-month, locking, snapshot and idempotency decision boundary.
  */
 export async function listRiskShareManagerPublishState(

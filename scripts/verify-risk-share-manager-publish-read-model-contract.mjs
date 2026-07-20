@@ -211,7 +211,14 @@ check(
     "worker_visible",
     "version_lock_id",
     "review_revision",
+    "review_revision_text:review_revision::text",
   ].every((field) => reviewModel.includes(field)),
+);
+check(
+  "review revision stays canonical bigint text",
+  reviewModel.includes("reviewRevisionText: string") &&
+    reviewModel.includes("/^[1-9][0-9]*$/.test(reviewRevisionText)") &&
+    src.includes("reviewRevision: item.reviewRevisionText"),
 );
 check(
   "package verifier registered",

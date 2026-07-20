@@ -36,6 +36,8 @@
     "verify:risk-share-tenant-publish-revision-guard": "node scripts/verify-risk-share-tenant-publish-revision-guard-contract.mjs",
     "verify:risk-share-manager-publish-api": "node scripts/verify-risk-share-manager-publish-api-contract.mjs",
     "verify:risk-share-manager-publish-read-model": "node scripts/verify-risk-share-manager-publish-read-model-contract.mjs",
+    "verify:risk-share-manager-publish-ui": "node scripts/verify-risk-share-manager-publish-ui-contract.mjs",
+    "verify:risk-share-manager-publish-revision-integration": "node scripts/verify-risk-share-manager-publish-revision-integration.mjs",
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh"
   },
   "dependencies": {
