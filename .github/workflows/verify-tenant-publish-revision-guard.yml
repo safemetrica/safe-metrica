@@ -1,0 +1,402 @@
+name: Verify Tenant Publish Revision Guard
+
+on:
+  push:
+    branches:
+      - feat/add-tenant-publish-revision-guard
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      PGPASSWORD: postgres
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create disposable prerequisite schema
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create extension if not exists pgcrypto;
+
+          create role anon nologin;
+          create role authenticated nologin;
+          create role service_role nologin;
+
+          create table public.tenant_membership (
+            id uuid primary key,
+            tenant_code text not null,
+            role text not null,
+            status text not null
+          );
+
+          create table public.risk_share_version_locks (
+            id uuid primary key default gen_random_uuid(),
+            company_code text not null,
+            lock_title text not null,
+            lock_month text not null,
+            item_count integer not null,
+            customer_confirmed_count integer not null,
+            worker_visible_count integer not null,
+            lock_status text not null,
+            locked_by text not null,
+            notes text,
+            actor_membership_id uuid,
+            idempotency_key text,
+            publish_action text,
+            previous_version_id uuid,
+            content_source_version_id uuid,
+            superseded_at timestamptz,
+            raw_payload jsonb,
+            created_at timestamptz not null default now()
+          );
+
+          create unique index risk_share_version_locks_active_month_uq
+            on public.risk_share_version_locks (company_code, lock_month)
+            where lock_status = 'active';
+
+          create unique index risk_share_version_locks_company_idempotency_uq
+            on public.risk_share_version_locks (company_code, idempotency_key)
+            where idempotency_key is not null;
+
+          create table public.risk_share_items (
+            id uuid primary key,
+            company_code text not null,
+            worker_visible boolean,
+            version_lock_id uuid,
+            share_status text not null,
+            customer_check_status text not null,
+            customer_confirmed boolean not null,
+            task_name text,
+            hazard text,
+            accident_type text,
+            current_controls text,
+            improvement_plan text,
+            risk_level text,
+            worker_share_summary text,
+            review_revision integer not null,
+            version_locked_at timestamptz,
+            created_at timestamptz not null default now(),
+            updated_at timestamptz not null default now()
+          );
+
+          create table public.risk_share_version_items (
+            company_code text not null,
+            version_lock_id uuid not null,
+            source_item_id uuid not null,
+            position integer not null,
+            task_name text,
+            hazard text,
+            accident_type text,
+            current_controls text,
+            improvement_plan text,
+            risk_level text,
+            worker_share_summary text,
+            worker_visible boolean,
+            source_review_revision integer
+          );
+          SQL
+
+      - name: Apply legacy tenant and checked migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20260719010000_add_tenant_risk_share_publish_rpc.sql
+          psql -v ON_ERROR_STOP=1 \
+            -f supabase/migrations/20260720010000_add_tenant_risk_share_publish_revision_guard.sql
+
+      - name: Run disposable checked-RPC contract scenarios
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          insert into public.tenant_membership (
+            id, tenant_code, role, status
+          ) values (
+            '11111111-1111-4111-8111-111111111111',
+            'test-revision-guard',
+            'tenant_manager',
+            'active'
+          );
+
+          insert into public.risk_share_items (
+            id, company_code, worker_visible, share_status,
+            customer_check_status, customer_confirmed,
+            task_name, hazard, current_controls, improvement_plan,
+            risk_level, worker_share_summary, review_revision, created_at
+          ) values
+          (
+            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+            'test-revision-guard', true, 'customer_confirmed',
+            'confirmed', true,
+            'Task A', 'Hazard A', 'Control A', 'Plan A',
+            'high', 'Share A', 2, '2026-07-20T00:00:01Z'
+          ),
+          (
+            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+            'test-revision-guard', false, 'customer_confirmed',
+            'confirmed', true,
+            'Task B', 'Hazard B', 'Control B', 'Plan B',
+            'medium', 'Share B', 4, '2026-07-20T00:00:02Z'
+          ),
+          (
+            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3',
+            'test-revision-guard', true, 'customer_confirmed',
+            'confirmed', true,
+            'Task C', 'Hazard C', 'Control C', 'Plan C',
+            'low', 'Share C', 3, '2026-07-20T00:00:03Z'
+          );
+
+          do $$
+          declare
+            r record;
+            v_version_count integer;
+            v_snapshot_count integer;
+            v_locked_count integer;
+          begin
+            select * into r
+            from public.publish_risk_share_version_for_tenant_checked(
+              'test-revision-guard',
+              '11111111-1111-4111-8111-111111111111',
+              '2026-08',
+              'Revision Guard QA',
+              null,
+              array[
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'::uuid,
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'::uuid
+              ],
+              array[4, 2],
+              'revision-guard-001'
+            );
+
+            if not r.ok or r.code <> 'ok' or r.replayed
+               or r.item_count <> 2 or r.worker_visible_count <> 1 then
+              raise exception 'fresh checked publish contract failed: %', row_to_json(r);
+            end if;
+
+            select count(*) into v_version_count
+            from public.risk_share_version_locks
+            where company_code = 'test-revision-guard';
+
+            select count(*) into v_snapshot_count
+            from public.risk_share_version_items
+            where company_code = 'test-revision-guard';
+
+            select count(*) into v_locked_count
+            from public.risk_share_items
+            where company_code = 'test-revision-guard'
+              and share_status = 'locked';
+
+            if v_version_count <> 1 or v_snapshot_count <> 2 or v_locked_count <> 2 then
+              raise exception 'fresh durable counts failed: %, %, %',
+                v_version_count, v_snapshot_count, v_locked_count;
+            end if;
+
+            if not exists (
+              select 1
+              from public.risk_share_version_items
+              where source_item_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'
+                and source_review_revision = 2
+            ) or not exists (
+              select 1
+              from public.risk_share_version_items
+              where source_item_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'
+                and source_review_revision = 4
+            ) then
+              raise exception 'snapshot review revision parity failed';
+            end if;
+
+            select * into r
+            from public.publish_risk_share_version_for_tenant_checked(
+              'test-revision-guard',
+              '11111111-1111-4111-8111-111111111111',
+              '2026-08',
+              'Revision Guard QA',
+              null,
+              array[
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'::uuid,
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'::uuid
+              ],
+              array[4, 2],
+              'revision-guard-001'
+            );
+
+            if not r.ok or r.code <> 'ok' or not r.replayed
+               or r.item_count <> 2 or r.worker_visible_count <> 1 then
+              raise exception 'exact replay contract failed: %', row_to_json(r);
+            end if;
+
+            select * into r
+            from public.publish_risk_share_version_for_tenant_checked(
+              'test-revision-guard',
+              '11111111-1111-4111-8111-111111111111',
+              '2026-08',
+              'Revision Guard QA',
+              null,
+              array[
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'::uuid,
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1'::uuid
+              ],
+              array[5, 2],
+              'revision-guard-001'
+            );
+
+            if r.ok or r.code <> 'idempotency_conflict' or r.replayed then
+              raise exception 'same-key revision conflict failed: %', row_to_json(r);
+            end if;
+
+            select * into r
+            from public.publish_risk_share_version_for_tenant_checked(
+              'test-revision-guard',
+              '11111111-1111-4111-8111-111111111111',
+              '2026-09',
+              'Revision Guard Stale QA',
+              null,
+              array['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'::uuid],
+              array[2],
+              'revision-guard-002'
+            );
+
+            if r.ok or r.code <> 'selection_mismatch' or r.replayed then
+              raise exception 'stale revision selection failed: %', row_to_json(r);
+            end if;
+
+            select * into r
+            from public.publish_risk_share_version_for_tenant_checked(
+              'test-revision-guard',
+              '11111111-1111-4111-8111-111111111111',
+              '2026-09',
+              'Revision Guard Duplicate QA',
+              null,
+              array[
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'::uuid,
+                'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'::uuid
+              ],
+              array[3, 3],
+              'revision-guard-003'
+            );
+
+            if r.ok or r.code <> 'validation_failed' or r.replayed then
+              raise exception 'duplicate selection validation failed: %', row_to_json(r);
+            end if;
+
+            select * into r
+            from public.publish_risk_share_version_for_tenant_checked(
+              'other-tenant',
+              '11111111-1111-4111-8111-111111111111',
+              '2026-09',
+              'Revision Guard Tenant QA',
+              null,
+              array['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'::uuid],
+              array[3],
+              'revision-guard-004'
+            );
+
+            if r.ok or r.code <> 'forbidden' or r.replayed then
+              raise exception 'tenant membership boundary failed: %', row_to_json(r);
+            end if;
+
+            select count(*) into v_version_count
+            from public.risk_share_version_locks
+            where company_code = 'test-revision-guard';
+
+            select count(*) into v_snapshot_count
+            from public.risk_share_version_items
+            where company_code = 'test-revision-guard';
+
+            select count(*) into v_locked_count
+            from public.risk_share_items
+            where company_code = 'test-revision-guard'
+              and share_status = 'locked';
+
+            if v_version_count <> 1 or v_snapshot_count <> 2 or v_locked_count <> 2 then
+              raise exception 'failure-path durable delta detected: %, %, %',
+                v_version_count, v_snapshot_count, v_locked_count;
+            end if;
+
+            if not exists (
+              select 1
+              from public.risk_share_items
+              where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3'
+                and share_status = 'customer_confirmed'
+                and version_lock_id is null
+                and review_revision = 3
+            ) then
+              raise exception 'stale fixture changed unexpectedly';
+            end if;
+          end
+          $$;
+          SQL
+
+      - name: Verify revision guard contract
+        run: npm run verify:risk-share-tenant-publish-revision-guard
+
+      - name: Verify existing tenant publish contract
+        run: npm run verify:risk-share-tenant-publish-rpc
+
+      - name: Verify Manager Publish contracts
+        run: |
+          npm run verify:risk-share-manager-publish-api
+          npm run verify:risk-share-manager-publish-read-model
+
+      - name: Verify Preparation contracts
+        run: |
+          npm run verify:risk-share-preparation-read-model
+          npm run verify:risk-share-preparation-api
+          npm run verify:risk-share-preparation-ui
+
+      - name: Targeted lint
+        run: npx eslint scripts/verify-risk-share-tenant-publish-revision-guard-contract.mjs
+
+      - name: Legacy route smoke
+        run: npm run smoke:legacy-routes
+
+      - name: Build
+        run: npm run build
+
+      - name: Scope and diff checks
+        run: |
+          git diff --check origin/main...HEAD
+          mapfile -t changed < <(git diff --name-only origin/main...HEAD | sort)
+          expected=(
+            ".github/workflows/verify-tenant-publish-revision-guard.yml"
+            "package.json"
+            "scripts/verify-risk-share-tenant-publish-revision-guard-contract.mjs"
+            "supabase/migrations/20260720010000_add_tenant_risk_share_publish_revision_guard.sql"
+          )
+          printf '%s\n' "${changed[@]}"
+          test "${#changed[@]}" -eq "${#expected[@]}"
+          for index in "${!expected[@]}"; do
+            test "${changed[$index]}" = "${expected[$index]}"
+          done
