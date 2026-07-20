@@ -1,6 +1,9 @@
 name: Temporary verify Version integrity PR
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - work/version-integrity-inspect-20260720
