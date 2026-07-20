@@ -17,12 +17,16 @@ async function updateReview(formData: FormData) {
   const submissionId = String(formData.get("submissionId") ?? "");
   const expectedStatus = String(formData.get("expectedStatus") ?? "") as ConfirmationReviewStatus;
   const nextStatus = String(formData.get("nextStatus") ?? "") as "in_review" | "completed";
-  const actionNote = String(formData.get("actionNote") ?? "").trim().slice(0, 500);
+  const actionNote = String(formData.get("actionNote") ?? "").trim();
   if (
     !companyCode
     || !UUID_PATTERN.test(submissionId)
     || !REVIEW_STATUSES.has(expectedStatus)
     || !NEXT_STATUSES.has(nextStatus)
+    || actionNote.length > 500
+    || (expectedStatus === "unreviewed" && nextStatus !== "in_review")
+    || (expectedStatus === "in_review" && nextStatus !== "completed")
+    || expectedStatus === "completed"
   ) {
     redirect(`/risk-share/manager/confirmations?company=${encodeURIComponent(companyCode)}&result=validation_failed`);
   }
@@ -79,7 +83,7 @@ export default async function Page({ searchParams }: { searchParams?: Promise<{ 
                 <input type="hidden" name="expectedStatus" value={row.reviewStatus} />
                 <input name="actionNote" defaultValue={row.actionNote} maxLength={500} placeholder="검토·조치 메모" className="min-w-64 flex-1 rounded-xl border px-3 py-2 text-sm" />
                 {row.reviewStatus === "unreviewed" ? <button name="nextStatus" value="in_review" className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white">검토 시작</button> : null}
-                {row.reviewStatus !== "completed" ? <button name="nextStatus" value="completed" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white">검토 완료</button> : null}
+                {row.reviewStatus === "in_review" ? <button name="nextStatus" value="completed" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white">검토 완료</button> : null}
               </form>
             </article>
           ))}
