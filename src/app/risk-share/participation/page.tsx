@@ -211,6 +211,9 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
               {submitted === "incomplete_confirmation" ? (
                 <RiskShareStatusBanner variant="error">{copy.versionShareIncompleteBanner}</RiskShareStatusBanner>
               ) : null}
+              {submitted === "idempotency_conflict" ? (
+                <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner>
+              ) : null}
 
               <form action="/api/risk-share/participation/submit" method="post" encType="multipart/form-data">
                 <input type="hidden" name="companyCode" value={companyCode} readOnly />
