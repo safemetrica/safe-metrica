@@ -51,8 +51,9 @@ export type RiskShareManagerReviewItem = {
   versionLockId: string | null;
   sourcePage: number | null;
   sourceRow: string | null;
-  /** Canonical PostgreSQL bigint decimal text; never convert to number. */
-  reviewRevision: string;
+  reviewRevision: number;
+  /** Canonical PostgreSQL bigint decimal text for Publish revision guards. */
+  reviewRevisionText: string;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -95,6 +96,7 @@ type RiskShareManagerReviewRow = {
   version_lock_id?: unknown;
   source_page?: unknown;
   source_row?: unknown;
+  review_revision?: unknown;
   review_revision_text?: unknown;
   created_at?: unknown;
   updated_at?: unknown;
@@ -141,7 +143,8 @@ function toReviewListEntry(
   const hazard = readTrimmedString(row.hazard);
   const shareStatus = readTrimmedString(row.share_status);
   const customerCheckStatus = readTrimmedString(row.customer_check_status);
-  const reviewRevision = readTrimmedString(row.review_revision_text);
+  const reviewRevision = row.review_revision;
+  const reviewRevisionText = readTrimmedString(row.review_revision_text);
 
   if (
     !id ||
@@ -152,7 +155,10 @@ function toReviewListEntry(
     !KNOWN_CUSTOMER_CHECK_STATUSES.has(customerCheckStatus) ||
     typeof row.customer_confirmed !== "boolean" ||
     typeof row.worker_visible !== "boolean" ||
-    !/^[1-9][0-9]*$/.test(reviewRevision)
+    typeof reviewRevision !== "number" ||
+    !Number.isFinite(reviewRevision) ||
+    reviewRevision < 1 ||
+    !/^[1-9][0-9]*$/.test(reviewRevisionText)
   ) {
     return { kind: "invalid", id: id || null };
   }
@@ -183,6 +189,7 @@ function toReviewListEntry(
       sourcePage: readNullableInteger(row.source_page),
       sourceRow: readNullableString(row.source_row),
       reviewRevision,
+      reviewRevisionText,
       createdAt: readNullableString(row.created_at),
       updatedAt: readNullableString(row.updated_at),
     },
@@ -225,7 +232,7 @@ export async function listRiskShareItemsForManagerReview(
 
   const query = new URLSearchParams({
     select:
-      "id,company_code,site_name,source_id,candidate_id,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,share_status,customer_check_status,customer_confirmed,worker_visible,version_lock_id,source_page,source_row,review_revision_text:review_revision::text,created_at,updated_at",
+      "id,company_code,site_name,source_id,candidate_id,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,share_status,customer_check_status,customer_confirmed,worker_visible,version_lock_id,source_page,source_row,review_revision,review_revision_text:review_revision::text,created_at,updated_at",
     company_code: `eq.${companyCode}`,
     order: "created_at.desc,id.desc",
     limit: String(FETCH_LIMIT),
