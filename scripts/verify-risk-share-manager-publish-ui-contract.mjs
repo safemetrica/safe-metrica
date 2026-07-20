@@ -126,6 +126,21 @@ check(
     submitBlock.includes("근로자별 확인 기록은 별도 단계"),
 );
 check(
+  "server page passes canonical review revisions",
+  page.includes("reviewRevision: entry.reviewRevision"),
+);
+check(
+  "client keeps Item and revision pairs in canonical Item order",
+  client.includes("selectedExpectedReviewRevisions") &&
+    client.includes('entry?.reviewRevision ?? ""') &&
+    client.includes("expectedReviewRevisions: selectedExpectedReviewRevisions"),
+);
+check(
+  "revision participates in server and idempotency signatures",
+  client.includes("[entry.id, entry.reviewRevision") &&
+    client.includes("expectedReviewRevisions: selectedExpectedReviewRevisions"),
+);
+check(
   "idempotency key is reused for an identical payload",
   submitBlock?.includes("pendingIdempotencyKey && pendingPayloadSignature === payloadSignature") &&
     submitBlock.includes("crypto.randomUUID()"),
