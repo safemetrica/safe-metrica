@@ -60,8 +60,10 @@ as $$
 declare
   v_current text;
 begin
-  if p_expected_status not in ('unreviewed', 'in_review', 'completed')
-     or p_next_status not in ('in_review', 'completed')
+  if not (
+       (p_expected_status = 'unreviewed' and p_next_status = 'in_review')
+       or (p_expected_status = 'in_review' and p_next_status = 'completed')
+     )
      or char_length(coalesce(p_action_note, '')) > 500 then
     return query select false, 'validation_failed', null::text; return;
   end if;
