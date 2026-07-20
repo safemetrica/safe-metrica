@@ -29,6 +29,9 @@ export type MonthlyKpiCounts = {
   versionLinkedMonthly: number;
   versionUnlinkedMonthly: number;
   confirmedVersionCount: number;
+  reviewUnreviewed: number;
+  reviewInProgress: number;
+  reviewCompleted: number;
 };
 
 export type MonthlyTrendPoint = {
@@ -502,6 +505,10 @@ export default function MonthlyDesignerView({
                   }}
                 >
                   Version 미연결 기록 {counts.versionUnlinkedMonthly}건
+                </p>
+                <p className="muted" style={{ marginTop: "8px" }}>
+                  관리자 검토: 미검토 <b>{counts.reviewUnreviewed}건</b> · 검토 중{" "}
+                  <b>{counts.reviewInProgress}건</b> · 완료 <b>{counts.reviewCompleted}건</b>
                 </p>
               </article>
             </section>
