@@ -153,6 +153,7 @@ export default async function RiskShareManagerPublishPage({
                 improvementPlan: entry.improvementPlan,
                 workerShareSummary: entry.workerShareSummary,
                 workerVisible: entry.workerVisible,
+                reviewRevision: entry.reviewRevision,
                 state: entry.state,
                 reviewReasons: entry.reviewReasons,
               }
