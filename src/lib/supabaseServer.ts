@@ -161,6 +161,7 @@ type SupabaseExportTable =
   | "risk_share_candidate_review_events"
   | "risk_share_items"
   | "risk_share_version_locks"
+  | "risk_share_version_items"
   | "tenant_registry"
   | "tenant_membership"
   | "tenant_sites";

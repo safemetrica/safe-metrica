@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { NextRequest, NextResponse } from "next/server";
 
 import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
@@ -9,6 +11,7 @@ import {
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { resolveActiveRiskSharePublicVersion } from "@/lib/risk-share/riskSharePublicVersion";
+import { insertRiskShareVersionConfirmation } from "@/lib/risk-share/riskShareVersionConfirmation";
 import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
 import {
   deletePrivateRiskShareSignature,
@@ -87,6 +90,22 @@ export async function POST(req: NextRequest) {
   }
 
   const tenant = tenantResolution.tenant;
+  const confirmationIdempotencyKey = getFormText(
+    formData,
+    "confirmationIdempotencyKey",
+  ).toLowerCase();
+
+  if (
+    mode === "monthly" &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      confirmationIdempotencyKey,
+    )
+  ) {
+    return NextResponse.redirect(
+      new URL(buildParticipationHref(companyCode, mode, lang, "error"), req.url),
+      { status: 303 },
+    );
+  }
 
   let monthlyVersionProvenance: {
     version_lock_id: string;
@@ -141,7 +160,7 @@ export async function POST(req: NextRequest) {
     monthlyVersionProvenance = {
       version_lock_id: versionResult.version.lock.id,
       version_lock_month: versionResult.version.lock.month,
-      confirmed_share_item_ids: expectedItemIds,
+      confirmed_share_item_ids: [...expectedItemIds].sort(),
       confirmed_share_item_count: expectedItemIds.length,
       version_confirmed_at: new Date().toISOString(),
     };
@@ -176,6 +195,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const monthlyRequestDigest =
+    mode === "monthly" && monthlyVersionProvenance
+      ? createHash("sha256")
+          .update(
+            JSON.stringify({
+              tenantCode: tenant.code,
+              versionLockId: monthlyVersionProvenance.version_lock_id,
+              itemIds: monthlyVersionProvenance.confirmed_share_item_ids,
+              workerName,
+              workerAffiliation,
+              workerIdentifier,
+              lang,
+              signaturePresent: Boolean(signatureResolution.file),
+            }),
+          )
+          .digest("hex")
+      : null;
+
   const modeLabel = mode === "monthly" ? "월간 위험성평가 공유확인" : "작업 전 안전확인";
   const confirmationType = mode === "monthly" ? "risk_share_confirm_monthly" : "risk_share_confirm_prework";
   const reportedDate = getTodayDateValue();
@@ -199,7 +236,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const result = await insertFieldParticipationSubmissionShadowRecord({
+  const submissionRecord = {
     tenant_code: tenant.code,
     company_name: tenant.name,
     submission_type: "공유확인",
@@ -244,9 +281,42 @@ export async function POST(req: NextRequest) {
         : {}),
       submitted_at: new Date().toISOString(),
     },
-  });
+  };
+
+  const result =
+    mode === "monthly" && monthlyVersionProvenance && monthlyRequestDigest
+      ? await insertRiskShareVersionConfirmation({
+          ...submissionRecord,
+          version_lock_id: monthlyVersionProvenance.version_lock_id,
+          confirmed_share_item_ids:
+            monthlyVersionProvenance.confirmed_share_item_ids,
+          confirmation_idempotency_key: confirmationIdempotencyKey,
+          confirmation_request_digest: monthlyRequestDigest,
+        })
+      : await insertFieldParticipationSubmissionShadowRecord(submissionRecord);
 
   if (!result.ok) {
+    if (
+      "code" in result &&
+      result.code === "idempotency_conflict"
+    ) {
+      if (signatureUpload?.ok) {
+        await deletePrivateRiskShareSignature(signatureUpload.cleanupUrl, oidcToken);
+      }
+
+      return NextResponse.redirect(
+        new URL(
+          buildParticipationHref(
+            companyCode,
+            mode,
+            lang,
+            "idempotency_conflict",
+          ),
+          req.url,
+        ),
+        { status: 303 },
+      );
+    }
     if (signatureUpload?.ok) {
       await deletePrivateRiskShareSignature(signatureUpload.cleanupUrl, oidcToken);
     }
@@ -255,6 +325,10 @@ export async function POST(req: NextRequest) {
       new URL(buildParticipationHref(companyCode, mode, lang, "error"), req.url),
       { status: 303 }
     );
+  }
+
+  if ("replayed" in result && result.replayed && signatureUpload?.ok) {
+    await deletePrivateRiskShareSignature(signatureUpload.cleanupUrl, oidcToken);
   }
 
   return NextResponse.redirect(
