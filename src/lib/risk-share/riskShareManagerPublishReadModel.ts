@@ -9,7 +9,6 @@ import {
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const LOCK_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ACTIVE_VERSION_FETCH_LIMIT = 2;
-const MAX_PUBLISH_ITEMS = 200;
 
 export type RiskShareManagerPublishEntryState =
   | "ready_to_publish"
@@ -71,6 +70,7 @@ export type RiskShareManagerPublishReadModelResult =
   | { status: "failed" };
 
 type ActiveVersionRow = {
+  company_code?: unknown;
   lock_title?: unknown;
   lock_month?: unknown;
   item_count?: unknown;
@@ -104,8 +104,10 @@ function readStrictInteger(value: unknown): number | null {
 
 function parseActiveVersionRow(
   row: ActiveVersionRow,
+  expectedCompanyCode: string,
   expectedLockMonth: string,
 ): RiskShareManagerPublishActiveVersion | null {
+  const companyCode = readTrimmedString(row.company_code);
   const lockTitle = readTrimmedString(row.lock_title);
   const lockMonth = readTrimmedString(row.lock_month);
   const lockStatus = readTrimmedString(row.lock_status);
@@ -115,13 +117,13 @@ function parseActiveVersionRow(
   const workerVisibleCount = readStrictInteger(row.worker_visible_count);
 
   if (
+    companyCode !== expectedCompanyCode ||
     !lockTitle ||
     lockMonth !== expectedLockMonth ||
     lockStatus !== "active" ||
     !createdAt ||
     itemCount === null ||
     itemCount < 1 ||
-    itemCount > MAX_PUBLISH_ITEMS ||
     customerConfirmedCount !== itemCount ||
     workerVisibleCount === null ||
     workerVisibleCount < 0 ||
@@ -145,7 +147,7 @@ async function fetchActiveVersionForMonth(
 ): Promise<ActiveVersionLookupResult> {
   const query = new URLSearchParams({
     select:
-      "lock_title,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status,created_at",
+      "company_code,lock_title,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status,created_at",
     company_code: `eq.${companyCode}`,
     lock_month: `eq.${lockMonth}`,
     lock_status: "eq.active",
@@ -172,7 +174,7 @@ async function fetchActiveVersionForMonth(
     return { status: "ok", activeVersion: null };
   }
 
-  const activeVersion = parseActiveVersionRow(rows[0], lockMonth);
+  const activeVersion = parseActiveVersionRow(rows[0], companyCode, lockMonth);
   return activeVersion
     ? { status: "ok", activeVersion }
     : { status: "failed" };
@@ -196,6 +198,10 @@ function toPublishEntry(
   }
 
   if (hasVersionLock && hasLockedStatus) {
+    if (item.customerCheckStatus !== "confirmed" || !item.customerConfirmed) {
+      return { kind: "invalid", id: item.id, state: "invalid" };
+    }
+
     return {
       kind: "valid",
       id: item.id,
