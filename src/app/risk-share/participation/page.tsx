@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   buildRiskShareLangHref,
   getRiskShareCopy,
@@ -68,6 +70,7 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const returnHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, locale);
   const query = { company: companyCode, mode };
+  const confirmationIdempotencyKey = randomUUID();
 
   if (!tenantResolution.ok) {
     return (
@@ -213,6 +216,14 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                 <input type="hidden" name="companyCode" value={companyCode} readOnly />
                 <input type="hidden" name="mode" value={mode} readOnly />
                 <input type="hidden" name="lang" value={locale} readOnly />
+                {mode === "monthly" ? (
+                  <input
+                    type="hidden"
+                    name="confirmationIdempotencyKey"
+                    value={confirmationIdempotencyKey}
+                    readOnly
+                  />
+                ) : null}
 
                 <div className="rsx-pub-field-card rsx-pub-form-section space-y-3 rounded-[13px] p-3">
                   <label className="rsx-pub-label block text-sm font-black">
