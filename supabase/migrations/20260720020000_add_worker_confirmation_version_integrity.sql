@@ -55,10 +55,6 @@ begin
           and confirmed_share_item_ids is not null
           and cardinality(confirmed_share_item_ids) between 1 and 100
           and array_position(confirmed_share_item_ids, null) is null
-          and cardinality(confirmed_share_item_ids) = (
-            select count(distinct item_id)
-            from unnest(confirmed_share_item_ids) item_id
-          )
           and confirmation_idempotency_key = btrim(confirmation_idempotency_key)
           and confirmation_idempotency_key <> ''
           and char_length(confirmation_idempotency_key) <= 200
