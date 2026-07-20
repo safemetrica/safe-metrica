@@ -216,7 +216,7 @@ function toPublishEntry(
       improvementPlan: item.improvementPlan,
       workerShareSummary: item.workerShareSummary,
       workerVisible: item.workerVisible,
-      reviewRevision: item.reviewRevision,
+      reviewRevision: item.reviewRevisionText,
       state: "already_locked",
       reviewReasons: [],
     };
