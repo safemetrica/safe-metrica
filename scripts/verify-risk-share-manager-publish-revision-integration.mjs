@@ -58,7 +58,7 @@ check(
 check(
   "API validates positive in-range bigint decimal strings",
   source.route.includes("!/^[1-9][0-9]*$/.test(rawRevision)") &&
-    source.route.includes("BigInt(rawRevision) > BigInt("9223372036854775807")"),
+    source.route.includes('BigInt(rawRevision) > BigInt("9223372036854775807")'),
 );
 check(
   "API forwards caller revisions without a database reread",
@@ -78,7 +78,7 @@ check(
   "helper repeats pair validation fail-closed",
   source.helper.includes("params.itemIds.length !== params.expectedReviewRevisions.length") &&
     source.helper.includes("seenItemIds.has(normalizedItemId)") &&
-    source.helper.includes("BigInt(revision) > BigInt("9223372036854775807")"),
+    source.helper.includes('BigInt(revision) > BigInt("9223372036854775807")'),
 );
 
 const unsafeRevision = "9007199254740993";
