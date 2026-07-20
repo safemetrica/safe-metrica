@@ -203,7 +203,7 @@ function validateRequestBody(raw: unknown): ValidatedRequestBody | null {
     if (
       typeof rawRevision !== "string" ||
       !/^[1-9][0-9]*$/.test(rawRevision) ||
-      BigInt(rawRevision) > 9223372036854775807n
+      BigInt(rawRevision) > BigInt("9223372036854775807")
     ) {
       return null;
     }
