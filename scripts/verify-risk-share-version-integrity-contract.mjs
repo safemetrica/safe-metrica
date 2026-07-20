@@ -66,13 +66,20 @@ assert(monthlyPage.includes("confirmedVersionCount"), "Monthly output counts dis
 assert(monthlyView.includes("게시 Version 연결"), "Monthly UI exposes Version linkage status");
 
 const touched = process.env.VERSION_INTEGRITY_CHANGED_FILES?.split("\n").filter(Boolean) ?? [];
-const forbidden = [
-  /^src\/app\/(?!risk-share\/)/,
-  /^src\/app\/risk-share\/(daedo|dongwoo|hankookgreen|bubblemon|mons|richi)/,
-  /^src\/app\/api\/(?!risk-share\/participation\/submit\/route\.ts$)/,
+const productScope = [
+  "package.json",
+  "scripts/verify-risk-share-version-integrity-contract.mjs",
+  "src/app/api/risk-share/participation/submit/route.ts",
+  "src/app/risk-share/monthly/page.tsx",
+  "src/app/risk-share/participation/page.tsx",
+  "src/components/risk-share/monthly/MonthlyDesignerView.tsx",
+  "src/lib/risk-share/riskSharePublicVersion.ts",
+  "src/lib/risk-share/riskShareVersionConfirmation.ts",
+  "src/lib/supabaseServer.ts",
+  "supabase/migrations/20260720020000_add_worker_confirmation_version_integrity.sql",
 ];
-for (const path of touched) {
-  assert(!forbidden.some((pattern) => pattern.test(path)), `Scope allowed: ${path}`);
+for (const path of touched.filter((value) => !value.startsWith(".github/") && !value.startsWith(".tmp-"))) {
+  assert(productScope.includes(path), `Scope allowed: ${path}`);
 }
 
 console.log(`PASS: ${checks.length} Version integrity contract checks`);
