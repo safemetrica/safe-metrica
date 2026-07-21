@@ -77,6 +77,9 @@ export type ManagerReviewStatusSegment = {
 };
 
 export type ManagerRecentSubmission = {
+  id: string;
+  reviewStatus: "unreviewed" | "in_review" | "completed";
+  actionNote: string;
   category: string;
   categoryBadgeClass: string;
   submitterLabel: string;
@@ -96,6 +99,7 @@ export type ManagerSafetyResource = {
 
 export type ManagerDesignerViewProps = {
   companyLabel: string;
+  companyCode: string;
   managerHref: string;
   monthlyHref: string;
   confirmationReviewHref: string;
@@ -123,6 +127,8 @@ export type ManagerDesignerViewProps = {
   weeklyTrend?: ManagerWeeklyTrendPoint[];
   /** Absent/empty when no review-status aggregation exists yet. */
   reviewStatus?: ManagerReviewStatusSegment[];
+  reviewResult?: string;
+  confirmationReviewAction?: (formData: FormData) => void | Promise<void>;
   /** Absent/empty when no recent-submission feed exists yet. */
   recentSubmissions?: ManagerRecentSubmission[];
   /** Absent/empty when no safety-resource feed exists yet. */
@@ -145,9 +151,9 @@ const ZERO_WEEKLY_SERIES = [
   { colorVar: "--c3", data: [0, 0, 0, 0, 0, 0, 0] },
 ];
 const ZERO_REVIEW_STATUS_ROWS = [
-  { label: "미검토", colorVar: "--c3" },
-  { label: "검토 중", colorVar: "--c1" },
-  { label: "검토 완료", colorVar: "--c2" },
+  { label: "확인 필요", colorVar: "--c3" },
+  { label: "확인 중", colorVar: "--c1" },
+  { label: "처리 완료", colorVar: "--c2" },
 ];
 
 const QUERY_NEEDS_REVIEW_LABEL = "확인 필요";
@@ -175,6 +181,7 @@ function NavBadge({ status, count }: { status: ManagerQueryStatus; count: number
 
 export default function ManagerDesignerView({
   companyLabel,
+  companyCode,
   managerHref,
   monthlyHref,
   confirmationReviewHref,
@@ -195,6 +202,8 @@ export default function ManagerDesignerView({
   fieldReferenceSummary,
   weeklyTrend,
   reviewStatus,
+  reviewResult,
+  confirmationReviewAction,
   recentSubmissions,
   safetyResources,
   weeklyTrendFallbackLabels,
@@ -685,14 +694,29 @@ export default function ManagerDesignerView({
             </section>
 
             {/* ⑤ 최근 접수 + 서명/흐름 */}
-            <section className="grid grid--dash mt-18">
+            <section className="grid grid--dash mt-18" id="confirmation-review">
               <article className="card">
                 <div className="card__head">
                   <div>
-                    <h3>최근 접수 내역</h3>
-                    <small>QR로 접수되어 관리자 검토 대기 중</small>
+                    <h3>근로자 확인 내역</h3>
+                    <small>근로자가 위험성평가 공유내용을 확인한 기록</small>
                   </div>
                 </div>
+                <div style={{ padding: "14px 18px", background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
+                  <b style={{ display: "block", marginBottom: "4px" }}>이곳에서 확인하고 처리합니다</b>
+                  <span style={{ color: "var(--text-2)", fontSize: "14px" }}>
+                    근로자가 게시된 위험성평가 내용을 확인한 기록입니다. 내용을 살펴보고 필요한 후속조치를 남겨 주세요.
+                  </span>
+                </div>
+                {reviewResult === "updated" ? (
+                  <div style={{ margin: "14px 18px 0", padding: "12px 14px", borderRadius: "10px", background: "var(--success-bg)", color: "var(--success)", fontWeight: 800 }}>
+                    처리 상태를 저장했습니다.
+                  </div>
+                ) : reviewResult ? (
+                  <div style={{ margin: "14px 18px 0", padding: "12px 14px", borderRadius: "10px", background: "var(--danger-bg)", color: "var(--danger)", fontWeight: 800 }}>
+                    상태가 변경되었거나 저장하지 못했습니다. 최신 내용을 확인해 다시 시도해 주세요.
+                  </div>
+                ) : null}
                 <div style={{ overflowX: "auto" }}>
                   <table className="table table--r">
                     <thead>
@@ -702,6 +726,7 @@ export default function ManagerDesignerView({
                         <th>내용</th>
                         <th>접수 시각</th>
                         <th>상태</th>
+                        <th>확인·조치</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -717,11 +742,38 @@ export default function ManagerDesignerView({
                             <td>
                               <span className={`badge ${row.statusBadgeClass}`}>{row.statusLabel}</span>
                             </td>
+                            <td style={{ minWidth: "330px" }}>
+                              {confirmationReviewAction && row.reviewStatus !== "completed" ? (
+                                <form action={confirmationReviewAction} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                  <input type="hidden" name="companyCode" value={companyCode} />
+                                  <input type="hidden" name="submissionId" value={row.id} />
+                                  <input type="hidden" name="expectedStatus" value={row.reviewStatus} />
+                                  <input
+                                    name="actionNote"
+                                    defaultValue={row.actionNote}
+                                    maxLength={500}
+                                    aria-label="확인 내용 또는 후속조치"
+                                    placeholder="확인 내용 또는 후속조치"
+                                    style={{ minWidth: "180px", flex: 1, border: "1px solid var(--border)", borderRadius: "9px", padding: "9px 10px", background: "var(--surface)", color: "var(--text)" }}
+                                  />
+                                  <button
+                                    className={`btn ${row.reviewStatus === "unreviewed" ? "btn--outline" : "btn--primary"}`}
+                                    name="nextStatus"
+                                    value={row.reviewStatus === "unreviewed" ? "in_review" : "completed"}
+                                    type="submit"
+                                  >
+                                    {row.reviewStatus === "unreviewed" ? "내용 확인" : "처리 완료"}
+                                  </button>
+                                </form>
+                              ) : (
+                                <span style={{ color: "var(--text-2)", fontSize: "13px" }}>{row.actionNote || "처리 완료"}</span>
+                              )}
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} style={{ padding: "28px 16px" }}>
+                          <td colSpan={6} style={{ padding: "28px 16px" }}>
                             <div className="empty-state" style={{ padding: 0 }}>
                               <div className="empty-state__icon">
                                 <iconify-icon icon="lucide:inbox"></iconify-icon>
