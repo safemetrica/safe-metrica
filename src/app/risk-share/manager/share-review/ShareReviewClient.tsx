@@ -28,6 +28,7 @@ type ShareReviewClientProps = {
   companyCode: string;
   lang: string;
   managerHref: string;
+  publishHref: string;
   listStatus: "ok" | "failed";
   items: ShareReviewClientItem[];
   overflow: boolean;
@@ -675,6 +676,7 @@ function ShareReviewItemCard({
 export default function ShareReviewClient({
   companyCode,
   managerHref,
+  publishHref,
   listStatus,
   items,
   overflow,
@@ -686,14 +688,29 @@ export default function ShareReviewClient({
 
   const validCount = items.filter((entry) => entry.kind === "valid").length;
   const invalidCount = items.filter((entry) => entry.kind === "invalid").length;
+  const validItems = items.filter(
+    (entry): entry is Extract<ShareReviewClientItem, { kind: "valid" }> => entry.kind === "valid",
+  );
+  const statusCounts = {
+    needsReview: validItems.filter(
+      (entry) => !entry.isLocked && ["draft", "needs_customer_check"].includes(entry.shareStatus),
+    ).length,
+    confirmed: validItems.filter(
+      (entry) => !entry.isLocked && entry.shareStatus === "customer_confirmed",
+    ).length,
+    excluded: validItems.filter(
+      (entry) => !entry.isLocked && entry.shareStatus === "excluded",
+    ).length,
+    published: validItems.filter((entry) => entry.isLocked).length,
+  };
 
   return (
     <div className="content" style={{ padding: "24px", overflowX: "hidden" }}>
       <div className="page-head" style={{ maxWidth: "860px" }}>
         <div>
           <p className="eyebrow">SafeMetrica · 안전운영</p>
-          <h1>공유할 내용 확인</h1>
-          <p>현장에 게시할 위험요인과 안전조치 내용을 확인·수정합니다.</p>
+          <h1>공유할 위험성평가</h1>
+          <p>근로자에게 알릴 위험요인과 안전조치를 확인하고 공유를 준비합니다.</p>
           <p className="notice" style={{ marginTop: "12px", maxWidth: "640px" }}>
             이 화면에서 확인한 내용은 공유본 게시 전까지 현장 QR에 공개되지 않습니다.
           </p>
@@ -706,6 +723,52 @@ export default function ShareReviewClient({
       </div>
 
       <div style={{ maxWidth: "860px", marginTop: "18px", display: "grid", gap: "14px" }}>
+        <section className="card card--pad" aria-label="위험성평가 공유 단계">
+          <p className="eyebrow">공유 단계</p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "10px",
+              marginTop: "10px",
+            }}
+          >
+            <div><b>1. 내용 검토</b><p className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>위험요인과 안전조치를 확인합니다.</p></div>
+            <div><b>2. 게시 항목 선택</b><p className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>공유할 항목을 직접 선택합니다.</p></div>
+            <div><b>3. 현장 QR 공유</b><p className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>게시 시점의 내용이 고정됩니다.</p></div>
+          </div>
+        </section>
+
+        <section
+          aria-label="공유 준비 현황"
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px" }}
+        >
+          {[
+            ["확인 필요", statusCounts.needsReview, "b-orange"],
+            ["확인 완료", statusCounts.confirmed, "b-green"],
+            ["공유 제외", statusCounts.excluded, "b-gray"],
+            ["게시 완료", statusCounts.published, "b-blue"],
+          ].map(([label, count, badgeClass]) => (
+            <article className="card card--pad" key={String(label)}>
+              <span className={`badge ${badgeClass}`}>{label}</span>
+              <p style={{ marginTop: "10px", fontSize: "24px", fontWeight: 900 }}>{count}건</p>
+            </article>
+          ))}
+        </section>
+
+        <section
+          className="card card--pad"
+          style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}
+        >
+          <div>
+            <p style={{ fontWeight: 900 }}>내용 검토가 끝났다면 게시할 항목을 선택하세요.</p>
+            <p className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>
+              다음 화면에서도 항목을 자동 선택하지 않으며, 관리자가 직접 확인합니다.
+            </p>
+          </div>
+          <a className="btn btn--primary" href={publishHref}>게시할 항목 선택</a>
+        </section>
+
         {listStatus === "failed" ? (
           <div className="notice" style={{ ...messageStyle("error") }}>
             공유 항목을 불러오지 못했습니다.

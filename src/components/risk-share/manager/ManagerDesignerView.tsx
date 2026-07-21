@@ -322,11 +322,11 @@ export default function ManagerDesignerView({
                 <a
                   className="nav__item"
                   href={shareReviewHref}
-                  title="공유할 내용 확인"
+                  title="공유할 위험성평가"
                   onClick={closeSidebar}
                 >
                   <iconify-icon icon="lucide:list-checks"></iconify-icon>
-                  <span className="nav__txt">공유할 내용 확인</span>
+                  <span className="nav__txt">공유할 위험성평가</span>
                 </a>
               ) : null}
             </div>
@@ -450,7 +450,7 @@ export default function ManagerDesignerView({
                 </div>
                 {shareReviewHref ? (
                   <a className="btn btn--outline" href={shareReviewHref}>
-                    <iconify-icon icon="lucide:list-checks"></iconify-icon> 공유할 내용 확인
+                    <iconify-icon icon="lucide:list-checks"></iconify-icon> 공유할 위험성평가
                   </a>
                 ) : null}
                 <a className="btn btn--primary" href={fieldHref}>

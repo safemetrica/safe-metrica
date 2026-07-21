@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "공유할 내용 확인 | SafeMetrica",
+  title: "공유할 위험성평가 | SafeMetrica",
   robots: {
     index: false,
     follow: false,
@@ -61,7 +61,7 @@ export default async function RiskShareManagerShareReviewPage({
   if (!tenantResolution.ok) {
     return (
       <ErrorShell
-        title="공유할 내용 확인 화면을 열 수 없습니다."
+        title="공유할 위험성평가 화면을 열 수 없습니다."
         message="등록된 고객사 코드가 필요합니다. 관리자 홈에서 다시 접속해 주세요."
       />
     );
@@ -142,33 +142,11 @@ export default async function RiskShareManagerShareReviewPage({
 
   return (
     <SiteProfileShell>
-      <div className="content" style={{ padding: "20px 24px 0", overflowX: "hidden" }}>
-        <div
-          className="card card--pad"
-          style={{
-            maxWidth: "860px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <p style={{ fontWeight: 900 }}>검토가 끝났다면 공유본 게시로 이동하세요.</p>
-            <p className="muted" style={{ marginTop: "4px", fontSize: "13px" }}>
-              게시할 항목은 다음 화면에서 다시 직접 선택합니다.
-            </p>
-          </div>
-          <a className="btn btn--primary" href={publishHref}>
-            공유본 게시 준비
-          </a>
-        </div>
-      </div>
       <ShareReviewClient
         companyCode={selectedTenantCode}
         lang={lang}
         managerHref={managerHref}
+        publishHref={publishHref}
         listStatus={listResult.status}
         items={clientItems}
         overflow={listResult.status === "ok" ? listResult.overflow : false}

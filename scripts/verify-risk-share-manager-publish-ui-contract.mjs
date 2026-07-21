@@ -88,7 +88,7 @@ check(
 check(
   "share review links to dedicated publish page",
   reviewPage.includes('"/risk-share/manager/share-review/publish"') &&
-    reviewPage.includes("공유본 게시 준비"),
+    reviewPage.includes("publishHref={publishHref}"),
 );
 
 check("client boundary", client.startsWith('"use client";'));

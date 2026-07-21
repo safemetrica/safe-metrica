@@ -623,7 +623,7 @@ export default function PublishClient({
             <div className="card card--pad">
               <p style={{ fontWeight: 800 }}>현재 표시할 공유 항목이 없습니다.</p>
               <p className="muted" style={{ marginTop: "6px", fontSize: "14px" }}>
-                공유할 내용 확인 화면에서 항목 준비 상태를 확인해 주세요.
+                공유할 위험성평가 화면에서 항목 준비 상태를 확인해 주세요.
               </p>
             </div>
           ) : null}
