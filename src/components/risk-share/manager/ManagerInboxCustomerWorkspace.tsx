@@ -260,7 +260,7 @@ export default function ManagerInboxCustomerWorkspace(props: Props) {
   const summaryCards = [
     { label: "오늘 새로 들어온 업무", value: props.summaryCounts.today, icon: "lucide:sparkles", color: "i-blue" },
     { label: "확인할 업무", value: props.summaryCounts.unreviewed, icon: "lucide:inbox", color: "i-orange" },
-    { label: "처리 중인 업무", value: props.summaryCounts.inReview, icon: "lucide:triangle-alert", color: "i-purple" },
+    { label: "처리 중인 업무", value: props.summaryCounts.inReview, icon: "lucide:triangle-alert", color: "i-blue" },
     { label: "장기 미확인", value: props.summaryCounts.overdue, icon: "lucide:clock-alert", color: "i-red" },
     { label: "처리 기록 완료", value: props.summaryCounts.completed, icon: "lucide:circle-check-big", color: "i-green" },
   ];
