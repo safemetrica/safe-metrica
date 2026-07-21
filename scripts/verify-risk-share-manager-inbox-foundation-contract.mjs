@@ -29,6 +29,13 @@ const checks = [
     && page.includes("listManagerInboxAuditEvents(tenant.tenant.code, detail.id)")],
   ["audit history stays read-only and monthly-only", page.includes('detail?.type === "monthly"')
     && page.includes("처리 이력") && !/rpc\//.test(model + page)],
+  ["audit lookup fails closed instead of showing an empty history", !page.includes(".catch(() => [])")
+    && page.includes("auditEventsFailed = true")
+    && page.includes("auditEventsFailed ?")
+    && page.includes("처리 이력을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.")
+    && page.includes("아직 기록된 상태 변경이 없습니다.")],
+  ["audit failure does not expose internal error details", page.includes("} catch {")
+    && !page.includes("catch (error)")],
   ["monthly result link retained", page.includes('"/risk-share/monthly"')],
   ["manager navigation connects all inbox types", manager.includes('"/risk-share/manager/inbox"')
     && ["prework", "anonymous", "visitor", "representative"].every((value) => designer.includes(`type=${value}`))],
