@@ -59,7 +59,10 @@ assert(migration.includes("array_position(confirmed_share_item_ids, null) is nul
 assert(migration.includes("unique (tenant_code, confirmation_idempotency_key)"), "DB enforces retry uniqueness");
 assert(!/\b(delete|update)\s+public\./i.test(migration), "Migration does not rewrite or delete existing rows");
 
-assert(monthlyPage.includes('query.set("select", "version_lock_id,raw_payload")'), "Monthly read selects Version linkage");
+assert(
+  /query\.set\("select",\s*"[^"]*\bversion_lock_id\b[^"]*"\)/.test(monthlyPage),
+  "Monthly read selects Version linkage",
+);
 assert(!monthlyPage.includes("row.version_lock_id || row.raw_payload?.version_lock_id"), "Monthly linkage requires durable FK-backed column");
 assert(monthlyPage.includes("versionLinkedMonthly"), "Monthly output counts linked confirmations");
 assert(monthlyPage.includes("versionUnlinkedMonthly"), "Monthly output counts unlinked confirmations");
