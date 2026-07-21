@@ -40,7 +40,8 @@
     "verify:risk-share-manager-publish-revision-integration": "node scripts/verify-risk-share-manager-publish-revision-integration.mjs",
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh",
     "verify:risk-share-version-integrity": "node scripts/verify-risk-share-version-integrity-contract.mjs",
-    "verify:risk-share-manager-confirmation-review": "node scripts/verify-risk-share-manager-confirmation-review-contract.mjs"
+    "verify:risk-share-manager-confirmation-review": "node scripts/verify-risk-share-manager-confirmation-review-contract.mjs",
+    "verify:self-service-signup": "node scripts/verify-self-service-signup-contract.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
