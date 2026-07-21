@@ -702,18 +702,18 @@ export default function ManagerDesignerView({
                     <small>근로자가 위험성평가 공유내용을 확인한 기록</small>
                   </div>
                 </div>
-                <div style={{ padding: "14px 18px", background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
+                <div className="confirmation-review__intro">
                   <b style={{ display: "block", marginBottom: "4px" }}>이곳에서 확인하고 처리합니다</b>
                   <span style={{ color: "var(--text-2)", fontSize: "14px" }}>
                     근로자가 게시된 위험성평가 내용을 확인한 기록입니다. 내용을 살펴보고 필요한 후속조치를 남겨 주세요.
                   </span>
                 </div>
                 {reviewResult === "updated" ? (
-                  <div style={{ margin: "14px 18px 0", padding: "12px 14px", borderRadius: "10px", background: "var(--success-bg)", color: "var(--success)", fontWeight: 800 }}>
+                  <div className="confirmation-review__feedback confirmation-review__feedback--success">
                     처리 상태를 저장했습니다.
                   </div>
                 ) : reviewResult ? (
-                  <div style={{ margin: "14px 18px 0", padding: "12px 14px", borderRadius: "10px", background: "var(--danger-bg)", color: "var(--danger)", fontWeight: 800 }}>
+                  <div className="confirmation-review__feedback confirmation-review__feedback--error">
                     상태가 변경되었거나 저장하지 못했습니다. 최신 내용을 확인해 다시 시도해 주세요.
                   </div>
                 ) : null}
@@ -742,9 +742,9 @@ export default function ManagerDesignerView({
                             <td>
                               <span className={`badge ${row.statusBadgeClass}`}>{row.statusLabel}</span>
                             </td>
-                            <td style={{ minWidth: "330px" }}>
+                            <td className="confirmation-review__action-cell">
                               {confirmationReviewAction && row.reviewStatus !== "completed" ? (
-                                <form action={confirmationReviewAction} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                <form action={confirmationReviewAction} className="confirmation-review__form">
                                   <input type="hidden" name="companyCode" value={companyCode} />
                                   <input type="hidden" name="submissionId" value={row.id} />
                                   <input type="hidden" name="expectedStatus" value={row.reviewStatus} />
@@ -754,7 +754,7 @@ export default function ManagerDesignerView({
                                     maxLength={500}
                                     aria-label="확인 내용 또는 후속조치"
                                     placeholder="확인 내용 또는 후속조치"
-                                    style={{ minWidth: "180px", flex: 1, border: "1px solid var(--border)", borderRadius: "9px", padding: "9px 10px", background: "var(--surface)", color: "var(--text)" }}
+                                    className="confirmation-review__input"
                                   />
                                   <button
                                     className={`btn ${row.reviewStatus === "unreviewed" ? "btn--outline" : "btn--primary"}`}
