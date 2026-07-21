@@ -90,11 +90,19 @@ async function fetchActiveVersionLock(companyCode: string): Promise<VersionLockR
 
   try {
     const rows = await selectSupabaseExportRows<VersionLockRow>("risk_share_version_locks", query);
-    return rows[0] ?? null;
+    if (rows[0]) return rows[0];
+
+    // Transition continuity: Production already has active immutable Versions
+    // created before site binding. Keep those exact NULL-site Versions readable
+    // until an explicit human-reviewed replacement is published. A site-bound
+    // Version always wins; this fallback never mixes another site's record.
+    query.set("site_id", "is.null");
+    const legacyRows = await selectSupabaseExportRows<VersionLockRow>(
+      "risk_share_version_locks",
+      query,
+    );
+    return legacyRows[0] ?? null;
   } catch (error) {
-    // Vercel can deploy this reader before the separately approved Production
-    // migration. During that narrow compatibility window, retain the legacy
-    // tenant-only read. Once site_id exists, no fallback is used.
     if (!(error instanceof Error) || !error.message.includes("site_id")) throw error;
     query.set("select", "id,lock_title,lock_month,created_at,worker_visible_count");
     query.delete("site_id");
