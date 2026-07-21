@@ -41,6 +41,7 @@
     "verify:risk-share-manager-share-workflow-ui": "node scripts/verify-risk-share-manager-share-workflow-ui.mjs",
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh",
     "verify:risk-share-version-integrity": "node scripts/verify-risk-share-version-integrity-contract.mjs",
+    "verify:risk-share-version-lifecycle-inspect": "node scripts/verify-risk-share-version-lifecycle-inspect.mjs",
     "verify:risk-share-manager-confirmation-review": "node scripts/verify-risk-share-manager-confirmation-review-contract.mjs",
     "verify:risk-share-manager-inbox-review-rpc": "node scripts/verify-risk-share-manager-inbox-review-rpc-contract.mjs",
     "verify:self-service-signup": "node scripts/verify-self-service-signup-contract.mjs",
