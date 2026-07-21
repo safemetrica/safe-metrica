@@ -38,6 +38,7 @@ const checks = [
     && !/grant[^;]*(update|delete)[^;]*risk_share_inbox_review_events/i.test(migration)],
   ["identity sequence is associated and not callable by the application role", /revoke all privileges[\s\S]*risk_share_inbox_review_events_event_sequence_seq[\s\S]*from public, anon, authenticated, service_role/.test(migration)
     && /pg_get_serial_sequence\([\s\S]*risk_share_inbox_review_events[\s\S]*event_sequence/.test(migration)
+    && /acldefault\('s', c\.relowner\)/.test(migration)
     && /identity sequence association or owner mismatch/.test(migration)
     && /unexpected identity sequence grant/.test(migration)],
   ["event submission and actor tenant foreign keys", /foreign key \(submission_id, tenant_code\)[\s\S]*field_participation_submissions \(id, tenant_code\)/.test(migration)

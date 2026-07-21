@@ -503,7 +503,7 @@ begin
   select count(*) into v_unexpected_acl_count
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace,
-  lateral aclexplode(coalesce(c.relacl, acldefault('S', c.relowner))) as a
+  lateral aclexplode(coalesce(c.relacl, acldefault('s', c.relowner))) as a
   where n.nspname = 'public'
     and c.relname = 'risk_share_inbox_review_events_event_sequence_seq'
     and a.grantee <> 'postgres'::regrole;
