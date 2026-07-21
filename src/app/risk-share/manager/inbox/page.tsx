@@ -128,7 +128,7 @@ function resolveAttention(status: InboxWorkspaceStatus, createdAt: string, now: 
 }
 
 function ageLabel(attention: InboxWorkspaceAttention) {
-  if (attention === "overdue") return "24시간 이상 대기";
+  if (attention === "overdue") return "장기 미확인";
   if (attention === "action") return "처리 중";
   if (attention === "complete") return "처리 기록 완료";
   return "확인 필요";
