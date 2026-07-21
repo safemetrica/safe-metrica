@@ -9,6 +9,7 @@ import {
   updateTenantSiteProfile,
 } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
+import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
 import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import {
@@ -101,6 +102,10 @@ export async function saveSiteProfileAction(
       redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     }
 
+    return { values, fieldErrors: {}, formError: "사업장 운영정보를 수정할 권한이 확인되지 않았습니다." };
+  }
+
+  if (!canAccessRiskShareManagerTenant(tenantResolution.tenant.status, accessResult.context.role)) {
     return { values, fieldErrors: {}, formError: "사업장 운영정보를 수정할 권한이 확인되지 않았습니다." };
   }
 
