@@ -12,7 +12,13 @@
 
 1. `supabase/migrations/20260721050000_add_manager_inbox_review_rpc.sql`
 2. `scripts/verify-risk-share-manager-inbox-review-rpc-contract.mjs`
-3. `package.json`
+3. `scripts/verify-risk-share-manager-inbox-review-rpc-runtime.mjs`
+4. `.github/workflows/manager-inbox-review-rpc-runtime.yml`
+5. `package.json`
+
+The runtime verifier uses only synthetic tenants, memberships, submissions,
+notes, and payload markers in an isolated PostgreSQL 15 service. It does not
+read Supabase credentials, connect to Production, or mutate customer data.
 
 ## Intended contract
 
@@ -86,6 +92,12 @@ Run only with synthetic tenant fixtures inside an isolated database or a transac
 | exact retry | `replayed`, original event id, no new event |
 | same key with different input | `idempotency_conflict` |
 | forced event-insert failure | status update rolled back |
+
+The repository runtime verifier additionally checks concurrent stale writers,
+concurrent exact retries, concurrent cross-submission key reuse, tenant-scoped
+key reuse, direct event-table and sequence privilege denial, anonymous-role
+denial, unchanged monthly RPC definition, and fail-closed migration reapply.
+The matrix is not complete until the PostgreSQL CI job reaches a terminal PASS.
 
 ## Rollback boundary
 

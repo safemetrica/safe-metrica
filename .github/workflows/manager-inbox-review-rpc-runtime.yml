@@ -1,0 +1,50 @@
+name: Manager inbox review RPC runtime
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260721050000_add_manager_inbox_review_rpc.sql"
+      - "scripts/verify-risk-share-manager-inbox-review-rpc-runtime.mjs"
+      - ".github/workflows/manager-inbox-review-rpc-runtime.yml"
+      - "package.json"
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-runtime-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-runtime-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PR930_DATABASE_URL: postgresql://postgres:synthetic-runtime-only@127.0.0.1:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm install --no-save --ignore-scripts pg@8.16.3
+
+      - run: node scripts/verify-risk-share-manager-inbox-review-rpc-runtime.mjs
