@@ -1,9 +1,10 @@
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDefaultTenantSiteConfigByTenantCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
-import { listManagerConfirmationReviews } from "@/lib/risk-share/riskShareManagerConfirmationReview";
+import { listManagerConfirmationReviews, updateManagerConfirmationReview, type ConfirmationReviewStatus } from "@/lib/risk-share/riskShareManagerConfirmationReview";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
@@ -16,8 +17,11 @@ type PageProps = {
   searchParams?: Promise<{
     company?: string | string[];
     lang?: string | string[];
+    reviewResult?: string | string[];
   }>;
 };
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function readSearchParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
@@ -29,6 +33,36 @@ function normalizeCompanyCode(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "")
     .slice(0, 64);
+}
+
+async function updateConfirmationReview(formData: FormData) {
+  "use server";
+  const companyCode = normalizeCompanyCode(String(formData.get("companyCode") ?? ""));
+  const submissionId = String(formData.get("submissionId") ?? "");
+  const expectedStatus = String(formData.get("expectedStatus") ?? "") as ConfirmationReviewStatus;
+  const nextStatus = String(formData.get("nextStatus") ?? "") as "in_review" | "completed";
+  const actionNote = String(formData.get("actionNote") ?? "").trim();
+  const validTransition =
+    (expectedStatus === "unreviewed" && nextStatus === "in_review")
+    || (expectedStatus === "in_review" && nextStatus === "completed");
+
+  if (!companyCode || !UUID_PATTERN.test(submissionId) || actionNote.length > 500 || !validTransition) {
+    redirect(`/risk-share/manager?company=${encodeURIComponent(companyCode)}&reviewResult=validation_failed#confirmation-review`);
+  }
+
+  const access = await requireTenantManagerAccessForCurrentSession({ tenantCode: companyCode });
+  if (!access.ok) redirect("/login");
+  const result = await updateManagerConfirmationReview({
+    companyCode,
+    actorMembershipId: access.context.membership.membershipId,
+    submissionId,
+    expectedStatus,
+    nextStatus,
+    actionNote,
+  });
+  revalidatePath("/risk-share/manager");
+  revalidatePath("/risk-share/monthly");
+  redirect(`/risk-share/manager?company=${encodeURIComponent(companyCode)}&reviewResult=${result.ok ? "updated" : encodeURIComponent(result.code)}#confirmation-review`);
 }
 
 function getCurrentKstMonthRange() {
@@ -288,12 +322,13 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   const params = (await searchParams) ?? {};
   const rawCompanyCode = readSearchParam(params.company);
   const companyCode = normalizeCompanyCode(rawCompanyCode);
+  const reviewResult = readSearchParam(params.reviewResult);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
   const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
   const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
-  const confirmationReviewHref = buildRiskShareLangHref("/risk-share/manager/confirmations", { company: companyCode }, lang);
+  const confirmationReviewHref = `${buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang)}#confirmation-review`;
   const fieldHref = buildRiskShareLangHref("/risk-share/field", { company: companyCode }, lang);
   const currentPeriod = getCurrentKstMonthDatePeriod();
   const monthLabel = getMonthLabelFromPeriod(currentPeriod);
@@ -371,9 +406,9 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   const siteProfileSummary = await fetchTenantSiteProfileSummary(tenantCode);
   const confirmationReviews = await listManagerConfirmationReviews(tenantCode).catch(() => []);
   const reviewStatus = [
-    { label: "미검토", value: confirmationReviews.filter((row) => row.reviewStatus === "unreviewed").length, colorVar: "--c3" },
-    { label: "검토 중", value: confirmationReviews.filter((row) => row.reviewStatus === "in_review").length, colorVar: "--c1" },
-    { label: "검토 완료", value: confirmationReviews.filter((row) => row.reviewStatus === "completed").length, colorVar: "--c2" },
+    { label: "확인 필요", value: confirmationReviews.filter((row) => row.reviewStatus === "unreviewed").length, colorVar: "--c3" },
+    { label: "확인 중", value: confirmationReviews.filter((row) => row.reviewStatus === "in_review").length, colorVar: "--c1" },
+    { label: "처리 완료", value: confirmationReviews.filter((row) => row.reviewStatus === "completed").length, colorVar: "--c2" },
   ];
 
   const monthlyConfirmationCount = participationSummary.counts.monthly;
@@ -398,6 +433,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   return (
     <ManagerDesignerView
       companyLabel={companyLabel}
+      companyCode={tenantCode}
       managerHref={managerHref}
       monthlyHref={monthlyHref}
       confirmationReviewHref={confirmationReviewHref}
@@ -429,13 +465,18 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
         status: representativeSubmissionSummary.status,
       }}
       reviewStatus={reviewStatus}
+      reviewResult={reviewResult}
+      confirmationReviewAction={updateConfirmationReview}
       recentSubmissions={confirmationReviews.slice(0, 10).map((row) => ({
+        id: row.id,
+        reviewStatus: row.reviewStatus,
+        actionNote: row.actionNote,
         category: "공유확인",
         categoryBadgeClass: "b-blue",
         submitterLabel: "근로자 확인",
         detail: row.title,
         submittedAtLabel: row.createdAt,
-        statusLabel: row.reviewStatus === "completed" ? "검토 완료" : row.reviewStatus === "in_review" ? "검토 중" : "미검토",
+        statusLabel: row.reviewStatus === "completed" ? "처리 완료" : row.reviewStatus === "in_review" ? "확인 중" : "확인 필요",
         statusBadgeClass: row.reviewStatus === "completed" ? "b-green" : row.reviewStatus === "in_review" ? "b-blue" : "b-orange",
       }))}
       userDisplayName={userDisplayName}
