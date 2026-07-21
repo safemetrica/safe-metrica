@@ -142,6 +142,7 @@ export type ManagerDesignerViewProps = {
    * tenant_manager -- explicitly not owner_internal, unlike
    * sourceRegistryHref above). */
   shareReviewHref?: string;
+  inboxHref?: string;
 };
 
 const DEFAULT_WEEKLY_LABELS = ["", "", "", "", "", "", ""];
@@ -209,6 +210,7 @@ export default function ManagerDesignerView({
   weeklyTrendFallbackLabels,
   sourceRegistryHref,
   shareReviewHref,
+  inboxHref,
 }: ManagerDesignerViewProps) {
   const hasRepresentativeSignatureData = representative.status === "ok";
   const hasWeeklyTrend = Boolean(weeklyTrend && weeklyTrend.length > 0);
@@ -276,26 +278,26 @@ export default function ManagerDesignerView({
                 <span className="nav__txt">위험성평가 공유확인</span>
                 <NavBadge status={statuses.monthly} count={counts.monthly} />
               </a>
-              <div className="nav__item is-disabled" title="작업 전 안전확인">
+              <a className="nav__item" href={inboxHref ? `${inboxHref}&type=prework` : confirmationReviewHref} title="작업 전 안전확인">
                 <iconify-icon icon="lucide:clipboard-check"></iconify-icon>
                 <span className="nav__txt">작업 전 안전확인</span>
                 <NavBadge status={statuses.prework} count={counts.prework} />
-              </div>
-              <div className="nav__item is-disabled" title="익명 의견함">
+              </a>
+              <a className="nav__item" href={inboxHref ? `${inboxHref}&type=anonymous` : confirmationReviewHref} title="익명 의견함">
                 <iconify-icon icon="lucide:message-circle-question"></iconify-icon>
                 <span className="nav__txt">익명 의견함</span>
                 <NavBadge status={statuses.anonymous} count={counts.anonymous} />
-              </div>
-              <div className="nav__item is-disabled" title="외부인 확인">
+              </a>
+              <a className="nav__item" href={inboxHref ? `${inboxHref}&type=visitor` : confirmationReviewHref} title="외부인 확인">
                 <iconify-icon icon="lucide:door-open"></iconify-icon>
                 <span className="nav__txt">외부인 확인</span>
                 <NavBadge status={statuses.visitor} count={counts.visitor} />
-              </div>
-              <div className="nav__item is-disabled" title="근로자대표 확인">
+              </a>
+              <a className="nav__item" href={inboxHref ? `${inboxHref}&type=representative` : confirmationReviewHref} title="근로자대표 확인">
                 <iconify-icon icon="lucide:user-check"></iconify-icon>
                 <span className="nav__txt">근로자대표 확인</span>
                 <NavBadge status={statuses.representative} count={counts.representative} />
-              </div>
+              </a>
               <a
                 className="nav__item nav__item--featured"
                 href={monthlyHref}

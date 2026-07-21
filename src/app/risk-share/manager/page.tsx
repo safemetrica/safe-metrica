@@ -406,6 +406,10 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
     role === "tenant_admin" || role === "tenant_manager"
       ? buildRiskShareLangHref("/risk-share/manager/share-review", { company: tenantCode }, lang)
       : undefined;
+  const inboxHref =
+    role === "tenant_admin" || role === "tenant_manager"
+      ? buildRiskShareLangHref("/risk-share/manager/inbox", { company: tenantCode }, lang)
+      : undefined;
   const siteProfileHref =
     role === "tenant_admin" || role === "tenant_manager"
       ? buildRiskShareLangHref("/risk-share/manager/settings/site-profile", { company: tenantCode }, lang)
@@ -503,6 +507,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       weeklyTrendFallbackLabels={getLastSevenDayLabels()}
       sourceRegistryHref={sourceRegistryHref}
       shareReviewHref={shareReviewHref}
+      inboxHref={inboxHref}
     />
   );
 }
