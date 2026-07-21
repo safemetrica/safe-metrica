@@ -1,5 +1,15 @@
 @import "../../preview/manager-inbox/preview.css";
 
+.manager-inbox-live .workspace-summary__scope {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .manager-inbox-live .workspace-filter__actions {
   display: flex;
   align-items: center;
