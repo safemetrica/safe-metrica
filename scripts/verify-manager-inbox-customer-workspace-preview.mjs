@@ -44,10 +44,16 @@ expect(css.includes("overflow-y: auto") && css.includes("workspace-desktop-detai
 expect(css.includes("@media (max-width: 640px)") && css.includes("@media (max-width: 900px)"), "390px-class mobile layout rules must exist");
 expect(component.includes('type="button" disabled>확인 시작') && component.includes('type="button" disabled>처리 기록 완료'), "preview actions must be visibly disconnected");
 expect(component.includes("안전조치의 적정성이나 법적 종결을 확정하지 않습니다"), "completion wording must preserve the human/legal boundary");
-expect(css.includes("scroll-snap-type: x proximity") && css.includes("safe-area-inset-bottom"), "390px summary and action layout must be mobile-safe");
+expect(css.includes("grid-template-columns: repeat(2, minmax(0, 1fr))") && css.includes("overflow-x: visible") && css.includes("safe-area-inset-bottom"), "390px summary and action layout must avoid horizontal clipping");
 expect(managerLayout.includes('inbox-workspace.css') && sharedCss.includes('@import "../../preview/manager-inbox/preview.css"'), "live inbox must reuse the approved preview workspace CSS");
 expect(liveComponent.includes("manager-workspace-preview manager-inbox-live") && liveComponent.includes("workspace-board card"), "live inbox must port the approved workspace structure");
 expect(liveComponent.includes("workspace-action-submit") && liveComponent.includes("useFormStatus"), "live actions must expose tactile and pending button states");
+expect(liveComponent.includes('{ label: "처리 중인 업무"') && liveComponent.includes('color: "i-blue"'), "in-review summary must use the same blue status color");
+expect(liveComponent.includes("workspace-mobile-stage") && liveComponent.includes("setMobileDetailOpen(true)") && liveComponent.includes("접수 목록"), "live mobile list-to-detail and back navigation must remain connected");
+expect(liveComponent.includes("disabled={pending}") && liveComponent.includes('pending ? "저장 중…"'), "live action must disable duplicate submission while pending");
+for (const forbidden of ["위공팩", "SYNTHETIC QA", "runtime QA", "PR #"]) {
+  expect(!liveComponent.includes(forbidden), `live customer workspace exposes internal term: ${forbidden}`);
+}
 
 for (const forbidden of ["위공팩", "RPC", "DB 상태", "company code", "companyCode", "tenantCode", "submission_id", "membership_id"]) {
   expect(!component.includes(forbidden), `customer preview exposes forbidden internal term: ${forbidden}`);
