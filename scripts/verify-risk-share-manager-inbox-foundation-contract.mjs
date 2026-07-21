@@ -26,8 +26,9 @@ const checks = [
     && supabaseServer.includes('| "risk_share_confirmation_review_events"')
     && model.includes('submission_id: `eq.${submissionId}`')
     && model.includes('tenant_code: `eq.${companyCode}`')
-    && page.includes("listManagerInboxAuditEvents(tenant.tenant.code, detail.id)")],
-  ["audit history stays read-only and monthly-only", page.includes('detail?.type === "monthly"')
+    && page.includes("listManagerInboxAuditEvents(tenant.tenant.code, detail.id, detail.type)")],
+  ["audit history is read-only for monthly and non-monthly items", model.includes('"risk_share_inbox_review_events"')
+    && page.includes("listManagerInboxAuditEvents(tenant.tenant.code, detail.id, detail.type)")
     && page.includes("처리 이력") && !/rpc\//.test(model + page)],
   ["audit lookup fails closed instead of showing an empty history", !page.includes(".catch(() => [])")
     && page.includes("auditEventsFailed = true")
