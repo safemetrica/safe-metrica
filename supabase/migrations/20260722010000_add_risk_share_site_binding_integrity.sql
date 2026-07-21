@@ -51,10 +51,9 @@ declare
   v_site_id uuid;
   v_site_name text;
 begin
-  v_tenant_code := case
-    when tg_table_name = 'field_participation_submissions' then new.tenant_code
-    else new.company_code
-  end;
+  -- This trigger is attached only to Risk Share ledgers that use
+  -- company_code. Confirmations have a separate Version-derived trigger.
+  v_tenant_code := new.company_code;
 
   select ts.id, ts.site_name
   into v_site_id, v_site_name
