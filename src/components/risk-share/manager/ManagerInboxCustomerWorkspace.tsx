@@ -155,7 +155,7 @@ function WorkDetail({
       {item.attention === "overdue" ? (
         <div className="workspace-alert workspace-alert--danger">
           <iconify-icon icon="lucide:clock-alert"></iconify-icon>
-          <div><b>24시간 이상 대기 중입니다.</b><span>법정기한이나 위험도 표시가 아니라 접수 후 경과시간 안내입니다.</span></div>
+          <div><b>장기 미확인</b><span>접수 후 24시간이 지나 아직 확인되지 않았습니다. 내부 업무 우선순위 안내이며 법정 처리기한을 의미하지 않습니다.</span></div>
         </div>
       ) : item.attention === "action" ? (
         <div className="workspace-alert workspace-alert--warning">
@@ -261,7 +261,7 @@ export default function ManagerInboxCustomerWorkspace(props: Props) {
     { label: "오늘 새로 들어온 업무", value: props.summaryCounts.today, icon: "lucide:sparkles", color: "i-blue" },
     { label: "확인할 업무", value: props.summaryCounts.unreviewed, icon: "lucide:inbox", color: "i-orange" },
     { label: "처리 중인 업무", value: props.summaryCounts.inReview, icon: "lucide:triangle-alert", color: "i-purple" },
-    { label: "24시간 이상 대기", value: props.summaryCounts.overdue, icon: "lucide:clock-alert", color: "i-red" },
+    { label: "장기 미확인", value: props.summaryCounts.overdue, icon: "lucide:clock-alert", color: "i-red" },
     { label: "처리 기록 완료", value: props.summaryCounts.completed, icon: "lucide:circle-check-big", color: "i-green" },
   ];
   const filterProps = {
@@ -325,7 +325,7 @@ export default function ManagerInboxCustomerWorkspace(props: Props) {
             </div>
 
             <section className="workspace-summary" aria-label="오늘의 업무 요약">
-              {summaryCards.map((card) => <article className="workspace-summary__card" key={card.label}><span className={`stat__icon ${card.color}`}><iconify-icon icon={card.icon}></iconify-icon></span><span><small>{card.label}</small><strong>{card.value}<em>건</em></strong></span></article>)}
+              {summaryCards.map((card) => <article className="workspace-summary__card" key={card.label}><span className={`stat__icon ${card.color}`}><iconify-icon icon={card.icon}></iconify-icon></span><span><small>{card.label}</small><strong>{card.value}<em>건</em></strong><span className="workspace-summary__scope">전체 접수 기준</span></span></article>)}
             </section>
 
             <form className="workspace-filter card" method="get" aria-label="접수함 필터">
@@ -342,7 +342,7 @@ export default function ManagerInboxCustomerWorkspace(props: Props) {
             <div className={`workspace-mobile-stage${mobileDetailOpen ? " is-detail" : ""}`}>
               <section className="workspace-board card" aria-label="처리할 업무 목록과 상세">
                 <div className="workspace-list-column">
-                  <div className="workspace-list-head"><div><h2>처리할 업무</h2><p>24시간 이상 대기 → 처리 중 → 확인 필요 → 최근 완료 순서</p></div><span>{props.items.length}건 표시</span></div>
+                  <div className="workspace-list-head"><div><h2>처리할 업무</h2><p>장기 미확인 → 처리 중 → 확인 필요 → 최근 완료 순서</p></div><span>{props.items.length}건 표시</span></div>
                   <div className="workspace-list" aria-live="polite">
                     {props.items.length ? props.items.map((item) => (
                       <a className={`workspace-list-item${props.selectedItem?.id === item.id ? " is-selected" : ""}`} href={buildItemHref(props.baseHref, item.id, filterProps)} key={item.id} onClick={() => setMobileDetailOpen(true)}>
