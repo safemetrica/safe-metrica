@@ -6,6 +6,7 @@ const helper = read("src/lib/risk-share/riskShareManagerConfirmationReview.ts");
 const page = read("src/app/risk-share/manager/confirmations/page.tsx");
 const manager = read("src/app/risk-share/manager/page.tsx");
 const managerView = read("src/components/risk-share/manager/ManagerDesignerView.tsx");
+const managerCss = read("src/app/risk-share/manager/designer.css");
 const monthly = read("src/app/risk-share/monthly/page.tsx");
 
 const checks = [
@@ -19,6 +20,7 @@ const checks = [
   ["helper calls scoped RPC", /rpc\/update_risk_share_confirmation_review_status/.test(helper) && /p_expected_status/.test(helper)],
   ["server action validates contract", /UUID_PATTERN\.test\(submissionId\)/.test(manager) && /actionNote\.length > 500/.test(manager) && /validTransition/.test(manager) && /requireTenantManagerAccessForCurrentSession/.test(manager)],
   ["designer manager integration", /confirmationReviewHref/.test(manager) && /#confirmation-review/.test(manager) && /근로자 확인 내역/.test(managerView) && /이곳에서 확인하고 처리합니다/.test(managerView)],
+  ["mobile review action layout", /confirmation-review__action-cell/.test(managerView) && /td:nth-child\(6\).*grid-column: 1 \/ -1/.test(managerCss) && /confirmation-review__form.*flex-direction: column/.test(managerCss)],
   ["standalone page removed", /redirect\(/.test(page) && /#confirmation-review/.test(page) && !/근로자 공유확인 검토·조치/.test(page)],
   ["monthly counts only version-linked rows", /const versionLinkedRows/.test(monthly) && /reviewUnreviewed: versionLinkedRows\.filter/.test(monthly)],
 ];
