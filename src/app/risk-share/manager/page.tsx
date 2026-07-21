@@ -6,7 +6,8 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { listManagerConfirmationReviews, updateManagerConfirmationReview, type ConfirmationReviewStatus } from "@/lib/risk-share/riskShareManagerConfirmationReview";
 import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
-import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
+import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
 import ManagerDesignerView from "@/components/risk-share/manager/ManagerDesignerView";
@@ -325,7 +326,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   const companyCode = normalizeCompanyCode(rawCompanyCode);
   const reviewResult = readSearchParam(params.reviewResult);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
-  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const tenantResolution = await resolveRiskShareManagerTenant(rawCompanyCode);
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
   const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
@@ -362,6 +363,22 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       redirect(`/login?callbackUrl=${encodeURIComponent(managerHref)}`);
     }
 
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
+        <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+          <p className="text-xs font-black text-amber-700">SafeMetrica · 안전운영</p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950">
+            이 회사의 관리자 권한이 확인되지 않았습니다.
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-amber-900">
+            운영 담당자에게 문의해 주세요.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!canAccessRiskShareManagerTenant(tenantResolution.tenant.status, tenantAccessResult.context.role)) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
         <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">

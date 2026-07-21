@@ -41,7 +41,8 @@
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh",
     "verify:risk-share-version-integrity": "node scripts/verify-risk-share-version-integrity-contract.mjs",
     "verify:risk-share-manager-confirmation-review": "node scripts/verify-risk-share-manager-confirmation-review-contract.mjs",
-    "verify:self-service-signup": "node scripts/verify-self-service-signup-contract.mjs"
+    "verify:self-service-signup": "node scripts/verify-self-service-signup-contract.mjs",
+    "verify:self-service-onboarding-manager-access": "node scripts/verify-self-service-onboarding-manager-access.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",

@@ -9,7 +9,8 @@ import {
   updateTenantSiteProfile,
 } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
-import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
+import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import {
   validateTenantSiteProfile,
@@ -79,7 +80,7 @@ export async function saveSiteProfileAction(
   formData: FormData,
 ): Promise<SiteProfileActionState> {
   const values = getSubmittedValues(formData);
-  const tenantResolution = await resolveActiveRiskSharePublicTenant(companyCode);
+  const tenantResolution = await resolveRiskShareManagerTenant(companyCode);
   const lang = getRiskShareLocale(langValue);
   const callbackUrl = buildRiskShareLangHref(
     "/risk-share/manager/settings/site-profile",
@@ -101,6 +102,10 @@ export async function saveSiteProfileAction(
       redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     }
 
+    return { values, fieldErrors: {}, formError: "사업장 운영정보를 수정할 권한이 확인되지 않았습니다." };
+  }
+
+  if (!canAccessRiskShareManagerTenant(tenantResolution.tenant.status, accessResult.context.role)) {
     return { values, fieldErrors: {}, formError: "사업장 운영정보를 수정할 권한이 확인되지 않았습니다." };
   }
 

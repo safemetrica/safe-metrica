@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 
 import { getDefaultTenantSiteConfigByTenantCode } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
-import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
+import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import type { SiteProfileActionState } from "./actions";
 import SiteProfileForm from "./SiteProfileForm";
@@ -76,7 +77,7 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
   const companyCode = normalizeCompanyCode(rawCompanyCode);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
   const settingsHref = buildRiskShareLangHref("/risk-share/manager/settings/site-profile", { company: companyCode }, lang);
-  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const tenantResolution = await resolveRiskShareManagerTenant(rawCompanyCode);
 
   if (!tenantResolution.ok) {
     return (
@@ -102,6 +103,20 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
       redirect(`/login?callbackUrl=${encodeURIComponent(settingsHref)}`);
     }
 
+    return (
+      <SiteProfileShell>
+        <div className="content">
+              <section className="card card--pad" style={{ maxWidth: "720px", margin: "40px auto" }}>
+                <p className="eyebrow">SafeMetrica · 안전운영</p>
+                <h1>사업장 운영정보 권한이 확인되지 않았습니다.</h1>
+                <p className="muted">운영 담당자에게 문의해 주세요.</p>
+              </section>
+        </div>
+      </SiteProfileShell>
+    );
+  }
+
+  if (!canAccessRiskShareManagerTenant(tenantResolution.tenant.status, tenantAccessResult.context.role)) {
     return (
       <SiteProfileShell>
         <div className="content">
