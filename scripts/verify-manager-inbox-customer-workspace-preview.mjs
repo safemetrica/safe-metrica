@@ -6,11 +6,17 @@ const componentPath = path.join(root, "src/components/risk-share/manager/Manager
 const layoutPath = path.join(root, "src/app/preview/manager-inbox/layout.tsx");
 const pagePath = path.join(root, "src/app/preview/manager-inbox/page.tsx");
 const cssPath = path.join(root, "src/app/preview/manager-inbox/preview.css");
+const liveComponentPath = path.join(root, "src/components/risk-share/manager/ManagerInboxCustomerWorkspace.tsx");
+const managerLayoutPath = path.join(root, "src/app/risk-share/manager/layout.tsx");
+const sharedCssPath = path.join(root, "src/app/risk-share/manager/inbox-workspace.css");
 
 const component = fs.readFileSync(componentPath, "utf8");
 const layout = fs.readFileSync(layoutPath, "utf8");
 const page = fs.readFileSync(pagePath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
+const liveComponent = fs.readFileSync(liveComponentPath, "utf8");
+const managerLayout = fs.readFileSync(managerLayoutPath, "utf8");
+const sharedCss = fs.readFileSync(sharedCssPath, "utf8");
 
 const failures = [];
 const expect = (condition, message) => { if (!condition) failures.push(message); };
@@ -39,6 +45,9 @@ expect(css.includes("@media (max-width: 640px)") && css.includes("@media (max-wi
 expect(component.includes('type="button" disabled>확인 시작') && component.includes('type="button" disabled>처리 기록 완료'), "preview actions must be visibly disconnected");
 expect(component.includes("안전조치의 적정성이나 법적 종결을 확정하지 않습니다"), "completion wording must preserve the human/legal boundary");
 expect(css.includes("scroll-snap-type: x proximity") && css.includes("safe-area-inset-bottom"), "390px summary and action layout must be mobile-safe");
+expect(managerLayout.includes('inbox-workspace.css') && sharedCss.includes('@import "../../preview/manager-inbox/preview.css"'), "live inbox must reuse the approved preview workspace CSS");
+expect(liveComponent.includes("manager-workspace-preview manager-inbox-live") && liveComponent.includes("workspace-board card"), "live inbox must port the approved workspace structure");
+expect(liveComponent.includes("workspace-action-submit") && liveComponent.includes("useFormStatus"), "live actions must expose tactile and pending button states");
 
 for (const forbidden of ["위공팩", "RPC", "DB 상태", "company code", "companyCode", "tenantCode", "submission_id", "membership_id"]) {
   expect(!component.includes(forbidden), `customer preview exposes forbidden internal term: ${forbidden}`);

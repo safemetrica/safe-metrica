@@ -3,9 +3,11 @@ import fs from "node:fs";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const page = read("src/app/risk-share/manager/inbox/page.tsx");
+const workspace = read("src/components/risk-share/manager/ManagerInboxCustomerWorkspace.tsx");
 const model = read("src/lib/risk-share/riskShareManagerInbox.ts");
 const action = read("src/lib/risk-share/riskShareManagerInboxReview.ts");
 const supabaseServer = read("src/lib/supabaseServer.ts");
+const presentation = page + workspace;
 
 const checks = [
   ["server action re-authorizes active tenant manager", page.includes('"use server"')
@@ -16,7 +18,7 @@ const checks = [
     && action.includes("const validTransition")],
   ["completion requires a bounded manager note", page.includes('nextStatus === "completed" && !actionNote')
     && page.includes("actionNote.length > 500")
-    && page.includes("maxLength={500}")],
+    && workspace.includes("maxLength={500}")],
   ["mutation uses only service-role RPC", action.includes('/rest/v1/rpc/update_risk_share_inbox_review_status')
     && action.includes("SUPABASE_SERVICE_ROLE_KEY")
     && !/(insert|update|delete)FieldParticipation/.test(action + page)],
@@ -32,11 +34,14 @@ const checks = [
     && supabaseServer.includes('| "risk_share_inbox_review_events"')
     && model.includes('tenant_code: `eq.${companyCode}`')
     && model.includes('submission_id: `eq.${submissionId}`')],
-  ["customer wording preserves human and legal boundary", page.includes("확인 시작")
-    && page.includes("처리 기록 완료")
-    && page.includes("안전조치의 적정성이나 법적 종결을 확정하지 않습니다")],
-  ["monthly review path remains separate", page.includes('detail.type === "monthly"')
-    && page.includes('#confirmation-review')],
+  ["customer wording preserves human and legal boundary", presentation.includes("확인 시작")
+    && presentation.includes("처리 기록 완료")
+    && presentation.includes("안전조치의 적정성이나 법적 종결을 확정하지 않습니다")],
+  ["monthly review path remains separate", workspace.includes('item.type === "monthly"')
+    && workspace.includes('#confirmation-review')],
+  ["approved workspace and tactile action states are connected", workspace.includes("manager-workspace-preview manager-inbox-live")
+    && workspace.includes("workspace-action-submit")
+    && workspace.includes("useFormStatus")],
   ["anonymous masking remains intact", model.includes('submitterLabel: isAnonymous ? "익명"')],
 ];
 
