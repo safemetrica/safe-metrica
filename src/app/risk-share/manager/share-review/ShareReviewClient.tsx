@@ -676,6 +676,7 @@ function ShareReviewItemCard({
 export default function ShareReviewClient({
   companyCode,
   managerHref,
+  publishHref,
   listStatus,
   items,
   overflow,
@@ -765,7 +766,7 @@ export default function ShareReviewClient({
               다음 화면에서도 항목을 자동 선택하지 않으며, 관리자가 직접 확인합니다.
             </p>
           </div>
-          <a className="btn btn--primary" href={props.publishHref}>게시할 항목 선택</a>
+          <a className="btn btn--primary" href={publishHref}>게시할 항목 선택</a>
         </section>
 
         {listStatus === "failed" ? (
