@@ -508,6 +508,31 @@
 .rsx-shell .table tr:last-child td { border-bottom: none; }
 .rsx-shell .table tbody tr { transition: background .12s; }
 .rsx-shell .table tbody tr:hover { background: var(--surface-2); }
+
+.rsx-shell .confirmation-review__intro {
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.rsx-shell .confirmation-review__feedback {
+  margin: 14px 18px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+.rsx-shell .confirmation-review__feedback--success { background: var(--success-bg); color: var(--success); }
+.rsx-shell .confirmation-review__feedback--error { background: var(--danger-bg); color: var(--danger); }
+.rsx-shell .confirmation-review__action-cell { min-width: 330px; }
+.rsx-shell .confirmation-review__form { display: flex; gap: 8px; align-items: center; }
+.rsx-shell .confirmation-review__input {
+  min-width: 180px;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 10px;
+  background: var(--surface);
+  color: var(--text);
+}
 .rsx-shell .td-user { display: flex; align-items: center; gap: 10px; }
 .rsx-shell .td-av { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0; }
 
@@ -833,7 +858,12 @@
   .rsx-shell .table--r td:nth-child(3) { grid-row: 2; grid-column: 1 / -1; font-weight: 700; } /* 내용 */
   .rsx-shell .table--r td:nth-child(2) { grid-row: 3; grid-column: 1; }              /* 제출자 */
   .rsx-shell .table--r td:nth-child(4) { grid-row: 3; grid-column: 2; justify-self: end; color: var(--text-3); } /* 시각 */
+  .rsx-shell .table--r td:nth-child(6) { grid-row: 4; grid-column: 1 / -1; }
   .rsx-shell .table--r .td-av { width: 26px; height: 26px; }
+  .rsx-shell .confirmation-review__action-cell { min-width: 0; margin-top: 6px; }
+  .rsx-shell .confirmation-review__form { align-items: stretch; flex-direction: column; }
+  .rsx-shell .confirmation-review__input { box-sizing: border-box; min-width: 0; width: 100%; }
+  .rsx-shell .confirmation-review__form .btn { width: 100%; justify-content: center; }
 
   /* ④ 서명 현황 — 도넛 축소·중앙 정렬 */
   .rsx-shell .card--pad { padding: 16px; }
