@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import CredentialsSignInForm from "@/components/auth/CredentialsSignInForm";
 import SignOutButton from "@/components/auth/SignOutButton";
@@ -59,10 +60,11 @@ function AlertNote({ tone, children }: { tone: AlertTone; children: React.ReactN
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; callbackUrl?: string }>;
+  searchParams?: Promise<{ error?: string; callbackUrl?: string; registered?: string }>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const error = resolvedSearchParams.error;
+  const registered = resolvedSearchParams.registered === "1";
   const isTenantRequired = error === "tenant_required";
   const hasOtherError = Boolean(error && !isTenantRequired);
   const rawCallbackUrl = readSearchParam(resolvedSearchParams.callbackUrl);
@@ -111,15 +113,15 @@ export default async function LoginPage({
             <p className="login-visual__sub">
               <b>SafeMetrica</b> — 현장의 기록이 다음 위험성평가로 이어집니다
             </p>
-            <a className="login-visual__cta" href="/">
+            <Link className="login-visual__cta" href="/">
               SafeMetrica 알아보기 <u>Learn More</u> <iconify-icon icon="lucide:arrow-right"></iconify-icon>
-            </a>
+            </Link>
           </aside>
 
           {/* 우측 폼 */}
           <main className="login-form">
             <div className="login-form__top">
-              {isAlreadySignedIn ? null : "계정이 없나요? 운영 담당자에게 문의해 주세요."}
+              {isAlreadySignedIn ? null : <>계정이 없나요? <Link href="/signup" style={{ color: "var(--brand-600)", fontWeight: 800 }}>가입하기</Link></>}
             </div>
 
             <div className="login-form__mid">
@@ -175,6 +177,12 @@ export default async function LoginPage({
                 </AlertNote>
               ) : (
                 <>
+                  {registered ? (
+                    <AlertNote tone="info">
+                      <p style={{ fontWeight: 700, color: "var(--text)" }}>가입이 완료되었습니다.</p>
+                      <p style={{ marginTop: "4px" }}>가입한 이메일과 비밀번호로 로그인해 주세요.</p>
+                    </AlertNote>
+                  ) : null}
                   {!hasExplicitCallbackUrl ? (
                     <AlertNote tone="info">
                       <p style={{ fontWeight: 700, color: "var(--text)" }}>고객사 운영 화면으로 이동하시나요?</p>
