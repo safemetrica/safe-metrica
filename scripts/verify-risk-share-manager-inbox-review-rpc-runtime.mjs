@@ -13,6 +13,7 @@ const sql = {
   submissions: migration("supabase/migrations/20260712010000_create_field_participation_submissions_baseline.sql"),
   monthly: migration("supabase/migrations/20260721010000_add_confirmation_manager_review.sql"),
   inbox: migration("supabase/migrations/20260721050000_add_manager_inbox_review_rpc.sql"),
+  monthlyPrivileges: migration("supabase/migrations/20260721060000_lock_confirmation_review_event_privileges.sql"),
 };
 
 const ids = {
@@ -97,6 +98,16 @@ async function main() {
   await root.query(sql.inbox);
   pass("migration applies with catalog postconditions");
 
+  // Reproduce the effective Production drift found during post-apply QA, then
+  // prove the additive hardening migration removes every direct write grant.
+  await root.query(`
+    grant update, delete
+    on public.risk_share_confirmation_review_events
+    to service_role;
+  `);
+  await root.query(sql.monthlyPrivileges);
+  pass("monthly audit ledger privilege hardening removes inherited write grants");
+
   const monthlyAfter = row(await root.query(`
     select pg_get_functiondef('public.update_risk_share_confirmation_review_status(text,uuid,uuid,text,text,text)'::regprocedure) as definition
   `)).definition;
@@ -177,6 +188,30 @@ async function main() {
   ));
   assert.deepEqual([monthlyResult.ok, monthlyResult.code, monthlyResult.review_status], [true, "ok", "in_review"]);
   pass("existing monthly RPC still executes independently");
+
+  assert.equal(
+    Number(row(await service.query(
+      `select count(*) as count
+       from public.risk_share_confirmation_review_events
+       where tenant_code='tenant-a' and submission_id=$1`,
+      [sid(106)],
+    )).count),
+    1,
+  );
+  pass("service_role retains monthly audit reads after RPC-owned insert");
+
+  await expectDenied(service,
+    `insert into public.risk_share_confirmation_review_events
+       (tenant_code, submission_id, from_status, to_status, actor_membership_id)
+     values ('tenant-a','${sid(106)}','unreviewed','in_review','${ids.adminA}')`,
+    "service_role direct monthly event insert is denied");
+  await expectDenied(service,
+    `update public.risk_share_confirmation_review_events
+     set action_note='changed' where tenant_code='tenant-a'`,
+    "service_role monthly event update is denied");
+  await expectDenied(service,
+    `delete from public.risk_share_confirmation_review_events where tenant_code='tenant-a'`,
+    "service_role monthly event delete is denied");
 
   const crossActor = await call(service, { actor: ids.adminB, submission: sid(109), key: "cross-actor" });
   const crossSubmission = await call(service, { submission: sid(108), key: "cross-submission" });
@@ -332,4 +367,3 @@ try {
 } finally {
   if (root) await root.end().catch(() => {});
 }
-
