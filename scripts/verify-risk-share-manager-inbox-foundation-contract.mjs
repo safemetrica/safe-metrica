@@ -6,6 +6,7 @@ const model = read("src/lib/risk-share/riskShareManagerInbox.ts");
 const page = read("src/app/risk-share/manager/inbox/page.tsx");
 const manager = read("src/app/risk-share/manager/page.tsx");
 const designer = read("src/components/risk-share/manager/ManagerDesignerView.tsx");
+const supabaseServer = read("src/lib/supabaseServer.ts");
 
 const checks = [
   ["server-only read model", model.includes('import "server-only"')],
@@ -21,6 +22,20 @@ const checks = [
   ["query cannot choose tenant after access", page.includes("listManagerInboxItems(tenant.tenant.code)")],
   ["detail and KST rendering", page.includes("selectedId") && page.includes("formatSeoulCustomerDateTime")],
   ["existing monthly workflow retained", page.includes('#confirmation-review') && page.includes("detail.canTransition")],
+  ["monthly audit history is tenant and submission scoped", model.includes('"risk_share_confirmation_review_events"')
+    && supabaseServer.includes('| "risk_share_confirmation_review_events"')
+    && model.includes('submission_id: `eq.${submissionId}`')
+    && model.includes('tenant_code: `eq.${companyCode}`')
+    && page.includes("listManagerInboxAuditEvents(tenant.tenant.code, detail.id)")],
+  ["audit history stays read-only and monthly-only", page.includes('detail?.type === "monthly"')
+    && page.includes("처리 이력") && !/rpc\//.test(model + page)],
+  ["audit lookup fails closed instead of showing an empty history", !page.includes(".catch(() => [])")
+    && page.includes("auditEventsFailed = true")
+    && page.includes("auditEventsFailed ?")
+    && page.includes("처리 이력을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.")
+    && page.includes("아직 기록된 상태 변경이 없습니다.")],
+  ["audit failure does not expose internal error details", page.includes("} catch {")
+    && !page.includes("catch (error)")],
   ["monthly result link retained", page.includes('"/risk-share/monthly"')],
   ["manager navigation connects all inbox types", manager.includes('"/risk-share/manager/inbox"')
     && ["prework", "anonymous", "visitor", "representative"].every((value) => designer.includes(`type=${value}`))],

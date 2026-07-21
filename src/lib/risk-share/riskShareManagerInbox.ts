@@ -18,10 +18,26 @@ export type ManagerInboxItem = {
   canTransition: boolean;
 };
 
+export type ManagerInboxAuditEvent = {
+  id: string;
+  fromStatus: ManagerInboxStatus;
+  toStatus: ManagerInboxStatus;
+  actionNote: string;
+  createdAt: string;
+};
+
 type DbRow = {
   id?: unknown; title?: unknown; content?: unknown; location?: unknown; submitter?: unknown;
   anonymous?: unknown; created_at?: unknown; manager_review_status?: unknown;
   manager_action_note?: unknown; version_lock_id?: unknown; source?: unknown; mode?: unknown;
+};
+
+type AuditDbRow = {
+  id?: unknown;
+  from_status?: unknown;
+  to_status?: unknown;
+  action_note?: unknown;
+  created_at?: unknown;
 };
 
 const SOURCE_TYPES: Record<string, ManagerInboxType | undefined> = {
@@ -33,6 +49,7 @@ const SOURCE_TYPES: Record<string, ManagerInboxType | undefined> = {
   risk_share_representative_confirmation_v1: "representative",
 };
 const STATUSES = new Set<ManagerInboxStatus>(["unreviewed", "in_review", "completed"]);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function text(value: unknown) { return typeof value === "string" ? value.trim() : ""; }
 
@@ -68,6 +85,39 @@ export async function listManagerInboxItems(companyCode: string): Promise<Manage
       status,
       actionNote: text(row.manager_action_note),
       canTransition: type === "monthly" && Boolean(text(row.version_lock_id)),
+    }];
+  });
+}
+
+export async function listManagerInboxAuditEvents(
+  companyCode: string,
+  submissionId: string,
+): Promise<ManagerInboxAuditEvent[]> {
+  if (!companyCode || !UUID_PATTERN.test(submissionId)) return [];
+
+  const query = new URLSearchParams({
+    select: "id,from_status,to_status,action_note,created_at",
+    tenant_code: `eq.${companyCode}`,
+    submission_id: `eq.${submissionId}`,
+    order: "created_at.asc,id.asc",
+    limit: "100",
+  });
+  const rows = await selectSupabaseExportRows<AuditDbRow>(
+    "risk_share_confirmation_review_events",
+    query,
+  );
+
+  return rows.flatMap((row): ManagerInboxAuditEvent[] => {
+    const id = text(row.id);
+    const fromStatus = row.from_status as ManagerInboxStatus;
+    const toStatus = row.to_status as ManagerInboxStatus;
+    if (!id || !STATUSES.has(fromStatus) || !STATUSES.has(toStatus)) return [];
+    return [{
+      id,
+      fromStatus,
+      toStatus,
+      actionNote: text(row.action_note),
+      createdAt: text(row.created_at),
     }];
   });
 }
