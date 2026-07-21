@@ -29,13 +29,17 @@ const checks = [
   ["submission composite tenant identity", /field_participation_submissions_id_tenant_uidx[\s\S]*\(id, tenant_code\)/.test(migration)],
   ["new contract objects fail closed on drift", /a new contract object already exists/.test(migration)
     && /create table public\.risk_share_inbox_review_events/.test(migration)
+    && /to_regclass\('public\.risk_share_inbox_review_events_event_sequence_seq'\) is not null/.test(migration)
     && !/create (table|index) if not exists public?\.?risk_share_inbox_review_events/i.test(migration)
     && !/drop function if exists public\.update_risk_share_inbox_review_status/.test(migration)],
   ["append-only audit ledger is SELECT-only outside RPC", /create table public\.risk_share_inbox_review_events/.test(migration)
     && /grant select[\s\S]*risk_share_inbox_review_events[\s\S]*to service_role/.test(migration)
     && !/grant[^;]*insert[^;]*risk_share_inbox_review_events/i.test(migration)
     && !/grant[^;]*(update|delete)[^;]*risk_share_inbox_review_events/i.test(migration)],
-  ["identity sequence is not callable by the application role", /revoke all privileges[\s\S]*risk_share_inbox_review_events_event_sequence_seq[\s\S]*from public, anon, authenticated, service_role/.test(migration)],
+  ["identity sequence is associated and not callable by the application role", /revoke all privileges[\s\S]*risk_share_inbox_review_events_event_sequence_seq[\s\S]*from public, anon, authenticated, service_role/.test(migration)
+    && /pg_get_serial_sequence\([\s\S]*risk_share_inbox_review_events[\s\S]*event_sequence/.test(migration)
+    && /identity sequence association or owner mismatch/.test(migration)
+    && /unexpected identity sequence grant/.test(migration)],
   ["event submission and actor tenant foreign keys", /foreign key \(submission_id, tenant_code\)[\s\S]*field_participation_submissions \(id, tenant_code\)/.test(migration)
     && /foreign key \(actor_membership_id, tenant_code\)[\s\S]*tenant_membership \(id, tenant_code\)/.test(migration)],
   ["event table is policy-free service-only", /enable row level security/.test(migration)

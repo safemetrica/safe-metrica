@@ -33,6 +33,7 @@ begin
      or to_regclass('public.field_participation_submissions_id_tenant_uidx') is not null
      or to_regclass('public.risk_share_inbox_review_events_tenant_idempotency_uidx') is not null
      or to_regclass('public.risk_share_inbox_review_events_tenant_submission_sequence_idx') is not null
+     or to_regclass('public.risk_share_inbox_review_events_event_sequence_seq') is not null
      or exists (
        select 1
        from pg_proc p
@@ -388,6 +389,7 @@ declare
   v_role record;
   v_unexpected_acl_count integer;
   v_service_role_grantable boolean;
+  v_identity_sequence text;
 begin
   select count(*) into v_function_count
   from pg_proc p
@@ -448,6 +450,26 @@ begin
       'manager inbox review RPC postcondition failed: event table must have no client policy';
   end if;
 
+  select pg_get_serial_sequence(
+    'public.risk_share_inbox_review_events',
+    'event_sequence'
+  ) into v_identity_sequence;
+
+  if v_identity_sequence is distinct from
+       'public.risk_share_inbox_review_events_event_sequence_seq'
+     or not exists (
+       select 1
+       from pg_class c
+       join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public'
+         and c.relname = 'risk_share_inbox_review_events_event_sequence_seq'
+         and c.relkind = 'S'
+         and c.relowner = 'postgres'::regrole
+     ) then
+    raise exception
+      'manager inbox review RPC postcondition failed: identity sequence association or owner mismatch';
+  end if;
+
   -- Default privileges may add grants at CREATE time. Inspect the effective
   -- ACL instead of assuming the explicit REVOKE/GRANT statements were enough.
   select count(*) into v_unexpected_acl_count
@@ -476,6 +498,19 @@ begin
   if v_service_role_grantable is distinct from false then
     raise exception
       'manager inbox review RPC postcondition failed: service_role function grant option mismatch';
+  end if;
+
+  select count(*) into v_unexpected_acl_count
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace,
+  lateral aclexplode(coalesce(c.relacl, acldefault('S', c.relowner))) as a
+  where n.nspname = 'public'
+    and c.relname = 'risk_share_inbox_review_events_event_sequence_seq'
+    and a.grantee <> 'postgres'::regrole;
+
+  if v_unexpected_acl_count <> 0 then
+    raise exception
+      'manager inbox review RPC postcondition failed: unexpected identity sequence grant';
   end if;
 
   select count(*) into v_unexpected_acl_count
