@@ -159,6 +159,7 @@ type SupabaseExportTable =
   | "risk_share_sources"
   | "risk_share_item_candidates"
   | "risk_share_candidate_review_events"
+  | "risk_share_confirmation_review_events"
   | "risk_share_items"
   | "risk_share_version_locks"
   | "risk_share_version_items"
