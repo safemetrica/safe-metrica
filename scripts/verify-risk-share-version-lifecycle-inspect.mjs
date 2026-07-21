@@ -6,6 +6,7 @@ const foundation = read("supabase/migrations/20260717000000_add_risk_share_versi
 const publish = read("supabase/migrations/20260720010000_add_tenant_risk_share_publish_revision_guard.sql");
 const publicVersion = read("src/lib/risk-share/riskSharePublicVersion.ts");
 const confirmation = read("supabase/migrations/20260720020000_add_worker_confirmation_version_integrity.sql");
+const preflight = read("docs/operations/RISK_SHARE_VERSION_LIFECYCLE_PRODUCTION_PREFLIGHT.sql");
 
 let passed = 0;
 const checks = [];
@@ -71,6 +72,19 @@ check(
   "contract holds production writes",
   contract.includes("actual customer-data transition or backfill") &&
     contract.includes("lifecycle migration or Production SQL execution"),
+);
+check(
+  "preflight is explicitly read-only and count-only",
+  preflight.includes("begin transaction read only") &&
+    preflight.includes("count(*)") &&
+    !/\b(insert|update|delete|truncate|alter|drop|create|grant|revoke)\b/i.test(
+      preflight.replace(/^--.*$/gm, ""),
+    ),
+);
+check(
+  "preflight does not select sensitive payload fields",
+  !/select\s+(raw_payload|worker_name|signature_url|confirmed_share_item_ids)\b/i.test(preflight) &&
+    !/jsonb_(agg|build_object)/i.test(preflight),
 );
 
 console.log(checks.join("\n"));
