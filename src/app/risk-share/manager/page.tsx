@@ -6,7 +6,7 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { listManagerConfirmationReviews, updateManagerConfirmationReview, type ConfirmationReviewStatus } from "@/lib/risk-share/riskShareManagerConfirmationReview";
 import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
-import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
 import ManagerDesignerView from "@/components/risk-share/manager/ManagerDesignerView";
@@ -325,7 +325,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   const companyCode = normalizeCompanyCode(rawCompanyCode);
   const reviewResult = readSearchParam(params.reviewResult);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
-  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const tenantResolution = await resolveRiskShareManagerTenant(rawCompanyCode);
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
   const managerHref = buildRiskShareLangHref("/risk-share/manager", { company: companyCode }, lang);
   const monthlyHref = buildRiskShareLangHref("/risk-share/monthly", { company: companyCode }, lang);
