@@ -9,7 +9,7 @@ import {
   updateTenantSiteProfile,
 } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
-import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import {
   validateTenantSiteProfile,
@@ -79,7 +79,7 @@ export async function saveSiteProfileAction(
   formData: FormData,
 ): Promise<SiteProfileActionState> {
   const values = getSubmittedValues(formData);
-  const tenantResolution = await resolveActiveRiskSharePublicTenant(companyCode);
+  const tenantResolution = await resolveRiskShareManagerTenant(companyCode);
   const lang = getRiskShareLocale(langValue);
   const callbackUrl = buildRiskShareLangHref(
     "/risk-share/manager/settings/site-profile",
