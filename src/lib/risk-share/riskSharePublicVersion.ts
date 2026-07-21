@@ -7,6 +7,7 @@ const RISK_SHARE_PUBLIC_VERSION_ITEM_FETCH_LIMIT = RISK_SHARE_PUBLIC_VERSION_ITE
 
 export type RiskSharePublicVersionLock = {
   id: string;
+  siteId: string | null;
   title: string;
   month: string;
   createdAt: string;
@@ -33,6 +34,7 @@ export type ResolveRiskSharePublicVersionResult =
 
 type VersionLockRow = {
   id?: string | null;
+  site_id?: string | null;
   lock_title?: string | null;
   lock_month?: string | null;
   created_at?: string | null;
@@ -58,17 +60,47 @@ function readOptionalCount(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-async function fetchActiveVersionLock(companyCode: string): Promise<VersionLockRow | null> {
+async function fetchCanonicalDefaultSiteId(companyCode: string): Promise<string | null> {
   const query = new URLSearchParams({
-    select: "id,lock_title,lock_month,created_at,worker_visible_count",
+    select: "default_site_id",
     company_code: `eq.${companyCode}`,
+    limit: "2",
+  });
+  const rows = await selectSupabaseExportRows<{ default_site_id?: string | null }>(
+    "tenant_registry",
+    query,
+  );
+  return rows.length === 1 && readText(rows[0].default_site_id)
+    ? readText(rows[0].default_site_id)
+    : null;
+}
+
+async function fetchActiveVersionLock(companyCode: string): Promise<VersionLockRow | null> {
+  const siteId = await fetchCanonicalDefaultSiteId(companyCode);
+  if (!siteId) return null;
+
+  const query = new URLSearchParams({
+    select: "id,site_id,lock_title,lock_month,created_at,worker_visible_count",
+    company_code: `eq.${companyCode}`,
+    site_id: `eq.${siteId}`,
     lock_status: "eq.active",
     order: "created_at.desc",
     limit: "1",
   });
 
-  const rows = await selectSupabaseExportRows<VersionLockRow>("risk_share_version_locks", query);
-  return rows[0] ?? null;
+  try {
+    const rows = await selectSupabaseExportRows<VersionLockRow>("risk_share_version_locks", query);
+    return rows[0] ?? null;
+  } catch (error) {
+    // Vercel can deploy this reader before the separately approved Production
+    // migration. During that narrow compatibility window, retain the legacy
+    // tenant-only read. Once site_id exists, no fallback is used.
+    if (!(error instanceof Error) || !error.message.includes("site_id")) throw error;
+    query.set("select", "id,lock_title,lock_month,created_at,worker_visible_count");
+    query.delete("site_id");
+    const rows = await selectSupabaseExportRows<VersionLockRow>("risk_share_version_locks", query);
+    return rows[0] ?? null;
+  }
 }
 
 async function fetchWorkerVisibleSnapshotItems(
@@ -169,6 +201,7 @@ export async function resolveActiveRiskSharePublicVersion(
       version: {
         lock: {
           id: String(lockRow.id),
+          siteId: readText(lockRow.site_id) || null,
           title: readText(lockRow.lock_title),
           month: readText(lockRow.lock_month),
           createdAt: readText(lockRow.created_at),
