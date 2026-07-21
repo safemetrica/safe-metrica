@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getDefaultTenantSiteConfigByTenantCode } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
-import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import type { SiteProfileActionState } from "./actions";
 import SiteProfileForm from "./SiteProfileForm";
@@ -76,7 +76,7 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
   const companyCode = normalizeCompanyCode(rawCompanyCode);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
   const settingsHref = buildRiskShareLangHref("/risk-share/manager/settings/site-profile", { company: companyCode }, lang);
-  const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
+  const tenantResolution = await resolveRiskShareManagerTenant(rawCompanyCode);
 
   if (!tenantResolution.ok) {
     return (
