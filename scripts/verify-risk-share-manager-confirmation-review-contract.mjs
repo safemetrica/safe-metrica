@@ -8,6 +8,7 @@ const manager = read("src/app/risk-share/manager/page.tsx");
 const managerView = read("src/components/risk-share/manager/ManagerDesignerView.tsx");
 const managerCss = read("src/app/risk-share/manager/designer.css");
 const recentSubmissionsTable = read("src/components/risk-share/manager/RecentSubmissionsTable.tsx");
+const customerDateTime = read("src/lib/risk-share/riskShareCustomerDateTime.mjs");
 const monthly = read("src/app/risk-share/monthly/page.tsx");
 
 const checks = [
@@ -23,10 +24,20 @@ const checks = [
   ["designer manager integration", /confirmationReviewHref/.test(manager) && /#confirmation-review/.test(manager) && /근로자 확인 내역/.test(managerView) && /이곳에서 확인하고 처리합니다/.test(managerView)],
   ["mobile review action layout", /confirmation-review__action-cell/.test(managerView) && /td:nth-child\(6\).*grid-column: 1 \/ -1/.test(managerCss) && /confirmation-review__form.*flex-direction: column/.test(managerCss)],
   ["customer-facing confirmation datetime terminology", /공유확인 일시/.test(managerView) && /공유확인 일시/.test(recentSubmissionsTable) && !/접수 시각/.test(managerView) && !/접수 시각/.test(recentSubmissionsTable)],
+  ["customer-facing confirmation datetime uses Seoul boundary", /formatSeoulCustomerDateTime\(row\.createdAt\)/.test(manager) && /timeZone: SEOUL_TIME_ZONE/.test(customerDateTime) && /일시 확인 필요/.test(customerDateTime)],
   ["standalone page removed", /redirect\(/.test(page) && /#confirmation-review/.test(page) && !/근로자 공유확인 검토·조치/.test(page)],
   ["monthly counts only version-linked rows", /const versionLinkedRows/.test(monthly) && /reviewUnreviewed: versionLinkedRows\.filter/.test(monthly)],
 ];
 
+const { formatSeoulCustomerDateTime } = await import("../src/lib/risk-share/riskShareCustomerDateTime.mjs");
+const displayCases = [
+  ["2026-07-20T14:58:22.528554+00:00", "2026. 7. 20. 오후 11:58"],
+  ["2026-07-19T15:05:00.000Z", "2026. 7. 20. 오전 12:05"],
+  ["invalid", "일시 확인 필요"],
+];
+for (const [value, expected] of displayCases) {
+  checks.push([`Seoul display ${value}`, formatSeoulCustomerDateTime(value) === expected]);
+}
 const failed = checks.filter(([, ok]) => !ok);
 for (const [name, ok] of checks) console.log(`${ok ? "PASS" : "FAIL"} ${name}`);
 if (failed.length) process.exit(1);
