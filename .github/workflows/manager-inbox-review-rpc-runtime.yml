@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "supabase/migrations/20260721050000_add_manager_inbox_review_rpc.sql"
+      - "supabase/migrations/20260721060000_lock_confirmation_review_event_privileges.sql"
+      - "scripts/verify-risk-share-manager-confirmation-review-contract.mjs"
       - "scripts/verify-risk-share-manager-inbox-review-rpc-runtime.mjs"
       - ".github/workflows/manager-inbox-review-rpc-runtime.yml"
       - "package.json"
