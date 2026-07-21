@@ -5,6 +5,7 @@ import { getDefaultTenantSiteConfigByTenantCode, selectSupabaseExportRows } from
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { listManagerConfirmationReviews, updateManagerConfirmationReview, type ConfirmationReviewStatus } from "@/lib/risk-share/riskShareManagerConfirmationReview";
+import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
@@ -475,7 +476,7 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
         categoryBadgeClass: "b-blue",
         submitterLabel: "근로자 확인",
         detail: row.title,
-        submittedAtLabel: row.createdAt,
+        submittedAtLabel: formatSeoulCustomerDateTime(row.createdAt),
         statusLabel: row.reviewStatus === "completed" ? "처리 완료" : row.reviewStatus === "in_review" ? "확인 중" : "확인 필요",
         statusBadgeClass: row.reviewStatus === "completed" ? "b-green" : row.reviewStatus === "in_review" ? "b-blue" : "b-orange",
       }))}
