@@ -43,7 +43,8 @@
     "verify:risk-share-manager-confirmation-review": "node scripts/verify-risk-share-manager-confirmation-review-contract.mjs",
     "verify:self-service-signup": "node scripts/verify-self-service-signup-contract.mjs",
     "verify:self-service-onboarding-manager-access": "node scripts/verify-self-service-onboarding-manager-access.mjs",
-    "verify:self-service-tenant-activation": "node scripts/verify-self-service-tenant-activation-contract.mjs"
+    "verify:self-service-tenant-activation": "node scripts/verify-self-service-tenant-activation-contract.mjs",
+    "verify:self-service-risk-publish-qr-e2e": "node scripts/verify-self-service-risk-publish-qr-e2e-contract.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
