@@ -92,6 +92,7 @@ export async function listManagerInboxItems(companyCode: string): Promise<Manage
 export async function listManagerInboxAuditEvents(
   companyCode: string,
   submissionId: string,
+  inboxType: ManagerInboxType,
 ): Promise<ManagerInboxAuditEvent[]> {
   if (!companyCode || !UUID_PATTERN.test(submissionId)) return [];
 
@@ -103,7 +104,9 @@ export async function listManagerInboxAuditEvents(
     limit: "100",
   });
   const rows = await selectSupabaseExportRows<AuditDbRow>(
-    "risk_share_confirmation_review_events",
+    inboxType === "monthly"
+      ? "risk_share_confirmation_review_events"
+      : "risk_share_inbox_review_events",
     query,
   );
 
