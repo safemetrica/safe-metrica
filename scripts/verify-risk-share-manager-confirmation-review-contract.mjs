@@ -7,6 +7,7 @@ const page = read("src/app/risk-share/manager/confirmations/page.tsx");
 const manager = read("src/app/risk-share/manager/page.tsx");
 const managerView = read("src/components/risk-share/manager/ManagerDesignerView.tsx");
 const managerCss = read("src/app/risk-share/manager/designer.css");
+const recentSubmissionsTable = read("src/components/risk-share/manager/RecentSubmissionsTable.tsx");
 const monthly = read("src/app/risk-share/monthly/page.tsx");
 
 const checks = [
@@ -21,6 +22,7 @@ const checks = [
   ["server action validates contract", /UUID_PATTERN\.test\(submissionId\)/.test(manager) && /actionNote\.length > 500/.test(manager) && /validTransition/.test(manager) && /requireTenantManagerAccessForCurrentSession/.test(manager)],
   ["designer manager integration", /confirmationReviewHref/.test(manager) && /#confirmation-review/.test(manager) && /근로자 확인 내역/.test(managerView) && /이곳에서 확인하고 처리합니다/.test(managerView)],
   ["mobile review action layout", /confirmation-review__action-cell/.test(managerView) && /td:nth-child\(6\).*grid-column: 1 \/ -1/.test(managerCss) && /confirmation-review__form.*flex-direction: column/.test(managerCss)],
+  ["customer-facing confirmation datetime terminology", /공유확인 일시/.test(managerView) && /공유확인 일시/.test(recentSubmissionsTable) && !/접수 시각/.test(managerView) && !/접수 시각/.test(recentSubmissionsTable)],
   ["standalone page removed", /redirect\(/.test(page) && /#confirmation-review/.test(page) && !/근로자 공유확인 검토·조치/.test(page)],
   ["monthly counts only version-linked rows", /const versionLinkedRows/.test(monthly) && /reviewUnreviewed: versionLinkedRows\.filter/.test(monthly)],
 ];

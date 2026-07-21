@@ -21,7 +21,7 @@ export default function RecentSubmissionsTable() {
               <th className="py-2 pr-3">구분</th>
               <th className="py-2 pr-3">제출자</th>
               <th className="py-2 pr-3">내용</th>
-              <th className="py-2 pr-3">접수 시각</th>
+              <th className="py-2 pr-3">공유확인 일시</th>
               <th className="py-2 pr-3">상태</th>
             </tr>
           </thead>

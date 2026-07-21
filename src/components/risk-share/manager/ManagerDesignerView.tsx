@@ -724,7 +724,7 @@ export default function ManagerDesignerView({
                         <th>구분</th>
                         <th>제출자</th>
                         <th>내용</th>
-                        <th>접수 시각</th>
+                        <th>공유확인 일시</th>
                         <th>상태</th>
                         <th>확인·조치</th>
                       </tr>
