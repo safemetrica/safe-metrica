@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import {
   getDefaultTenantSiteConfigByTenantCode,
   getTenantRegistryConfigByCode,
@@ -9,13 +11,14 @@ import {
   type TenantMembershipStatus,
   type TenantRegistryConfig,
 } from "@/lib/supabaseServer";
+import { activateTenantAfterProfile } from "@/lib/tenant-onboarding/tenantActivation";
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 const ELIGIBLE_TENANT_SERVICE_MODES = new Set(["risk_share_pack", "full_safemetrica"]);
 const ELIGIBLE_TENANT_STATUSES = new Set(["onboarding", "active"]);
 const EXISTING_MEMBERSHIP_STATUSES = ["invited", "active", "suspended"];
-const ACTIVE_MANAGER_ROLES = new Set<TenantMembershipRole>(["tenant_admin", "tenant_manager"]);
+const ACTIVE_MANAGER_ROLES = new Set<TenantMembershipRole>(["tenant_admin"]);
 const EXISTING_MEMBERSHIP_LOOKUP_LIMIT = 200;
 
 function readRowString(value: unknown): string {
@@ -164,43 +167,6 @@ async function insertTenantMembershipRow(record: Record<string, unknown>) {
   return { ok: res.ok as boolean };
 }
 
-async function patchTenantRegistryStatusToActive(tenantId: string) {
-  const supabaseUrl = getSupabaseUrl();
-  const serviceRoleKey = getSupabaseServiceRoleKey();
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return { ok: false as const, activated: false as const };
-  }
-
-  const query = new URLSearchParams({
-    id: `eq.${tenantId}`,
-    status: "eq.onboarding",
-  });
-
-  const res = await fetch(`${supabaseUrl}/rest/v1/tenant_registry?${query.toString()}`, {
-    method: "PATCH",
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify({
-      status: "active",
-      updated_at: new Date().toISOString(),
-    }),
-  });
-
-  if (!res.ok) {
-    return { ok: false as const, activated: false as const };
-  }
-
-  const data = await res.json().catch(() => []);
-  const activated = Array.isArray(data) && data.length > 0;
-
-  return { ok: true as const, activated };
-}
-
 export type CreateOwnerTenantMembershipInput = {
   companyCode: string;
   managerEmail: string;
@@ -337,15 +303,16 @@ export async function activateOwnerTenant(
     return { ok: true, status: "already_active", companyCode: tenant.code };
   }
 
-  const patchResult = await patchTenantRegistryStatusToActive(tenant.id);
+  const activationResult = await activateTenantAfterProfile({
+    tenantCode: tenant.code,
+    actorMembershipId: readRowString(activeManagerMembership.id),
+    idempotencyKey: randomUUID(),
+    initiatedBy: "owner_console",
+  });
 
-  if (!patchResult.ok) {
+  if (!activationResult.ok) {
     return { ok: false, reason: "activation_failed" };
   }
 
-  if (!patchResult.activated) {
-    return { ok: false, reason: "activation_conflict" };
-  }
-
-  return { ok: true, status: "activated", companyCode: tenant.code };
+  return { ok: true, status: activationResult.status, companyCode: tenant.code };
 }
