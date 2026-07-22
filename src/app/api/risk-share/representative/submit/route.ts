@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
-import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
+import { insertRiskSharePublicSubmission } from "@/lib/risk-share/riskSharePublicSubmission";
 import {
   buildRiskShareLangHref,
   getRiskShareLocale,
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
   const confirmed = getFormChecked(formData, "confirmed");
   const submitterLabel = representativeName || "근로자대표";
   const reportedDate = getTodayDateValue();
+  const publicIdempotencyKey = getFormText(formData, "publicIdempotencyKey").toLowerCase();
 
   const signatureResolution = await resolveOptionalRiskShareSignatureFile(
     formData.get("signatureFile"),
@@ -101,7 +103,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const result = await insertFieldParticipationSubmissionShadowRecord({
+  const publicRequestDigest = createHash("sha256").update(JSON.stringify({
+    tenantCode: tenant.code, representativeName, affiliation, opinion, confirmed, lang,
+    signaturePresent: Boolean(signatureResolution.file),
+  })).digest("hex");
+  const result = await insertRiskSharePublicSubmission({
     tenant_code: tenant.code,
     company_name: tenant.name,
     submission_type: "근로자대표확인",
@@ -134,6 +140,9 @@ export async function POST(req: NextRequest) {
           }
         : {}),
     },
+    public_submission_kind: "representative_confirmation",
+    public_idempotency_key: publicIdempotencyKey,
+    public_request_digest: publicRequestDigest,
   });
 
   if (!result.ok) {
@@ -144,6 +153,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "error"), req.url), {
       status: 303,
     });
+  }
+
+  if (result.replayed && signatureUpload?.ok) {
+    await deletePrivateRiskShareSignature(signatureUpload.cleanupUrl, oidcToken);
   }
 
   return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "submitted"), req.url), {

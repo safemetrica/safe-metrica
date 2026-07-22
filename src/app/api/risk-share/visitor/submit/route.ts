@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
-import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
+import { insertRiskSharePublicSubmission } from "@/lib/risk-share/riskSharePublicSubmission";
 import {
   buildRiskShareLangHref,
   getRiskShareLocale,
@@ -68,8 +69,12 @@ export async function POST(req: NextRequest) {
   const visitorCompany = getFormText(formData, "visitorCompany");
   const visitorName = getFormText(formData, "visitorName");
   const checkedSafetyGuide = getFormChecked(formData, "checkedSafetyGuide");
+  const publicIdempotencyKey = getFormText(formData, "publicIdempotencyKey").toLowerCase();
+  const publicRequestDigest = createHash("sha256").update(JSON.stringify({
+    tenantCode: tenant.code, purpose, visitorCompany, visitorName, checkedSafetyGuide, lang,
+  })).digest("hex");
 
-  const result = await insertFieldParticipationSubmissionShadowRecord({
+  const result = await insertRiskSharePublicSubmission({
     tenant_code: tenant.code,
     company_name: tenant.name,
     submission_type: "외부인확인",
@@ -92,6 +97,9 @@ export async function POST(req: NextRequest) {
       lang,
       source: "risk_share_visitor_confirmation_v1",
     },
+    public_submission_kind: "visitor_confirmation",
+    public_idempotency_key: publicIdempotencyKey,
+    public_request_digest: publicRequestDigest,
   });
 
   if (!result.ok) {
