@@ -19,6 +19,7 @@ type PageProps = {
     lang?: string | string[];
     submitted?: string | string[];
     error?: string | string[];
+    rate_limited?: string | string[];
   }>;
 };
 
@@ -42,6 +43,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
   const locale = getRiskShareLocale(readSearchParam(params.lang));
   const submitted = readSearchParam(params.submitted);
   const submissionError = readSearchParam(params.error);
+  const rateLimited = readSearchParam(params.rate_limited);
   const copy = getRiskShareCopy(locale).representative;
   const common = getRiskShareCopy(locale).common;
   const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
@@ -109,6 +111,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
               {submissionError === "1" ? (
                 <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner>
               ) : null}
+              {rateLimited === "1" ? <RiskShareStatusBanner variant="warning">{common.rateLimitedBanner}</RiskShareStatusBanner> : null}
 
               <form
                 action="/api/risk-share/representative/submit"

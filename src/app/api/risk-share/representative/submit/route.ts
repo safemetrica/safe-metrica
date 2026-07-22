@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { insertRiskSharePublicSubmission } from "@/lib/risk-share/riskSharePublicSubmission";
+import { consumeRiskSharePublicRateLimit } from "@/lib/risk-share/riskSharePublicRateLimit";
 import {
   buildRiskShareLangHref,
   getRiskShareLocale,
@@ -38,7 +39,7 @@ function getTodayDateValue() {
   return kst.toISOString().slice(0, 10);
 }
 
-function buildRepresentativeHref(companyCode: string, lang: RiskShareLocale, status: "submitted" | "error") {
+function buildRepresentativeHref(companyCode: string, lang: RiskShareLocale, status: "submitted" | "error" | "rate_limited") {
   const href = buildRiskShareLangHref("/risk-share/representative", { company: companyCode }, lang);
   return `${href}&${status}=1`;
 }
@@ -65,6 +66,22 @@ export async function POST(req: NextRequest) {
   }
 
   const tenant = tenantResolution.tenant;
+
+  const rateLimit = await consumeRiskSharePublicRateLimit({
+    headers: req.headers,
+    tenantCode: tenant.code,
+    submissionKind: "representative_confirmation",
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "error"), req.url), {
+      status: 303,
+    });
+  }
+  if (!rateLimit.allowed) {
+    return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "rate_limited"), req.url), {
+      status: 303,
+    });
+  }
 
   const representativeName = getFormText(formData, "representativeName").slice(0, 60);
   const affiliation = getFormText(formData, "affiliation").slice(0, 80);

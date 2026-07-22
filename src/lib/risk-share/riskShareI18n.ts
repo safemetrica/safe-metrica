@@ -203,6 +203,7 @@ type CommonCopy = {
   signatureOptionalTag: string;
   signatureHint: string;
   signatureClear: string;
+  rateLimitedBanner: string;
 };
 
 type RiskShareCopy = {
@@ -225,6 +226,7 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       signatureOptionalTag: "선택",
       signatureHint: "원하시면 아래 칸에 손가락으로 서명을 남길 수 있습니다. 서명이 없어도 제출할 수 있습니다.",
       signatureClear: "서명 지우기",
+      rateLimitedBanner: "짧은 시간에 제출이 반복되었습니다. 10분 뒤 다시 시도해 주세요.",
     },
     field: {
       heroTitle: "우리 작업장 안전 확인",
@@ -399,6 +401,7 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       signatureOptionalTag: "optional",
       signatureHint: "You may sign with your finger in the box below if you like. You can submit without a signature.",
       signatureClear: "Clear signature",
+      rateLimitedBanner: "Too many submissions were made in a short time. Please try again in 10 minutes.",
     },
     field: {
       heroTitle: "Workplace Safety Check",
@@ -573,6 +576,7 @@ const COPY: Record<RiskShareLocale, RiskShareCopy> = {
       signatureOptionalTag: "không bắt buộc",
       signatureHint: "Bạn có thể ký bằng ngón tay vào khung bên dưới nếu muốn. Vẫn có thể gửi mà không cần chữ ký.",
       signatureClear: "Xóa chữ ký",
+      rateLimitedBanner: "Đã gửi quá nhiều lần trong thời gian ngắn. Vui lòng thử lại sau 10 phút.",
     },
     field: {
       heroTitle: "Kiểm tra an toàn nơi làm việc",

@@ -26,6 +26,7 @@ type PageProps = {
     lang?: string | string[];
     submitted?: string | string[];
     error?: string | string[];
+    rate_limited?: string | string[];
   }>;
 };
 
@@ -49,6 +50,7 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
   const locale = getRiskShareLocale(readSearchParam(params.lang));
   const submitted = readSearchParam(params.submitted);
   const submissionError = readSearchParam(params.error);
+  const rateLimited = readSearchParam(params.rate_limited);
   const copy = getRiskShareCopy(locale).anonymous;
   const common = getRiskShareCopy(locale).common;
   const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
@@ -114,6 +116,7 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
             <div className="rsx-pub-flow-body space-y-3 p-3">
               {submitted === "1" ? <RiskShareStatusBanner variant="success">{copy.submittedBanner}</RiskShareStatusBanner> : null}
               {submissionError === "1" ? <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner> : null}
+              {rateLimited === "1" ? <RiskShareStatusBanner variant="warning">{common.rateLimitedBanner}</RiskShareStatusBanner> : null}
 
               <form
                 action="/api/risk-share/anonymous/submit"

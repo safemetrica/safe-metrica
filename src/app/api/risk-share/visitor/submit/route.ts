@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { insertRiskSharePublicSubmission } from "@/lib/risk-share/riskSharePublicSubmission";
+import { consumeRiskSharePublicRateLimit } from "@/lib/risk-share/riskSharePublicRateLimit";
 import {
   buildRiskShareLangHref,
   getRiskShareLocale,
@@ -64,6 +65,22 @@ export async function POST(req: NextRequest) {
   }
 
   const tenant = tenantResolution.tenant;
+
+  const rateLimit = await consumeRiskSharePublicRateLimit({
+    headers: req.headers,
+    tenantCode: tenant.code,
+    submissionKind: "visitor_confirmation",
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.redirect(new URL(buildVisitorHref(companyCode, lang, "error"), req.url), {
+      status: 303,
+    });
+  }
+  if (!rateLimit.allowed) {
+    return NextResponse.redirect(new URL(buildVisitorHref(companyCode, lang, "rate_limited"), req.url), {
+      status: 303,
+    });
+  }
 
   const purpose = getFormText(formData, "visitPurpose");
   const visitorCompany = getFormText(formData, "visitorCompany");
