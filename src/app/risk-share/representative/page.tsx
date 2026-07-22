@@ -33,6 +33,7 @@ function normalizeCompanyCode(value: string) {
 }
 
 export default async function RiskShareRepresentativePage({ searchParams }: PageProps) {
+  const publicIdempotencyKey = randomUUID();
   const params = (await searchParams) ?? {};
   const rawCompanyCode = readSearchParam(params.company);
   const companyCode = normalizeCompanyCode(rawCompanyCode);
@@ -115,6 +116,7 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
               >
                 <input type="hidden" name="companyCode" value={companyCode} readOnly />
                 <input type="hidden" name="lang" value={locale} readOnly />
+                <input type="hidden" name="publicIdempotencyKey" value={publicIdempotencyKey} readOnly />
 
                 <label className="rsx-pub-label block text-sm font-black">
                   {copy.nameLabel}
@@ -176,3 +178,4 @@ export default async function RiskShareRepresentativePage({ searchParams }: Page
     </RiskSharePublicShell>
   );
 }
+import { randomUUID } from "node:crypto";

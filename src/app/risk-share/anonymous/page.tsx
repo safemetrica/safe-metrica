@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
 
 import { buildRiskShareLangHref, getRiskShareCopy, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
@@ -41,6 +42,7 @@ function normalizeCompanyCode(value: string) {
 }
 
 export default async function RiskShareAnonymousFeedbackPage({ searchParams }: PageProps) {
+  const publicIdempotencyKey = randomUUID();
   const params = (await searchParams) ?? {};
   const rawCompanyCode = readSearchParam(params.company);
   const companyCode = normalizeCompanyCode(rawCompanyCode);
@@ -121,6 +123,7 @@ export default async function RiskShareAnonymousFeedbackPage({ searchParams }: P
               >
                 <input type="hidden" name="companyCode" value={companyCode} readOnly />
                 <input type="hidden" name="lang" value={locale} readOnly />
+                <input type="hidden" name="publicIdempotencyKey" value={publicIdempotencyKey} readOnly />
                 <input type="hidden" name="identityMode" value="anonymous" readOnly />
                 <input type="hidden" name="anonymous" value="true" readOnly />
 

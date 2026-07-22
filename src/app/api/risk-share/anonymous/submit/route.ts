@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
-import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
+import { insertRiskSharePublicSubmission } from "@/lib/risk-share/riskSharePublicSubmission";
 import {
   buildRiskShareLangHref,
   getRiskShareLocale,
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
   const feedbackType = normalizeFeedbackType(getFormText(formData, "feedbackType"));
   const location = getFormText(formData, "location").slice(0, 120);
   const content = getFormText(formData, "content").slice(0, 1900);
+  const publicIdempotencyKey = getFormText(formData, "publicIdempotencyKey").toLowerCase();
 
   if (content.length < 2) {
     return NextResponse.redirect(new URL(buildAnonymousHref(companyCode, lang, "error"), req.url), {
@@ -78,7 +80,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const result = await insertFieldParticipationSubmissionShadowRecord({
+  const publicRequestDigest = createHash("sha256").update(JSON.stringify({
+    tenantCode: tenant.code, feedbackType, location, content, lang,
+  })).digest("hex");
+  const result = await insertRiskSharePublicSubmission({
     tenant_code: tenant.code,
     company_name: tenant.name,
     submission_type: feedbackType,
@@ -100,6 +105,9 @@ export async function POST(req: NextRequest) {
       content,
       lang,
     },
+    public_submission_kind: "anonymous_feedback",
+    public_idempotency_key: publicIdempotencyKey,
+    public_request_digest: publicRequestDigest,
   });
 
   if (!result.ok) {
