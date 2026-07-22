@@ -28,7 +28,7 @@ Boundary ids match `RISK_SHARE_ENTITLEMENT_SHADOW_BOUNDARIES` in
 | `public.anonymous.submit` | public_mutation | `src/app/api/risk-share/anonymous/submit/route.ts` | `resolveActiveRiskSharePublicTenant`, `consumeRiskSharePublicRateLimit` | No |
 | `public.visitor.submit` | public_mutation | `src/app/api/risk-share/visitor/submit/route.ts` | `resolveActiveRiskSharePublicTenant`, `consumeRiskSharePublicRateLimit` | No |
 | `public.representative.submit` | public_mutation | `src/app/api/risk-share/representative/submit/route.ts` | `resolveActiveRiskSharePublicTenant`, `consumeRiskSharePublicRateLimit` | No |
-| `legacy.manager.page` | legacy_read | `src/app/manager/risk-share/page.tsx` | `getCompanyConfig`/`getCompanyConfigByCode` (pre-tenant_registry company guard); most paths redirect into `/risk-share/manager`, the session/membership-guarded page | No |
+| `legacy.manager.page` | legacy_read | `src/app/manager/risk-share/page.tsx` | `getCompanyConfig`, `getCompanyConfigByCode` | No |
 | `legacy.field_participation.submit` | legacy_mutation | `src/app/api/field/participation/submit/route.ts` | `getCompanyConfig`/`getCompanyConfigByCode` (same legacy company guard family) | No |
 
 Finding: `riskShareEntitlementAccess` (the reader) and
