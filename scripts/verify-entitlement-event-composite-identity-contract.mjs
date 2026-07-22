@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const foundationPath = "supabase/migrations/20260722020000_add_product_entitlement_foundation.sql";
-const correctivePath = "supabase/migrations/20260722030000_harden_entitlement_event_composite_identity.sql";
+const correctivePath = "supabase/migrations/20260722031000_harden_entitlement_event_composite_identity.sql";
 const foundation = read(foundationPath);
 const corrective = read(correctivePath);
 const publicGuard = read("src/lib/risk-share/riskSharePublicTenantGuard.ts");
@@ -20,8 +20,11 @@ const checks = [
   ["event identity uses one composite foreign key",
     /foreign key \(entitlement_id, tenant_id, tenant_code, product_code\) references public\.tenant_product_entitlements \(id, tenant_id, tenant_code, product_code\) on delete restrict/.test(sql)],
   ["weaker entitlement-only foreign key is removed by exact name",
-    /drop constraint tenant_product_entitlement_events_entitlement_fk/.test(sql)
+    /drop constraint if exists tenant_product_entitlement_events_entitlement_fk/.test(sql)
       && /constraint tenant_product_entitlement_events_entitlement_fk\s+foreign key \(entitlement_id\)/s.test(compact(foundation))],
+  ["corrective migration is safe after the production contract already exists",
+    /if not exists \( select 1 from pg_constraint where conname = 'tenant_product_entitlements_event_identity_unique' and conrelid = 'public\.tenant_product_entitlements'::regclass \)/.test(sql)
+      && /if not exists \( select 1 from pg_constraint where conname = 'tenant_product_entitlement_events_identity_fk' and conrelid = 'public\.tenant_product_entitlement_events'::regclass \)/.test(sql)],
   ["tenant registry composite identity remains enforced",
     /foreign key \(tenant_id, tenant_code\) references public\.tenant_registry \(id, company_code\) on delete restrict/.test(compact(foundation))],
   ["RLS and service-role-only grants remain intact",
