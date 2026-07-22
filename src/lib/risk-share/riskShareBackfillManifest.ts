@@ -56,6 +56,7 @@ export function canonicalRiskShareBackfillRequest(
     actor_type: entry.actorType,
     idempotency_key: entry.idempotencyKey,
     external_reference: entry.externalReference,
+    approval_evidence_reference: entry.approvalEvidenceReference,
   });
 }
 
