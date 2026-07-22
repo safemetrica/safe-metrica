@@ -30,7 +30,12 @@ begin
     left join public.tenant_registry tr
       on tr.id = i.tenant_id and tr.company_code = i.tenant_code
     where tr.id is null or tr.status <> 'active' or i.status <> 'active'
-      or i.activation_source not in ('owner_console','contract','payment_webhook','partner','complimentary')
+      or i.activation_source not in ('owner_console','contract','payment_webhook','partner','complimentary','internal_test')
+      or (i.activation_source = 'internal_test' and (
+        i.expires_at is null
+        or i.external_reference is null
+        or i.external_reference not like 'internal-test:%'
+      ))
       or i.policy_version < 1 or i.actor_type <> 'owner_console'
       or length(btrim(i.idempotency_key)) not between 1 and 200
       or i.request_digest !~ '^[0-9a-f]{64}$'

@@ -12,6 +12,7 @@ const ACTIVATION_SOURCES = new Set([
   "payment_webhook",
   "partner",
   "complimentary",
+  "internal_test",
 ]);
 
 export type RiskShareBackfillManifestEntry = {
@@ -91,6 +92,12 @@ export function validateRiskShareBackfillManifestEntry(
   if (typeof input.idempotencyKey !== "string" || input.idempotencyKey.trim().length < 1 || input.idempotencyKey.trim().length > 200) errors.push("idempotency_key_invalid");
   if (typeof input.externalReference !== "string" && input.externalReference !== null) errors.push("external_reference_invalid");
   if (typeof input.externalReference === "string" && (input.externalReference.trim().length < 1 || input.externalReference.trim().length > 200)) errors.push("external_reference_invalid");
+  if (
+    input.activationSource === "internal_test" &&
+    (!expiresAt ||
+      typeof input.externalReference !== "string" ||
+      !input.externalReference.trim().startsWith("internal-test:"))
+  ) errors.push("internal_test_boundary_invalid");
   if (typeof input.approvalEvidenceReference !== "string" || !input.approvalEvidenceReference.trim()) errors.push("approval_evidence_required");
   if (typeof input.requestDigest !== "string" || !SHA256_PATTERN.test(input.requestDigest)) errors.push("request_digest_invalid");
 

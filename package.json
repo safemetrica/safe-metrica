@@ -56,6 +56,7 @@
     "verify:risk-share-entitlement-access-reader": "node scripts/verify-risk-share-entitlement-access-reader.mjs",
     "verify:risk-share-backfill-shadow-foundation": "node scripts/verify-risk-share-backfill-shadow-foundation.mjs",
     "verify:risk-share-shadow-boundary-contract": "node scripts/verify-risk-share-shadow-boundary-contract.mjs",
+    "verify:internal-test-entitlement": "node scripts/verify-internal-test-entitlement-contract.mjs",
     "verify:risk-share-public-submission-replay": "node scripts/verify-risk-share-public-submission-replay-contract.mjs",
     "verify:risk-share-public-rate-limit": "node scripts/verify-risk-share-public-rate-limit-contract.mjs",
     "verify:self-service-risk-publish-qr-e2e": "node scripts/verify-self-service-risk-publish-qr-e2e-contract.mjs",
