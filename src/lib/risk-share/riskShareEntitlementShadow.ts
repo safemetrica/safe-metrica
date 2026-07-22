@@ -29,6 +29,15 @@ export function isRiskShareEntitlementShadowBoundaryId(
 }
 
 export type LegacyRiskShareDecision = "allow" | "deny" | "error";
+export type RiskShareEntitlementLookupFailureClass =
+  | "timeout"
+  | "missing_config"
+  | "upstream_error";
+const RISK_SHARE_ENTITLEMENT_LOOKUP_FAILURE_CLASSES = new Set<string>([
+  "timeout",
+  "missing_config",
+  "upstream_error",
+]);
 export type RiskShareShadowClass =
   | "match_allow"
   | "match_deny"
@@ -47,6 +56,7 @@ export type RiskShareShadowObservation = {
   policyVersion: number | null;
   correlationId: string;
   observedAt: string;
+  failureClass: RiskShareEntitlementLookupFailureClass | null;
 };
 
 export function classifyRiskShareEntitlementShadow(
@@ -73,10 +83,15 @@ export function createRiskShareShadowObservation(input: {
   policyVersion: number | null;
   correlationId: string;
   observedAt: Date;
+  failureClass?: RiskShareEntitlementLookupFailureClass | null;
 }): RiskShareShadowObservation | null {
   if (!isRiskShareEntitlementShadowBoundaryId(input.boundaryId)) return null;
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(input.correlationId)) return null;
   if (!Number.isFinite(input.observedAt.getTime())) return null;
+  if (
+    input.entitlementState === "lookup_failed" &&
+    !RISK_SHARE_ENTITLEMENT_LOOKUP_FAILURE_CLASSES.has(input.failureClass ?? "")
+  ) return null;
   return {
     boundaryId: input.boundaryId,
     legacyDecision: input.legacyDecision,
@@ -88,5 +103,7 @@ export function createRiskShareShadowObservation(input: {
     policyVersion: input.policyVersion,
     correlationId: input.correlationId,
     observedAt: input.observedAt.toISOString(),
+    failureClass:
+      input.entitlementState === "lookup_failed" ? input.failureClass! : null,
   };
 }

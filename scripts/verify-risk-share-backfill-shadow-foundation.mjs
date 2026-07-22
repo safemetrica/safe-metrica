@@ -65,9 +65,10 @@ const observation = createRiskShareShadowObservation({
   observedAt: new Date("2026-07-22T00:00:00.000Z"),
 });
 assert.deepEqual(Object.keys(observation ?? {}).sort(), [
-  "boundaryId", "comparisonClass", "correlationId", "entitlementState",
+  "boundaryId", "comparisonClass", "correlationId", "entitlementState", "failureClass",
   "legacyDecision", "observedAt", "policyVersion",
 ].sort());
+assert.equal(observation.failureClass, null);
 assert.equal(JSON.stringify(observation).includes("tenant"), false);
 
 const sql = fs.readFileSync("docs/operations/risk-share-entitlement-backfill-review.sql", "utf8");

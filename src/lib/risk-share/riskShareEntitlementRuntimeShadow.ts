@@ -40,9 +40,15 @@ export async function observeInternalTestRiskShareEntitlementShadow(
         state: "lookup_failed";
         entitlementId: null;
         policyVersion: null;
+        failureClass: "timeout";
       }>((resolve) => {
         timeout = setTimeout(
-          () => resolve({ state: "lookup_failed", entitlementId: null, policyVersion: null }),
+          () => resolve({
+            state: "lookup_failed",
+            entitlementId: null,
+            policyVersion: null,
+            failureClass: "timeout",
+          }),
           SHADOW_LOOKUP_TIMEOUT_MS,
         );
       }),
@@ -55,6 +61,7 @@ export async function observeInternalTestRiskShareEntitlementShadow(
       policyVersion: evaluation.policyVersion,
       correlationId: randomUUID(),
       observedAt: new Date(),
+      failureClass: evaluation.state === "lookup_failed" ? evaluation.failureClass : null,
     });
 
     if (observation) {

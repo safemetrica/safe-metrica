@@ -39,11 +39,31 @@ const observation = createRiskShareShadowObservation({
   observedAt: new Date("2026-07-22T00:00:00.000Z"),
 });
 assert.ok(observation);
+assert.equal(observation.failureClass, null);
+const failedObservation = createRiskShareShadowObservation({
+  boundaryId: "saas.manager.page",
+  legacyDecision: "allow",
+  entitlementState: "lookup_failed",
+  policyVersion: null,
+  correlationId: "opaque_request_02",
+  observedAt: new Date("2026-07-22T00:00:00.000Z"),
+  failureClass: "timeout",
+});
+assert.equal(failedObservation?.failureClass, "timeout");
+assert.equal(createRiskShareShadowObservation({
+  boundaryId: "saas.manager.page",
+  legacyDecision: "allow",
+  entitlementState: "lookup_failed",
+  policyVersion: null,
+  correlationId: "opaque_request_03",
+  observedAt: new Date("2026-07-22T00:00:00.000Z"),
+}), null);
 assert.deepEqual(Object.keys(observation).sort(), [
   "boundaryId",
   "comparisonClass",
   "correlationId",
   "entitlementState",
+  "failureClass",
   "legacyDecision",
   "observedAt",
   "policyVersion",
@@ -93,6 +113,8 @@ assert.equal(runtimeShadow.includes('const INTERNAL_TEST_TENANT_CODE = "test-ris
 assert.equal(runtimeShadow.includes("if (input.tenantCode !== INTERNAL_TEST_TENANT_CODE) return"), true);
 assert.equal(runtimeShadow.includes("Promise.race"), true);
 assert.equal(runtimeShadow.includes('state: "lookup_failed"'), true);
+assert.equal(runtimeShadow.includes('failureClass: "timeout"'), true);
+assert.equal(runtimeShadow.includes("evaluation.failureClass"), true);
 assert.equal(runtimeShadow.includes("console.info"), true);
 assert.equal(runtimeShadow.includes("catch {"), true);
 assert.equal(runtimeShadow.includes("tenantId: observation"), false);
