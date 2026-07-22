@@ -11,6 +11,7 @@ import {
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { resolveActiveRiskSharePublicVersion } from "@/lib/risk-share/riskSharePublicVersion";
 import { getRiskSharePreworkChecklistTemplate } from "@/lib/risk-share/riskShareChecklistTemplate";
+import { resolveChecklistSubmission } from "@/lib/risk-share/riskShareChecklistSubmission";
 import { insertRiskShareVersionConfirmation } from "@/lib/risk-share/riskShareVersionConfirmation";
 import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
 import {
@@ -169,12 +170,20 @@ export async function POST(req: NextRequest) {
   const checklistTemplate =
     mode === "prework" ? getRiskSharePreworkChecklistTemplate(lang) : null;
 
-  if (
-    checklistTemplate &&
-    (getFormText(formData, "checklistTemplateId") !== checklistTemplate.templateId ||
-      getFormText(formData, "checklistTemplateVersion") !==
-        checklistTemplate.templateVersion)
-  ) {
+  const checklistResolution = checklistTemplate
+    ? resolveChecklistSubmission({
+        template: checklistTemplate,
+        submittedTemplateId: getFormText(formData, "checklistTemplateId"),
+        submittedTemplateVersion: getFormText(
+          formData,
+          "checklistTemplateVersion",
+        ),
+        isChecked: (index) =>
+          getFormChecked(formData, `checklist-${mode}-${index}`),
+      })
+    : null;
+
+  if (checklistResolution && !checklistResolution.ok) {
     return NextResponse.redirect(
       new URL(buildParticipationHref(companyCode, mode, lang, "form_changed"), req.url),
       { status: 303 },
@@ -182,12 +191,15 @@ export async function POST(req: NextRequest) {
   }
 
   const checklist = checklistTemplate?.items ?? [];
-  const checkedItems = checklist.map((label, index) => ({
-    label,
-    checked: getFormChecked(formData, `checklist-${mode}-${index}`),
-  }));
-  const checkedCount = checkedItems.filter((item) => item.checked).length;
-  const allChecked = checklist.length > 0 && checkedCount === checklist.length;
+  const checkedItems = checklistResolution?.ok
+    ? checklistResolution.checkedItems
+    : [];
+  const checkedCount = checklistResolution?.ok
+    ? checklistResolution.checkedCount
+    : 0;
+  const allChecked = checklistResolution?.ok
+    ? checklistResolution.allChecked
+    : false;
   const workerName = getFormText(formData, "workerName").slice(0, 60);
   const workerAffiliation = getFormText(formData, "workerAffiliation").slice(0, 80);
   const workerIdentifier = getFormText(formData, "workerIdentifier").slice(0, 20);
