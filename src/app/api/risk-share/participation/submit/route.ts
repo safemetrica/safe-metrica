@@ -5,12 +5,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { insertFieldParticipationSubmissionShadowRecord } from "@/lib/supabaseServer";
 import {
   buildRiskShareLangHref,
-  getRiskShareCopy,
   getRiskShareLocale,
   type RiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { resolveActiveRiskSharePublicVersion } from "@/lib/risk-share/riskSharePublicVersion";
+import { getRiskSharePreworkChecklistTemplate } from "@/lib/risk-share/riskShareChecklistTemplate";
 import { insertRiskShareVersionConfirmation } from "@/lib/risk-share/riskShareVersionConfirmation";
 import { resolveOptionalRiskShareSignatureFile } from "@/lib/risk-share/riskShareSignatureFileGuard";
 import {
@@ -166,7 +166,22 @@ export async function POST(req: NextRequest) {
     };
   }
 
-  const checklist = mode === "prework" ? getRiskShareCopy(lang).participation.prework.checklist : [];
+  const checklistTemplate =
+    mode === "prework" ? getRiskSharePreworkChecklistTemplate(lang) : null;
+
+  if (
+    checklistTemplate &&
+    (getFormText(formData, "checklistTemplateId") !== checklistTemplate.templateId ||
+      getFormText(formData, "checklistTemplateVersion") !==
+        checklistTemplate.templateVersion)
+  ) {
+    return NextResponse.redirect(
+      new URL(buildParticipationHref(companyCode, mode, lang, "form_changed"), req.url),
+      { status: 303 },
+    );
+  }
+
+  const checklist = checklistTemplate?.items ?? [];
   const checkedItems = checklist.map((label, index) => ({
     label,
     checked: getFormChecked(formData, `checklist-${mode}-${index}`),
@@ -266,7 +281,15 @@ export async function POST(req: NextRequest) {
       worker_identifier: workerIdentifier,
       identity_mode: "identified",
       ...(mode === "prework"
-        ? { checked_items: checkedItems, checked_count: checkedCount, all_checked: allChecked }
+        ? {
+            checklist_template_id: checklistTemplate?.templateId,
+            checklist_template_version: checklistTemplate?.templateVersion,
+            checklist_locale: checklistTemplate?.locale,
+            checklist_items_snapshot: checkedItems,
+            checked_items: checkedItems,
+            checked_count: checkedCount,
+            all_checked: allChecked,
+          }
         : {}),
       ...(monthlyVersionProvenance ?? {}),
       signature_present: Boolean(signatureUpload?.ok),
