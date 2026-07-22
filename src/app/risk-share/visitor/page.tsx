@@ -167,7 +167,7 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
                 </div>
 
                 <label className="rsx-pub-checkbox-row flex items-start gap-2 rounded-[13px] p-3 text-sm font-bold leading-5">
-                  <input type="checkbox" name="checkedSafetyGuide" className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300" />
+                  <input type="checkbox" name="checkedSafetyGuide" required className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300" />
                   {copy.confirmLabel}
                 </label>
 
