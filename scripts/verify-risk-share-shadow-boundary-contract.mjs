@@ -66,7 +66,6 @@ for (const forbidden of [
 }
 
 const runtimePaths = [
-  "src/app/risk-share/manager/page.tsx",
   "src/app/risk-share/monthly/page.tsx",
   "src/app/api/risk-share/participation/submit/route.ts",
   "src/app/api/risk-share/anonymous/submit/route.ts",
@@ -80,5 +79,24 @@ for (const path of runtimePaths) {
   assert.equal(source.includes("riskShareEntitlementShadow"), false, `${path} connected shadow Runtime early`);
   assert.equal(source.includes("riskShareEntitlementAccess"), false, `${path} connected entitlement Runtime early`);
 }
+
+const managerRuntime = readFileSync("src/app/risk-share/manager/page.tsx", "utf8");
+assert.equal(managerRuntime.includes("riskShareEntitlementRuntimeShadow"), true);
+assert.equal(managerRuntime.includes('boundaryId: "saas.manager.page"'), true);
+assert.equal(managerRuntime.includes('legacyDecision: "allow"'), true);
+
+const runtimeShadow = readFileSync(
+  "src/lib/risk-share/riskShareEntitlementRuntimeShadow.ts",
+  "utf8",
+);
+assert.equal(runtimeShadow.includes('const INTERNAL_TEST_TENANT_CODE = "test-risk-pack-01"'), true);
+assert.equal(runtimeShadow.includes("if (input.tenantCode !== INTERNAL_TEST_TENANT_CODE) return"), true);
+assert.equal(runtimeShadow.includes("Promise.race"), true);
+assert.equal(runtimeShadow.includes('state: "lookup_failed"'), true);
+assert.equal(runtimeShadow.includes("console.info"), true);
+assert.equal(runtimeShadow.includes("catch {"), true);
+assert.equal(runtimeShadow.includes("tenantId: observation"), false);
+assert.equal(runtimeShadow.includes("tenantCode: observation"), false);
+assert.equal(runtimeShadow.includes("throw "), false);
 
 console.log("PASS risk share shadow boundary privacy contract");
