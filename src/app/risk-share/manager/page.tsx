@@ -7,6 +7,7 @@ import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRe
 import { listManagerConfirmationReviews, updateManagerConfirmationReview, type ConfirmationReviewStatus } from "@/lib/risk-share/riskShareManagerConfirmationReview";
 import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
 import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
+import { observeInternalTestRiskShareEntitlementShadow } from "@/lib/risk-share/riskShareEntitlementRuntimeShadow";
 import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
@@ -393,6 +394,13 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       </main>
     );
   }
+
+  await observeInternalTestRiskShareEntitlementShadow({
+    boundaryId: "saas.manager.page",
+    legacyDecision: "allow",
+    tenantId: tenantAccessResult.context.selectedTenantId,
+    tenantCode,
+  });
 
   const userEmail = tenantAccessResult.context.membership.userEmail;
   const userDisplayName = tenantAccessResult.context.membership.displayName || userEmail || "관리자";
