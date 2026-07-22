@@ -33,6 +33,7 @@ export type OwnerTenantActionFailureReason =
   | "membership_insert_failed"
   | "default_site_required"
   | "active_manager_required"
+  | "entitlement_conflict"
   | "activation_conflict"
   | "activation_failed"
   | "missing_server_config";
@@ -299,10 +300,6 @@ export async function activateOwnerTenant(
     return { ok: false, reason: "active_manager_required" };
   }
 
-  if (tenant.status === "active") {
-    return { ok: true, status: "already_active", companyCode: tenant.code };
-  }
-
   const activationResult = await activateTenantAfterProfile({
     tenantCode: tenant.code,
     actorMembershipId: readRowString(activeManagerMembership.id),
@@ -310,7 +307,12 @@ export async function activateOwnerTenant(
   });
 
   if (!activationResult.ok) {
-    return { ok: false, reason: "activation_failed" };
+    return {
+      ok: false,
+      reason: activationResult.reason === "entitlement_conflict"
+        ? "entitlement_conflict"
+        : "activation_failed",
+    };
   }
 
   return { ok: true, status: activationResult.status, companyCode: tenant.code };
