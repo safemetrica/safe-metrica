@@ -111,6 +111,7 @@ const runtimeShadow = readFileSync(
 );
 assert.equal(runtimeShadow.includes('const INTERNAL_TEST_TENANT_CODE = "test-risk-pack-01"'), true);
 assert.equal(runtimeShadow.includes("if (input.tenantCode !== INTERNAL_TEST_TENANT_CODE) return"), true);
+assert.equal(runtimeShadow.includes("const SHADOW_LOOKUP_TIMEOUT_MS = 1_500"), true);
 assert.equal(runtimeShadow.includes("Promise.race"), true);
 assert.equal(runtimeShadow.includes('state: "lookup_failed"'), true);
 assert.equal(runtimeShadow.includes('failureClass: "timeout"'), true);
