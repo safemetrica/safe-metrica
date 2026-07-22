@@ -1,5 +1,33 @@
 import type { RiskShareEntitlementState } from "./riskShareEntitlementEvaluation";
 
+export const RISK_SHARE_ENTITLEMENT_SHADOW_BOUNDARIES = [
+  { id: "saas.manager.page", kind: "authenticated_read", priority: "high" },
+  { id: "saas.monthly.page", kind: "authenticated_read", priority: "medium" },
+  { id: "saas.publish.mutation", kind: "authenticated_mutation", priority: "critical" },
+  { id: "saas.preparation.mutation", kind: "authenticated_mutation", priority: "high" },
+  { id: "saas.share_review.mutation", kind: "authenticated_mutation", priority: "high" },
+  { id: "public.participation.submit", kind: "public_mutation", priority: "critical" },
+  { id: "public.anonymous.submit", kind: "public_mutation", priority: "critical" },
+  { id: "public.visitor.submit", kind: "public_mutation", priority: "critical" },
+  { id: "public.representative.submit", kind: "public_mutation", priority: "critical" },
+  { id: "legacy.manager.page", kind: "legacy_read", priority: "high" },
+  { id: "legacy.field_participation.submit", kind: "legacy_mutation", priority: "critical" },
+] as const;
+
+export type RiskShareEntitlementShadowBoundaryId =
+  (typeof RISK_SHARE_ENTITLEMENT_SHADOW_BOUNDARIES)[number]["id"];
+
+const RISK_SHARE_ENTITLEMENT_SHADOW_BOUNDARY_IDS = new Set<string>(
+  RISK_SHARE_ENTITLEMENT_SHADOW_BOUNDARIES.map((boundary) => boundary.id),
+);
+
+/** Static inventory only: no reader, logger, metric client, or access policy. */
+export function isRiskShareEntitlementShadowBoundaryId(
+  value: string,
+): value is RiskShareEntitlementShadowBoundaryId {
+  return RISK_SHARE_ENTITLEMENT_SHADOW_BOUNDARY_IDS.has(value);
+}
+
 export type LegacyRiskShareDecision = "allow" | "deny" | "error";
 export type RiskShareShadowClass =
   | "match_allow"
@@ -12,7 +40,7 @@ export type RiskShareShadowClass =
   | "legacy_error";
 
 export type RiskShareShadowObservation = {
-  boundaryId: string;
+  boundaryId: RiskShareEntitlementShadowBoundaryId;
   legacyDecision: LegacyRiskShareDecision;
   entitlementState: RiskShareEntitlementState;
   comparisonClass: RiskShareShadowClass;
@@ -46,7 +74,7 @@ export function createRiskShareShadowObservation(input: {
   correlationId: string;
   observedAt: Date;
 }): RiskShareShadowObservation | null {
-  if (!/^[a-z0-9][a-z0-9_.-]{0,63}$/.test(input.boundaryId)) return null;
+  if (!isRiskShareEntitlementShadowBoundaryId(input.boundaryId)) return null;
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(input.correlationId)) return null;
   if (!Number.isFinite(input.observedAt.getTime())) return null;
   return {
