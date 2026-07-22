@@ -40,11 +40,20 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const companyCodeInput = readText(formData, "company_code", 80);
   const companyCode = normalizeStrictOwnerCompanyCode(companyCodeInput);
+  const contractConfirmed = formData.get("contract_confirmed") === "on";
+  const productConfirmed = formData.get("product_confirmed") === "on";
 
   if (!companyCode) {
     return buildRedirect(request, {
       actionError: "invalid_company",
       companyCode: companyCodeInput,
+    });
+  }
+
+  if (!contractConfirmed || !productConfirmed) {
+    return buildRedirect(request, {
+      actionError: "commercial_confirmation_required",
+      companyCode,
     });
   }
 
