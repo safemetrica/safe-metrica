@@ -224,6 +224,7 @@ const commercialActionErrorMessages: Record<string, string> = {
   active_manager_required: "활성 관리자 멤버십이 필요합니다.",
   activation_conflict: "활성화 처리 중 상태가 변경되어 다시 확인이 필요합니다.",
   activation_failed: "활성화 처리에 실패했습니다.",
+  commercial_confirmation_required: "계약과 이용상품 확인을 모두 완료해야 활성화할 수 있습니다.",
   missing_server_config: "운영 서버 설정을 확인할 수 없습니다.",
 };
 
@@ -725,8 +726,19 @@ export default async function OwnerTenantRegistryDraftPage({
                 <ul className="mt-2 space-y-1.5 text-xs font-bold leading-5 text-slate-600">
                   <li>- 기본 현장명</li>
                   <li>- 활성 관리자 멤버십</li>
-                  <li>- 운영자 최종 확인</li>
+                  <li>- 계약과 이용상품 확인</li>
                 </ul>
+              </div>
+
+              <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800">
+                <label className="flex items-start gap-3">
+                  <input type="checkbox" name="contract_confirmed" required className="mt-1" />
+                  <span>고객사와의 계약 상태를 확인했습니다.</span>
+                </label>
+                <label className="flex items-start gap-3">
+                  <input type="checkbox" name="product_confirmed" required className="mt-1" />
+                  <span>활성화할 이용상품이 위험성평가 공유확인 운영팩 또는 Full SafeMetrica임을 확인했습니다.</span>
+                </label>
               </div>
 
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
@@ -738,7 +750,7 @@ export default async function OwnerTenantRegistryDraftPage({
                 type="submit"
                 className="mt-5 w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-slate-950 hover:bg-emerald-300"
               >
-                활성화
+                계약·상품 확인 후 활성화
               </button>
             </form>
           </div>
