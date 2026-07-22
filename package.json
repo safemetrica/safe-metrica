@@ -57,6 +57,7 @@
     "verify:risk-share-backfill-shadow-foundation": "node scripts/verify-risk-share-backfill-shadow-foundation.mjs",
     "verify:risk-share-shadow-boundary-contract": "node scripts/verify-risk-share-shadow-boundary-contract.mjs",
     "verify:risk-share-public-submission-replay": "node scripts/verify-risk-share-public-submission-replay-contract.mjs",
+    "verify:risk-share-public-rate-limit": "node scripts/verify-risk-share-public-rate-limit-contract.mjs",
     "verify:self-service-risk-publish-qr-e2e": "node scripts/verify-self-service-risk-publish-qr-e2e-contract.mjs",
     "verify:risk-share-manager-inbox-foundation": "node scripts/verify-risk-share-manager-inbox-foundation-contract.mjs",
     "verify:risk-share-manager-inbox-actions": "node scripts/verify-risk-share-manager-inbox-actions-contract.mjs",

@@ -17,6 +17,7 @@ type PageProps = {
     company?: string | string[];
     lang?: string | string[];
     submitted?: string | string[];
+    rate_limited?: string | string[];
   }>;
 };
 
@@ -39,6 +40,7 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
   const companyCode = normalizeCompanyCode(rawCompanyCode);
   const locale = getRiskShareLocale(readSearchParam(params.lang));
   const submitted = readSearchParam(params.submitted);
+  const rateLimited = readSearchParam(params.rate_limited);
   const copy = getRiskShareCopy(locale).visitor;
   const common = getRiskShareCopy(locale).common;
   const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
@@ -104,6 +106,7 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
             <div className="rsx-pub-flow-body space-y-3 p-3">
               {submitted === "1" ? <RiskShareStatusBanner variant="success">{copy.submittedBanner}</RiskShareStatusBanner> : null}
               {submitted === "error" ? <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner> : null}
+              {rateLimited === "1" ? <RiskShareStatusBanner variant="warning">{common.rateLimitedBanner}</RiskShareStatusBanner> : null}
 
               <form action="/api/risk-share/visitor/submit" method="post" className="space-y-3">
                 <input type="hidden" name="companyCode" value={companyCode} readOnly />
