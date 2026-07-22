@@ -14,6 +14,7 @@ create temporary table approved_risk_share_backfill (
   idempotency_key text not null,
   request_digest text not null,
   external_reference text,
+  approval_evidence_reference text not null,
   unique (tenant_code, idempotency_key)
 ) on commit drop;
 
@@ -39,19 +40,14 @@ begin
       or i.policy_version < 1 or i.actor_type <> 'owner_console'
       or length(btrim(i.idempotency_key)) not between 1 and 200
       or i.request_digest !~ '^[0-9a-f]{64}$'
+      or length(btrim(i.approval_evidence_reference)) not between 1 and 200
       or (i.expires_at is not null and i.expires_at <= i.effective_at)
   ) then raise exception 'backfill_input_invalid'; end if;
   if exists (
     select 1 from approved_risk_share_backfill i
     join public.tenant_product_entitlements e
       on e.tenant_id = i.tenant_id and e.product_code = 'risk_share'
-    where e.tenant_code <> i.tenant_code or e.status <> i.status
-      or e.activation_source <> i.activation_source
-      or e.policy_version <> i.policy_version
-      or e.effective_at is distinct from i.effective_at
-      or e.expires_at is distinct from i.expires_at
-      or e.external_reference is distinct from i.external_reference
-  ) then raise exception 'existing_entitlement_conflict'; end if;
+  ) then raise exception 'existing_entitlement_requires_separate_review'; end if;
   if exists (
     select 1 from approved_risk_share_backfill i
     join public.tenant_product_entitlement_events ev
