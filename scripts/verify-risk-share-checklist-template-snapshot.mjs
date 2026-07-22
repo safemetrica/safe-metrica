@@ -4,6 +4,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "
 const template = read("src/lib/risk-share/riskShareChecklistTemplate.ts");
 const page = read("src/app/risk-share/participation/page.tsx");
 const route = read("src/app/api/risk-share/participation/submit/route.ts");
+const submission = read("src/lib/risk-share/riskShareChecklistSubmission.ts");
 
 const checks = [
   ["stable template identity", /RISK_SHARE_PREWORK_CHECKLIST_TEMPLATE_ID/.test(template) && /RISK_SHARE_PREWORK_CHECKLIST_TEMPLATE_VERSION/.test(template)],
@@ -11,7 +12,7 @@ const checks = [
   ["page renders the canonical template", /getRiskSharePreworkChecklistTemplate\(locale\)/.test(page) && /checklistTemplate\?\.items/.test(page)],
   ["page sends template identity", /name="checklistTemplateId"/.test(page) && /name="checklistTemplateVersion"/.test(page)],
   ["server re-derives template", /getRiskSharePreworkChecklistTemplate\(lang\)/.test(route)],
-  ["stale form fails closed", /checklistTemplateId/.test(route) && /checklistTemplateVersion/.test(route) && /"form_changed"/.test(route)],
+  ["server uses behavioral resolver", /resolveChecklistSubmission/.test(route) && /reason: "form_changed"/.test(submission)],
   ["submission snapshots identity and wording", /checklist_template_id/.test(route) && /checklist_template_version/.test(route) && /checklist_locale/.test(route) && /checklist_items_snapshot/.test(route)],
   ["legacy checked_items remains available", /checked_items: checkedItems/.test(route)],
 ];
