@@ -16,6 +16,7 @@ type PageProps = {
   searchParams?: Promise<{
     company?: string | string[];
     lang?: string | string[];
+    saved?: string | string[];
   }>;
 };
 
@@ -76,6 +77,7 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
   const rawCompanyCode = readSearchParam(params.company);
   const companyCode = normalizeCompanyCode(rawCompanyCode);
   const lang = getRiskShareLocale(readSearchParam(params.lang));
+  const saved = readSearchParam(params.saved) === "1";
   const settingsHref = buildRiskShareLangHref("/risk-share/manager/settings/site-profile", { company: companyCode }, lang);
   const tenantResolution = await resolveRiskShareManagerTenant(rawCompanyCode);
 
@@ -166,6 +168,14 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
                 <p>위험성평가 공유확인과 월간 운영기록에 사용할 기본 사업장 정보를 입력합니다.</p>
               </div>
             </div>
+            {saved ? (
+              <div className="notice notice--success" role="status" style={{ maxWidth: "860px", marginBottom: "18px" }}>
+                <strong>사업장 정보 저장 완료</strong>
+                <p style={{ marginTop: "6px" }}>
+                  입력한 정보가 저장되었습니다. 서비스 활성화는 계약·이용상품 확인 후 SafeMetrica 운영자가 별도로 진행합니다.
+                </p>
+              </div>
+            ) : null}
             <SiteProfileForm
               companyCode={tenantCode}
               lang={lang}
