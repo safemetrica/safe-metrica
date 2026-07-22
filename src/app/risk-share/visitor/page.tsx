@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { buildRiskShareLangHref, getRiskShareCopy, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import RiskSharePublicShell from "@/components/risk-share/public/RiskSharePublicShell";
@@ -186,4 +188,3 @@ export default async function RiskShareVisitorPage({ searchParams }: PageProps) 
     </RiskSharePublicShell>
   );
 }
-import { randomUUID } from "node:crypto";
