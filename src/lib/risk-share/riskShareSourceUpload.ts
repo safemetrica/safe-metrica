@@ -7,7 +7,7 @@ import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/s
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const ELIGIBLE_TENANT_SERVICE_MODES = new Set(["risk_share_pack", "full_safemetrica"]);
-const ELIGIBLE_TENANT_STATUSES = new Set(["onboarding", "active"]);
+const ELIGIBLE_TENANT_STATUSES = new Set(["active"]);
 
 const MAX_SOURCE_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 const SOURCE_DOCUMENT_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
