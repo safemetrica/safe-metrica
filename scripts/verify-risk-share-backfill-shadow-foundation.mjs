@@ -49,7 +49,7 @@ for (const [legacy, state, expected] of cases) {
   assert.equal(classifyRiskShareEntitlementShadow(legacy, state), expected);
 }
 const observation = createRiskShareShadowObservation({
-  boundaryId: "public_submission",
+  boundaryId: "public.participation.submit",
   legacyDecision: "allow",
   entitlementState: "active_effective",
   policyVersion: 1,
