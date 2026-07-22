@@ -34,6 +34,14 @@ assert.deepEqual(summarizeRiskShareBackfillManifest([valid, { ...valid, requestD
 });
 assert.equal(validateRiskShareBackfillManifestEntry({ ...valid, tenantCode: "other" }).ok, false);
 assert.equal(validateRiskShareBackfillManifestEntry({ ...valid, approvalEvidenceReference: "" }).ok, false);
+assert.notEqual(
+  digestRiskShareBackfillRequest(digestInput),
+  digestRiskShareBackfillRequest({
+    ...digestInput,
+    approvalEvidenceReference: "approval-record-002",
+  }),
+  "the request digest must bind the representative-approved evidence reference",
+);
 
 const cases = [
   ["allow", "active_effective", "match_allow"],
@@ -67,6 +75,9 @@ assert.match(sql, /begin;/i);
 assert.match(sql, /rollback;/i);
 assert.doesNotMatch(sql, /\bcommit\s*;/i);
 assert.match(sql, /existing_event_idempotency_conflict/);
+assert.match(sql, /approval_evidence_reference text not null/);
+assert.match(sql, /existing_entitlement_requires_separate_review/);
+assert.doesNotMatch(sql, /on conflict \(tenant_id,product_code\) do update/i);
 assert.match(sql, /combined_backfill_verification_failed/);
 
 const inventory = fs.readFileSync("docs/operations/risk-share-entitlement-backfill-inventory.sql", "utf8");
