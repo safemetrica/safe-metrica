@@ -20,9 +20,8 @@ const publicVersion = read("src/lib/risk-share/riskSharePublicVersion.ts");
 
 const checks = [
   ["self-service signup starts onboarding", /'onboarding'/.test(signupMigration)],
-  ["profile completion invokes atomic activation", /tenantResolution\.tenant\.status === "onboarding"/.test(profileAction)
-    && /activateTenantAfterProfile/.test(profileAction)
-    && /actorMembershipId: accessResult\.context\.membership\.membershipId/.test(profileAction)],
+  ["profile completion remains onboarding", !/activateTenantAfterProfile/.test(profileAction)
+    && /saved: "1"/.test(profileAction)],
   ["activation commits active status with audit event", /insert into public\.tenant_activation_events/.test(activationMigration)
     && /set status = 'active'/.test(activationMigration)
     && /v_membership\.role <> 'tenant_admin'/.test(activationMigration)],
