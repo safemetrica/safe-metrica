@@ -1,6 +1,6 @@
 import "server-only";
 
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { SupabaseReadError, selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   evaluateRiskShareEntitlementRows,
   RISK_SHARE_PRODUCT_CODE,
@@ -29,6 +29,7 @@ export type ReadRiskShareEntitlementResult =
       state: "lookup_failed";
       entitlementId: null;
       policyVersion: null;
+      failureClass: "missing_config" | "upstream_error";
     };
 
 /**
@@ -66,11 +67,16 @@ export async function readRiskShareEntitlementAccess(
       query,
     );
     return evaluateRiskShareEntitlementRows(rows, identity, now);
-  } catch {
+  } catch (error) {
     return {
       state: "lookup_failed",
       entitlementId: null,
       policyVersion: null,
+      failureClass:
+        error instanceof SupabaseReadError &&
+        error.statusText === "missing_supabase_server_config"
+          ? "missing_config"
+          : "upstream_error",
     };
   }
 }

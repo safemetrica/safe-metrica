@@ -54,6 +54,8 @@ const readerChecks = [
   ["composite tenant filters", reader.includes('tenant_id: `eq.${identity.tenantId}`') && reader.includes('tenant_code: `eq.${identity.tenantCode}`')],
   ["duplicate detection fetch limit", reader.includes('limit: "2"')],
   ["lookup failures stay distinct", reader.includes('state: "lookup_failed"')],
+  ["missing config classified without secret values", reader.includes('failureClass:') && reader.includes('"missing_config"')],
+  ["upstream failures classified without error payload", reader.includes('"upstream_error"')],
   ["no write or RPC boundary", !/\b(POST|PATCH|PUT|DELETE)\b/.test(reader) && !/\/rest\/v1\/rpc\//.test(reader)],
   ["no service_mode fallback", !/service_mode|serviceMode/.test(reader)],
   ["no tenant, membership, site, or historical policy", !/from ["'][^"']*(tenantRegistry|tenantMembership|tenantSite)/i.test(reader) && !/historical_authenticated_read|current_public_read/.test(reader)],
