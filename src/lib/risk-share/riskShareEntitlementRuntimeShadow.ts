@@ -10,7 +10,10 @@ import {
 } from "./riskShareEntitlementShadow";
 
 const INTERNAL_TEST_TENANT_CODE = "test-risk-pack-01";
-const SHADOW_LOOKUP_TIMEOUT_MS = 750;
+// Internal-test-only shadow reads have shown intermittent success/timeout pairs
+// in Production. Keep the observation bounded without retrying or affecting the
+// legacy access decision, while allowing one normal upstream latency spike.
+const SHADOW_LOOKUP_TIMEOUT_MS = 1_500;
 
 type ObserveRuntimeShadowInput = {
   boundaryId: RiskShareEntitlementShadowBoundaryId;
