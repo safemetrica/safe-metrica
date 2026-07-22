@@ -33,4 +33,16 @@ for (const [name, kind] of [
   assert.match(page, /rateLimitedBanner/);
 }
 
+for (const [name, field] of [
+  ["visitor", "checkedSafetyGuide"],
+  ["representative", "confirmed"],
+]) {
+  const route = read(`src/app/api/risk-share/${name}/submit/route.ts`);
+  const page = read(`src/app/risk-share/${name}/page.tsx`);
+  const validation = new RegExp(`if \\(!${field}\\)[\\s\\S]*?status: 303`);
+  assert.match(route, validation);
+  assert.ok(route.indexOf(`if (!${field})`) < route.indexOf("await insertRiskSharePublicSubmission"));
+  assert.match(page, new RegExp(`name="${field}" required`));
+}
+
 console.log("PASS risk share public submission rate-limit contract");

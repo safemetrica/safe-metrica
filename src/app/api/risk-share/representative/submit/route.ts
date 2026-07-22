@@ -91,6 +91,12 @@ export async function POST(req: NextRequest) {
   const reportedDate = getTodayDateValue();
   const publicIdempotencyKey = getFormText(formData, "publicIdempotencyKey").toLowerCase();
 
+  if (!confirmed) {
+    return NextResponse.redirect(new URL(buildRepresentativeHref(companyCode, lang, "error"), req.url), {
+      status: 303,
+    });
+  }
+
   const signatureResolution = await resolveOptionalRiskShareSignatureFile(
     formData.get("signatureFile"),
   );

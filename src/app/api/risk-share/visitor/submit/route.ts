@@ -87,6 +87,13 @@ export async function POST(req: NextRequest) {
   const visitorName = getFormText(formData, "visitorName");
   const checkedSafetyGuide = getFormChecked(formData, "checkedSafetyGuide");
   const publicIdempotencyKey = getFormText(formData, "publicIdempotencyKey").toLowerCase();
+
+  if (!checkedSafetyGuide) {
+    return NextResponse.redirect(new URL(buildVisitorHref(companyCode, lang, "error"), req.url), {
+      status: 303,
+    });
+  }
+
   const publicRequestDigest = createHash("sha256").update(JSON.stringify({
     tenantCode: tenant.code, purpose, visitorCompany, visitorName, checkedSafetyGuide, lang,
   })).digest("hex");
