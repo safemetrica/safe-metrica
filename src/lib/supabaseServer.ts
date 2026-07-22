@@ -166,6 +166,7 @@ type SupabaseExportTable =
   | "risk_share_version_items"
   | "tenant_registry"
   | "tenant_membership"
+  | "tenant_product_entitlements"
   | "tenant_sites";
 
 export class SupabaseReadError extends Error {
