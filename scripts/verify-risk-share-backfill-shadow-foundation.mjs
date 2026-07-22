@@ -68,4 +68,14 @@ assert.match(sql, /rollback;/i);
 assert.doesNotMatch(sql, /\bcommit\s*;/i);
 assert.match(sql, /existing_event_idempotency_conflict/);
 assert.match(sql, /combined_backfill_verification_failed/);
+
+const inventory = fs.readFileSync("docs/operations/risk-share-entitlement-backfill-inventory.sql", "utf8");
+assert.match(inventory, /READ-ONLY B2 inventory/);
+assert.match(inventory, /tr\.status = 'active'/);
+assert.match(inventory, /tr\.service_mode in \('risk_share_pack', 'full_safemetrica'\)/);
+assert.match(inventory, /hold_missing_approval_evidence/);
+assert.match(inventory, /conflict_tenant_identity/);
+assert.match(inventory, /already_covered/);
+assert.match(inventory, /hold_inactive_entitlement/);
+assert.doesNotMatch(inventory, /\b(insert|update|delete|merge|truncate|alter|drop|create|grant|revoke|call)\b/i);
 console.log("PASS risk share backfill manifest and shadow observer foundation");
