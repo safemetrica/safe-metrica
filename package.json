@@ -54,6 +54,7 @@
     "verify:product-entitlement-foundation": "node scripts/verify-product-entitlement-foundation-contract.mjs",
     "verify:entitlement-event-composite-identity": "node scripts/verify-entitlement-event-composite-identity-contract.mjs",
     "verify:risk-share-entitlement-access-reader": "node scripts/verify-risk-share-entitlement-access-reader.mjs",
+    "verify:risk-share-backfill-shadow-foundation": "node scripts/verify-risk-share-backfill-shadow-foundation.mjs",
     "verify:self-service-risk-publish-qr-e2e": "node scripts/verify-self-service-risk-publish-qr-e2e-contract.mjs",
     "verify:risk-share-manager-inbox-foundation": "node scripts/verify-risk-share-manager-inbox-foundation-contract.mjs",
     "verify:risk-share-manager-inbox-actions": "node scripts/verify-risk-share-manager-inbox-actions-contract.mjs",
