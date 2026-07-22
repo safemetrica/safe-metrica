@@ -14,6 +14,7 @@ export type TenantActivationResult =
         | "forbidden"
         | "default_site_required"
         | "profile_incomplete"
+        | "entitlement_conflict"
         | "request_failed"
         | "not_configured";
     };
@@ -38,6 +39,7 @@ function normalizeFailureReason(value: unknown): Extract<TenantActivationResult,
     "forbidden",
     "default_site_required",
     "profile_incomplete",
+    "entitlement_conflict",
   ].includes(reason)
     ? reason as Extract<TenantActivationResult, { ok: false }>["reason"]
     : "request_failed";

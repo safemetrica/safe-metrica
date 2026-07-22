@@ -51,6 +51,7 @@
     "verify:self-service-onboarding-manager-access": "node scripts/verify-self-service-onboarding-manager-access.mjs",
     "verify:self-service-tenant-activation": "node scripts/verify-self-service-tenant-activation-contract.mjs",
     "verify:owner-approved-tenant-activation": "node scripts/verify-owner-approved-tenant-activation-contract.mjs",
+    "verify:tenant-activation-entitlement": "node scripts/verify-tenant-activation-entitlement-contract.mjs",
     "verify:product-entitlement-foundation": "node scripts/verify-product-entitlement-foundation-contract.mjs",
     "verify:entitlement-event-composite-identity": "node scripts/verify-entitlement-event-composite-identity-contract.mjs",
     "verify:risk-share-entitlement-access-reader": "node scripts/verify-risk-share-entitlement-access-reader.mjs",

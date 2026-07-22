@@ -222,6 +222,7 @@ const commercialActionErrorMessages: Record<string, string> = {
   membership_insert_failed: "관리자 멤버십 저장에 실패했습니다.",
   default_site_required: "기본 현장명이 필요합니다.",
   active_manager_required: "활성 관리자 멤버십이 필요합니다.",
+  entitlement_conflict: "정지·만료·종료된 이용권은 자동으로 다시 활성화할 수 없습니다. 이용권 상태를 먼저 검토해 주세요.",
   activation_conflict: "활성화 처리 중 상태가 변경되어 다시 확인이 필요합니다.",
   activation_failed: "활성화 처리에 실패했습니다.",
   commercial_confirmation_required: "계약과 이용상품 확인을 모두 완료해야 활성화할 수 있습니다.",
