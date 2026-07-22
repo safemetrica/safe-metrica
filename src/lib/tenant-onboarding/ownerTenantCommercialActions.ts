@@ -307,7 +307,6 @@ export async function activateOwnerTenant(
     tenantCode: tenant.code,
     actorMembershipId: readRowString(activeManagerMembership.id),
     idempotencyKey: randomUUID(),
-    initiatedBy: "owner_console",
   });
 
   if (!activationResult.ok) {

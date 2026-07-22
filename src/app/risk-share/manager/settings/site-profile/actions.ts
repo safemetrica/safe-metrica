@@ -1,6 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,7 +12,6 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
 import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
-import { activateTenantAfterProfile } from "@/lib/tenant-onboarding/tenantActivation";
 import {
   validateTenantSiteProfile,
   type TenantSiteProfileFieldErrors,
@@ -152,24 +150,11 @@ export async function saveSiteProfileAction(
     return { values, fieldErrors: {}, formError };
   }
 
-  if (tenantResolution.tenant.status === "onboarding") {
-    const activationResult = await activateTenantAfterProfile({
-      tenantCode,
-      actorMembershipId: accessResult.context.membership.membershipId,
-      idempotencyKey: randomUUID(),
-      initiatedBy: "self_service_profile",
-    });
-
-    if (!activationResult.ok) {
-      return {
-        values,
-        fieldErrors: {},
-        formError: "사업장 정보는 저장했지만 운영 시작 처리를 완료하지 못했습니다. 잠시 후 다시 저장해 주세요.",
-      };
-    }
-  }
-
   revalidatePath("/risk-share/manager");
   revalidatePath("/risk-share/manager/settings/site-profile");
-  redirect(buildRiskShareLangHref("/risk-share/manager", { company: tenantCode }, lang));
+  redirect(buildRiskShareLangHref(
+    "/risk-share/manager/settings/site-profile",
+    { company: tenantCode, saved: "1" },
+    lang,
+  ));
 }

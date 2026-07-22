@@ -55,12 +55,13 @@ const checks = [
     && /raise exception 'tenant activation update invariant failed'/.test(rpc)
     && !/exception\s+when/i.test(rpc)],
   ["application helper calls only the atomic RPC", /\/rest\/v1\/rpc\/activate_tenant_after_profile/.test(helper)
+    && /p_initiated_by: "owner_console"/.test(helper)
+    && !/params\.initiatedBy/.test(helper)
     && !/tenant_registry\?/.test(helper)],
-  ["profile save activates only onboarding with session membership", /tenantResolution\.tenant\.status === "onboarding"/.test(profileAction)
-    && /actorMembershipId: accessResult\.context\.membership\.membershipId/.test(profileAction)
-    && /initiatedBy: "self_service_profile"/.test(profileAction)],
+  ["profile save never activates the tenant", !/activateTenantAfterProfile/.test(profileAction)
+    && !/self_service_profile/.test(profileAction)
+    && /saved: "1"/.test(profileAction)],
   ["Owner direct PATCH is removed", /activateTenantAfterProfile/.test(ownerActions)
-    && /initiatedBy: "owner_console"/.test(ownerActions)
     && !/method: "PATCH"/.test(ownerActions)
     && !/tenant_registry\?/.test(ownerActions)],
 ];

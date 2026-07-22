@@ -3,8 +3,6 @@ import "server-only";
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export type TenantActivationInitiator = "self_service_profile" | "owner_console";
-
 export type TenantActivationResult =
   | { ok: true; status: "activated" | "already_active"; eventId: string | null }
   | {
@@ -49,7 +47,6 @@ export async function activateTenantAfterProfile(params: {
   tenantCode: string;
   actorMembershipId: string;
   idempotencyKey: string;
-  initiatedBy: TenantActivationInitiator;
 }): Promise<TenantActivationResult> {
   const tenantCode = params.tenantCode.trim().toLowerCase();
   const idempotencyKey = params.idempotencyKey.trim();
@@ -82,7 +79,7 @@ export async function activateTenantAfterProfile(params: {
       p_company_code: tenantCode,
       p_actor_membership_id: params.actorMembershipId,
       p_idempotency_key: idempotencyKey,
-      p_initiated_by: params.initiatedBy,
+      p_initiated_by: "owner_console",
     }),
     cache: "no-store",
   }).catch(() => null);
