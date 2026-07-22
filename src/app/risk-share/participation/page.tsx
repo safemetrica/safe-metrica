@@ -5,6 +5,7 @@ import {
   getRiskShareCopy,
   getRiskShareLocale,
 } from "@/lib/risk-share/riskShareI18n";
+import { getRiskSharePreworkChecklistTemplate } from "@/lib/risk-share/riskShareChecklistTemplate";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import {
   resolveActiveRiskSharePublicVersion,
@@ -65,6 +66,8 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
   const copy = getRiskShareCopy(locale).participation;
   const common = getRiskShareCopy(locale).common;
   const modeCopy = copy[mode];
+  const checklistTemplate =
+    mode === "prework" ? getRiskSharePreworkChecklistTemplate(locale) : null;
 
   const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
   const companyLabel = (tenantResolution.ok ? tenantResolution.tenant.name : "") || companyCode || "현장";
@@ -214,6 +217,9 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
               {submitted === "idempotency_conflict" ? (
                 <RiskShareStatusBanner variant="error">{copy.errorBanner}</RiskShareStatusBanner>
               ) : null}
+              {submitted === "form_changed" ? (
+                <RiskShareStatusBanner variant="warning">{copy.errorBanner}</RiskShareStatusBanner>
+              ) : null}
 
               <form action="/api/risk-share/participation/submit" method="post" encType="multipart/form-data">
                 <input type="hidden" name="companyCode" value={companyCode} readOnly />
@@ -327,7 +333,19 @@ export default async function RiskShareParticipationPage({ searchParams }: PageP
                 ) : (
                   <fieldset className="rsx-pub-field-card rsx-pub-form-section mt-3 space-y-2 rounded-[13px] p-3">
                     <legend className="rsx-pub-label px-1 text-sm font-black">{copy.checklistLegend}</legend>
-                    {modeCopy.checklist.map((item, index) => (
+                    <input
+                      type="hidden"
+                      name="checklistTemplateId"
+                      value={checklistTemplate?.templateId ?? ""}
+                      readOnly
+                    />
+                    <input
+                      type="hidden"
+                      name="checklistTemplateVersion"
+                      value={checklistTemplate?.templateVersion ?? ""}
+                      readOnly
+                    />
+                    {(checklistTemplate?.items ?? []).map((item, index) => (
                       <label
                         key={item}
                         className="rsx-pub-checkbox-row flex items-start gap-2 rounded-[13px] p-2.5 text-sm font-bold leading-5"
