@@ -111,6 +111,7 @@ async function updateConfirmationReview(formData: FormData) {
 
   const result = await updateManagerConfirmationReview({
     companyCode,
+    siteId: siteScope.siteId,
     actorMembershipId: access.context.membership.membershipId,
     submissionId,
     expectedStatus,
