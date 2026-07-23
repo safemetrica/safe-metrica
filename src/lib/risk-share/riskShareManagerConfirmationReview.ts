@@ -56,6 +56,7 @@ export async function listManagerConfirmationReviews(companyCode: string, siteId
 
 export async function updateManagerConfirmationReview(input: {
   companyCode: string;
+  siteId: string;
   actorMembershipId: string;
   submissionId: string;
   expectedStatus: ConfirmationReviewStatus;
@@ -64,6 +65,7 @@ export async function updateManagerConfirmationReview(input: {
 }) {
   if (
     !input.companyCode
+    || !UUID_PATTERN.test(input.siteId)
     || !UUID_PATTERN.test(input.actorMembershipId)
     || !UUID_PATTERN.test(input.submissionId)
     || !STATUSES.has(input.expectedStatus)
@@ -75,6 +77,26 @@ export async function updateManagerConfirmationReview(input: {
   ) {
     return { ok: false as const, code: "validation_failed" };
   }
+  const targetQuery = new URLSearchParams({
+    select: "id",
+    id: `eq.${input.submissionId}`,
+    tenant_code: `eq.${input.companyCode}`,
+    "raw_payload->>source": "eq.risk_share_participation_submit_v1",
+    "raw_payload->>mode": "eq.monthly",
+    version_lock_id: "not.is.null",
+    limit: "2",
+  });
+  applyRiskShareDefaultSiteScope(targetQuery, input.siteId);
+
+  const targetRows = await selectSupabaseExportRows<{ id?: unknown }>(
+    "field_participation_submissions",
+    targetQuery,
+  ).catch(() => null);
+  if (!targetRows) return { ok: false as const, code: "request_failed" };
+  if (targetRows.length !== 1 || targetRows[0]?.id !== input.submissionId) {
+    return { ok: false as const, code: "target_scope_mismatch" };
+  }
+
   const url = process.env.SUPABASE_URL?.replace(/\/+$/, "");
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return { ok: false as const, code: "request_failed" };
