@@ -1,7 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { getDefaultTenantSiteConfigByTenantCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
+import {
+  getDefaultTenantSiteConfigByTenantCode,
+  listTenantSitesByTenantCode,
+  selectSupabaseExportRows,
+  type TenantSiteConfig,
+} from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { listManagerConfirmationReviews, updateManagerConfirmationReview, type ConfirmationReviewStatus } from "@/lib/risk-share/riskShareManagerConfirmationReview";
@@ -11,7 +16,10 @@ import { observeInternalTestRiskShareEntitlementShadow } from "@/lib/risk-share/
 import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
-import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import {
+  applyRiskShareDefaultSiteScope,
+  resolveRiskShareSingleSiteScope,
+} from "@/lib/risk-share/riskShareDefaultSiteScope";
 import ManagerDesignerView from "@/components/risk-share/manager/ManagerDesignerView";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +32,30 @@ type PageProps = {
     reviewResult?: string | string[];
   }>;
 };
+
+function ManagerHomeBlocked({
+  code,
+  title,
+  description,
+}: {
+  code: "manager_site_scope_ambiguous" | "manager_site_scope_unavailable";
+  title: string;
+  description: string;
+}) {
+  return (
+    <main
+      className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950"
+      data-error-code={code}
+    >
+      <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <p className="text-xs font-black text-amber-700">SafeMetrica · 안전운영</p>
+        <h1 className="mt-2 text-2xl font-black text-slate-950">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-amber-900">{description}</p>
+        <p className="mt-4 font-mono text-xs text-amber-800">{code}</p>
+      </section>
+    </main>
+  );
+}
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -311,10 +343,8 @@ type TenantSiteProfileSummary = {
   profileComplete: boolean;
 };
 
-async function fetchTenantSiteProfileSummary(companyCode: string): Promise<TenantSiteProfileSummary> {
+function buildTenantSiteProfileSummary(site: TenantSiteConfig | null): TenantSiteProfileSummary {
   try {
-    const site = await getDefaultTenantSiteConfigByTenantCode(companyCode);
-
     if (!site) {
       return { status: "not_configured", siteName: null, siteId: null, profileComplete: false };
     }
@@ -432,7 +462,35 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       ? buildRiskShareLangHref("/risk-share/manager/settings/site-profile", { company: tenantCode }, lang)
       : undefined;
 
-  const siteProfileSummary = await fetchTenantSiteProfileSummary(tenantCode);
+  const siteScope = await Promise.all([
+    getDefaultTenantSiteConfigByTenantCode(tenantCode),
+    listTenantSitesByTenantCode(tenantCode),
+  ]).catch(() => null);
+
+  if (!siteScope) {
+    return (
+      <ManagerHomeBlocked
+        code="manager_site_scope_unavailable"
+        title="관리자 자료의 사업장 범위를 확인할 수 없습니다."
+        description="불완전한 운영자료를 표시하지 않았습니다. 잠시 후 다시 시도해 주세요."
+      />
+    );
+  }
+
+  const [defaultSite, tenantSites] = siteScope;
+  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+
+  if (!singleSiteScope.ok) {
+    return (
+      <ManagerHomeBlocked
+        code="manager_site_scope_ambiguous"
+        title="관리자 자료의 사업장 범위가 명확하지 않습니다."
+        description="사업장 귀속이 잘못된 자료가 섞이지 않도록 관리자 자료 조회를 중단했습니다."
+      />
+    );
+  }
+
+  const siteProfileSummary = buildTenantSiteProfileSummary(defaultSite);
   const participationSummary = await fetchRiskShareParticipationSummary(
     tenantCode,
     getCurrentKstMonthRange(),

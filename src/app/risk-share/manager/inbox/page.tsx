@@ -13,7 +13,11 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
 import { listManagerInboxAuditEvents, listManagerInboxItems, type ManagerInboxType } from "@/lib/risk-share/riskShareManagerInbox";
-import { getDefaultTenantSiteConfigByTenantCode } from "@/lib/supabaseServer";
+import {
+  getDefaultTenantSiteConfigByTenantCode,
+  listTenantSitesByTenantCode,
+} from "@/lib/supabaseServer";
+import { resolveRiskShareSingleSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { updateManagerInboxReview, type ManagerInboxReviewResultCode } from "@/lib/risk-share/riskShareManagerInboxReview";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 
@@ -147,6 +151,30 @@ function priorityRank(item: InboxWorkspaceItem) {
   return { overdue: 0, action: 1, normal: 2, complete: 3 }[item.attention];
 }
 
+function ManagerInboxBlocked({
+  code,
+  title,
+  description,
+}: {
+  code: "manager_inbox_site_scope_ambiguous" | "manager_inbox_site_scope_unavailable";
+  title: string;
+  description: string;
+}) {
+  return (
+    <main
+      className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950"
+      data-error-code={code}
+    >
+      <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <p className="text-xs font-black text-amber-700">SafeMetrica · 안전운영</p>
+        <h1 className="mt-2 text-2xl font-black text-slate-950">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-amber-900">{description}</p>
+        <p className="mt-4 font-mono text-xs text-amber-800">{code}</p>
+      </section>
+    </main>
+  );
+}
+
 export default async function ManagerInboxPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const params = (await searchParams) ?? {};
   const company = one(params.company).trim().toLowerCase();
@@ -168,8 +196,35 @@ export default async function ManagerInboxPage({ searchParams }: { searchParams?
   }
 
   const now = getCurrentTimestamp();
-  const defaultSite = await getDefaultTenantSiteConfigByTenantCode(tenant.tenant.code).catch(() => null);
-  const allItems = await listManagerInboxItems(tenant.tenant.code, defaultSite?.id ?? null);
+  const siteScope = await Promise.all([
+    getDefaultTenantSiteConfigByTenantCode(tenant.tenant.code),
+    listTenantSitesByTenantCode(tenant.tenant.code),
+  ]).catch(() => null);
+
+  if (!siteScope) {
+    return (
+      <ManagerInboxBlocked
+        code="manager_inbox_site_scope_unavailable"
+        title="접수함의 사업장 범위를 확인할 수 없습니다."
+        description="불완전한 접수자료를 표시하지 않았습니다. 잠시 후 다시 시도해 주세요."
+      />
+    );
+  }
+
+  const [defaultSite, tenantSites] = siteScope;
+  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+
+  if (!singleSiteScope.ok) {
+    return (
+      <ManagerInboxBlocked
+        code="manager_inbox_site_scope_ambiguous"
+        title="접수함의 사업장 범위가 명확하지 않습니다."
+        description="사업장 귀속이 잘못된 자료가 섞이지 않도록 접수자료 조회를 중단했습니다."
+      />
+    );
+  }
+
+  const allItems = await listManagerInboxItems(tenant.tenant.code, singleSiteScope.siteId);
   const workspaceItems: InboxWorkspaceItem[] = allItems.map((item) => {
     const attention = resolveAttention(item.status, item.createdAt, now);
     return {
