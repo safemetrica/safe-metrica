@@ -13,13 +13,15 @@ const representative = read("src/lib/riskShareRepresentativeSubmissionRecords.ts
 const checks = [
   ["site-bound rows plus legacy NULL continuity", scope.includes("site_id.eq.${siteId},site_id.is.null")],
   ["missing default site is legacy-only", scope.includes('query.set("site_id", "is.null")')],
-  ["manager resolves default site before summaries", manager.indexOf("fetchTenantSiteProfileSummary(tenantCode)") < manager.lastIndexOf("fetchRiskShareParticipationSummary(")],
+  ["manager resolves canonical site scope before summaries", manager.includes("listTenantSitesByTenantCode(tenantCode)") && manager.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && manager.includes("const siteProfileSummary = buildTenantSiteProfileSummary(defaultSite)") && manager.indexOf("const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") < manager.lastIndexOf("fetchRiskShareParticipationSummary(")],
+  ["manager fails closed when canonical site scope is unavailable or ambiguous", manager.includes('"manager_site_scope_unavailable"') && manager.includes('"manager_site_scope_ambiguous"')],
   ["manager summary queries apply site scope", (manager.match(/applyRiskShareDefaultSiteScope\(query, siteId\)/g) ?? []).length === 3],
   ["monthly resolves canonical default site", monthly.includes("getDefaultTenantSiteConfigByTenantCode(tenantCode)") && monthly.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && monthly.includes("const siteId = singleSiteScope.siteId")],
   ["monthly summary queries apply site scope", (monthly.match(/applyRiskShareDefaultSiteScope\(query, siteId\)/g) ?? []).length === 3],
   ["representative summary applies site scope", representative.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
   ["confirmation review applies site scope", reviews.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
-  ["manager inbox resolves and applies site scope", inboxPage.includes("getDefaultTenantSiteConfigByTenantCode(tenant.tenant.code)") && inboxPage.includes("defaultSite?.id ?? null") && inbox.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
+  ["manager inbox resolves and applies canonical site scope", inboxPage.includes("listTenantSitesByTenantCode(tenant.tenant.code)") && inboxPage.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && inboxPage.includes("singleSiteScope.siteId") && inbox.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
+  ["manager inbox fails closed when canonical site scope is unavailable or ambiguous", inboxPage.includes('"manager_inbox_site_scope_unavailable"') && inboxPage.includes('"manager_inbox_site_scope_ambiguous"')],
 ];
 
 for (const [name, ok] of checks) console.log(`${ok ? "PASS" : "FAIL"} ${name}`);
