@@ -84,6 +84,7 @@ export async function updateManagerConfirmationReview(input: {
     "raw_payload->>source": "eq.risk_share_participation_submit_v1",
     "raw_payload->>mode": "eq.monthly",
     version_lock_id: "not.is.null",
+    manager_review_status: `eq.${input.expectedStatus}`,
     limit: "2",
   });
   applyRiskShareDefaultSiteScope(targetQuery, input.siteId);
