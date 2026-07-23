@@ -6,6 +6,8 @@ const scope = read("src/lib/risk-share/riskShareDefaultSiteScope.ts");
 const manager = read("src/app/risk-share/manager/page.tsx");
 const monthly = read("src/app/risk-share/monthly/page.tsx");
 const inboxPage = read("src/app/risk-share/manager/inbox/page.tsx");
+const siteProfilePage = read("src/app/risk-share/manager/settings/site-profile/page.tsx");
+const siteProfileAction = read("src/app/risk-share/manager/settings/site-profile/actions.ts");
 const inbox = read("src/lib/risk-share/riskShareManagerInbox.ts");
 const reviews = read("src/lib/risk-share/riskShareManagerConfirmationReview.ts");
 const representative = read("src/lib/riskShareRepresentativeSubmissionRecords.ts");
@@ -22,6 +24,10 @@ const checks = [
   ["confirmation review applies site scope", reviews.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
   ["manager inbox resolves and applies canonical site scope", inboxPage.includes("listTenantSitesByTenantCode(tenant.tenant.code)") && inboxPage.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && inboxPage.includes("singleSiteScope.siteId") && inbox.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
   ["manager inbox fails closed when canonical site scope is unavailable or ambiguous", inboxPage.includes('"manager_inbox_site_scope_unavailable"') && inboxPage.includes('"manager_inbox_site_scope_ambiguous"')],
+  ["site profile read resolves canonical site scope", siteProfilePage.includes("listTenantSitesByTenantCode(tenantCode)") && siteProfilePage.includes("resolveRiskShareSingleSiteScope(site, tenantSites)")],
+  ["site profile read fails closed on ambiguous site scope", siteProfilePage.includes('reason: "ambiguous"') && siteProfilePage.includes("기본 사업장 설정이 일치하지 않아")],
+  ["site profile write resolves canonical scope before create, update, and retry", (siteProfileAction.match(/resolveRiskShareSingleSiteScope\(/g) ?? []).length === 2 && (siteProfileAction.match(/listTenantSitesByTenantCode\(tenantCode\)/g) ?? []).length === 2],
+  ["site profile create is followed by canonical re-read", siteProfileAction.indexOf("createTenantDefaultSite") < siteProfileAction.lastIndexOf("resolveCanonicalSite()")],
 ];
 
 for (const [name, ok] of checks) console.log(`${ok ? "PASS" : "FAIL"} ${name}`);

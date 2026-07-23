@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { getDefaultTenantSiteConfigByTenantCode } from "@/lib/supabaseServer";
+import {
+  getDefaultTenantSiteConfigByTenantCode,
+  listTenantSitesByTenantCode,
+} from "@/lib/supabaseServer";
+import { resolveRiskShareSingleSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
 import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
@@ -133,9 +137,17 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
   }
 
   const tenantCode = tenantAccessResult.context.membership.tenantCode;
-  const siteResult = await getDefaultTenantSiteConfigByTenantCode(tenantCode)
-    .then((site) => ({ ok: true as const, site }))
-    .catch(() => ({ ok: false as const }));
+  const siteResult = await Promise.all([
+    getDefaultTenantSiteConfigByTenantCode(tenantCode),
+    listTenantSitesByTenantCode(tenantCode),
+  ])
+    .then(([site, tenantSites]) => {
+      const singleSiteScope = resolveRiskShareSingleSiteScope(site, tenantSites);
+      return singleSiteScope.ok
+        ? { ok: true as const, site }
+        : { ok: false as const, reason: "ambiguous" as const };
+    })
+    .catch(() => ({ ok: false as const, reason: "request_failed" as const }));
 
   if (!siteResult.ok) {
     return (
@@ -145,7 +157,9 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
                 <p className="eyebrow">SafeMetrica · 안전운영</p>
                 <h1>사업장 운영정보</h1>
                 <p className="muted" style={{ marginTop: "10px" }}>
-                  사업장 운영정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+                  {siteResult.reason === "ambiguous"
+                    ? "기본 사업장 설정이 일치하지 않아 운영정보를 열 수 없습니다. SafeMetrica 운영자에게 문의해 주세요."
+                    : "사업장 운영정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
                 </p>
                 <p style={{ marginTop: "18px" }}>
                   <a className="btn btn--ghost" href={buildRiskShareLangHref("/risk-share/manager", { company: tenantCode }, lang)}>
