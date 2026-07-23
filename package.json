@@ -42,14 +42,12 @@
     "smoke:legacy-routes": "bash scripts/smoke-legacy-routes.sh",
     "verify:risk-share-version-integrity": "node scripts/verify-risk-share-version-integrity-contract.mjs",
     "verify:risk-share-site-binding-integrity": "node scripts/verify-risk-share-site-binding-integrity.mjs",
-    "verify:risk-share-source-intake-canonical-site-scope": "node scripts/verify-risk-share-source-intake-canonical-site-scope.mjs",
-    "verify:risk-share-source-preview-mapping-canonical-site-scope": "node scripts/verify-risk-share-source-preview-mapping-canonical-site-scope.mjs",
     "verify:risk-share-preparation-canonical-site-scope": "node scripts/verify-risk-share-preparation-canonical-site-scope.mjs",
+    "verify:risk-share-review-canonical-site-scope": "node scripts/verify-risk-share-review-canonical-site-scope.mjs",
     "verify:risk-share-checklist-template-snapshot": "node scripts/verify-risk-share-checklist-template-snapshot.mjs",
     "verify:risk-share-checklist-submission-behavior": "node scripts/verify-risk-share-checklist-submission-behavior.mjs",
     "verify:risk-share-version-lifecycle-inspect": "node scripts/verify-risk-share-version-lifecycle-inspect.mjs",
     "verify:risk-share-manager-confirmation-review": "node scripts/verify-risk-share-manager-confirmation-review-contract.mjs",
-    "verify:risk-share-monthly-evidence-multi-site-gate": "node scripts/verify-risk-share-monthly-evidence-multi-site-gate.mjs",
     "verify:risk-share-manager-inbox-review-rpc": "node scripts/verify-risk-share-manager-inbox-review-rpc-contract.mjs",
     "verify:self-service-signup": "node scripts/verify-self-service-signup-contract.mjs",
     "verify:self-service-onboarding-manager-access": "node scripts/verify-self-service-onboarding-manager-access.mjs",
@@ -70,10 +68,7 @@
     "verify:risk-share-manager-inbox-actions": "node scripts/verify-risk-share-manager-inbox-actions-contract.mjs",
     "verify:manager-inbox-customer-workspace-preview": "node scripts/verify-manager-inbox-customer-workspace-preview.mjs",
     "verify:risk-share-entitlement-enforcement-readiness-audit": "node scripts/verify-risk-share-entitlement-enforcement-readiness-audit.mjs",
-    "verify:synthetic-tenant-production-e2e-fixture": "node scripts/verify-synthetic-tenant-production-e2e-fixture-contract.mjs",
-    "verify:risk-share-entitlement-rollback-rehearsal": "node scripts/verify-risk-share-entitlement-rollback-rehearsal-contract.mjs",
-    "verify:risk-share-default-site-read-scope": "node scripts/verify-risk-share-default-site-read-scope.mjs",
-    "verify:risk-share-customer-export-site-scope": "node scripts/verify-risk-share-customer-export-site-scope.mjs"
+    "verify:synthetic-tenant-production-e2e-fixture": "node scripts/verify-synthetic-tenant-production-e2e-fixture-contract.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
