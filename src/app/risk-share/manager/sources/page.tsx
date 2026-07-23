@@ -5,6 +5,7 @@ import {
   listRiskShareSourcesForTenant,
   type RiskShareSourceRegistryEntry,
 } from "@/lib/risk-share/riskShareSourceRegistry";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
@@ -41,6 +42,7 @@ const uploadActionErrorMessages: Record<string, string> = {
   upload_failed: "파일 저장 중 오류가 발생했습니다.",
   source_insert_failed: "원본 메타데이터 저장에 실패했습니다.",
   access_denied: "이 회사의 원본 등록 권한이 확인되지 않았습니다.",
+  site_scope_unavailable: "기본 사업장 설정이 일치하지 않아 원본 등록을 중단했습니다.",
 };
 
 const REGISTRY_STATUS_LABELS: Record<string, string> = {
@@ -169,6 +171,27 @@ export default async function RiskShareManagerSourcesPage({
           </h1>
           <p className="mt-3 text-sm leading-6 text-amber-900">
             운영 담당자에게 문의해 주세요.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950">
+        <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+          <p className="text-xs font-black text-amber-700">SafeMetrica · 안전운영</p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950">
+            기본 사업장 설정을 확인할 수 없습니다.
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-amber-900">
+            원본 자료가 다른 사업장과 섞이지 않도록 조회와 등록을 중단했습니다. 운영 담당자에게 문의해 주세요.
           </p>
         </section>
       </main>

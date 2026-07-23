@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { uploadRiskShareSource } from "@/lib/risk-share/riskShareSourceUpload";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
@@ -64,6 +65,17 @@ export async function POST(request: NextRequest) {
     (role !== "tenant_admin" && role !== "tenant_manager")
   ) {
     return buildRedirect(request, tenantCode, lang, { actionError: "access_denied" });
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    return buildRedirect(request, selectedTenantCode, lang, {
+      actionError: "site_scope_unavailable",
+    });
   }
 
   const oidcToken = request.headers.get("x-vercel-oidc-token")?.trim() ?? "";
