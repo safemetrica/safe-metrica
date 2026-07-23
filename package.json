@@ -65,7 +65,8 @@
     "verify:risk-share-manager-inbox-foundation": "node scripts/verify-risk-share-manager-inbox-foundation-contract.mjs",
     "verify:risk-share-manager-inbox-actions": "node scripts/verify-risk-share-manager-inbox-actions-contract.mjs",
     "verify:manager-inbox-customer-workspace-preview": "node scripts/verify-manager-inbox-customer-workspace-preview.mjs",
-    "verify:risk-share-entitlement-enforcement-readiness-audit": "node scripts/verify-risk-share-entitlement-enforcement-readiness-audit.mjs"
+    "verify:risk-share-entitlement-enforcement-readiness-audit": "node scripts/verify-risk-share-entitlement-enforcement-readiness-audit.mjs",
+    "verify:synthetic-tenant-production-e2e-fixture": "node scripts/verify-synthetic-tenant-production-e2e-fixture-contract.mjs"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
