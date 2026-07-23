@@ -1,5 +1,7 @@
 import { del, put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 
@@ -70,6 +72,7 @@ function getSupabaseEnv() {
 async function insertRiskShareSourceRecord(record: {
   company_code: string;
   company_name: string | null;
+  site_id: string;
   site_name: string | null;
   source_title: string;
   source_type: string;
@@ -162,6 +165,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "site_scope_unavailable",
+        message: "고객사의 canonical site를 확인할 수 없습니다.",
+      },
+      { status: 409 },
+    );
+  }
+
   if (!sourceTitle) {
     return NextResponse.json(
       {
@@ -208,7 +230,7 @@ export async function POST(req: NextRequest) {
 
   const today = new Date().toISOString().slice(0, 10);
   const safeFileName = sanitizeFileName(sourceFile.name || "risk-share-source");
-  const blobPath = `risk-share-sources/${companyCode}/${today}/${Date.now()}-${safeFileName}`;
+  const blobPath = `risk-share-sources/${tenant.code}/${today}/${Date.now()}-${safeFileName}`;
 
   let blob: Awaited<ReturnType<typeof put>>;
 
@@ -231,8 +253,9 @@ export async function POST(req: NextRequest) {
   }
 
   const insertResult = await insertRiskShareSourceRecord({
-    company_code: companyCode,
+    company_code: tenant.code,
     company_name: companyName || null,
+    site_id: siteScope.siteId,
     site_name: siteName || null,
     source_title: sourceTitle,
     source_type: sourceType,
@@ -280,7 +303,7 @@ export async function POST(req: NextRequest) {
     status: "source_received",
     message: "Risk Share source 파일이 접수되었습니다. AI 추출 대기 상태로 전환합니다.",
     source: {
-      companyCode,
+      companyCode: tenant.code,
       companyName,
       siteName,
       sourceTitle,
