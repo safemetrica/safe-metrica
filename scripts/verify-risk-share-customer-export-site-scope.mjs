@@ -25,6 +25,22 @@ const checks = [
       && route.includes("const defaultSiteId = defaultSite?.id ?? null"),
   ],
   [
+    "canonical active tenant_sites count blocks Core export for multi-site tenants",
+    route.includes("listTenantSitesByTenantCode(companyKey)")
+      && route.includes('tenantSites.filter((site) => site.status === "active").length > 1')
+      && route.includes('"multi_site_export_blocked"'),
+  ],
+  [
+    "legacy evidence manifest keeps TBM continuity",
+    route.includes('const needsTbmRows = dataset === "tbm_records" || dataset === "evidence_manifest";')
+      && route.includes("buildEvidenceManifestRows(evidenceRows, fieldRows, tbmRows, startDate)"),
+  ],
+  [
+    "mixed evidence manifest is not labelled as Core evidence",
+    !route.includes('"core_evidence_manifest"')
+      && route.includes('dataset === "evidence_manifest"'),
+  ],
+  [
     "default-site lookup is limited to Core site-bound datasets",
     route.includes(
       "const needsDefaultSiteScope =\n    needsFieldRows || needsEvidenceRows || needsLockedShareItems;",

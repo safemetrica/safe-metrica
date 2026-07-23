@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import {
   getDefaultTenantSiteConfigByTenantCode,
+  listTenantSitesByTenantCode,
   selectSupabaseExportRows,
   SupabaseReadError,
 } from "@/lib/supabaseServer";
@@ -1059,7 +1060,18 @@ export async function GET(request: NextRequest) {
   > = null;
   if (needsDefaultSiteScope) {
     try {
-      defaultSite = await getDefaultTenantSiteConfigByTenantCode(companyKey);
+      const [resolvedDefaultSite, tenantSites] = await Promise.all([
+        getDefaultTenantSiteConfigByTenantCode(companyKey),
+        listTenantSitesByTenantCode(companyKey),
+      ]);
+      defaultSite = resolvedDefaultSite;
+      if (tenantSites.filter((site) => site.status === "active").length > 1) {
+        return errorResponse(
+          409,
+          "multi_site_export_blocked",
+          "Core site-scoped export is blocked until NULL site policy is resolved.",
+        );
+      }
     } catch {
       return errorResponse(
         503,
