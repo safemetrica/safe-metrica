@@ -6,6 +6,7 @@ import {
   selectSupabaseExportRows,
   SupabaseReadError,
 } from "@/lib/supabaseServer";
+import { resolveRiskShareSingleSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 
 type ExportRow = Record<string, unknown>;
 
@@ -1055,23 +1056,25 @@ export async function GET(request: NextRequest) {
   const needsLockedShareItems = dataset === "locked_share_items";
   const needsDefaultSiteScope =
     needsFieldRows || needsEvidenceRows || needsLockedShareItems;
-  let defaultSite: Awaited<
-    ReturnType<typeof getDefaultTenantSiteConfigByTenantCode>
-  > = null;
+  let defaultSiteId: string | null = null;
   if (needsDefaultSiteScope) {
     try {
       const [resolvedDefaultSite, tenantSites] = await Promise.all([
         getDefaultTenantSiteConfigByTenantCode(companyKey),
         listTenantSitesByTenantCode(companyKey),
       ]);
-      defaultSite = resolvedDefaultSite;
-      if (tenantSites.filter((site) => site.status === "active").length > 1) {
+      const singleSiteScope = resolveRiskShareSingleSiteScope(
+        resolvedDefaultSite,
+        tenantSites,
+      );
+      if (!singleSiteScope.ok) {
         return errorResponse(
           409,
           "multi_site_export_blocked",
-          "Core site-scoped export is blocked until NULL site policy is resolved.",
+          "Core site-scoped export is blocked because its canonical site scope is ambiguous.",
         );
       }
+      defaultSiteId = singleSiteScope.siteId;
     } catch {
       return errorResponse(
         503,
@@ -1080,7 +1083,6 @@ export async function GET(request: NextRequest) {
       );
     }
   }
-  const defaultSiteId = defaultSite?.id ?? null;
   const fieldPeriodFilter = buildPeriodFilter(
     "created_at",
     "reported_date",

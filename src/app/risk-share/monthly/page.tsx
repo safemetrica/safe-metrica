@@ -5,7 +5,10 @@ import {
   listTenantSitesByTenantCode,
   selectSupabaseExportRows,
 } from "@/lib/supabaseServer";
-import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import {
+  applyRiskShareDefaultSiteScope,
+  resolveRiskShareSingleSiteScope,
+} from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
@@ -388,19 +391,19 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   }
 
   const [defaultSite, tenantSites] = siteScope;
-  const activeSiteCount = tenantSites.filter((site) => site.status === "active").length;
+  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
 
-  if (activeSiteCount > 1) {
+  if (!singleSiteScope.ok) {
     return (
       <MonthlyEvidenceBlocked
         code="multi_site_monthly_evidence_blocked"
-        title="다중사업장 월간 Evidence는 아직 제공되지 않습니다."
-        description="사업장 귀속이 불명확한 기존 기록이 섞이지 않도록 월간 자료 생성을 중단했습니다."
+        title="월간 Evidence의 사업장 범위가 명확하지 않습니다."
+        description="사업장 귀속이 잘못된 자료가 섞이지 않도록 월간 자료 생성을 중단했습니다."
       />
     );
   }
 
-  const siteId = defaultSite?.id ?? null;
+  const siteId = singleSiteScope.siteId;
   const participationSummary = await fetchRiskShareMonthlyParticipationSummary(tenantCode, period, siteId);
   const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(tenantCode, period, siteId);
   const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(tenantCode, period, siteId);
