@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import {
   getDefaultTenantSiteConfigByTenantCode,
+  getTenantRegistryConfigByCode,
   listTenantSitesByTenantCode,
   selectSupabaseExportRows,
   SupabaseReadError,
@@ -1059,13 +1060,22 @@ export async function GET(request: NextRequest) {
   let defaultSiteId: string | null = null;
   if (needsDefaultSiteScope) {
     try {
-      const [resolvedDefaultSite, tenantSites] = await Promise.all([
+      const [resolvedDefaultSite, tenantSites, tenantRegistry] = await Promise.all([
         getDefaultTenantSiteConfigByTenantCode(companyKey),
         listTenantSitesByTenantCode(companyKey),
+        getTenantRegistryConfigByCode(companyKey),
       ]);
+      if (!tenantRegistry) {
+        return errorResponse(
+          409,
+          "site_scope_registry_missing",
+          "Core site-scoped export is blocked because its tenant registry is missing.",
+        );
+      }
       const singleSiteScope = resolveRiskShareSingleSiteScope(
         resolvedDefaultSite,
         tenantSites,
+        tenantRegistry.defaultSiteId,
       );
       if (!singleSiteScope.ok) {
         return errorResponse(

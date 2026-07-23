@@ -285,7 +285,11 @@ export async function activateOwnerTenant(
     return { ok: false, reason: "missing_server_config" };
   }
 
-  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+  const singleSiteScope = resolveRiskShareSingleSiteScope(
+    defaultSite,
+    tenantSites,
+    tenant.defaultSiteId,
+  );
 
   if (
     !singleSiteScope.ok ||

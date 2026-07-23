@@ -212,7 +212,11 @@ export default async function ManagerInboxPage({ searchParams }: { searchParams?
   }
 
   const [defaultSite, tenantSites] = siteScope;
-  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+  const singleSiteScope = resolveRiskShareSingleSiteScope(
+    defaultSite,
+    tenantSites,
+    tenant.tenant.defaultSiteId,
+  );
 
   if (!singleSiteScope.ok) {
     return (

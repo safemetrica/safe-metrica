@@ -44,10 +44,10 @@ const checks = [
     && /p_initiated_by: "owner_console"/.test(activationHelper)
     && !/params\.initiatedBy/.test(activationHelper)],
   ["Owner activation requires canonical single-site scope", /listTenantSitesByTenantCode/.test(ownerActions)
-    && /resolveRiskShareSingleSiteScope\(defaultSite, tenantSites\)/.test(ownerActions)
+    && /resolveRiskShareSingleSiteScope\([\s\S]*tenant\.defaultSiteId/.test(ownerActions)
     && /!singleSiteScope\.ok/.test(ownerActions)
     && /!singleSiteScope\.siteId/.test(ownerActions)
-    && ownerActions.indexOf("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)")
+    && ownerActions.indexOf("resolveRiskShareSingleSiteScope(")
       < ownerActions.indexOf("activateTenantAfterProfile({")],
   ["activation audit identifies tenant actor type and time", /tenant_code text not null/.test(migration)
     && /initiated_by text not null/.test(migration)

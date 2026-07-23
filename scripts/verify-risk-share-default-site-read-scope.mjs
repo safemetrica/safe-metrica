@@ -15,19 +15,20 @@ const representative = read("src/lib/riskShareRepresentativeSubmissionRecords.ts
 const checks = [
   ["site-bound rows plus legacy NULL continuity", scope.includes("site_id.eq.${siteId},site_id.is.null")],
   ["missing default site is legacy-only", scope.includes('query.set("site_id", "is.null")')],
-  ["manager resolves canonical site scope before summaries", manager.includes("listTenantSitesByTenantCode(tenantCode)") && manager.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && manager.includes("const siteProfileSummary = buildTenantSiteProfileSummary(defaultSite)") && manager.indexOf("const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") < manager.lastIndexOf("fetchRiskShareParticipationSummary(")],
+  ["manager resolves canonical site scope before summaries", manager.includes("listTenantSitesByTenantCode(tenantCode)") && manager.includes("tenantResolution.tenant.defaultSiteId") && manager.includes("const siteProfileSummary = buildTenantSiteProfileSummary(defaultSite)") && manager.indexOf("const singleSiteScope = resolveRiskShareSingleSiteScope(") < manager.lastIndexOf("fetchRiskShareParticipationSummary(")],
   ["manager fails closed when canonical site scope is unavailable or ambiguous", manager.includes('"manager_site_scope_unavailable"') && manager.includes('"manager_site_scope_ambiguous"')],
   ["manager summary queries apply site scope", (manager.match(/applyRiskShareDefaultSiteScope\(query, siteId\)/g) ?? []).length === 3],
-  ["monthly resolves canonical default site", monthly.includes("getDefaultTenantSiteConfigByTenantCode(tenantCode)") && monthly.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && monthly.includes("const siteId = singleSiteScope.siteId")],
+  ["monthly resolves canonical default site", monthly.includes("getDefaultTenantSiteConfigByTenantCode(tenantCode)") && monthly.includes("tenantResolution.tenant.defaultSiteId") && monthly.includes("const siteId = singleSiteScope.siteId")],
   ["monthly summary queries apply site scope", (monthly.match(/applyRiskShareDefaultSiteScope\(query, siteId\)/g) ?? []).length === 3],
   ["representative summary applies site scope", representative.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
   ["confirmation review applies site scope", reviews.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
-  ["manager inbox resolves and applies canonical site scope", inboxPage.includes("listTenantSitesByTenantCode(tenant.tenant.code)") && inboxPage.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && inboxPage.includes("singleSiteScope.siteId") && inbox.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
+  ["manager inbox resolves and applies canonical site scope", inboxPage.includes("listTenantSitesByTenantCode(tenant.tenant.code)") && inboxPage.includes("tenant.tenant.defaultSiteId") && inboxPage.includes("singleSiteScope.siteId") && inbox.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
   ["manager inbox fails closed when canonical site scope is unavailable or ambiguous", inboxPage.includes('"manager_inbox_site_scope_unavailable"') && inboxPage.includes('"manager_inbox_site_scope_ambiguous"')],
-  ["site profile read resolves canonical site scope", siteProfilePage.includes("listTenantSitesByTenantCode(tenantCode)") && siteProfilePage.includes("resolveRiskShareSingleSiteScope(site, tenantSites)")],
+  ["site profile read resolves canonical site scope", siteProfilePage.includes("listTenantSitesByTenantCode(tenantCode)") && siteProfilePage.includes("tenantResolution.tenant.defaultSiteId")],
   ["site profile read fails closed on ambiguous site scope", siteProfilePage.includes('reason: "ambiguous"') && siteProfilePage.includes("기본 사업장 설정이 일치하지 않아")],
   ["site profile write resolves canonical scope before create, update, and retry", (siteProfileAction.match(/resolveRiskShareSingleSiteScope\(/g) ?? []).length === 2 && (siteProfileAction.match(/listTenantSitesByTenantCode\(tenantCode\)/g) ?? []).length === 2],
   ["site profile create is followed by canonical re-read", siteProfileAction.indexOf("createTenantDefaultSite") < siteProfileAction.lastIndexOf("resolveCanonicalSite()")],
+  ["site profile create and retry re-read the registry pointer", (siteProfileAction.match(/getTenantRegistryConfigByCode\(tenantCode\)/g) ?? []).length === 2 && siteProfileAction.includes("tenantRegistry.defaultSiteId")],
 ];
 
 for (const [name, ok] of checks) console.log(`${ok ? "PASS" : "FAIL"} ${name}`);

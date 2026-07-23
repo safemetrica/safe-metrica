@@ -391,7 +391,11 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   }
 
   const [defaultSite, tenantSites] = siteScope;
-  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+  const singleSiteScope = resolveRiskShareSingleSiteScope(
+    defaultSite,
+    tenantSites,
+    tenantResolution.tenant.defaultSiteId,
+  );
 
   if (!singleSiteScope.ok) {
     return (

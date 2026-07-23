@@ -26,6 +26,8 @@ const checks = [
   [
     "Core export resolves canonical default site server-side",
     route.includes("getDefaultTenantSiteConfigByTenantCode(companyKey)")
+      && route.includes("getTenantRegistryConfigByCode(companyKey)")
+      && route.includes("tenantRegistry.defaultSiteId")
       && route.includes("defaultSiteId = singleSiteScope.siteId"),
   ],
   [
@@ -39,6 +41,7 @@ const checks = [
     scope.includes('"active_site_without_matching_default"')
       && scope.includes('"archived_default_site"')
       && scope.includes('"multiple_default_sites"')
+      && scope.includes('"registry_default_site_mismatch"')
       && scope.includes("defaultSite.id !== activeSites[0].id"),
   ],
   [
