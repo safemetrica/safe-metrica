@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import {
+  getTenantRegistryConfigByCode,
+  selectSupabaseExportRows,
+} from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,6 +37,7 @@ type VersionLockRow = {
   lock_status?: string | null;
   locked_by?: string | null;
   notes?: string | null;
+  site_id?: string | null;
 };
 
 type VersionLockResult = {
@@ -174,7 +180,11 @@ function getCheckStatus(params: Record<string, string | string[] | undefined>, k
   return isChecked(readParam(params, key));
 }
 
-async function fetchVersionLockResult(versionLockId: string, companyCode: string): Promise<VersionLockResult> {
+async function fetchVersionLockResult(
+  versionLockId: string,
+  companyCode: string,
+  siteId: string,
+): Promise<VersionLockResult> {
   if (!versionLockId || !companyCode || !isUuid(versionLockId)) {
     return {
       status: "idle",
@@ -184,11 +194,12 @@ async function fetchVersionLockResult(versionLockId: string, companyCode: string
 
   const query = new URLSearchParams({
     select:
-      "id,created_at,company_code,company_name,site_name,source_title,lock_title,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status,locked_by,notes",
+      "id,created_at,company_code,company_name,site_name,source_title,lock_title,lock_month,item_count,customer_confirmed_count,worker_visible_count,lock_status,locked_by,notes,site_id",
     id: `eq.${versionLockId}`,
     company_code: `eq.${companyCode}`,
     limit: "1",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<VersionLockRow>("risk_share_version_locks", query);
@@ -244,7 +255,25 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
   const versionLocked = readParam(params, "versionLocked") === "1";
   const versionLockId = cleanText(readParam(params, "versionLockId"), 80);
   const errorCode = cleanText(readParam(params, "error"), 80);
-  const versionLockResult = await fetchVersionLockResult(versionLockId, companyCode);
+  const tenant = companyCode
+    ? await getTenantRegistryConfigByCode(companyCode).catch(() => null)
+    : null;
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+  const canonicalCompanyCode = tenant?.code ?? companyCode;
+  const versionLockResult = versionLockId && siteScope.ok
+    ? await fetchVersionLockResult(
+        versionLockId,
+        canonicalCompanyCode,
+        siteScope.siteId,
+      )
+    : versionLockId
+      ? { status: "failed" as const, lock: null }
+      : { status: "idle" as const, lock: null };
 
   // versionLocked=1 in the URL is a client-controlled hint only. The success
   // headline/badge below only render once the lock row is actually confirmed
@@ -255,7 +284,7 @@ export default async function RiskShareVersionLockPage({ searchParams }: PagePro
     isUuid(versionLockId) &&
     versionLockResult.status === "ok" &&
     versionLockResult.lock !== null &&
-    versionLockResult.lock.company_code === companyCode;
+    versionLockResult.lock.company_code === canonicalCompanyCode;
 
   const requiredChecks = LOCK_CHECKS.filter((item) => item.required);
   const completedRequiredCount = requiredChecks.filter((item) => getCheckStatus(params, item.key)).length;
