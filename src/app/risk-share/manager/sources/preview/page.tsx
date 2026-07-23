@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
 import { readRiskShareSourceHeaderPreview } from "@/lib/risk-share/riskShareSourceHeaderPreview";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
@@ -129,6 +130,20 @@ export default async function RiskShareManagerSourcePreviewPage({
     (role !== "tenant_admin" && role !== "tenant_manager")
   ) {
     return <AccessDeniedScreen />;
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    return (
+      <ErrorScreen
+        sourcesHref={sourcesHref}
+        message="기본 사업장 설정이 일치하지 않아 원본 미리보기를 중단했습니다."
+      />
+    );
   }
 
   const descriptorResult = await readRiskShareSourcePrivateDescriptor(selectedTenantCode, sourceId);

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import {
   readRiskShareSourceColumnMappingSourceState,
   readLatestRiskShareSourceColumnMappingVersion,
@@ -164,6 +165,20 @@ export default async function RiskShareManagerSourceColumnMappingPage({
     (role !== "tenant_admin" && role !== "tenant_manager")
   ) {
     return <AccessDeniedScreen />;
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    return (
+      <ErrorScreen
+        sourcesHref={sourcesHref}
+        message="기본 사업장 설정이 일치하지 않아 열 매핑을 중단했습니다."
+      />
+    );
   }
 
   const descriptorResult = await readRiskShareSourcePrivateDescriptor(selectedTenantCode, sourceId);
