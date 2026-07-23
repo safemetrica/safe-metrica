@@ -3,7 +3,8 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { readRiskShareSourcePrivateDescriptorForTenant } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import {
   readRiskShareSourceColumnMappingSourceState,
   readLatestRiskShareSourceColumnMappingVersion,
@@ -15,6 +16,7 @@ import RiskShareSourceColumnMappingForm, {
   type RiskShareSourceColumnMappingFormColumn,
 } from "@/components/risk-share/source/RiskShareSourceColumnMappingForm";
 import { hasRiskShareCandidatesForConfirmedMapping } from "@/lib/risk-share/riskShareSourceCandidateImport";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -89,6 +91,7 @@ const SAVE_ACTION_ERROR_MESSAGES: Record<string, string> = {
   source_row_limit_exceeded: "원본 데이터 행이 처리 가능한 범위를 초과합니다.",
   no_candidate_rows: "검토 후보로 만들 수 있는 행이 없습니다. 위험요인 열의 값을 확인해 주세요.",
   candidate_import_failed: "검토 후보 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  site_scope_unavailable: "사업장 범위를 확인할 수 없습니다. 사업장 설정을 확인해 주세요.",
 };
 
 function ErrorScreen({ companyCode, message }: { companyCode: string; message: string }) {
@@ -153,7 +156,28 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
     redirect("/login?error=owner_required");
   }
 
-  const descriptorResult = await readRiskShareSourcePrivateDescriptor(companyCode, sourceId);
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return (
+      <ErrorScreen
+        companyCode={companyCode}
+        message="사업장 범위를 확인할 수 없습니다. 사업장 설정을 확인해 주세요."
+      />
+    );
+  }
+
+  const descriptorResult = await readRiskShareSourcePrivateDescriptorForTenant(
+    tenant.code,
+    sourceId,
+    siteScope.siteId,
+  );
 
   if (!descriptorResult.ok) {
     return (
@@ -262,8 +286,9 @@ export default async function OwnerRiskShareSourceColumnMappingPage({
   const candidateImportVerified =
     candidateImportRequested && canCreateCandidates && appliedStatus
       ? await hasRiskShareCandidatesForConfirmedMapping({
-          companyCode,
+          companyCode: tenant.code,
           sourceId,
+          siteId: siteScope.siteId,
           mappingVersion: appliedStatus.version,
           sheetIndex: selectedSheetIndex,
         })

@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { importRiskShareCandidatesFromConfirmedSourceMapping } from "@/lib/risk-share/riskShareSourceCandidateImport";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -58,9 +60,24 @@ export async function POST(request: NextRequest) {
 
   const fallback = { companyCode, sourceId, sheet: sheetIndex, headerRow: headerRowIndex };
 
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return buildRedirect(request, fallback, {
+      actionError: "site_scope_unavailable",
+    });
+  }
+
   const importResult = await importRiskShareCandidatesFromConfirmedSourceMapping({
-    companyCode,
+    companyCode: tenant.code,
     sourceId,
+    siteId: siteScope.siteId,
     oidcToken,
     sheetIndex,
     importActor: "owner_console",
