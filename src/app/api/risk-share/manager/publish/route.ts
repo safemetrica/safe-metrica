@@ -68,7 +68,11 @@ type ValidatedRequestBody = {
   idempotencyKey: string;
 };
 
-function jsonError(status: number, code: PublishRiskShareVersionCode) {
+type PublishRiskShareApiCode =
+  | PublishRiskShareVersionCode
+  | "site_scope_unavailable";
+
+function jsonError(status: number, code: PublishRiskShareApiCode) {
   return NextResponse.json(
     { ok: false, code, replayed: false },
     { status },

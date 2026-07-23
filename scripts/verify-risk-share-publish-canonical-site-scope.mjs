@@ -36,6 +36,14 @@ const checks = [
       && route.includes('jsonError(403, "site_scope_unavailable")'),
   ],
   [
+    "Publish API exposes site scope failure without changing RPC result codes",
+    route.includes('type PublishRiskShareApiCode =')
+      && route.includes('| "site_scope_unavailable";')
+      && route.includes(
+        'function jsonError(status: number, code: PublishRiskShareApiCode)',
+      ),
+  ],
+  [
     "Authentication and membership validation precede canonical site resolution",
     route.indexOf("requireTenantAccessForCurrentSession({") < routeGuard
       && route.indexOf("const actorMembershipId =") < routeGuard,
