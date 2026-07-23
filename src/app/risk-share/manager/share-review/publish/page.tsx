@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import SiteProfileShell from "@/app/risk-share/manager/settings/site-profile/SiteProfileShell";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { listRiskShareManagerPublishState } from "@/lib/risk-share/riskShareManagerPublishReadModel";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
@@ -120,6 +121,20 @@ export default async function RiskShareManagerPublishPage({
       <ErrorShell
         title="이 화면에 접근할 권한이 확인되지 않았습니다."
         message="운영 담당자에게 문의해 주세요."
+      />
+    );
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    return (
+      <ErrorShell
+        title="공유본 게시 화면을 열 수 없습니다."
+        message="기본사업장 설정을 확인한 뒤 다시 시도해 주세요."
       />
     );
   }
