@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { readRiskShareSourcePrivateDescriptorForTenant } from "@/lib/risk-share/riskShareSourcePrivateRead";
 import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import {
   readRiskShareSourceColumnMappingSourceState,
@@ -119,7 +119,11 @@ export async function POST(request: NextRequest) {
     return buildRedirect(request, selectedTenantCode, lang, fallback, { actionError: "invalid_intent" });
   }
 
-  const descriptorResult = await readRiskShareSourcePrivateDescriptor(selectedTenantCode, sourceId);
+  const descriptorResult = await readRiskShareSourcePrivateDescriptorForTenant(
+    selectedTenantCode,
+    sourceId,
+    siteScope.siteId,
+  );
 
   if (!descriptorResult.ok) {
     return buildRedirect(request, selectedTenantCode, lang, fallback, { actionError: "access_denied" });

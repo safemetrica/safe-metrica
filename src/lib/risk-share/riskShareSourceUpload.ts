@@ -3,9 +3,11 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { del, put } from "@vercel/blob";
 
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { getTenantRegistryConfigByCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ELIGIBLE_TENANT_SERVICE_MODES = new Set(["risk_share_pack", "full_safemetrica"]);
 const ELIGIBLE_TENANT_STATUSES = new Set(["active"]);
 
@@ -36,6 +38,7 @@ export type RiskShareSourceUploadFailureReason =
   | "tenant_not_found"
   | "tenant_not_eligible"
   | "invalid_input"
+  | "site_scope_mismatch"
   | "site_required"
   | "file_required"
   | "file_empty"
@@ -55,6 +58,7 @@ export type RiskShareSourceUploadActor = "owner_console" | "tenant_admin" | "ten
 
 export type RiskShareSourceUploadInput = {
   companyCode: string;
+  siteId: string;
   sourceTitle: string;
   siteName: string;
   sourceDocumentDate: string;
@@ -67,6 +71,7 @@ type EligibleTenant = {
   id: string;
   code: string;
   name: string;
+  defaultSiteId: string | null;
   defaultSiteName: string | null;
 };
 
@@ -115,6 +120,7 @@ async function resolveEligibleTenant(rawCompanyCode: string): Promise<EligibleTe
       id: tenant.id,
       code: tenant.code,
       name: tenant.name,
+      defaultSiteId: tenant.defaultSiteId,
       defaultSiteName: tenant.defaultSiteName,
     },
   };
@@ -225,13 +231,18 @@ function getSupabaseServiceRoleKey() {
 
 type RiskShareSourceIdRow = { id?: unknown };
 
-async function findDuplicateSourceByChecksum(companyCode: string, checksum: string) {
+async function findDuplicateSourceByChecksum(
+  companyCode: string,
+  siteId: string,
+  checksum: string,
+) {
   const query = new URLSearchParams({
     select: "id",
     company_code: `eq.${companyCode}`,
     file_checksum_sha256: `eq.${checksum}`,
     limit: "1",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   const rows = await selectSupabaseExportRows<RiskShareSourceIdRow>("risk_share_sources", query);
 
@@ -278,6 +289,14 @@ export async function uploadRiskShareSource(
   }
 
   const tenant = tenantResolution.tenant;
+
+  if (
+    !UUID_PATTERN.test(input.siteId)
+    || !tenant.defaultSiteId
+    || input.siteId !== tenant.defaultSiteId
+  ) {
+    return { ok: false, reason: "site_scope_mismatch" };
+  }
 
   const sourceTitle = input.sourceTitle.trim().slice(0, 200);
 
@@ -335,7 +354,11 @@ export async function uploadRiskShareSource(
   const checksum = await computeSha256Hex(file);
 
   try {
-    const duplicate = await findDuplicateSourceByChecksum(tenant.code, checksum);
+    const duplicate = await findDuplicateSourceByChecksum(
+      tenant.code,
+      input.siteId,
+      checksum,
+    );
 
     if (duplicate) {
       return { ok: false, reason: "duplicate_source" };
@@ -388,6 +411,7 @@ export async function uploadRiskShareSource(
 
   const insertOk = await insertRiskShareSourceRow({
     company_code: tenant.code,
+    site_id: input.siteId,
     company_name: tenant.name || null,
     site_name: siteName,
     source_title: sourceTitle,

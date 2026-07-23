@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
 
   const result = await uploadRiskShareSource({
     companyCode: selectedTenantCode,
+    siteId: siteScope.siteId,
     sourceTitle,
     siteName,
     sourceDocumentDate,
@@ -98,6 +99,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (!result.ok) {
+    if (result.reason === "site_scope_mismatch") {
+      return buildRedirect(request, selectedTenantCode, lang, {
+        actionError: "site_scope_unavailable",
+      });
+    }
+
     if (result.reason === "duplicate_source") {
       return buildRedirect(request, selectedTenantCode, lang, { upload: "duplicate" });
     }

@@ -202,7 +202,10 @@ export default async function RiskShareManagerSourcesPage({
   let registryLookupFailed = false;
 
   try {
-    registrySources = await listRiskShareSourcesForTenant(selectedTenantCode);
+    registrySources = await listRiskShareSourcesForTenant(
+      selectedTenantCode,
+      siteScope.siteId,
+    );
   } catch {
     registryLookupFailed = true;
   }
