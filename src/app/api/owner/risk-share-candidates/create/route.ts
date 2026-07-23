@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import {
+  getTenantRegistryConfigByCode,
   insertRiskShareItemCandidateRecord,
   selectSupabaseExportRows,
 } from "@/lib/supabaseServer";
@@ -15,6 +18,7 @@ type RiskShareSourceRow = {
   source_title?: string;
   review_status?: string;
   extraction_status?: string;
+  site_id?: string | null;
 };
 
 type RiskShareCandidateCategory =
@@ -77,16 +81,38 @@ function buildRedirect(request: NextRequest, path: string, params: Record<string
   return NextResponse.redirect(url);
 }
 
-async function findRiskShareSource(companyCode: string, sourceId: string) {
+async function findRiskShareSource(
+  companyCode: string,
+  sourceId: string,
+  siteId: string,
+) {
   const query = new URLSearchParams({
-    select: "id,company_code,company_name,source_title,review_status,extraction_status",
+    select: "id,company_code,company_name,source_title,review_status,extraction_status,site_id",
     id: `eq.${sourceId}`,
     company_code: `eq.${companyCode}`,
     limit: "1",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
-  const rows = await selectSupabaseExportRows<RiskShareSourceRow>("risk_share_sources", query);
-  return rows[0] ?? null;
+  const rows = await selectSupabaseExportRows<RiskShareSourceRow>(
+    "risk_share_sources",
+    query,
+  );
+  const source = rows[0] ?? null;
+
+  if (
+    !source
+    || source.id?.toLowerCase() !== sourceId.toLowerCase()
+    || source.company_code?.toLowerCase() !== companyCode.toLowerCase()
+    || (
+      source.site_id !== null
+      && source.site_id?.toLowerCase() !== siteId.toLowerCase()
+    )
+  ) {
+    return null;
+  }
+
+  return source;
 }
 
 export async function POST(request: NextRequest) {
@@ -122,10 +148,25 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates/new", {
+      ...baseRedirectParams,
+      error: "site_scope_unavailable",
+    });
+  }
+
   let source: RiskShareSourceRow | null = null;
 
   try {
-    source = await findRiskShareSource(companyCode, sourceId);
+    source = await findRiskShareSource(tenant.code, sourceId, siteScope.siteId);
   } catch {
     return buildRedirect(request, "/owner/risk-share-activation/candidates/new", {
       ...baseRedirectParams,
@@ -144,7 +185,7 @@ export async function POST(request: NextRequest) {
 
   const result = await insertRiskShareItemCandidateRecord({
     source_id: sourceId,
-    company_code: companyCode,
+    company_code: tenant.code,
     company_name: companyName,
     site_name: readText(formData, "siteName", 160) || null,
     task_name: taskName,
