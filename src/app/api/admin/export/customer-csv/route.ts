@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  getDefaultTenantSiteConfigByTenantCode,
   selectSupabaseExportRows,
   SupabaseReadError,
 } from "@/lib/supabaseServer";
@@ -86,6 +87,17 @@ function buildTimestampPeriodFilter(
     `and(${createdAtColumn}.gte.${startDate}T00:00:00.000Z,${createdAtColumn}.lt.${dayAfterEnd}T00:00:00.000Z)`,
     `and(${eventAtColumn}.gte.${startDate}T00:00:00.000Z,${eventAtColumn}.lt.${dayAfterEnd}T00:00:00.000Z)`,
   ].join(",")})`;
+}
+
+function applyDefaultSitePeriodScope(
+  query: URLSearchParams,
+  siteId: string | null,
+  periodFilter: string,
+) {
+  const siteFilter = siteId
+    ? `or(site_id.eq.${siteId},site_id.is.null)`
+    : "site_id.is.null";
+  query.set("and", `(${siteFilter},or${periodFilter})`);
 }
 
 function parseDataset(value: string): Dataset | null {
@@ -1040,13 +1052,45 @@ export async function GET(request: NextRequest) {
   const needsWorkerRepresentativeRows =
     dataset === "worker_representative_confirmations";
   const needsLockedShareItems = dataset === "locked_share_items";
+  let defaultSite: Awaited<
+    ReturnType<typeof getDefaultTenantSiteConfigByTenantCode>
+  >;
+  try {
+    defaultSite = await getDefaultTenantSiteConfigByTenantCode(companyKey);
+  } catch {
+    return errorResponse(
+      503,
+      "default_site_lookup_failed",
+      "The customer export could not verify its site scope.",
+    );
+  }
+  const defaultSiteId = defaultSite?.id ?? null;
+  const fieldPeriodFilter = buildPeriodFilter(
+    "created_at",
+    "reported_date",
+    startDate,
+    endDate,
+    dayAfterEnd,
+  );
+  const evidencePeriodFilter = buildTimestampPeriodFilter(
+    "created_at",
+    "submitted_at",
+    startDate,
+    dayAfterEnd,
+  );
+  const lockedShareItemsPeriodFilter = buildTimestampPeriodFilter(
+    "created_at",
+    "version_locked_at",
+    startDate,
+    dayAfterEnd,
+  );
 
   const fieldQuery = new URLSearchParams({
     select: "*",
     tenant_code: `eq.${companyKey}`,
-    or: buildPeriodFilter("created_at", "reported_date", startDate, endDate, dayAfterEnd),
     order: "created_at.asc",
   });
+  applyDefaultSitePeriodScope(fieldQuery, defaultSiteId, fieldPeriodFilter);
   const tbmQuery = new URLSearchParams({
     select: "*",
     company_code: `eq.${companyKey}`,
@@ -1087,9 +1131,9 @@ export async function GET(request: NextRequest) {
       "created_at",
     ].join(","),
     company_code: `eq.${companyKey}`,
-    or: buildTimestampPeriodFilter("created_at", "submitted_at", startDate, dayAfterEnd),
     order: "created_at.asc",
   });
+  applyDefaultSitePeriodScope(evidenceQuery, defaultSiteId, evidencePeriodFilter);
   const lockedShareItemsQuery = new URLSearchParams({
     select: [
       "version_locked_at",
@@ -1117,9 +1161,13 @@ export async function GET(request: NextRequest) {
     customer_confirmed: "eq.true",
     worker_visible: "eq.true",
     version_lock_id: "not.is.null",
-    or: buildTimestampPeriodFilter("created_at", "version_locked_at", startDate, dayAfterEnd),
     order: "version_locked_at.asc.nullslast,created_at.asc",
   });
+  applyDefaultSitePeriodScope(
+    lockedShareItemsQuery,
+    defaultSiteId,
+    lockedShareItemsPeriodFilter,
+  );
 
   try {
     const [fieldRows, tbmRows, workerRepresentativeRows, evidenceRows, lockedShareItemRows] = await Promise.all([
