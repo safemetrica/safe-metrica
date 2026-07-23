@@ -1,6 +1,7 @@
 import "server-only";
 
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 
 const RISK_SHARE_REPRESENTATIVE_SUBMISSION_SOURCE =
   "risk_share_representative_confirmation_v1";
@@ -34,6 +35,7 @@ function readSignaturePresent(rawPayload: unknown) {
 export async function fetchRiskShareRepresentativeSubmissionSummary(
   companyCode: string,
   period: RiskShareRepresentativeSubmissionPeriod,
+  siteId: string | null = null,
 ): Promise<RiskShareRepresentativeSubmissionSummary> {
   const query = new URLSearchParams();
   query.set("select", "raw_payload");
@@ -47,6 +49,7 @@ export async function fetchRiskShareRepresentativeSubmissionSummary(
     `(and(created_at.gte.${period.startDate}T00:00:00.000Z,created_at.lt.${period.dayAfterEnd}T00:00:00.000Z),and(reported_date.gte.${period.startDate},reported_date.lte.${period.endDate}))`,
   );
   query.set("limit", String(RISK_SHARE_REPRESENTATIVE_SUBMISSION_LIMIT));
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<FieldParticipationSubmissionRow>(
