@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import {
+  getTenantRegistryConfigByCode,
+  selectSupabaseExportRows,
+} from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -47,6 +52,7 @@ type RiskShareItemRow = {
   worker_visible?: boolean | null;
   version_lock_id?: string | null;
   owner_note?: string | null;
+  site_id?: string | null;
 };
 
 const SAMPLE_ITEMS: ShareItem[] = [
@@ -195,16 +201,17 @@ function mapRiskShareItemRow(row: RiskShareItemRow, index: number): ShareItem {
   };
 }
 
-async function fetchRiskShareItems(companyCode: string) {
+async function fetchRiskShareItems(companyCode: string, siteId: string) {
   if (!companyCode) return [];
 
   const query = new URLSearchParams({
     select:
-      "id,created_at,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,share_status,customer_check_status,customer_confirmed,worker_visible,version_lock_id,owner_note",
+      "id,created_at,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,share_status,customer_check_status,customer_confirmed,worker_visible,version_lock_id,owner_note,site_id",
     company_code: `eq.${companyCode}`,
     order: "created_at.desc",
     limit: "100",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   const rows = await selectSupabaseExportRows<RiskShareItemRow>("risk_share_items", query);
   return rows.map((row, index) => mapRiskShareItemRow(row, index + 1));
@@ -280,10 +287,27 @@ export default async function RiskShareShareItemBuilderPage({ searchParams }: Pa
   let storedItems: ShareItem[] = [];
   let loadFailed = false;
 
-  try {
-    storedItems = await fetchRiskShareItems(companyCode);
-  } catch {
-    loadFailed = true;
+  if (companyCode) {
+    const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+    const siteScope = tenant
+      ? await resolveRiskShareCanonicalSiteScopeForTenant(
+          tenant.code,
+          tenant.defaultSiteId,
+        ).catch(() => ({ ok: false as const }))
+      : { ok: false as const };
+
+    if (!tenant || !siteScope.ok) {
+      loadFailed = true;
+    } else {
+      try {
+        storedItems = await fetchRiskShareItems(
+          tenant.code,
+          siteScope.siteId,
+        );
+      } catch {
+        loadFailed = true;
+      }
+    }
   }
 
   const items = storedItems.length > 0 ? storedItems : [1, 2, 3].map((index) => getShareItem(params, index));

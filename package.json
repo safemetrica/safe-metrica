@@ -49,6 +49,7 @@
     "verify:risk-share-owner-candidate-promotion-canonical-site-scope": "node scripts/verify-risk-share-owner-candidate-promotion-canonical-site-scope.mjs",
     "verify:risk-share-owner-customer-check-canonical-site-scope": "node scripts/verify-risk-share-owner-customer-check-canonical-site-scope.mjs",
     "verify:risk-share-owner-candidate-review-canonical-site-scope": "node scripts/verify-risk-share-owner-candidate-review-canonical-site-scope.mjs",
+    "verify:risk-share-owner-record-lists-canonical-site-scope": "node scripts/verify-risk-share-owner-record-lists-canonical-site-scope.mjs",
     "verify:risk-share-preparation-canonical-site-scope": "node scripts/verify-risk-share-preparation-canonical-site-scope.mjs",
     "verify:risk-share-review-canonical-site-scope": "node scripts/verify-risk-share-review-canonical-site-scope.mjs",
     "verify:risk-share-confirmation-review-canonical-site-scope": "node scripts/verify-risk-share-confirmation-review-canonical-site-scope.mjs",
