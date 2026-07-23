@@ -10,7 +10,9 @@ import ManagerInboxCustomerWorkspace, {
   type InboxWorkspaceType,
 } from "@/components/risk-share/manager/ManagerInboxCustomerWorkspace";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
 import { listManagerInboxAuditEvents, listManagerInboxItems, type ManagerInboxType } from "@/lib/risk-share/riskShareManagerInbox";
 import {
@@ -36,6 +38,8 @@ const RESULT_MESSAGE: Partial<Record<ManagerInboxReviewResultCode, string>> = {
   unsupported_type: "현재 처리할 수 없는 접수유형입니다.",
   idempotency_conflict: "동일 요청 식별자가 다른 처리에 사용됐습니다. 목록을 새로 확인해 주세요.",
   status_conflict: "다른 화면에서 상태가 먼저 변경됐습니다. 최신 상태를 다시 확인해 주세요.",
+  site_scope_unavailable: "사업장 범위를 확인할 수 없어 처리를 중단했습니다. 목록을 새로 확인해 주세요.",
+  target_scope_mismatch: "현재 고객사·사업장 범위에서 처리할 수 없는 접수입니다. 목록을 새로 확인해 주세요.",
   request_failed: "처리 요청을 완료하지 못했습니다. 잠시 후 같은 화면에서 다시 시도해 주세요.",
   invalid_response: "처리 결과를 확인할 수 없습니다. 상태를 새로 확인한 뒤 다시 시도해 주세요.",
 };
@@ -57,6 +61,33 @@ function inboxResultHref(companyCode: string, submissionId: string, result: stri
 async function updateInboxReview(formData: FormData) {
   "use server";
   const companyCode = normalizeCompanyCode(String(formData.get("companyCode") ?? ""));
+
+  if (!companyCode) {
+    redirect(inboxResultHref(companyCode, "", "validation_failed"));
+  }
+
+  const access = await requireTenantManagerAccessForCurrentSession({ tenantCode: companyCode });
+  if (!access.ok) {
+    if (access.reason === "unauthenticated") {
+      redirect(`/login?callbackUrl=${encodeURIComponent(inboxResultHref(companyCode, "", "unauthenticated"))}`);
+    }
+    redirect(inboxResultHref(companyCode, "", "forbidden"));
+  }
+
+  const tenantResolution = await resolveRiskShareManagerTenant(companyCode);
+  if (!tenantResolution.ok) {
+    redirect(inboxResultHref(companyCode, "", "site_scope_unavailable"));
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    companyCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    redirect(inboxResultHref(companyCode, "", "site_scope_unavailable"));
+  }
+
   const submissionId = String(formData.get("submissionId") ?? "");
   const expectedStatus = String(formData.get("expectedStatus") ?? "");
   const nextStatus = String(formData.get("nextStatus") ?? "");
@@ -66,21 +97,12 @@ async function updateInboxReview(formData: FormData) {
     || (expectedStatus === "in_review" && nextStatus === "completed");
 
   if (
-    !companyCode
-    || !UUID_PATTERN.test(submissionId)
+    !UUID_PATTERN.test(submissionId)
     || !validTransition
     || actionNote.length > 500
     || (nextStatus === "completed" && !actionNote)
   ) {
     redirect(inboxResultHref(companyCode, submissionId, "validation_failed"));
-  }
-
-  const access = await requireTenantManagerAccessForCurrentSession({ tenantCode: companyCode });
-  if (!access.ok) {
-    if (access.reason === "unauthenticated") {
-      redirect(`/login?callbackUrl=${encodeURIComponent(inboxResultHref(companyCode, submissionId, "unauthenticated"))}`);
-    }
-    redirect(inboxResultHref(companyCode, submissionId, "forbidden"));
   }
 
   const idempotencyKey = `manager-inbox:v1:${createHash("sha256").update(JSON.stringify([
@@ -94,6 +116,7 @@ async function updateInboxReview(formData: FormData) {
 
   const result = await updateManagerInboxReview({
     companyCode,
+    siteId: siteScope.siteId,
     actorMembershipId: access.context.membership.membershipId,
     submissionId,
     expectedStatus: expectedStatus as "unreviewed" | "in_review",

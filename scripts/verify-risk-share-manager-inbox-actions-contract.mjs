@@ -13,6 +13,11 @@ const checks = [
   ["server action re-authorizes active tenant manager", page.includes('"use server"')
     && page.includes("requireTenantManagerAccessForCurrentSession({ tenantCode: companyCode })")
     && page.includes("access.context.membership.membershipId")],
+  ["server action resolves canonical site before mutable target fields", page.includes("resolveRiskShareManagerTenant(companyCode)")
+    && page.includes("resolveRiskShareCanonicalSiteScopeForTenant(")
+    && page.includes("tenantResolution.tenant.defaultSiteId")
+    && page.indexOf("requireTenantManagerAccessForCurrentSession({ tenantCode: companyCode })") < page.indexOf('formData.get("submissionId")')
+    && page.indexOf("resolveRiskShareCanonicalSiteScopeForTenant(") < page.indexOf('formData.get("submissionId")')],
   ["only two explicit transitions are accepted", page.includes('expectedStatus === "unreviewed" && nextStatus === "in_review"')
     && page.includes('expectedStatus === "in_review" && nextStatus === "completed"')
     && action.includes("const validTransition")],
@@ -22,6 +27,13 @@ const checks = [
   ["mutation uses only service-role RPC", action.includes('/rest/v1/rpc/update_risk_share_inbox_review_status')
     && action.includes("SUPABASE_SERVICE_ROLE_KEY")
     && !/(insert|update|delete)FieldParticipation/.test(action + page)],
+  ["mutation preflights exact site-bound target and stale status", page.includes("siteId: siteScope.siteId")
+    && action.includes("applyRiskShareDefaultSiteScope(targetQuery, input.siteId)")
+    && action.includes('id: `eq.${input.submissionId}`')
+    && action.includes('tenant_code: `eq.${input.companyCode}`')
+    && action.includes('manager_review_status: `eq.${input.expectedStatus}`')
+    && action.indexOf("applyRiskShareDefaultSiteScope(targetQuery, input.siteId)") < action.indexOf("/rest/v1/rpc/update_risk_share_inbox_review_status")
+    && action.includes('code: "target_scope_mismatch"')],
   ["idempotency is deterministic for exact retries and forwarded", page.includes('createHash("sha256")')
     && page.includes('`manager-inbox:v1:${')
     && page.includes("access.context.membership.membershipId")
