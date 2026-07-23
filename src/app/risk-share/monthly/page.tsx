@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { getDefaultTenantSiteConfigByTenantCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
@@ -128,7 +129,8 @@ function hasParticipationSignature(rawPayload: RiskShareParticipationRawPayload 
 
 async function fetchRiskShareMonthlyParticipationSummary(
   companyCode: string,
-  period: { createdAtGte: string; createdAtLt: string }
+  period: { createdAtGte: string; createdAtLt: string },
+  siteId: string | null,
 ): Promise<RiskShareParticipationSummary> {
   const query = new URLSearchParams();
   query.set("select", "version_lock_id,manager_review_status,raw_payload");
@@ -137,6 +139,7 @@ async function fetchRiskShareMonthlyParticipationSummary(
   query.append("created_at", `gte.${period.createdAtGte}`);
   query.append("created_at", `lt.${period.createdAtLt}`);
   query.set("limit", String(RISK_SHARE_MONTHLY_SUMMARY_LIMIT));
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<RiskShareParticipationSummaryRow>(
@@ -212,7 +215,8 @@ type AnonymousFeedbackSummary = {
 
 async function fetchRiskShareMonthlyAnonymousFeedbackSummary(
   companyCode: string,
-  period: { createdAtGte: string; createdAtLt: string }
+  period: { createdAtGte: string; createdAtLt: string },
+  siteId: string | null,
 ): Promise<AnonymousFeedbackSummary> {
   const query = new URLSearchParams();
   query.set("select", "raw_payload");
@@ -221,6 +225,7 @@ async function fetchRiskShareMonthlyAnonymousFeedbackSummary(
   query.append("created_at", `gte.${period.createdAtGte}`);
   query.append("created_at", `lt.${period.createdAtLt}`);
   query.set("limit", String(ANONYMOUS_FEEDBACK_SUMMARY_LIMIT));
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<AnonymousFeedbackSummaryRow>(
@@ -253,7 +258,8 @@ type VisitorConfirmationSummary = {
 
 async function fetchRiskShareMonthlyVisitorConfirmationSummary(
   companyCode: string,
-  period: { createdAtGte: string; createdAtLt: string }
+  period: { createdAtGte: string; createdAtLt: string },
+  siteId: string | null,
 ): Promise<VisitorConfirmationSummary> {
   const query = new URLSearchParams();
   query.set("select", "raw_payload");
@@ -262,6 +268,7 @@ async function fetchRiskShareMonthlyVisitorConfirmationSummary(
   query.append("created_at", `gte.${period.createdAtGte}`);
   query.append("created_at", `lt.${period.createdAtLt}`);
   query.set("limit", String(VISITOR_CONFIRMATION_SUMMARY_LIMIT));
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<VisitorConfirmationSummaryRow>(
@@ -337,10 +344,12 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   const userDisplayName = tenantAccessResult.context.membership.displayName || userEmail || "관리자";
   const avatarInitial = userDisplayName.trim().slice(0, 1) || "관";
 
-  const participationSummary = await fetchRiskShareMonthlyParticipationSummary(tenantCode, period);
-  const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(tenantCode, period);
-  const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(tenantCode, period);
-  const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(tenantCode, period);
+  const defaultSite = await getDefaultTenantSiteConfigByTenantCode(tenantCode).catch(() => null);
+  const siteId = defaultSite?.id ?? null;
+  const participationSummary = await fetchRiskShareMonthlyParticipationSummary(tenantCode, period, siteId);
+  const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(tenantCode, period, siteId);
+  const visitorConfirmationSummary = await fetchRiskShareMonthlyVisitorConfirmationSummary(tenantCode, period, siteId);
+  const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(tenantCode, period, siteId);
 
   return (
     <MonthlyDesignerView

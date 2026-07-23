@@ -13,6 +13,7 @@ import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/ris
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
 import { listManagerInboxAuditEvents, listManagerInboxItems, type ManagerInboxType } from "@/lib/risk-share/riskShareManagerInbox";
+import { getDefaultTenantSiteConfigByTenantCode } from "@/lib/supabaseServer";
 import { updateManagerInboxReview, type ManagerInboxReviewResultCode } from "@/lib/risk-share/riskShareManagerInboxReview";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 
@@ -167,7 +168,8 @@ export default async function ManagerInboxPage({ searchParams }: { searchParams?
   }
 
   const now = getCurrentTimestamp();
-  const allItems = await listManagerInboxItems(tenant.tenant.code);
+  const defaultSite = await getDefaultTenantSiteConfigByTenantCode(tenant.tenant.code).catch(() => null);
+  const allItems = await listManagerInboxItems(tenant.tenant.code, defaultSite?.id ?? null);
   const workspaceItems: InboxWorkspaceItem[] = allItems.map((item) => {
     const attention = resolveAttention(item.status, item.createdAt, now);
     return {

@@ -11,6 +11,7 @@ import { observeInternalTestRiskShareEntitlementShadow } from "@/lib/risk-share/
 import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantManagerAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { isTenantSiteProfileComplete } from "@/lib/tenant-onboarding/tenantSiteProfileValidation";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import ManagerDesignerView from "@/components/risk-share/manager/ManagerDesignerView";
 
 export const dynamic = "force-dynamic";
@@ -171,7 +172,8 @@ function hasParticipationSignature(rawPayload: RiskShareParticipationRawPayload 
 
 async function fetchRiskShareParticipationSummary(
   companyCode: string,
-  period: { createdAtGte: string; createdAtLt: string }
+  period: { createdAtGte: string; createdAtLt: string },
+  siteId: string | null,
 ): Promise<RiskShareParticipationSummary> {
   const query = new URLSearchParams();
   query.set("select", "raw_payload");
@@ -180,6 +182,7 @@ async function fetchRiskShareParticipationSummary(
   query.append("created_at", `gte.${period.createdAtGte}`);
   query.append("created_at", `lt.${period.createdAtLt}`);
   query.set("limit", String(RISK_SHARE_PARTICIPATION_SUMMARY_LIMIT));
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<RiskShareParticipationSummaryRow>(
@@ -221,7 +224,8 @@ type AnonymousFeedbackSummary = {
 };
 
 async function fetchRiskShareAnonymousFeedbackSummary(
-  companyCode: string
+  companyCode: string,
+  siteId: string | null,
 ): Promise<AnonymousFeedbackSummary> {
   const monthRange = getCurrentKstMonthRange();
   const query = new URLSearchParams();
@@ -231,6 +235,7 @@ async function fetchRiskShareAnonymousFeedbackSummary(
   query.append("created_at", `gte.${monthRange.createdAtGte}`);
   query.append("created_at", `lt.${monthRange.createdAtLt}`);
   query.set("limit", String(ANONYMOUS_FEEDBACK_SUMMARY_LIMIT));
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<AnonymousFeedbackSummaryRow>(
@@ -262,7 +267,8 @@ type VisitorConfirmationSummary = {
 };
 
 async function fetchRiskShareVisitorConfirmationSummary(
-  companyCode: string
+  companyCode: string,
+  siteId: string | null,
 ): Promise<VisitorConfirmationSummary> {
   const monthRange = getCurrentKstMonthRange();
   const query = new URLSearchParams();
@@ -272,6 +278,7 @@ async function fetchRiskShareVisitorConfirmationSummary(
   query.append("created_at", `gte.${monthRange.createdAtGte}`);
   query.append("created_at", `lt.${monthRange.createdAtLt}`);
   query.set("limit", String(VISITOR_CONFIRMATION_SUMMARY_LIMIT));
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   try {
     const rows = await selectSupabaseExportRows<VisitorConfirmationSummaryRow>(
@@ -296,6 +303,7 @@ type TenantSiteProfileSummary = {
    * per the zero-state-vs-failure principle used across this page. */
   status: "ok" | "not_configured" | "failed";
   siteName: string | null;
+  siteId: string | null;
   /** True only when every required operational profile field is valid:
    * site name, industry, processes, equipment, worker count, external
    * workforce flag, and worker representative flag. Never inferred from an
@@ -308,14 +316,15 @@ async function fetchTenantSiteProfileSummary(companyCode: string): Promise<Tenan
     const site = await getDefaultTenantSiteConfigByTenantCode(companyCode);
 
     if (!site) {
-      return { status: "not_configured", siteName: null, profileComplete: false };
+      return { status: "not_configured", siteName: null, siteId: null, profileComplete: false };
     }
 
-    return { status: "ok", siteName: site.siteName, profileComplete: isTenantSiteProfileComplete(site) };
+    return { status: "ok", siteName: site.siteName, siteId: site.id, profileComplete: isTenantSiteProfileComplete(site) };
   } catch {
     return {
       status: "failed",
       siteName: null,
+      siteId: null,
       profileComplete: false,
     };
   }
@@ -423,18 +432,20 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
       ? buildRiskShareLangHref("/risk-share/manager/settings/site-profile", { company: tenantCode }, lang)
       : undefined;
 
+  const siteProfileSummary = await fetchTenantSiteProfileSummary(tenantCode);
   const participationSummary = await fetchRiskShareParticipationSummary(
     tenantCode,
     getCurrentKstMonthRange(),
+    siteProfileSummary.siteId,
   );
-  const anonymousFeedbackSummary = await fetchRiskShareAnonymousFeedbackSummary(tenantCode);
-  const visitorConfirmationSummary = await fetchRiskShareVisitorConfirmationSummary(tenantCode);
+  const anonymousFeedbackSummary = await fetchRiskShareAnonymousFeedbackSummary(tenantCode, siteProfileSummary.siteId);
+  const visitorConfirmationSummary = await fetchRiskShareVisitorConfirmationSummary(tenantCode, siteProfileSummary.siteId);
   const representativeSubmissionSummary = await fetchRiskShareRepresentativeSubmissionSummary(
     tenantCode,
     currentPeriod,
+    siteProfileSummary.siteId,
   );
-  const siteProfileSummary = await fetchTenantSiteProfileSummary(tenantCode);
-  const confirmationReviews = await listManagerConfirmationReviews(tenantCode).catch(() => []);
+  const confirmationReviews = await listManagerConfirmationReviews(tenantCode, siteProfileSummary.siteId).catch(() => []);
   const reviewStatus = [
     { label: "확인 필요", value: confirmationReviews.filter((row) => row.reviewStatus === "unreviewed").length, colorVar: "--c3" },
     { label: "확인 중", value: confirmationReviews.filter((row) => row.reviewStatus === "in_review").length, colorVar: "--c1" },
