@@ -709,6 +709,7 @@ export type RiskShareItemCustomerCheckStatusUpdateRecord = {
 export async function updateRiskShareItemCustomerCheckStatus(
   itemId: string,
   companyCode: string,
+  siteId: string,
   record: RiskShareItemCustomerCheckStatusUpdateRecord
 ): Promise<SupabaseInsertResult> {
   const supabaseUrl = getSupabaseUrl();
@@ -726,6 +727,7 @@ export async function updateRiskShareItemCustomerCheckStatus(
   const query = new URLSearchParams({
     id: `eq.${itemId}`,
     company_code: `eq.${companyCode}`,
+    or: `(site_id.eq.${siteId},site_id.is.null)`,
   });
 
   const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_items?${query.toString()}`, {
