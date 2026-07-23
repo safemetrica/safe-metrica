@@ -1052,17 +1052,21 @@ export async function GET(request: NextRequest) {
   const needsWorkerRepresentativeRows =
     dataset === "worker_representative_confirmations";
   const needsLockedShareItems = dataset === "locked_share_items";
+  const needsDefaultSiteScope =
+    needsFieldRows || needsEvidenceRows || needsLockedShareItems;
   let defaultSite: Awaited<
     ReturnType<typeof getDefaultTenantSiteConfigByTenantCode>
-  >;
-  try {
-    defaultSite = await getDefaultTenantSiteConfigByTenantCode(companyKey);
-  } catch {
-    return errorResponse(
-      503,
-      "default_site_lookup_failed",
-      "The customer export could not verify its site scope.",
-    );
+  > = null;
+  if (needsDefaultSiteScope) {
+    try {
+      defaultSite = await getDefaultTenantSiteConfigByTenantCode(companyKey);
+    } catch {
+      return errorResponse(
+        503,
+        "default_site_lookup_failed",
+        "The customer export could not verify its site scope.",
+      );
+    }
   }
   const defaultSiteId = defaultSite?.id ?? null;
   const fieldPeriodFilter = buildPeriodFilter(
