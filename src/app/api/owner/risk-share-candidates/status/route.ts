@@ -1,6 +1,12 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import type { RiskShareItemCandidateReviewerStatus } from "@/lib/supabaseServer";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import {
+  getTenantRegistryConfigByCode,
+  selectSupabaseExportRows,
+  type RiskShareItemCandidateReviewerStatus,
+} from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -51,6 +57,42 @@ type ReviewCandidateRpcResult =
   | { ok: true; result: "ok"; id: string }
   | { ok: true; result: "not_found" | "missing_required_fields" }
   | { ok: false };
+
+type CandidateScopeRow = {
+  id?: string;
+  company_code?: string;
+  site_id?: string | null;
+};
+
+async function verifyCandidateScope(
+  candidateId: string,
+  companyCode: string,
+  siteId: string,
+) {
+  const query = new URLSearchParams({
+    select: "id,company_code,site_id",
+    id: `eq.${candidateId}`,
+    company_code: `eq.${companyCode}`,
+    limit: "1",
+  });
+  applyRiskShareDefaultSiteScope(query, siteId);
+
+  const rows = await selectSupabaseExportRows<CandidateScopeRow>(
+    "risk_share_item_candidates",
+    query,
+  );
+  const candidate = rows[0] ?? null;
+
+  return Boolean(
+    candidate
+    && candidate.id?.toLowerCase() === candidateId.toLowerCase()
+    && candidate.company_code?.toLowerCase() === companyCode.toLowerCase()
+    && (
+      candidate.site_id === null
+      || candidate.site_id?.toLowerCase() === siteId.toLowerCase()
+    ),
+  );
+}
 
 async function callReviewCandidateRpc(params: {
   candidateId: string;
@@ -151,6 +193,43 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "site_scope_unavailable",
+    });
+  }
+
+  let candidateInScope = false;
+
+  try {
+    candidateInScope = await verifyCandidateScope(
+      candidateId,
+      tenant.code,
+      siteScope.siteId,
+    );
+  } catch {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "candidate_lookup_failed",
+    });
+  }
+
+  if (!candidateInScope) {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "candidate_not_found",
+    });
+  }
+
   const reviewerNote = readText(formData, "reviewerNote", 500) || null;
   const taskName = readText(formData, "taskName", 200);
   const hazard = readText(formData, "hazard", 500);
@@ -160,7 +239,7 @@ export async function POST(request: NextRequest) {
 
   const rpcResult = await callReviewCandidateRpc({
     candidateId,
-    companyCode,
+    companyCode: tenant.code,
     reviewerStatus,
     reviewerNote,
     taskName,
