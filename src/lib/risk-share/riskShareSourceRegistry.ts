@@ -29,6 +29,7 @@ export type RiskShareSourceRegistryEntry = {
 type RiskShareSourceRegistryRow = {
   id?: unknown;
   company_code?: unknown;
+  site_id?: unknown;
   source_title?: unknown;
   site_name?: unknown;
   source_type?: unknown;
@@ -41,6 +42,10 @@ type RiskShareSourceRegistryRow = {
   uploaded_by?: unknown;
   uploaded_at?: unknown;
 };
+
+export type RiskShareSourceRecordScopeResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid_request" | "not_found" | "lookup_failed" };
 
 function normalizeStrictCompanyCode(rawCompanyCode: string): string | null {
   const value = rawCompanyCode.trim().toLowerCase();
@@ -153,4 +158,69 @@ export async function listRiskShareSourcesForTenant(
     ...options,
     siteId,
   });
+}
+
+/**
+ * Confirms that one exact Source belongs to the server-resolved canonical
+ * single-site scope before a downstream mutation calls an existing RPC
+ * whose v1 signature carries tenant + Source but not site_id.
+ *
+ * Legacy site_id NULL rows remain readable during the approved transition
+ * window through applyRiskShareDefaultSiteScope. This helper does not
+ * update, backfill, lock, or otherwise mutate the Source row.
+ */
+export async function verifyRiskShareSourceRecordScopeForTenant(
+  rawCompanyCode: string,
+  rawSourceId: string,
+  siteId: string,
+): Promise<RiskShareSourceRecordScopeResult> {
+  const companyCode = normalizeStrictCompanyCode(rawCompanyCode);
+  const sourceId = rawSourceId.trim().toLowerCase();
+
+  if (
+    !companyCode
+    || !UUID_PATTERN.test(sourceId)
+    || !UUID_PATTERN.test(siteId)
+  ) {
+    return { ok: false, reason: "invalid_request" };
+  }
+
+  const query = new URLSearchParams({
+    select: "id,company_code,site_id",
+    id: `eq.${sourceId}`,
+    company_code: `eq.${companyCode}`,
+    limit: "1",
+  });
+  applyRiskShareDefaultSiteScope(query, siteId);
+
+  let rows: RiskShareSourceRegistryRow[];
+
+  try {
+    rows = await selectSupabaseExportRows<RiskShareSourceRegistryRow>(
+      "risk_share_sources",
+      query,
+    );
+  } catch {
+    return { ok: false, reason: "lookup_failed" };
+  }
+
+  const row = rows[0];
+
+  if (!row) {
+    return { ok: false, reason: "not_found" };
+  }
+
+  const rowId = readTrimmedString(row.id).toLowerCase();
+  const rowCompanyCode = readTrimmedString(row.company_code).toLowerCase();
+  const rowSiteId = readNullableString(row.site_id)?.toLowerCase() ?? null;
+
+  if (
+    rowId !== sourceId
+    || rowCompanyCode !== companyCode
+    || (rowSiteId !== null && rowSiteId !== siteId.toLowerCase())
+  ) {
+    return { ok: false, reason: "not_found" };
+  }
+
+  return { ok: true };
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
+import { verifyRiskShareSourceRecordScopeForTenant } from "@/lib/risk-share/riskShareSourceRegistry";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { prepareRiskShareItemsForTenant } from "@/lib/supabaseServer";
 
@@ -240,6 +241,20 @@ export async function POST(request: NextRequest) {
 
   if (!validatedBody) {
     return jsonError(422, "validation_failed");
+  }
+
+  const sourceScope = await verifyRiskShareSourceRecordScopeForTenant(
+    selectedTenantCode,
+    validatedBody.sourceId,
+    siteScope.siteId,
+  );
+
+  if (!sourceScope.ok) {
+    if (sourceScope.reason === "lookup_failed") {
+      return jsonError(503, "request_failed");
+    }
+
+    return jsonError(404, "not_found");
   }
 
   const result = await prepareRiskShareItemsForTenant({
