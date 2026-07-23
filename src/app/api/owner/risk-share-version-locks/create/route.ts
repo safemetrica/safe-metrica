@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import {
+  getTenantRegistryConfigByCode,
+  selectSupabaseExportRows,
+} from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,6 +15,7 @@ type ShareItemRow = {
   company_name?: string | null;
   site_name?: string | null;
   source_title?: string | null;
+  site_id?: string | null;
 };
 
 function isOwnerTokenValid(ownerToken?: string) {
@@ -61,24 +66,51 @@ function buildRedirect(request: NextRequest, params: Record<string, string>) {
   return NextResponse.redirect(url);
 }
 
-// Best-effort only: used to pre-fill company_name/site_name/source_title
-// fallback display text if the form did not supply them. The actual item
-// selection and locking decision is made inside create_risk_share_version_lock,
-// not from this read.
-async function fetchAnyCustomerConfirmedShareItem(companyCode: string) {
+async function fetchEligibleVersionLockItems(
+  companyCode: string,
+  siteId: string,
+  requestedItemIds: string[],
+) {
   const query = new URLSearchParams({
-    select: "id,company_code,company_name,site_name,source_title",
+    select: "id,company_code,company_name,site_name,source_title,site_id",
     company_code: `eq.${companyCode}`,
+    site_id: `eq.${siteId}`,
     share_status: "eq.customer_confirmed",
     customer_check_status: "eq.confirmed",
     customer_confirmed: "eq.true",
     version_lock_id: "is.null",
     order: "created_at.asc",
-    limit: "1",
+    limit: "201",
   });
 
+  if (requestedItemIds.length > 0) {
+    query.set("id", `in.(${requestedItemIds.join(",")})`);
+  }
+
   const rows = await selectSupabaseExportRows<ShareItemRow>("risk_share_items", query);
-  return rows[0] ?? null;
+  const requestedSet = new Set(requestedItemIds.map((id) => id.toLowerCase()));
+  const validatedRows = rows.filter((row) => {
+    const rowId = row.id?.toLowerCase() ?? "";
+    return isUuid(rowId)
+      && row.company_code?.toLowerCase() === companyCode.toLowerCase()
+      && row.site_id?.toLowerCase() === siteId.toLowerCase()
+      && (requestedSet.size === 0 || requestedSet.has(rowId));
+  });
+  const uniqueIds = new Set(validatedRows.map((row) => row.id?.toLowerCase()));
+  const selectionMismatch = rows.length > 200
+    || uniqueIds.size !== validatedRows.length
+    || (
+      requestedSet.size > 0
+      && (
+        requestedSet.size !== requestedItemIds.length
+        || requestedSet.size !== uniqueIds.size
+      )
+    );
+
+  return {
+    items: selectionMismatch ? [] : validatedRows,
+    selectionMismatch,
+  };
 }
 
 type CreateVersionLockRpcResult =
@@ -191,17 +223,59 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  let fallbackItem: ShareItemRow | null = null;
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
 
-  try {
-    fallbackItem = await fetchAnyCustomerConfirmedShareItem(companyCode);
-  } catch {
-    // Non-fatal: fallback display text only. The RPC below independently
-    // re-checks for eligible items and is the actual source of truth.
+  if (!tenant || !siteScope.ok) {
+    return buildRedirect(request, {
+      ...redirectParams,
+      error: "site_scope_unavailable",
+    });
   }
 
+  let eligibleItems: ShareItemRow[] = [];
+
+  try {
+    const selection = await fetchEligibleVersionLockItems(
+      tenant.code,
+      siteScope.siteId,
+      requestedItemIds,
+    );
+
+    if (selection.selectionMismatch) {
+      return buildRedirect(request, {
+        ...redirectParams,
+        error: "version_lock_selection_changed",
+      });
+    }
+
+    eligibleItems = selection.items;
+  } catch {
+    return buildRedirect(request, {
+      ...redirectParams,
+      error: "version_lock_item_lookup_failed",
+    });
+  }
+
+  if (eligibleItems.length === 0) {
+    return buildRedirect(request, {
+      ...redirectParams,
+      error: "no_customer_confirmed_items",
+    });
+  }
+
+  const fallbackItem = eligibleItems[0] ?? null;
+  const eligibleItemIds = eligibleItems.flatMap((item) =>
+    item.id && isUuid(item.id) ? [item.id] : []
+  );
+
   const rpcResult = await callCreateVersionLockRpc({
-    companyCode,
+    companyCode: tenant.code,
     companyName: companyName ?? fallbackItem?.company_name ?? null,
     siteName: siteName ?? fallbackItem?.site_name ?? null,
     sourceTitle: sourceTitle ?? fallbackItem?.source_title ?? null,
@@ -209,7 +283,7 @@ export async function POST(request: NextRequest) {
     lockMonth,
     notes,
     workerVisible: lockWorkerVisible,
-    itemIds: requestedItemIds,
+    itemIds: eligibleItemIds,
     lockedBy: "Owner",
   });
 
