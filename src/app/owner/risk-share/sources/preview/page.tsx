@@ -3,8 +3,10 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { readRiskShareSourcePrivateDescriptorForTenant } from "@/lib/risk-share/riskShareSourcePrivateRead";
 import { readRiskShareSourceHeaderPreview } from "@/lib/risk-share/riskShareSourceHeaderPreview";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -88,7 +90,28 @@ export default async function OwnerRiskShareSourcePreviewPage({
     redirect("/login?error=owner_required");
   }
 
-  const descriptorResult = await readRiskShareSourcePrivateDescriptor(companyCode, sourceId);
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return (
+      <ErrorScreen
+        companyCode={companyCode}
+        message="사업장 범위를 확인할 수 없습니다. 사업장 설정을 확인해 주세요."
+      />
+    );
+  }
+
+  const descriptorResult = await readRiskShareSourcePrivateDescriptorForTenant(
+    tenant.code,
+    sourceId,
+    siteScope.siteId,
+  );
 
   if (!descriptorResult.ok) {
     return (
