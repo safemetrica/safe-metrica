@@ -181,16 +181,6 @@ async function readRiskShareSourcePrivateDescriptorByCompanyCode(
   };
 }
 
-export async function readRiskShareSourcePrivateDescriptor(
-  rawCompanyCode: string,
-  rawSourceId: string,
-): Promise<RiskShareSourcePrivateReadResult> {
-  return readRiskShareSourcePrivateDescriptorByCompanyCode(
-    rawCompanyCode,
-    rawSourceId,
-  );
-}
-
 export async function readRiskShareSourcePrivateDescriptorForTenant(
   rawCompanyCode: string,
   rawSourceId: string,

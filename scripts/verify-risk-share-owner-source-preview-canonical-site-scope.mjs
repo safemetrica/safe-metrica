@@ -4,6 +4,10 @@ const preview = fs.readFileSync(
   "src/app/owner/risk-share/sources/preview/page.tsx",
   "utf8",
 );
+const privateRead = fs.readFileSync(
+  "src/lib/risk-share/riskShareSourcePrivateRead.ts",
+  "utf8",
+);
 
 const tenantLookup = preview.indexOf(
   "getTenantRegistryConfigByCode(companyCode)",
@@ -43,6 +47,15 @@ const checks = [
       && !preview.includes("updateSupabase")
       && !preview.includes("deleteSupabase")
       && !preview.includes("/rpc/"),
+  ],
+  [
+    "Private Source reads expose only the canonical site-scoped helper",
+    privateRead.includes(
+      "export async function readRiskShareSourcePrivateDescriptorForTenant(",
+    )
+      && !privateRead.includes(
+        "export async function readRiskShareSourcePrivateDescriptor(",
+      ),
   ],
 ];
 
