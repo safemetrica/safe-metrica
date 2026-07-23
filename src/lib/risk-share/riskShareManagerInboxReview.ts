@@ -1,6 +1,8 @@
 import "server-only";
 
 import type { ManagerInboxStatus } from "@/lib/risk-share/riskShareManagerInbox";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 export type ManagerInboxReviewResultCode =
   | "updated"
@@ -11,6 +13,8 @@ export type ManagerInboxReviewResultCode =
   | "unsupported_type"
   | "idempotency_conflict"
   | "status_conflict"
+  | "site_scope_unavailable"
+  | "target_scope_mismatch"
   | "request_failed"
   | "invalid_response";
 
@@ -20,6 +24,12 @@ type RpcRow = {
   review_status?: unknown;
   event_id?: unknown;
   replayed?: unknown;
+};
+
+type TargetRow = {
+  id?: unknown;
+  source?: unknown;
+  mode?: unknown;
 };
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -33,8 +43,21 @@ const FAILURE_CODES = new Set<ManagerInboxReviewResultCode>([
   "status_conflict",
 ]);
 
+function isSupportedInboxTarget(row: TargetRow) {
+  const source = typeof row.source === "string" ? row.source : "";
+  const mode = typeof row.mode === "string" ? row.mode : "";
+  return (
+    (source === "risk_share_participation_submit_v1" && mode === "prework")
+    || source === "risk_share_anonymous_feedback_v1"
+    || source === "anonymous_worker_feedback_v1"
+    || source === "risk_share_visitor_confirmation_v1"
+    || source === "risk_share_representative_confirmation_v1"
+  );
+}
+
 export async function updateManagerInboxReview(input: {
   companyCode: string;
+  siteId: string;
   actorMembershipId: string;
   submissionId: string;
   expectedStatus: Exclude<ManagerInboxStatus, "completed">;
@@ -51,6 +74,7 @@ export async function updateManagerInboxReview(input: {
 
   if (
     !COMPANY_CODE_PATTERN.test(input.companyCode)
+    || !UUID_PATTERN.test(input.siteId)
     || !UUID_PATTERN.test(input.actorMembershipId)
     || !UUID_PATTERN.test(input.submissionId)
     || !validTransition
@@ -59,6 +83,28 @@ export async function updateManagerInboxReview(input: {
     || input.idempotencyKey.length > 200
   ) {
     return { ok: false, code: "validation_failed" };
+  }
+
+  const targetQuery = new URLSearchParams({
+    select: "id,source:raw_payload->>source,mode:raw_payload->>mode",
+    id: `eq.${input.submissionId}`,
+    tenant_code: `eq.${input.companyCode}`,
+    manager_review_status: `eq.${input.expectedStatus}`,
+    limit: "2",
+  });
+  applyRiskShareDefaultSiteScope(targetQuery, input.siteId);
+
+  const targetRows = await selectSupabaseExportRows<TargetRow>(
+    "field_participation_submissions",
+    targetQuery,
+  ).catch(() => null);
+  if (!targetRows) return { ok: false, code: "request_failed" };
+  if (
+    targetRows.length !== 1
+    || targetRows[0]?.id !== input.submissionId
+    || !isSupportedInboxTarget(targetRows[0])
+  ) {
+    return { ok: false, code: "target_scope_mismatch" };
   }
 
   const url = process.env.SUPABASE_URL?.replace(/\/+$/, "");
