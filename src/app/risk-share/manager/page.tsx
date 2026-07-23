@@ -8,6 +8,7 @@ import {
   type TenantSiteConfig,
 } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
 import { listManagerConfirmationReviews, updateManagerConfirmationReview, type ConfirmationReviewStatus } from "@/lib/risk-share/riskShareManagerConfirmationReview";
 import { formatSeoulCustomerDateTime } from "@/lib/risk-share/riskShareCustomerDateTime.mjs";
@@ -74,6 +75,28 @@ function normalizeCompanyCode(value: string) {
 async function updateConfirmationReview(formData: FormData) {
   "use server";
   const companyCode = normalizeCompanyCode(String(formData.get("companyCode") ?? ""));
+
+  if (!companyCode) {
+    redirect("/risk-share/manager?reviewResult=validation_failed#confirmation-review");
+  }
+
+  const access = await requireTenantManagerAccessForCurrentSession({ tenantCode: companyCode });
+  if (!access.ok) redirect("/login");
+
+  const tenantResolution = await resolveRiskShareManagerTenant(companyCode);
+  if (!tenantResolution.ok) {
+    redirect(`/risk-share/manager?company=${encodeURIComponent(companyCode)}&reviewResult=site_scope_unavailable#confirmation-review`);
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    companyCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    redirect(`/risk-share/manager?company=${encodeURIComponent(companyCode)}&reviewResult=site_scope_unavailable#confirmation-review`);
+  }
+
   const submissionId = String(formData.get("submissionId") ?? "");
   const expectedStatus = String(formData.get("expectedStatus") ?? "") as ConfirmationReviewStatus;
   const nextStatus = String(formData.get("nextStatus") ?? "") as "in_review" | "completed";
@@ -82,14 +105,13 @@ async function updateConfirmationReview(formData: FormData) {
     (expectedStatus === "unreviewed" && nextStatus === "in_review")
     || (expectedStatus === "in_review" && nextStatus === "completed");
 
-  if (!companyCode || !UUID_PATTERN.test(submissionId) || actionNote.length > 500 || !validTransition) {
+  if (!UUID_PATTERN.test(submissionId) || actionNote.length > 500 || !validTransition) {
     redirect(`/risk-share/manager?company=${encodeURIComponent(companyCode)}&reviewResult=validation_failed#confirmation-review`);
   }
 
-  const access = await requireTenantManagerAccessForCurrentSession({ tenantCode: companyCode });
-  if (!access.ok) redirect("/login");
   const result = await updateManagerConfirmationReview({
     companyCode,
+    siteId: siteScope.siteId,
     actorMembershipId: access.context.membership.membershipId,
     submissionId,
     expectedStatus,
