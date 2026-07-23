@@ -2,23 +2,34 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const monthlyPage = fs.readFileSync("src/app/risk-share/monthly/page.tsx", "utf8");
+const scope = fs.readFileSync(
+  "src/lib/risk-share/riskShareDefaultSiteScope.ts",
+  "utf8",
+);
 
 const checks = [
   [
     "canonical multi-site source is tenant_sites",
     monthlyPage.includes("listTenantSitesByTenantCode(tenantCode)")
-      && monthlyPage.includes('site.status === "active"'),
+      && scope.includes('site.status === "active"'),
   ],
   [
     "default-site pointer is not used as the multi-site detector",
-    monthlyPage.includes("const activeSiteCount = tenantSites.filter")
+    monthlyPage.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)")
       && !monthlyPage.includes("defaultSite ? 1 : 0"),
   ],
   [
     "multi-site Monthly Evidence fails closed before Core queries",
-    monthlyPage.indexOf("if (activeSiteCount > 1)") > 0
-      && monthlyPage.indexOf("if (activeSiteCount > 1)")
+    monthlyPage.indexOf("if (!singleSiteScope.ok)") > 0
+      && monthlyPage.indexOf("if (!singleSiteScope.ok)")
         < monthlyPage.indexOf("fetchRiskShareMonthlyParticipationSummary(tenantCode"),
+  ],
+  [
+    "canonical scope rejects missing, archived, duplicate, and mismatched defaults",
+    scope.includes('"active_site_without_matching_default"')
+      && scope.includes('"archived_default_site"')
+      && scope.includes('"multiple_default_sites"')
+      && scope.includes("defaultSite.id !== activeSites[0].id"),
   ],
   [
     "multi-site block exposes a stable machine-readable code",
@@ -32,7 +43,7 @@ const checks = [
   ],
   [
     "single-site default-site and NULL continuity remain unchanged",
-    monthlyPage.includes("const siteId = defaultSite?.id ?? null")
+    monthlyPage.includes("const siteId = singleSiteScope.siteId")
       && monthlyPage.includes(
         "fetchRiskShareMonthlyParticipationSummary(tenantCode, period, siteId)",
       ),

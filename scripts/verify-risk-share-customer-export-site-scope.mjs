@@ -5,6 +5,10 @@ const route = fs.readFileSync(
   "src/app/api/admin/export/customer-csv/route.ts",
   "utf8",
 );
+const scope = fs.readFileSync(
+  "src/lib/risk-share/riskShareDefaultSiteScope.ts",
+  "utf8",
+);
 const representativeSubmitRoute = fs.readFileSync(
   "src/app/api/risk-share/representative/submit/route.ts",
   "utf8",
@@ -22,13 +26,20 @@ const checks = [
   [
     "Core export resolves canonical default site server-side",
     route.includes("getDefaultTenantSiteConfigByTenantCode(companyKey)")
-      && route.includes("const defaultSiteId = defaultSite?.id ?? null"),
+      && route.includes("defaultSiteId = singleSiteScope.siteId"),
   ],
   [
     "canonical active tenant_sites count blocks Core export for multi-site tenants",
     route.includes("listTenantSitesByTenantCode(companyKey)")
-      && route.includes('tenantSites.filter((site) => site.status === "active").length > 1')
+      && route.includes("resolveRiskShareSingleSiteScope(")
       && route.includes('"multi_site_export_blocked"'),
+  ],
+  [
+    "canonical export scope rejects invalid default-site states",
+    scope.includes('"active_site_without_matching_default"')
+      && scope.includes('"archived_default_site"')
+      && scope.includes('"multiple_default_sites"')
+      && scope.includes("defaultSite.id !== activeSites[0].id"),
   ],
   [
     "legacy evidence manifest keeps TBM continuity",

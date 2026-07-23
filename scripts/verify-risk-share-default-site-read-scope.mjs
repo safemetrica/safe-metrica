@@ -15,7 +15,7 @@ const checks = [
   ["missing default site is legacy-only", scope.includes('query.set("site_id", "is.null")')],
   ["manager resolves default site before summaries", manager.indexOf("fetchTenantSiteProfileSummary(tenantCode)") < manager.lastIndexOf("fetchRiskShareParticipationSummary(")],
   ["manager summary queries apply site scope", (manager.match(/applyRiskShareDefaultSiteScope\(query, siteId\)/g) ?? []).length === 3],
-  ["monthly resolves canonical default site", monthly.includes("getDefaultTenantSiteConfigByTenantCode(tenantCode)") && monthly.includes("const siteId = defaultSite?.id ?? null")],
+  ["monthly resolves canonical default site", monthly.includes("getDefaultTenantSiteConfigByTenantCode(tenantCode)") && monthly.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)") && monthly.includes("const siteId = singleSiteScope.siteId")],
   ["monthly summary queries apply site scope", (monthly.match(/applyRiskShareDefaultSiteScope\(query, siteId\)/g) ?? []).length === 3],
   ["representative summary applies site scope", representative.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
   ["confirmation review applies site scope", reviews.includes("applyRiskShareDefaultSiteScope(query, siteId)")],
