@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { getDefaultTenantSiteConfigByTenantCode, selectSupabaseExportRows } from "@/lib/supabaseServer";
+import {
+  getDefaultTenantSiteConfigByTenantCode,
+  listTenantSitesByTenantCode,
+  selectSupabaseExportRows,
+} from "@/lib/supabaseServer";
 import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
 import { fetchRiskShareRepresentativeSubmissionSummary } from "@/lib/riskShareRepresentativeSubmissionRecords";
@@ -20,6 +24,30 @@ type PageProps = {
 
 function readSearchParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function MonthlyEvidenceBlocked({
+  code,
+  title,
+  description,
+}: {
+  code: "multi_site_monthly_evidence_blocked" | "monthly_evidence_site_scope_unavailable";
+  title: string;
+  description: string;
+}) {
+  return (
+    <main
+      className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950"
+      data-error-code={code}
+    >
+      <section className="mx-auto max-w-3xl rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <p className="text-xs font-black text-amber-700">SafeMetrica · 안전운영</p>
+        <h1 className="mt-2 text-2xl font-black text-slate-950">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-amber-900">{description}</p>
+        <p className="mt-4 font-mono text-xs text-amber-800">{code}</p>
+      </section>
+    </main>
+  );
 }
 
 function normalizeCompanyCode(value: string) {
@@ -344,7 +372,34 @@ export default async function RiskShareMonthlySummaryPage({ searchParams }: Page
   const userDisplayName = tenantAccessResult.context.membership.displayName || userEmail || "관리자";
   const avatarInitial = userDisplayName.trim().slice(0, 1) || "관";
 
-  const defaultSite = await getDefaultTenantSiteConfigByTenantCode(tenantCode).catch(() => null);
+  const siteScope = await Promise.all([
+    getDefaultTenantSiteConfigByTenantCode(tenantCode),
+    listTenantSitesByTenantCode(tenantCode),
+  ]).catch(() => null);
+
+  if (!siteScope) {
+    return (
+      <MonthlyEvidenceBlocked
+        code="monthly_evidence_site_scope_unavailable"
+        title="월간 Evidence의 사업장 범위를 확인할 수 없습니다."
+        description="불완전한 월간 자료를 표시하지 않았습니다. 잠시 후 다시 시도해 주세요."
+      />
+    );
+  }
+
+  const [defaultSite, tenantSites] = siteScope;
+  const activeSiteCount = tenantSites.filter((site) => site.status === "active").length;
+
+  if (activeSiteCount > 1) {
+    return (
+      <MonthlyEvidenceBlocked
+        code="multi_site_monthly_evidence_blocked"
+        title="다중사업장 월간 Evidence는 아직 제공되지 않습니다."
+        description="사업장 귀속이 불명확한 기존 기록이 섞이지 않도록 월간 자료 생성을 중단했습니다."
+      />
+    );
+  }
+
   const siteId = defaultSite?.id ?? null;
   const participationSummary = await fetchRiskShareMonthlyParticipationSummary(tenantCode, period, siteId);
   const anonymousFeedbackSummary = await fetchRiskShareMonthlyAnonymousFeedbackSummary(tenantCode, period, siteId);
