@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       ).catch(() => ({ ok: false as const }))
     : { ok: false as const };
 
-  if (!siteScope.ok) {
+  if (!tenant || !siteScope.ok) {
     return buildRedirect(request, {
       actionError: "site_scope_mismatch",
       companyCode: companyCodeInput,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await uploadRiskShareSource({
-    companyCode: companyCodeInput,
+    companyCode: tenant.code,
     siteId: siteScope.siteId,
     sourceTitle,
     siteName,
@@ -77,14 +77,14 @@ export async function POST(request: NextRequest) {
   if (!result.ok) {
     if (result.reason === "duplicate_source") {
       return buildRedirect(request, {
-        companyCode: companyCodeInput,
+        companyCode: tenant.code,
         upload: "duplicate",
       });
     }
 
     return buildRedirect(request, {
       actionError: result.reason,
-      companyCode: companyCodeInput,
+      companyCode: tenant.code,
     });
   }
 
