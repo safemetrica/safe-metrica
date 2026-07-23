@@ -53,6 +53,7 @@
     "verify:risk-share-owner-version-lock-canonical-site-scope": "node scripts/verify-risk-share-owner-version-lock-canonical-site-scope.mjs",
     "verify:risk-share-owner-legacy-source-canonical-site-scope": "node scripts/verify-risk-share-owner-legacy-source-canonical-site-scope.mjs",
     "verify:risk-share-owner-source-list-canonical-site-scope": "node scripts/verify-risk-share-owner-source-list-canonical-site-scope.mjs",
+    "verify:risk-share-owner-source-preview-canonical-site-scope": "node scripts/verify-risk-share-owner-source-preview-canonical-site-scope.mjs",
     "verify:risk-share-preparation-canonical-site-scope": "node scripts/verify-risk-share-preparation-canonical-site-scope.mjs",
     "verify:risk-share-review-canonical-site-scope": "node scripts/verify-risk-share-review-canonical-site-scope.mjs",
     "verify:risk-share-confirmation-review-canonical-site-scope": "node scripts/verify-risk-share-confirmation-review-canonical-site-scope.mjs",
