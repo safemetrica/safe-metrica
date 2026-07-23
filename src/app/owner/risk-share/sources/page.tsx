@@ -3,10 +3,12 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import {
-  listRiskShareSourcesForOwner,
+  listRiskShareSourcesForTenant,
   type RiskShareSourceRegistryEntry,
 } from "@/lib/risk-share/riskShareSourceRegistry";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 
@@ -101,10 +103,25 @@ export default async function RiskShareSourceIntakePage({
   let registryLookupFailed = false;
 
   if (companyCode) {
-    try {
-      registrySources = await listRiskShareSourcesForOwner(companyCode);
-    } catch {
+    const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+    const siteScope = tenant
+      ? await resolveRiskShareCanonicalSiteScopeForTenant(
+          tenant.code,
+          tenant.defaultSiteId,
+        ).catch(() => ({ ok: false as const }))
+      : { ok: false as const };
+
+    if (!tenant || !siteScope.ok) {
       registryLookupFailed = true;
+    } else {
+      try {
+        registrySources = await listRiskShareSourcesForTenant(
+          tenant.code,
+          siteScope.siteId,
+        );
+      } catch {
+        registryLookupFailed = true;
+      }
     }
   }
 
