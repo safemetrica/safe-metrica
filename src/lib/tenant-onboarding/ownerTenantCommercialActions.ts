@@ -5,12 +5,14 @@ import { randomUUID } from "node:crypto";
 import {
   getDefaultTenantSiteConfigByTenantCode,
   getTenantRegistryConfigByCode,
+  listTenantSitesByTenantCode,
   selectSupabaseExportRows,
   type TenantMembershipRole,
   type TenantMembershipRow,
   type TenantMembershipStatus,
   type TenantRegistryConfig,
 } from "@/lib/supabaseServer";
+import { resolveRiskShareSingleSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { activateTenantAfterProfile } from "@/lib/tenant-onboarding/tenantActivation";
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -268,22 +270,30 @@ export async function activateOwnerTenant(
 
   // Verifies the real tenant_sites default row -- not just
   // tenant_registry.default_site_name, which is only a compatibility
-  // mirror. Requires all three: an active default site exists, the
-  // registry's default_site_id actually points at it (catching a partial
-  // failure where a site was created but the registry sync did not run),
-  // and the site name itself is non-empty.
+  // mirror. Requires one canonical active/default site, the registry's
+  // default_site_id to point at that exact row (catching partial sync and
+  // duplicate-site states), and a non-empty site name.
   let defaultSite: Awaited<ReturnType<typeof getDefaultTenantSiteConfigByTenantCode>>;
+  let tenantSites: Awaited<ReturnType<typeof listTenantSitesByTenantCode>>;
 
   try {
-    defaultSite = await getDefaultTenantSiteConfigByTenantCode(tenant.code);
+    [defaultSite, tenantSites] = await Promise.all([
+      getDefaultTenantSiteConfigByTenantCode(tenant.code),
+      listTenantSitesByTenantCode(tenant.code),
+    ]);
   } catch {
     return { ok: false, reason: "missing_server_config" };
   }
 
+  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+
   if (
+    !singleSiteScope.ok ||
+    !singleSiteScope.siteId ||
     !defaultSite ||
     !defaultSite.siteName.trim() ||
-    defaultSite.id !== tenant.defaultSiteId
+    defaultSite.id !== tenant.defaultSiteId ||
+    defaultSite.id !== singleSiteScope.siteId
   ) {
     return { ok: false, reason: "default_site_required" };
   }
