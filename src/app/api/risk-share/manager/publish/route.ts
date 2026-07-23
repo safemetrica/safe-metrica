@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import {
   publishRiskShareVersionForTenantChecked,
@@ -239,38 +240,6 @@ export async function POST(request: NextRequest) {
     return jsonError(403, "forbidden");
   }
 
-  const contentLengthHeader = request.headers.get("content-length");
-
-  if (contentLengthHeader && Number(contentLengthHeader) > MAX_BODY_BYTES) {
-    return jsonError(422, "validation_failed");
-  }
-
-  let rawBodyText: string;
-
-  try {
-    rawBodyText = await request.text();
-  } catch {
-    return jsonError(422, "validation_failed");
-  }
-
-  if (Buffer.byteLength(rawBodyText, "utf8") > MAX_BODY_BYTES) {
-    return jsonError(422, "validation_failed");
-  }
-
-  let parsedBody: unknown;
-
-  try {
-    parsedBody = JSON.parse(rawBodyText);
-  } catch {
-    return jsonError(422, "validation_failed");
-  }
-
-  const validatedBody = validateRequestBody(parsedBody);
-
-  if (!validatedBody) {
-    return jsonError(422, "validation_failed");
-  }
-
   const rawCompanyCode = request.nextUrl.searchParams.get("company") ?? "";
   const tenantResolution = await resolveActiveRiskSharePublicTenant(rawCompanyCode);
 
@@ -307,6 +276,47 @@ export async function POST(request: NextRequest) {
 
   if (!actorMembershipId) {
     return jsonError(403, "forbidden");
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    return jsonError(403, "site_scope_unavailable");
+  }
+
+  const contentLengthHeader = request.headers.get("content-length");
+
+  if (contentLengthHeader && Number(contentLengthHeader) > MAX_BODY_BYTES) {
+    return jsonError(422, "validation_failed");
+  }
+
+  let rawBodyText: string;
+
+  try {
+    rawBodyText = await request.text();
+  } catch {
+    return jsonError(422, "validation_failed");
+  }
+
+  if (Buffer.byteLength(rawBodyText, "utf8") > MAX_BODY_BYTES) {
+    return jsonError(422, "validation_failed");
+  }
+
+  let parsedBody: unknown;
+
+  try {
+    parsedBody = JSON.parse(rawBodyText);
+  } catch {
+    return jsonError(422, "validation_failed");
+  }
+
+  const validatedBody = validateRequestBody(parsedBody);
+
+  if (!validatedBody) {
+    return jsonError(422, "validation_failed");
   }
 
   const result = await publishRiskShareVersionForTenantChecked({

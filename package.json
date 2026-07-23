@@ -46,6 +46,7 @@
     "verify:risk-share-source-preview-mapping-canonical-site-scope": "node scripts/verify-risk-share-source-preview-mapping-canonical-site-scope.mjs",
     "verify:risk-share-preparation-canonical-site-scope": "node scripts/verify-risk-share-preparation-canonical-site-scope.mjs",
     "verify:risk-share-review-canonical-site-scope": "node scripts/verify-risk-share-review-canonical-site-scope.mjs",
+    "verify:risk-share-publish-canonical-site-scope": "node scripts/verify-risk-share-publish-canonical-site-scope.mjs",
     "verify:risk-share-checklist-template-snapshot": "node scripts/verify-risk-share-checklist-template-snapshot.mjs",
     "verify:risk-share-checklist-submission-behavior": "node scripts/verify-risk-share-checklist-submission-behavior.mjs",
     "verify:risk-share-version-lifecycle-inspect": "node scripts/verify-risk-share-version-lifecycle-inspect.mjs",
