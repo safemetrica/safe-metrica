@@ -5,6 +5,7 @@ import {
   listRiskSharePreparationStateForSource,
   type RiskSharePreparationEntry,
 } from "@/lib/risk-share/riskSharePreparationReadModel";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { resolveActiveRiskSharePublicTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
@@ -148,6 +149,15 @@ export default async function RiskShareManagerSourcePreparationPage({
     selectedTenantCode !== tenantCode ||
     (role !== "tenant_admin" && role !== "tenant_manager")
   ) {
+    return <AccessDeniedScreen />;
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
     return <AccessDeniedScreen />;
   }
 
