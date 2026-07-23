@@ -1,6 +1,7 @@
 import "server-only";
 
-import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import { readRiskShareSourcePrivateDescriptorForTenant } from "@/lib/risk-share/riskShareSourcePrivateRead";
 import {
   readRiskShareSourceColumnMappingSourceState,
   readLatestRiskShareSourceColumnMappingVersion,
@@ -12,6 +13,8 @@ import {
   readRiskShareSourceMappedRows,
   computeRiskShareSourceMappedRowSignature,
 } from "@/lib/risk-share/riskShareSourceMappedRows";
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export type ImportRiskShareCandidatesFailureReason =
   | "confirmed_mapping_required"
@@ -120,11 +123,16 @@ async function saveCandidatesViaRpc(params: {
 export async function importRiskShareCandidatesFromConfirmedSourceMapping(params: {
   companyCode: string;
   sourceId: string;
+  siteId: string;
   oidcToken: string;
   sheetIndex: number;
   importActor: RiskShareSourceColumnMappingCreatedByRole;
 }): Promise<ImportRiskShareCandidatesResult> {
-  const descriptorResult = await readRiskShareSourcePrivateDescriptor(params.companyCode, params.sourceId);
+  const descriptorResult = await readRiskShareSourcePrivateDescriptorForTenant(
+    params.companyCode,
+    params.sourceId,
+    params.siteId,
+  );
 
   if (!descriptorResult.ok) {
     if (descriptorResult.reason === "unsupported_file_type") {
@@ -295,6 +303,7 @@ export async function importRiskShareCandidatesFromConfirmedSourceMapping(params
 export async function hasRiskShareCandidatesForConfirmedMapping(params: {
   companyCode: string;
   sourceId: string;
+  siteId: string;
   mappingVersion: number;
   sheetIndex: number;
 }): Promise<boolean> {
@@ -305,14 +314,19 @@ export async function hasRiskShareCandidatesForConfirmedMapping(params: {
     return false;
   }
 
+  if (!UUID_PATTERN.test(params.siteId)) {
+    return false;
+  }
+
   const query = new URLSearchParams({
-    select: "id",
+    select: "id,site_id",
     company_code: `eq.${params.companyCode}`,
     source_id: `eq.${params.sourceId}`,
     mapping_version: `eq.${params.mappingVersion}`,
     sheet_index: `eq.${params.sheetIndex}`,
     limit: "1",
   });
+  applyRiskShareDefaultSiteScope(query, params.siteId);
 
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/risk_share_item_candidates?${query.toString()}`, {
