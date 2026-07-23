@@ -161,10 +161,14 @@ export default async function RiskShareManagerSourcePreparationPage({
     return <AccessDeniedScreen />;
   }
 
-  // Only the server-confirmed selectedTenantCode is ever passed to the Read
-  // Model -- never rawCompanyCode or tenantCode from the unauthenticated
-  // resolution step above.
-  const listResult = await listRiskSharePreparationStateForSource(selectedTenantCode, rawSourceId);
+  // Only the server-confirmed selectedTenantCode and canonical site are
+  // passed to the Read Model -- never rawCompanyCode or tenantCode from the
+  // unauthenticated resolution step above.
+  const listResult = await listRiskSharePreparationStateForSource(
+    selectedTenantCode,
+    rawSourceId,
+    siteScope.siteId,
+  );
 
   const companyLabel = tenantResolution.tenant.name || tenantCode;
 

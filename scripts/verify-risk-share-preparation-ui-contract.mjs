@@ -57,8 +57,8 @@ check(
     page.includes('role !== "tenant_admin" && role !== "tenant_manager"'),
 );
 check(
-  "page.tsx passes only the server-confirmed selectedTenantCode to the Read Model (never rawCompanyCode/tenantCode)",
-  page.includes("listRiskSharePreparationStateForSource(selectedTenantCode, rawSourceId)") &&
+  "page.tsx passes only the server-confirmed tenant and canonical site to the Read Model",
+  /listRiskSharePreparationStateForSource\(\s*selectedTenantCode,\s*rawSourceId,\s*siteScope\.siteId,\s*\)/.test(page) &&
     !/listRiskSharePreparationStateForSource\(\s*(rawCompanyCode|tenantCode)/.test(page),
 );
 check(

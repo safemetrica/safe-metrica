@@ -1,5 +1,6 @@
 import "server-only";
 
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 /**
@@ -203,6 +204,8 @@ type RiskSharePreparationCandidateRow = {
 
 type RiskShareSourceWithConfirmedMappingsRow = {
   id?: unknown;
+  company_code?: unknown;
+  site_id?: unknown;
   source_title?: unknown;
   site_name?: unknown;
   risk_share_source_column_mappings?: unknown;
@@ -280,6 +283,7 @@ function readStrictInteger(value: unknown): number | null {
 async function fetchSourceAndConfirmedMappings(
   verifiedCompanyCode: string,
   sourceId: string,
+  siteId: string,
 ): Promise<
   | { ok: true; found: false }
   | {
@@ -294,10 +298,11 @@ async function fetchSourceAndConfirmedMappings(
   const query = new URLSearchParams();
   query.set(
     "select",
-    "id,source_title,site_name,risk_share_source_column_mappings!risk_share_source_column_mappings_source_id_fkey(sheet_index,mapping_version,status,company_code)",
+    "id,company_code,site_id,source_title,site_name,risk_share_source_column_mappings!risk_share_source_column_mappings_source_id_fkey(sheet_index,mapping_version,status,company_code)",
   );
   query.set("id", `eq.${sourceId}`);
   query.set("company_code", `eq.${verifiedCompanyCode}`);
+  applyRiskShareDefaultSiteScope(query, siteId);
   query.set("risk_share_source_column_mappings.status", "eq.confirmed");
   // No embedded company_code filter here -- see the function-level comment
   // above for why: filtering the child relation by tenant would hide a
@@ -326,9 +331,17 @@ async function fetchSourceAndConfirmedMappings(
     return { ok: true, found: false };
   }
 
+  const rowId = readTrimmedString(row.id).toLowerCase();
+  const rowCompanyCode = readTrimmedString(row.company_code).toLowerCase();
+  const rowSiteId = readNullableString(row.site_id)?.toLowerCase() ?? null;
   const sourceTitle = readTrimmedString(row.source_title);
 
-  if (!sourceTitle) {
+  if (
+    rowId !== sourceId
+    || rowCompanyCode !== verifiedCompanyCode
+    || (rowSiteId !== null && rowSiteId !== siteId.toLowerCase())
+    || !sourceTitle
+  ) {
     // A source row that exists but fails its own required-field shape is
     // treated the same as a query failure -- never surfaced as if it were
     // a normal, displayable source.
@@ -801,6 +814,8 @@ function toPreparationEntry(
  *     authenticate a browser and does not itself re-derive tenant identity)
  *   - sourceId: must be UUID-shaped; a malformed sourceId returns
  *     status "failed", not "empty"
+ *   - siteId: the server-resolved canonical site; the Source query keeps
+ *     explicit legacy site_id NULL continuity but rejects any other site
  *
  * A source id that does not resolve for verifiedCompanyCode -- either
  * because it does not exist at all, or because it belongs to a different
@@ -812,10 +827,11 @@ function toPreparationEntry(
 export async function listRiskSharePreparationStateForSource(
   verifiedCompanyCode: string,
   sourceId: string,
+  siteId: string,
 ): Promise<RiskSharePreparationStateResult> {
   const companyCode = normalizeStrictCompanyCode(verifiedCompanyCode);
 
-  if (!companyCode || !isUuid(sourceId)) {
+  if (!companyCode || !isUuid(sourceId) || !isUuid(siteId)) {
     console.error("[risk-share-preparation-read-model] invalid caller input", {
       operation: "listRiskSharePreparationStateForSource",
     });
@@ -825,7 +841,11 @@ export async function listRiskSharePreparationStateForSource(
 
   const normalizedSourceId = sourceId.toLowerCase();
 
-  const sourceResult = await fetchSourceAndConfirmedMappings(companyCode, normalizedSourceId);
+  const sourceResult = await fetchSourceAndConfirmedMappings(
+    companyCode,
+    normalizedSourceId,
+    siteId,
+  );
 
   if (!sourceResult.ok) {
     console.error("[risk-share-preparation-read-model] source lookup failed", {
