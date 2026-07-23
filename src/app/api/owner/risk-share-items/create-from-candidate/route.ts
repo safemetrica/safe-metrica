@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import {
+  getTenantRegistryConfigByCode,
   insertRiskShareItemRecord,
   selectSupabaseExportRows,
   type RiskShareItemInsertRecord,
@@ -28,10 +31,12 @@ type CandidateRow = {
   reviewer_status?: string | null;
   reviewer_note?: string | null;
   raw_payload?: Record<string, unknown>;
+  site_id?: string | null;
 };
 
 type ExistingShareItemRow = {
   id?: string;
+  site_id?: string | null;
 };
 
 const CONVERTIBLE_STATUSES = new Set(["accepted", "edited"]);
@@ -70,28 +75,58 @@ function buildRedirect(request: NextRequest, path: string, params: Record<string
   return NextResponse.redirect(url);
 }
 
-async function findCandidate(candidateId: string, companyCode: string) {
+async function findCandidate(
+  candidateId: string,
+  companyCode: string,
+  siteId: string,
+) {
   const query = new URLSearchParams({
     select:
-      "id,source_id,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,category,source_page,source_row,reviewer_status,reviewer_note,raw_payload",
+      "id,source_id,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,category,source_page,source_row,reviewer_status,reviewer_note,raw_payload,site_id",
     id: `eq.${candidateId}`,
     company_code: `eq.${companyCode}`,
     limit: "1",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
-  const rows = await selectSupabaseExportRows<CandidateRow>("risk_share_item_candidates", query);
-  return rows[0] ?? null;
+  const rows = await selectSupabaseExportRows<CandidateRow>(
+    "risk_share_item_candidates",
+    query,
+  );
+  const candidate = rows[0] ?? null;
+
+  if (
+    !candidate
+    || candidate.id?.toLowerCase() !== candidateId.toLowerCase()
+    || candidate.company_code?.toLowerCase() !== companyCode.toLowerCase()
+    || (
+      candidate.site_id !== null
+      && candidate.site_id?.toLowerCase() !== siteId.toLowerCase()
+    )
+  ) {
+    return null;
+  }
+
+  return candidate;
 }
 
-async function findExistingShareItem(candidateId: string, companyCode: string) {
+async function findExistingShareItem(
+  candidateId: string,
+  companyCode: string,
+  siteId: string,
+) {
   const query = new URLSearchParams({
-    select: "id",
+    select: "id,site_id",
     candidate_id: `eq.${candidateId}`,
     company_code: `eq.${companyCode}`,
     limit: "1",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
-  const rows = await selectSupabaseExportRows<ExistingShareItemRow>("risk_share_items", query);
+  const rows = await selectSupabaseExportRows<ExistingShareItemRow>(
+    "risk_share_items",
+    query,
+  );
   return rows[0] ?? null;
 }
 
@@ -133,10 +168,25 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return buildRedirect(request, "/owner/risk-share-activation/candidates", {
+      ...redirectParams,
+      error: "site_scope_unavailable",
+    });
+  }
+
   let candidate: CandidateRow | null = null;
 
   try {
-    candidate = await findCandidate(candidateId, companyCode);
+    candidate = await findCandidate(candidateId, tenant.code, siteScope.siteId);
   } catch {
     return buildRedirect(request, "/owner/risk-share-activation/candidates", {
       ...redirectParams,
@@ -166,7 +216,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const existing = await findExistingShareItem(candidateId, companyCode);
+    const existing = await findExistingShareItem(
+      candidateId,
+      tenant.code,
+      siteScope.siteId,
+    );
 
     if (existing) {
       return buildRedirect(request, "/owner/risk-share-activation/share-items", {
@@ -184,7 +238,7 @@ export async function POST(request: NextRequest) {
   const result = await insertRiskShareItemRecord({
     source_id: candidate.source_id,
     candidate_id: candidateId,
-    company_code: companyCode,
+    company_code: tenant.code,
     company_name: candidate.company_name ?? null,
     site_name: candidate.site_name ?? null,
     task_name: candidate.task_name,
