@@ -1,9 +1,11 @@
 import "server-only";
 
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import { listRiskShareSourcesForTenant } from "@/lib/risk-share/riskShareSourceRegistry";
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /** One more than the display cap so a full page of results (exactly
  * DISPLAY_LIMIT rows) is distinguishable from a truncated one (more than
@@ -196,19 +198,21 @@ function toReviewListEntry(
   };
 }
 
-/** Tenant Share Review list for the manager-facing screen. company_code
- * must already be the server-confirmed selectedTenantCode from the active
- * session -- this function does not itself re-derive tenant identity, and
- * callers must never pass a client-supplied company code straight through.
+/** Canonical single-site Share Review list for the manager-facing screen.
+ * company_code and siteId must already be server-confirmed from the active
+ * session and canonical site resolver -- this function does not itself
+ * re-derive either identity, and callers must never pass client-supplied
+ * scope straight through.
  * Distinguishes a real zero-row tenant from a query failure via the
  * `status` discriminant; callers must not collapse "failed" into "ok" with
  * an empty list. */
 export async function listRiskShareItemsForManagerReview(
   rawCompanyCode: string,
+  siteId: string,
 ): Promise<RiskShareManagerReviewListResult> {
   const companyCode = normalizeStrictCompanyCode(rawCompanyCode);
 
-  if (!companyCode) {
+  if (!companyCode || !UUID_PATTERN.test(siteId)) {
     return { status: "failed" };
   }
 
@@ -237,6 +241,7 @@ export async function listRiskShareItemsForManagerReview(
     order: "created_at.desc,id.desc",
     limit: String(FETCH_LIMIT),
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   let rows: RiskShareManagerReviewRow[];
 

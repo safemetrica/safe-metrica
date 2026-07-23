@@ -1,5 +1,6 @@
 import "server-only";
 
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 import {
   listRiskShareItemsForManagerReview,
@@ -7,6 +8,7 @@ import {
 } from "@/lib/risk-share/riskShareManagerReview";
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOCK_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const ACTIVE_VERSION_FETCH_LIMIT = 2;
 
@@ -146,6 +148,7 @@ function parseActiveVersionRow(
 async function fetchActiveVersionForMonth(
   companyCode: string,
   lockMonth: string,
+  siteId: string,
 ): Promise<ActiveVersionLookupResult> {
   const query = new URLSearchParams({
     select:
@@ -156,6 +159,7 @@ async function fetchActiveVersionForMonth(
     order: "created_at.desc",
     limit: String(ACTIVE_VERSION_FETCH_LIMIT),
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   let rows: ActiveVersionRow[];
 
@@ -290,17 +294,18 @@ function countEntries(entries: RiskShareManagerPublishEntry[]): RiskShareManager
 export async function listRiskShareManagerPublishState(
   rawCompanyCode: string,
   rawLockMonth: string,
+  siteId: string,
 ): Promise<RiskShareManagerPublishReadModelResult> {
   const companyCode = normalizeStrictCompanyCode(rawCompanyCode);
   const lockMonth = normalizeStrictLockMonth(rawLockMonth);
 
-  if (!companyCode || !lockMonth) {
+  if (!companyCode || !lockMonth || !UUID_PATTERN.test(siteId)) {
     return { status: "failed" };
   }
 
   const [reviewResult, activeVersionResult] = await Promise.all([
-    listRiskShareItemsForManagerReview(companyCode),
-    fetchActiveVersionForMonth(companyCode, lockMonth),
+    listRiskShareItemsForManagerReview(companyCode, siteId),
+    fetchActiveVersionForMonth(companyCode, lockMonth, siteId),
   ]);
 
   if (reviewResult.status !== "ok" || activeVersionResult.status !== "ok") {

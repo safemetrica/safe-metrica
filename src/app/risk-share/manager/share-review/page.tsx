@@ -127,7 +127,10 @@ export default async function RiskShareManagerShareReviewPage({
     { company: selectedTenantCode },
     lang,
   );
-  const listResult = await listRiskShareItemsForManagerReview(selectedTenantCode);
+  const listResult = await listRiskShareItemsForManagerReview(
+    selectedTenantCode,
+    siteScope.siteId,
+  );
 
   const clientItems: ShareReviewClientItem[] =
     listResult.status === "ok"
