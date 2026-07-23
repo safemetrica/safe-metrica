@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import {
+  getTenantRegistryConfigByCode,
   selectSupabaseExportRows,
   updateRiskShareItemCustomerCheckStatus,
   type RiskShareItemCustomerCheckStatus,
@@ -18,6 +21,7 @@ type ShareItemRow = {
   customer_confirmed?: boolean | null;
   worker_visible?: boolean | null;
   version_lock_id?: string | null;
+  site_id?: string | null;
 };
 
 const CUSTOMER_CHECK_STATUSES = new Set<RiskShareItemCustomerCheckStatus>([
@@ -59,17 +63,39 @@ function buildRedirect(request: NextRequest, params: Record<string, string>) {
   return NextResponse.redirect(url);
 }
 
-async function findShareItem(itemId: string, companyCode: string) {
+async function findShareItem(
+  itemId: string,
+  companyCode: string,
+  siteId: string,
+) {
   const query = new URLSearchParams({
     select:
-      "id,company_code,share_status,customer_check_status,customer_confirmed,worker_visible,version_lock_id",
+      "id,company_code,share_status,customer_check_status,customer_confirmed,worker_visible,version_lock_id,site_id",
     id: `eq.${itemId}`,
     company_code: `eq.${companyCode}`,
     limit: "1",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
-  const rows = await selectSupabaseExportRows<ShareItemRow>("risk_share_items", query);
-  return rows[0] ?? null;
+  const rows = await selectSupabaseExportRows<ShareItemRow>(
+    "risk_share_items",
+    query,
+  );
+  const item = rows[0] ?? null;
+
+  if (
+    !item
+    || item.id?.toLowerCase() !== itemId.toLowerCase()
+    || item.company_code?.toLowerCase() !== companyCode.toLowerCase()
+    || (
+      item.site_id !== null
+      && item.site_id?.toLowerCase() !== siteId.toLowerCase()
+    )
+  ) {
+    return null;
+  }
+
+  return item;
 }
 
 export async function POST(request: NextRequest) {
@@ -100,10 +126,25 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return buildRedirect(request, {
+      ...redirectParams,
+      error: "site_scope_unavailable",
+    });
+  }
+
   let item: ShareItemRow | null = null;
 
   try {
-    item = await findShareItem(itemId, companyCode);
+    item = await findShareItem(itemId, tenant.code, siteScope.siteId);
   } catch {
     return buildRedirect(request, {
       ...redirectParams,
@@ -139,13 +180,18 @@ export async function POST(request: NextRequest) {
       ? "needs_customer_check"
       : "draft";
 
-  const result = await updateRiskShareItemCustomerCheckStatus(itemId, companyCode, {
-    customer_check_status: customerCheckStatus,
-    customer_note: customerNote,
-    customer_confirmed: customerConfirmed,
-    share_status: nextShareStatus,
-    updated_at: new Date().toISOString(),
-  });
+  const result = await updateRiskShareItemCustomerCheckStatus(
+    itemId,
+    tenant.code,
+    siteScope.siteId,
+    {
+      customer_check_status: customerCheckStatus,
+      customer_note: customerNote,
+      customer_confirmed: customerConfirmed,
+      share_status: nextShareStatus,
+      updated_at: new Date().toISOString(),
+    },
+  );
 
   if (!result.ok) {
     return buildRedirect(request, {
