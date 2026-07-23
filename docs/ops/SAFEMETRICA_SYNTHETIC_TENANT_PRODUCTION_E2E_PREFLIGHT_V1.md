@@ -28,9 +28,9 @@ The generated manifest fixes:
 
 - the exact tenant and manifest identifiers;
 - the Vercel Production target;
-- the authorized human and four distinct approval references;
-- separate approval records for fixture creation, authenticated Runtime, Public
-  QR submission, and cleanup writes;
+- the authorized human and phase-specific approval references;
+- a required fixture-creation approval record plus optional later approval
+  records for authenticated Runtime, Public QR submission, and cleanup writes;
 - one `risk_share` entitlement using `activation_source=internal_test`;
 - a non-null expiry and `internal-test:` external reference;
 - the exact scenario set and maximum records per table family;
@@ -76,14 +76,21 @@ SM_E2E_SEQUENCE=1 \
 SM_E2E_ACCOUNT_EMAIL="<synthetic account>" \
 SM_E2E_APPROVED_BY="<authorized human>" \
 SM_E2E_FIXTURE_CREATION_APPROVAL_REFERENCE="<fixture approval reference>" \
-SM_E2E_AUTHENTICATED_RUNTIME_APPROVAL_REFERENCE="<Runtime approval reference>" \
-SM_E2E_PUBLIC_QR_APPROVAL_REFERENCE="<Public QR approval reference>" \
-SM_E2E_CLEANUP_APPROVAL_REFERENCE="<cleanup approval reference>" \
 npm run synthetic-tenant-production-e2e:manifest
 ```
 
-The four approval references must be distinct. One general instruction cannot
-be copied into all four fields.
+Later approval references are optional during fixture preflight and are added
+only when the corresponding phase receives explicit approval:
+
+```bash
+SM_E2E_AUTHENTICATED_RUNTIME_APPROVAL_REFERENCE="<Runtime approval reference>"
+SM_E2E_PUBLIC_QR_APPROVAL_REFERENCE="<Public QR approval reference>"
+SM_E2E_CLEANUP_APPROVAL_REFERENCE="<cleanup approval reference>"
+```
+
+Every supplied approval reference must be distinct. One general instruction
+cannot be copied into multiple phase fields. A pending later approval never
+blocks read-only preflight or expands the current write scope.
 
 Validate a protected temporary manifest:
 

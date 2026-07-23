@@ -121,16 +121,26 @@ export function buildSyntheticManifest({
     expiresAt.valueOf() + cleanupHoursAfterExpiry * 60 * 60 * 1000,
   );
   const approvalReferences = Object.fromEntries(
-    APPROVAL_SCOPES.map((scope) => [
-      scope,
-      readRequiredText(
-        phaseApprovalReferences?.[scope],
-        `${scope}_approval_reference`,
-        200,
-      ),
-    ]),
+    APPROVAL_SCOPES.map((scope) => {
+      const value = phaseApprovalReferences?.[scope];
+      return [
+        scope,
+        typeof value === "string" && value.trim()
+          ? readRequiredText(value, `${scope}_approval_reference`, 200)
+          : null,
+      ];
+    }),
   );
-  if (new Set(Object.values(approvalReferences)).size !== APPROVAL_SCOPES.length) {
+  if (!approvalReferences.fixture_creation) {
+    throw new Error("fixture_creation_approval_reference_required");
+  }
+  const providedApprovalReferences = Object.values(approvalReferences).filter(
+    (value) => typeof value === "string",
+  );
+  if (
+    new Set(providedApprovalReferences).size
+    !== providedApprovalReferences.length
+  ) {
     throw new Error("phase_approval_references_must_be_distinct");
   }
   const approver = readRequiredText(approvedBy, "approved_by", 120);
@@ -141,16 +151,19 @@ export function buildSyntheticManifest({
     state: "approved_not_created",
     approvedAt: now.toISOString(),
     approvedBy: approver,
-    phaseApprovals: Object.fromEntries(
-      APPROVAL_SCOPES.map((scope) => [
+    phaseApprovals: Object.fromEntries(APPROVAL_SCOPES.map((scope) => {
+      const approvalReference = approvalReferences[scope];
+      return [
         scope,
-        {
-          approvedAt: now.toISOString(),
-          approvedBy: approver,
-          approvalReference: approvalReferences[scope],
-        },
-      ]),
-    ),
+        approvalReference
+          ? {
+              approvedAt: now.toISOString(),
+              approvedBy: approver,
+              approvalReference,
+            }
+          : null,
+      ];
+    })),
     runtimeTarget: "vercel_production",
     tenant: {
       code: `sm-e2e-${identity}`,
@@ -248,6 +261,9 @@ export function validateSyntheticManifest(manifest, {
   const approvalReferences = [];
   for (const scope of APPROVAL_SCOPES) {
     const approval = manifest.phaseApprovals?.[scope];
+    if (approval === null && scope !== "fixture_creation") {
+      continue;
+    }
     if (
       typeof approval?.approvedAt !== "string"
       || typeof approval?.approvedBy !== "string"
@@ -261,8 +277,7 @@ export function validateSyntheticManifest(manifest, {
     approvalReferences.push(approval.approvalReference.trim());
   }
   if (
-    approvalReferences.length === APPROVAL_SCOPES.length
-    && new Set(approvalReferences).size !== APPROVAL_SCOPES.length
+    new Set(approvalReferences).size !== approvalReferences.length
   ) {
     errors.push("phase_approval_references_must_be_distinct");
   }
