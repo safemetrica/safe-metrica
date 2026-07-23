@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import {
   readRiskShareSourceColumnMappingSourceState,
   validateRiskShareSourceColumnMappingEntries,
@@ -90,6 +91,16 @@ export async function POST(request: NextRequest) {
   ) {
     const href = buildRiskShareLangHref("/risk-share/manager/sources", { company: tenantCode }, lang);
     return NextResponse.redirect(new URL(`${href}&actionError=access_denied`, request.url), { status: 303 });
+  }
+
+  const siteScope = await resolveRiskShareCanonicalSiteScopeForTenant(
+    selectedTenantCode,
+    tenantResolution.tenant.defaultSiteId,
+  ).catch(() => ({ ok: false as const }));
+
+  if (!siteScope.ok) {
+    const href = buildRiskShareLangHref("/risk-share/manager/sources", { company: tenantCode }, lang);
+    return NextResponse.redirect(new URL(`${href}&actionError=site_scope_unavailable`, request.url), { status: 303 });
   }
 
   const oidcToken = request.headers.get("x-vercel-oidc-token")?.trim() ?? "";
