@@ -46,6 +46,7 @@ const helper = fs.readFileSync(
 const helperStart = helper.indexOf("export async function updateManagerConfirmationReview");
 const helperAction = helper.slice(helperStart);
 const targetScopeQuery = helperAction.indexOf("applyRiskShareDefaultSiteScope(targetQuery, input.siteId)");
+const targetStatusFilter = helperAction.indexOf("manager_review_status: `eq.${input.expectedStatus}`");
 const targetScopeFailure = helperAction.indexOf('code: "target_scope_mismatch"');
 const rpcCall = helperAction.indexOf("/rest/v1/rpc/update_risk_share_confirmation_review_status");
 
@@ -59,6 +60,10 @@ const targetChecks = [
     targetScopeQuery !== -1
       && helperAction.includes('id: `eq.${input.submissionId}`')
       && helperAction.includes('tenant_code: `eq.${input.companyCode}`'),
+  ],
+  [
+    "Confirmation review preflight requires the expected review status",
+    targetStatusFilter !== -1 && targetStatusFilter < targetScopeQuery,
   ],
   [
     "Confirmation review fails closed before the RPC when the target is outside site scope",
