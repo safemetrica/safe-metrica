@@ -6,9 +6,11 @@ import { redirect } from "next/navigation";
 import {
   createTenantDefaultSite,
   getDefaultTenantSiteConfigByTenantCode,
+  listTenantSitesByTenantCode,
   updateTenantSiteProfile,
 } from "@/lib/supabaseServer";
 import { buildRiskShareLangHref, getRiskShareLocale } from "@/lib/risk-share/riskShareI18n";
+import { resolveRiskShareSingleSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { canAccessRiskShareManagerTenant } from "@/lib/risk-share/riskShareManagerTenantAccess";
 import { resolveRiskShareManagerTenant } from "@/lib/risk-share/riskSharePublicTenantGuard";
 import { requireTenantAccessForCurrentSession } from "@/lib/tenant-auth/tenantAccessServerGuards";
@@ -57,20 +59,38 @@ function normalizeNavigationCode(value: string) {
 }
 
 async function resolveSiteIdForUpdate(tenantId: string, tenantCode: string, siteName: string) {
-  const existingSite = await getDefaultTenantSiteConfigByTenantCode(tenantCode);
+  const resolveCanonicalSite = async () => {
+    const [defaultSite, tenantSites] = await Promise.all([
+      getDefaultTenantSiteConfigByTenantCode(tenantCode),
+      listTenantSitesByTenantCode(tenantCode),
+    ]);
+    const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
 
-  if (existingSite) {
-    return existingSite.id;
+    if (!singleSiteScope.ok) {
+      return { ok: false as const, siteId: null };
+    }
+
+    return { ok: true as const, siteId: singleSiteScope.siteId };
+  };
+
+  const existingScope = await resolveCanonicalSite();
+
+  if (!existingScope.ok) {
+    return null;
+  }
+
+  if (existingScope.siteId) {
+    return existingScope.siteId;
   }
 
   const createResult = await createTenantDefaultSite({ tenantId, tenantCode, siteName });
 
-  if ((createResult.ok || createResult.reason === "default_already_exists") && createResult.id) {
-    return createResult.id;
+  if (!createResult.ok && createResult.reason !== "default_already_exists") {
+    return null;
   }
 
-  const recoveredSite = await getDefaultTenantSiteConfigByTenantCode(tenantCode);
-  return recoveredSite?.id ?? null;
+  const recoveredScope = await resolveCanonicalSite();
+  return recoveredScope.ok ? recoveredScope.siteId : null;
 }
 
 export async function saveSiteProfileAction(
@@ -130,13 +150,20 @@ export async function saveSiteProfileAction(
   }).catch(() => ({ ok: false, id: null, reason: "request_failed" }));
 
   if (!finalUpdateResult.ok && finalUpdateResult.reason === "site_not_found") {
-    const recoveredSite = await getDefaultTenantSiteConfigByTenantCode(tenantCode).catch(() => null);
-    const retrySiteId = recoveredSite?.id;
+    const recoveredSiteId = await Promise.all([
+      getDefaultTenantSiteConfigByTenantCode(tenantCode),
+      listTenantSitesByTenantCode(tenantCode),
+    ])
+      .then(([defaultSite, tenantSites]) => {
+        const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+        return singleSiteScope.ok ? singleSiteScope.siteId : null;
+      })
+      .catch(() => null);
 
-    if (retrySiteId && retrySiteId !== siteId) {
+    if (recoveredSiteId && recoveredSiteId !== siteId) {
       finalUpdateResult = await updateTenantSiteProfile({
         tenantId,
-        siteId: retrySiteId,
+        siteId: recoveredSiteId,
         ...validation.value,
       }).catch(() => ({ ok: false, id: null, reason: "request_failed" }));
     }
