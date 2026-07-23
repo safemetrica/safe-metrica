@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { readRiskShareSourcePrivateDescriptorForTenant } from "@/lib/risk-share/riskShareSourcePrivateRead";
 import {
   readRiskShareSourceColumnMappingSourceState,
   validateRiskShareSourceColumnMappingEntries,
@@ -10,6 +11,7 @@ import {
   type RiskShareSourceCanonicalField,
   type RiskShareSourceColumnMappingEntry,
 } from "@/lib/risk-share/riskShareSourceColumnMapping";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -73,11 +75,29 @@ export async function POST(request: NextRequest) {
 
   const fallback = { companyCode, sourceId, sheet: sheetIndex, headerRow: submittedHeaderRowIndex };
 
+  const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!tenant || !siteScope.ok) {
+    return buildRedirect(request, fallback, {
+      actionError: "site_scope_unavailable",
+    });
+  }
+
   if (saveIntentRaw !== "draft" && saveIntentRaw !== "confirm") {
     return buildRedirect(request, fallback, { actionError: "invalid_intent" });
   }
 
-  const descriptorResult = await readRiskShareSourcePrivateDescriptor(companyCode, sourceId);
+  const descriptorResult = await readRiskShareSourcePrivateDescriptorForTenant(
+    tenant.code,
+    sourceId,
+    siteScope.siteId,
+  );
 
   if (!descriptorResult.ok) {
     return buildRedirect(request, fallback, { actionError: "access_denied" });
@@ -115,7 +135,7 @@ export async function POST(request: NextRequest) {
   }
 
   const saveResult = await saveRiskShareSourceColumnMappingVersion({
-    companyCode,
+    companyCode: tenant.code,
     sourceId,
     sheetIndex: selectedSheetIndex,
     headerRowIndex,
