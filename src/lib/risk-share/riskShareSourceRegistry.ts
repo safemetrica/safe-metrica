@@ -1,8 +1,10 @@
 import "server-only";
 
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 50;
 
@@ -101,7 +103,7 @@ function toRegistryEntry(row: RiskShareSourceRegistryRow): RiskShareSourceRegist
 
 async function listRiskShareSourcesByCompanyCode(
   rawCompanyCode: string,
-  options?: { limit?: number },
+  options?: { limit?: number; siteId?: string },
 ): Promise<RiskShareSourceRegistryEntry[]> {
   const companyCode = normalizeStrictCompanyCode(rawCompanyCode);
 
@@ -120,6 +122,10 @@ async function listRiskShareSourcesByCompanyCode(
     limit: String(limit),
   });
 
+  if (options?.siteId) {
+    applyRiskShareDefaultSiteScope(query, options.siteId);
+  }
+
   const rows = await selectSupabaseExportRows<RiskShareSourceRegistryRow>("risk_share_sources", query);
 
   return rows
@@ -136,7 +142,15 @@ export async function listRiskShareSourcesForOwner(
 
 export async function listRiskShareSourcesForTenant(
   rawCompanyCode: string,
+  siteId: string,
   options?: { limit?: number },
 ): Promise<RiskShareSourceRegistryEntry[]> {
-  return listRiskShareSourcesByCompanyCode(rawCompanyCode, options);
+  if (!UUID_PATTERN.test(siteId)) {
+    return [];
+  }
+
+  return listRiskShareSourcesByCompanyCode(rawCompanyCode, {
+    ...options,
+    siteId,
+  });
 }

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
 
 const COMPANY_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -35,6 +36,7 @@ export type RiskShareSourcePrivateReadResult =
 type RiskShareSourcePrivateReadRow = {
   id?: unknown;
   company_code?: unknown;
+  site_id?: unknown;
   source_title?: unknown;
   site_name?: unknown;
   source_type?: unknown;
@@ -94,9 +96,10 @@ function resolveSourceType(row: RiskShareSourcePrivateReadRow): "risk_assessment
   return null;
 }
 
-export async function readRiskShareSourcePrivateDescriptor(
+async function readRiskShareSourcePrivateDescriptorByCompanyCode(
   rawCompanyCode: string,
   rawSourceId: string,
+  siteId?: string,
 ): Promise<RiskShareSourcePrivateReadResult> {
   const companyCode = normalizeStrictCompanyCode(rawCompanyCode);
   const sourceId = normalizeStrictSourceId(rawSourceId);
@@ -107,11 +110,14 @@ export async function readRiskShareSourcePrivateDescriptor(
 
   const query = new URLSearchParams({
     select:
-      "id,company_code,source_title,site_name,source_type,file_name,file_mime_type,file_size,source_document_date,storage_provider,storage_access,file_pathname",
+      "id,company_code,site_id,source_title,site_name,source_type,file_name,file_mime_type,file_size,source_document_date,storage_provider,storage_access,file_pathname",
     company_code: `eq.${companyCode}`,
     id: `eq.${sourceId}`,
     limit: "1",
   });
+  if (siteId) {
+    applyRiskShareDefaultSiteScope(query, siteId);
+  }
 
   let rows: RiskShareSourcePrivateReadRow[];
 
@@ -173,4 +179,30 @@ export async function readRiskShareSourcePrivateDescriptor(
       filePathname,
     },
   };
+}
+
+export async function readRiskShareSourcePrivateDescriptor(
+  rawCompanyCode: string,
+  rawSourceId: string,
+): Promise<RiskShareSourcePrivateReadResult> {
+  return readRiskShareSourcePrivateDescriptorByCompanyCode(
+    rawCompanyCode,
+    rawSourceId,
+  );
+}
+
+export async function readRiskShareSourcePrivateDescriptorForTenant(
+  rawCompanyCode: string,
+  rawSourceId: string,
+  siteId: string,
+): Promise<RiskShareSourcePrivateReadResult> {
+  if (!UUID_PATTERN.test(siteId)) {
+    return { ok: false, reason: "invalid_request" };
+  }
+
+  return readRiskShareSourcePrivateDescriptorByCompanyCode(
+    rawCompanyCode,
+    rawSourceId,
+    siteId,
+  );
 }

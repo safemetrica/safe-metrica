@@ -219,9 +219,11 @@ export async function listRiskShareItemsForManagerReview(
   let sourceTitleById: Map<string, string>;
 
   try {
-    const sources = await listRiskShareSourcesForTenant(companyCode, {
-      limit: SOURCE_TITLE_LOOKUP_LIMIT,
-    });
+    const sources = await listRiskShareSourcesForTenant(
+      companyCode,
+      siteId,
+      { limit: SOURCE_TITLE_LOOKUP_LIMIT },
+    );
     sourceTitleById = new Map(
       sources
         .filter((source) => source.sourceTitle)

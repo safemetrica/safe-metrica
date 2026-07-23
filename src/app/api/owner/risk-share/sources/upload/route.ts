@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import { uploadRiskShareSource } from "@/lib/risk-share/riskShareSourceUpload";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -44,8 +46,26 @@ export async function POST(request: NextRequest) {
   const sourceDocumentDate = readText(formData, "source_document_date", 10);
   const sourceFile = formData.get("source_file");
 
+  const tenant = await getTenantRegistryConfigByCode(companyCodeInput).catch(
+    () => null,
+  );
+  const siteScope = tenant
+    ? await resolveRiskShareCanonicalSiteScopeForTenant(
+        tenant.code,
+        tenant.defaultSiteId,
+      ).catch(() => ({ ok: false as const }))
+    : { ok: false as const };
+
+  if (!siteScope.ok) {
+    return buildRedirect(request, {
+      actionError: "site_scope_mismatch",
+      companyCode: companyCodeInput,
+    });
+  }
+
   const result = await uploadRiskShareSource({
     companyCode: companyCodeInput,
+    siteId: siteScope.siteId,
     sourceTitle,
     siteName,
     sourceDocumentDate,

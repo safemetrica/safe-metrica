@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { readRiskShareSourcePrivateDescriptor } from "@/lib/risk-share/riskShareSourcePrivateRead";
+import { readRiskShareSourcePrivateDescriptorForTenant } from "@/lib/risk-share/riskShareSourcePrivateRead";
 import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
 import {
   readRiskShareSourceColumnMappingSourceState,
@@ -181,7 +181,11 @@ export default async function RiskShareManagerSourceColumnMappingPage({
     );
   }
 
-  const descriptorResult = await readRiskShareSourcePrivateDescriptor(selectedTenantCode, sourceId);
+  const descriptorResult = await readRiskShareSourcePrivateDescriptorForTenant(
+    selectedTenantCode,
+    sourceId,
+    siteScope.siteId,
+  );
 
   if (!descriptorResult.ok) {
     return (
