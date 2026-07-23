@@ -138,13 +138,6 @@ async function listRiskShareSourcesByCompanyCode(
     .filter((entry): entry is RiskShareSourceRegistryEntry => entry !== null);
 }
 
-export async function listRiskShareSourcesForOwner(
-  rawCompanyCode: string,
-  options?: { limit?: number },
-): Promise<RiskShareSourceRegistryEntry[]> {
-  return listRiskShareSourcesByCompanyCode(rawCompanyCode, options);
-}
-
 export async function listRiskShareSourcesForTenant(
   rawCompanyCode: string,
   siteId: string,
