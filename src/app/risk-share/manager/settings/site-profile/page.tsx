@@ -142,7 +142,11 @@ export default async function ManagerSiteProfileSettingsPage({ searchParams }: P
     listTenantSitesByTenantCode(tenantCode),
   ])
     .then(([site, tenantSites]) => {
-      const singleSiteScope = resolveRiskShareSingleSiteScope(site, tenantSites);
+      const singleSiteScope = resolveRiskShareSingleSiteScope(
+        site,
+        tenantSites,
+        tenantResolution.tenant.defaultSiteId,
+      );
       return singleSiteScope.ok
         ? { ok: true as const, site }
         : { ok: false as const, reason: "ambiguous" as const };

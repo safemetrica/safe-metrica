@@ -14,8 +14,9 @@ const checks = [
       && scope.includes('site.status === "active"'),
   ],
   [
-    "default-site pointer is not used as the multi-site detector",
-    monthlyPage.includes("resolveRiskShareSingleSiteScope(defaultSite, tenantSites)")
+    "registry pointer supplements the canonical tenant_sites detector",
+    monthlyPage.includes("tenantResolution.tenant.defaultSiteId")
+      && scope.includes('"registry_default_site_mismatch"')
       && !monthlyPage.includes("defaultSite ? 1 : 0"),
   ],
   [
@@ -29,6 +30,7 @@ const checks = [
     scope.includes('"active_site_without_matching_default"')
       && scope.includes('"archived_default_site"')
       && scope.includes('"multiple_default_sites"')
+      && scope.includes('"registry_default_site_mismatch"')
       && scope.includes("defaultSite.id !== activeSites[0].id"),
   ],
   [

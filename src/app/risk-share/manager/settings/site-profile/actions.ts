@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   createTenantDefaultSite,
   getDefaultTenantSiteConfigByTenantCode,
+  getTenantRegistryConfigByCode,
   listTenantSitesByTenantCode,
   updateTenantSiteProfile,
 } from "@/lib/supabaseServer";
@@ -58,13 +59,27 @@ function normalizeNavigationCode(value: string) {
     .slice(0, 64);
 }
 
-async function resolveSiteIdForUpdate(tenantId: string, tenantCode: string, siteName: string) {
+async function resolveSiteIdForUpdate(
+  tenantId: string,
+  tenantCode: string,
+  siteName: string,
+) {
   const resolveCanonicalSite = async () => {
-    const [defaultSite, tenantSites] = await Promise.all([
+    const [defaultSite, tenantSites, tenantRegistry] = await Promise.all([
       getDefaultTenantSiteConfigByTenantCode(tenantCode),
       listTenantSitesByTenantCode(tenantCode),
+      getTenantRegistryConfigByCode(tenantCode),
     ]);
-    const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+
+    if (!tenantRegistry || tenantRegistry.id !== tenantId) {
+      return { ok: false as const, siteId: null };
+    }
+
+    const singleSiteScope = resolveRiskShareSingleSiteScope(
+      defaultSite,
+      tenantSites,
+      tenantRegistry.defaultSiteId,
+    );
 
     if (!singleSiteScope.ok) {
       return { ok: false as const, siteId: null };
@@ -137,7 +152,11 @@ export async function saveSiteProfileAction(
     return { values, fieldErrors: validation.fieldErrors, formError: "입력값을 확인해 주세요." };
   }
 
-  const siteId = await resolveSiteIdForUpdate(tenantId, tenantCode, validation.value.siteName).catch(() => null);
+  const siteId = await resolveSiteIdForUpdate(
+    tenantId,
+    tenantCode,
+    validation.value.siteName,
+  ).catch(() => null);
 
   if (!siteId) {
     return { values, fieldErrors: {}, formError: "저장할 기본 사업장을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." };
@@ -153,9 +172,17 @@ export async function saveSiteProfileAction(
     const recoveredSiteId = await Promise.all([
       getDefaultTenantSiteConfigByTenantCode(tenantCode),
       listTenantSitesByTenantCode(tenantCode),
+      getTenantRegistryConfigByCode(tenantCode),
     ])
-      .then(([defaultSite, tenantSites]) => {
-        const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+      .then(([defaultSite, tenantSites, tenantRegistry]) => {
+        if (!tenantRegistry || tenantRegistry.id !== tenantId) {
+          return null;
+        }
+        const singleSiteScope = resolveRiskShareSingleSiteScope(
+          defaultSite,
+          tenantSites,
+          tenantRegistry.defaultSiteId,
+        );
         return singleSiteScope.ok ? singleSiteScope.siteId : null;
       })
       .catch(() => null);

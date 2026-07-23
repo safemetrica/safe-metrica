@@ -12,6 +12,7 @@ const ACTIVE_RISK_SHARE_PUBLIC_SERVICE_MODES = new Set([
 export type ActiveRiskSharePublicTenant = {
   code: string;
   name: string;
+  defaultSiteId: string | null;
 };
 
 export type RiskShareManagerTenant = ActiveRiskSharePublicTenant & {
@@ -73,6 +74,7 @@ export async function resolveActiveRiskSharePublicTenant(
     tenant: {
       code: tenant.code,
       name: tenant.name,
+      defaultSiteId: tenant.defaultSiteId,
     },
   };
 }
@@ -111,6 +113,7 @@ export async function resolveRiskShareManagerTenant(
     tenant: {
       code: tenant.code,
       name: tenant.name,
+      defaultSiteId: tenant.defaultSiteId,
       status: tenant.status,
     },
   };

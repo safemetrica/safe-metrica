@@ -478,7 +478,11 @@ export default async function RiskShareManagerHomePage({ searchParams }: PagePro
   }
 
   const [defaultSite, tenantSites] = siteScope;
-  const singleSiteScope = resolveRiskShareSingleSiteScope(defaultSite, tenantSites);
+  const singleSiteScope = resolveRiskShareSingleSiteScope(
+    defaultSite,
+    tenantSites,
+    tenantResolution.tenant.defaultSiteId,
+  );
 
   if (!singleSiteScope.ok) {
     return (
