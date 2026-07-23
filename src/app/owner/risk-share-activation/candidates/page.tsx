@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
+import {
+  getTenantRegistryConfigByCode,
+  selectSupabaseExportRows,
+} from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -36,6 +41,7 @@ type CandidateRow = {
   mapping_version?: number;
   sheet_index?: number;
   source_row_number?: number;
+  site_id?: string | null;
 };
 
 const REVIEWER_STATUS_LABELS: Record<string, string> = {
@@ -123,16 +129,21 @@ function formatConfidence(value?: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-async function fetchCandidates(companyCode: string, status: string) {
+async function fetchCandidates(
+  companyCode: string,
+  status: string,
+  siteId: string,
+) {
   if (!companyCode) return [];
 
   const query = new URLSearchParams({
     select:
-      "id,created_at,source_id,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,category,source_page,source_row,confidence,ai_generated,reviewer_status,reviewer_note,worker_visible,customer_confirmed,mapping_version,sheet_index,source_row_number",
+      "id,created_at,source_id,company_code,company_name,site_name,task_name,hazard,accident_type,risk_level,current_controls,improvement_plan,worker_share_summary,category,source_page,source_row,confidence,ai_generated,reviewer_status,reviewer_note,worker_visible,customer_confirmed,mapping_version,sheet_index,source_row_number,site_id",
     company_code: `eq.${companyCode}`,
     order: "created_at.desc",
     limit: "100",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
 
   if (status && status !== "all") {
     query.set("reviewer_status", `eq.${status}`);
@@ -163,10 +174,28 @@ export default async function RiskShareCandidateReviewPage({ searchParams }: Pag
   let candidates: CandidateRow[] = [];
   let loadFailed = false;
 
-  try {
-    candidates = await fetchCandidates(companyCode, selectedStatus);
-  } catch {
-    loadFailed = true;
+  if (companyCode) {
+    const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+    const siteScope = tenant
+      ? await resolveRiskShareCanonicalSiteScopeForTenant(
+          tenant.code,
+          tenant.defaultSiteId,
+        ).catch(() => ({ ok: false as const }))
+      : { ok: false as const };
+
+    if (!tenant || !siteScope.ok) {
+      loadFailed = true;
+    } else {
+      try {
+        candidates = await fetchCandidates(
+          tenant.code,
+          selectedStatus,
+          siteScope.siteId,
+        );
+      } catch {
+        loadFailed = true;
+      }
+    }
   }
 
   const statusCounts = candidates.reduce<Record<string, number>>((acc, candidate) => {
