@@ -33,15 +33,11 @@ async function main() {
         fixture_creation: requiredEnv(
           "SM_E2E_FIXTURE_CREATION_APPROVAL_REFERENCE",
         ),
-        authenticated_runtime: requiredEnv(
-          "SM_E2E_AUTHENTICATED_RUNTIME_APPROVAL_REFERENCE",
-        ),
-        public_qr_submission: requiredEnv(
-          "SM_E2E_PUBLIC_QR_APPROVAL_REFERENCE",
-        ),
-        cleanup_writes: requiredEnv(
-          "SM_E2E_CLEANUP_APPROVAL_REFERENCE",
-        ),
+        authenticated_runtime:
+          process.env.SM_E2E_AUTHENTICATED_RUNTIME_APPROVAL_REFERENCE,
+        public_qr_submission:
+          process.env.SM_E2E_PUBLIC_QR_APPROVAL_REFERENCE,
+        cleanup_writes: process.env.SM_E2E_CLEANUP_APPROVAL_REFERENCE,
       },
     });
 

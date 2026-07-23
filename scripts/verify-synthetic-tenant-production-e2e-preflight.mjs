@@ -13,9 +13,6 @@ const fixedNow = new Date("2026-07-24T01:00:00.000Z");
 const accountEmail = "synthetic-e2e-001@example.invalid";
 const phaseApprovalReferences = {
   fixture_creation: "approval-fixture-2026-07-24",
-  authenticated_runtime: "approval-runtime-2026-07-24",
-  public_qr_submission: "approval-public-qr-2026-07-24",
-  cleanup_writes: "approval-cleanup-2026-07-24",
 };
 
 const manifest = buildSyntheticManifest({
@@ -43,10 +40,15 @@ assert.deepEqual(
   Object.fromEntries(
     Object.entries(manifest.phaseApprovals).map(([scope, approval]) => [
       scope,
-      approval.approvalReference,
+      approval?.approvalReference ?? null,
     ]),
   ),
-  phaseApprovalReferences,
+  {
+    fixture_creation: phaseApprovalReferences.fixture_creation,
+    authenticated_runtime: null,
+    public_qr_submission: null,
+    cleanup_writes: null,
+  },
 );
 
 const valid = validateSyntheticManifest(manifest, {
@@ -72,8 +74,12 @@ assert.equal(customerLikeResult.ok, false);
 assert.equal(customerLikeResult.errors.includes("tenant_code_invalid"), true);
 
 const bundledApproval = structuredClone(manifest);
-bundledApproval.phaseApprovals.authenticated_runtime.approvalReference =
-  bundledApproval.phaseApprovals.fixture_creation.approvalReference;
+bundledApproval.phaseApprovals.authenticated_runtime = {
+  approvedAt: fixedNow.toISOString(),
+  approvedBy: "authorized-human",
+  approvalReference:
+    bundledApproval.phaseApprovals.fixture_creation.approvalReference,
+};
 const bundledApprovalResult = validateSyntheticManifest(bundledApproval, {
   accountEmail,
   now: fixedNow,
