@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { listRiskShareSourcesForOwner } from "@/lib/risk-share/riskShareSourceRegistry";
+import { resolveRiskShareCanonicalSiteScopeForTenant } from "@/lib/risk-share/riskShareCanonicalSiteScopeServer";
+import { listRiskShareSourcesForTenant } from "@/lib/risk-share/riskShareSourceRegistry";
+import { getTenantRegistryConfigByCode } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -62,17 +64,31 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
   const companyName = cleanText(readParam(params, "companyName"), 120);
   const sourceId = cleanText(readParam(params, "sourceId"), 80);
 
-  let recentSources: Awaited<ReturnType<typeof listRiskShareSourcesForOwner>> = [];
+  let recentSources: Awaited<ReturnType<typeof listRiskShareSourcesForTenant>> = [];
   let sourceLookupFailed = false;
 
   if (companyCode) {
-    try {
-      recentSources = (await listRiskShareSourcesForOwner(companyCode)).slice(
-        0,
-        RECENT_SOURCE_DISPLAY_LIMIT,
-      );
-    } catch {
+    const tenant = await getTenantRegistryConfigByCode(companyCode).catch(() => null);
+    const siteScope = tenant
+      ? await resolveRiskShareCanonicalSiteScopeForTenant(
+          tenant.code,
+          tenant.defaultSiteId,
+        ).catch(() => ({ ok: false as const }))
+      : { ok: false as const };
+
+    if (!tenant || !siteScope.ok) {
       sourceLookupFailed = true;
+    } else {
+      try {
+        recentSources = (
+          await listRiskShareSourcesForTenant(
+            tenant.code,
+            siteScope.siteId,
+          )
+        ).slice(0, RECENT_SOURCE_DISPLAY_LIMIT);
+      } catch {
+        sourceLookupFailed = true;
+      }
     }
   }
 
@@ -82,6 +98,8 @@ export default async function ManualRiskShareCandidateCreatePage({ searchParams 
       ? "고객사 코드, sourceId, 작업명, 위험요인은 필수입니다. sourceId는 UUID 형식이어야 합니다."
       : error === "source_lookup_failed"
         ? "sourceId 확인 중 오류가 발생했습니다. Supabase 설정과 source 원장을 확인하세요."
+        : error === "site_scope_unavailable"
+          ? "고객사의 canonical site를 확인할 수 없습니다. tenant와 기본 사업장 설정을 확인하세요."
         : error === "source_not_found"
           ? "해당 고객사 코드와 sourceId가 연결된 원본 source를 찾지 못했습니다."
           : error === "insert_failed"
