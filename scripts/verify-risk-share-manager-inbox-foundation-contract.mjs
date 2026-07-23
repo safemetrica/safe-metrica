@@ -20,7 +20,8 @@ const checks = [
     && model.includes('source:raw_payload->>source,mode:raw_payload->>mode')],
   ["only existing monthly review can transition", model.includes('canTransition: type === "monthly"')],
   ["active tenant and session manager required", page.includes("resolveActiveRiskSharePublicTenant") && page.includes("requireTenantManagerAccessForCurrentSession")],
-  ["query cannot choose tenant after access", page.includes("listManagerInboxItems(tenant.tenant.code)")],
+  ["query cannot choose tenant or site after access", page.includes("listManagerInboxItems(tenant.tenant.code, defaultSite?.id ?? null)")
+    && page.includes("getDefaultTenantSiteConfigByTenantCode(tenant.tenant.code)")],
   ["detail and KST rendering", page.includes("selectedId") && page.includes("formatSeoulCustomerDateTime")],
   ["existing monthly workflow retained", workspace.includes('#confirmation-review') && workspace.includes("item.canTransition")],
   ["monthly audit history is tenant and submission scoped", model.includes('"risk_share_confirmation_review_events"')
