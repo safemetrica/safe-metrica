@@ -1,6 +1,7 @@
 import "server-only";
 
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 
 export type ManagerInboxType = "monthly" | "prework" | "anonymous" | "visitor" | "representative";
 export type ManagerInboxStatus = "unreviewed" | "in_review" | "completed";
@@ -59,13 +60,14 @@ function resolveType(sourceValue: unknown, modeValue: unknown): ManagerInboxType
   return SOURCE_TYPES[mode ? `${source}:${mode}` : source] ?? null;
 }
 
-export async function listManagerInboxItems(companyCode: string): Promise<ManagerInboxItem[]> {
+export async function listManagerInboxItems(companyCode: string, siteId: string | null = null): Promise<ManagerInboxItem[]> {
   const query = new URLSearchParams({
     select: "id,title,content,location,submitter,anonymous,created_at,manager_review_status,manager_action_note,version_lock_id,source:raw_payload->>source,mode:raw_payload->>mode",
     tenant_code: `eq.${companyCode}`,
     order: "created_at.desc,id.desc",
     limit: "200",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
   const rows = await selectSupabaseExportRows<DbRow>("field_participation_submissions", query);
   return rows.flatMap((row): ManagerInboxItem[] => {
     const id = text(row.id);
