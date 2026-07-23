@@ -1,6 +1,7 @@
 import "server-only";
 
 import { selectSupabaseExportRows } from "@/lib/supabaseServer";
+import { applyRiskShareDefaultSiteScope } from "@/lib/risk-share/riskShareDefaultSiteScope";
 
 export type ConfirmationReviewStatus = "unreviewed" | "in_review" | "completed";
 
@@ -25,7 +26,7 @@ type DbRow = {
 const STATUSES = new Set<ConfirmationReviewStatus>(["unreviewed", "in_review", "completed"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export async function listManagerConfirmationReviews(companyCode: string) {
+export async function listManagerConfirmationReviews(companyCode: string, siteId: string | null = null) {
   const query = new URLSearchParams({
     select: "id,version_lock_id,title,created_at,manager_review_status,manager_action_note",
     tenant_code: `eq.${companyCode}`,
@@ -35,6 +36,7 @@ export async function listManagerConfirmationReviews(companyCode: string) {
     order: "created_at.desc",
     limit: "100",
   });
+  applyRiskShareDefaultSiteScope(query, siteId);
   const rows = await selectSupabaseExportRows<DbRow>("field_participation_submissions", query);
   return rows.flatMap((row): ManagerConfirmationReviewRow[] => {
     if (typeof row.id !== "string" || typeof row.version_lock_id !== "string") return [];
