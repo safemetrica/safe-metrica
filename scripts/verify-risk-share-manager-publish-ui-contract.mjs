@@ -77,7 +77,8 @@ check(
 );
 check(
   "page reads publish state with server tenant",
-  page.includes("listRiskShareManagerPublishState(selectedTenantCode, lockMonth)"),
+  page.includes("listRiskShareManagerPublishState(")
+    && page.includes("siteScope.siteId,"),
 );
 check(
   "page contains no mutation call",

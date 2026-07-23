@@ -70,8 +70,13 @@ check(
 );
 check(
   "invalid inputs fail closed",
-  src.includes("if (!companyCode || !lockMonth)") &&
+  src.includes("if (!companyCode || !lockMonth || !UUID_PATTERN.test(siteId))") &&
     src.includes('return { status: "failed" };'),
+);
+check(
+  "canonical site reaches both Review Items and active Version reads",
+  src.includes("listRiskShareItemsForManagerReview(companyCode, siteId)") &&
+    src.includes("fetchActiveVersionForMonth(companyCode, lockMonth, siteId)"),
 );
 
 check("active lookup exists", activeLookup !== null);
@@ -79,7 +84,8 @@ check(
   "active lookup is exact tenant month active",
   activeLookup?.includes("company_code: `eq.${companyCode}`") &&
     activeLookup.includes("lock_month: `eq.${lockMonth}`") &&
-    activeLookup.includes('lock_status: "eq.active"'),
+    activeLookup.includes('lock_status: "eq.active"') &&
+    activeLookup.includes("applyRiskShareDefaultSiteScope(query, siteId)"),
 );
 check(
   "active lookup selects tenant lineage",

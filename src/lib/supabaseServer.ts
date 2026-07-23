@@ -1545,6 +1545,7 @@ export type ReviewRiskShareItemCode =
   | "validation_failed"
   | "forbidden"
   | "not_found"
+  | "target_scope_mismatch"
   | "locked"
   | "idempotency_conflict"
   | "stale_revision"
@@ -1564,6 +1565,7 @@ export type ReviewRiskShareItemAction = "include" | "edit_include" | "exclude";
 export type ReviewRiskShareItemParams = {
   itemId: string;
   companyCode: string;
+  siteId: string;
   actorMembershipId: string;
   expectedRevision: number;
   action: ReviewRiskShareItemAction;
@@ -1673,7 +1675,9 @@ function toSafeReviewedRiskShareItem(value: unknown): SafeReviewedRiskShareItem 
  * validates membership, locks the item row, enforces optimistic
  * concurrency, and writes the risk_share_item_review_events audit row --
  * this helper must never PATCH risk_share_items or insert into the audit
- * table directly. */
+ * table directly. The application preflight binds the requested Item to the
+ * canonical site and expected revision before the RPC; the RPC remains the
+ * final transaction-time concurrency and audit boundary. */
 export async function reviewRiskShareItemForTenant(
   params: ReviewRiskShareItemParams
 ): Promise<ReviewRiskShareItemResult> {
@@ -1690,6 +1694,49 @@ export async function reviewRiskShareItemForTenant(
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
     return failClosed("request_failed");
+  }
+
+  if (
+    !REVIEWED_ITEM_UUID_PATTERN.test(params.itemId)
+    || !REVIEWED_ITEM_UUID_PATTERN.test(params.siteId)
+    || !REVIEWED_ITEM_COMPANY_CODE_PATTERN.test(params.companyCode)
+    || !Number.isInteger(params.expectedRevision)
+    || params.expectedRevision < 1
+  ) {
+    return failClosed("validation_failed");
+  }
+
+  const targetQuery = new URLSearchParams({
+    select: "id,review_revision_text:review_revision::text",
+    id: `eq.${params.itemId}`,
+    company_code: `eq.${params.companyCode}`,
+    limit: "2",
+  });
+  targetQuery.set(
+    "or",
+    `(site_id.eq.${params.siteId},site_id.is.null)`,
+  );
+
+  let targetRows: Array<{ id?: unknown; review_revision_text?: unknown }>;
+
+  try {
+    targetRows = await selectSupabaseExportRows<{
+      id?: unknown;
+      review_revision_text?: unknown;
+    }>(
+      "risk_share_items",
+      targetQuery,
+    );
+  } catch {
+    return failClosed("request_failed");
+  }
+
+  if (targetRows.length !== 1 || targetRows[0]?.id !== params.itemId) {
+    return failClosed("target_scope_mismatch");
+  }
+
+  if (targetRows[0]?.review_revision_text !== String(params.expectedRevision)) {
+    return failClosed("stale_revision");
   }
 
   let res: Response;

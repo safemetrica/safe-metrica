@@ -140,7 +140,11 @@ export default async function RiskShareManagerPublishPage({
   }
 
   const lockMonth = getCurrentKstMonth();
-  const readResult = await listRiskShareManagerPublishState(selectedTenantCode, lockMonth);
+  const readResult = await listRiskShareManagerPublishState(
+    selectedTenantCode,
+    lockMonth,
+    siteScope.siteId,
+  );
   const managerHref = buildRiskShareLangHref(
     "/risk-share/manager",
     { company: selectedTenantCode },

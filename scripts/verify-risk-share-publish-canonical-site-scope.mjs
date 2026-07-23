@@ -6,7 +6,7 @@ const route = read("src/app/api/risk-share/manager/publish/route.ts");
 
 const pageGuard = page.indexOf("const siteScope = await");
 const pageRead = page.indexOf(
-  "listRiskShareManagerPublishState(selectedTenantCode, lockMonth)",
+  "listRiskShareManagerPublishState(",
 );
 const routeGuard = route.indexOf("const siteScope = await");
 const routeBodyRead = route.indexOf("request.text()");

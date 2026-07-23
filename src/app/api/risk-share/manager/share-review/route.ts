@@ -225,6 +225,7 @@ const RESULT_CODE_STATUS: Record<ReviewRiskShareItemCode, number> = {
   validation_failed: 422,
   forbidden: 403,
   not_found: 404,
+  target_scope_mismatch: 404,
   locked: 409,
   idempotency_conflict: 409,
   stale_revision: 409,
@@ -319,6 +320,7 @@ export async function POST(request: NextRequest) {
   const result = await reviewRiskShareItemForTenant({
     itemId: validatedBody.itemId,
     companyCode: selectedTenantCode,
+    siteId: siteScope.siteId,
     actorMembershipId,
     expectedRevision: validatedBody.expectedRevision,
     action: validatedBody.action,
@@ -333,6 +335,8 @@ export async function POST(request: NextRequest) {
   });
 
   const status = RESULT_CODE_STATUS[result.code] ?? 503;
+  const responseCode =
+    result.code === "target_scope_mismatch" ? "not_found" : result.code;
 
   // The browser only ever needs to know whether the mutation succeeded and
   // whether it was a replay -- it re-reads the authoritative item state via
@@ -341,7 +345,7 @@ export async function POST(request: NextRequest) {
   // reviewRiskShareItemForTenant / toSafeReviewedRiskShareItem) but never
   // forwarded to the client.
   return NextResponse.json(
-    { ok: result.ok, code: result.code, replayed: result.replayed },
+    { ok: result.ok, code: responseCode, replayed: result.replayed },
     { status },
   );
 }
