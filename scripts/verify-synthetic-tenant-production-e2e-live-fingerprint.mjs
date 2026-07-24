@@ -4,6 +4,10 @@ import fs from "node:fs";
 const sqlPath =
   "scripts/sql/synthetic_tenant_production_e2e_live_fingerprint_v1.sql";
 const sql = fs.readFileSync(sqlPath, "utf8");
+const preflightDoc = fs.readFileSync(
+  "docs/ops/SAFEMETRICA_SYNTHETIC_TENANT_PRODUCTION_E2E_PREFLIGHT_V1.md",
+  "utf8",
+);
 
 assert.match(sql, /begin transaction read only;/i);
 assert.match(sql, /rollback;/i);
@@ -13,6 +17,8 @@ assert.equal(
 );
 assert.match(sql, /SCHEMA_RLS_AND_SERVICE_GRANT_FINGERPRINT_PASS/);
 assert.match(sql, /HOLD_SCHEMA_OR_GRANT_DRIFT/);
+assert.match(preflightDoc, /SCHEMA_RLS_AND_SERVICE_GRANT_FINGERPRINT_PASS/);
+assert.doesNotMatch(preflightDoc, /\bSCHEMA_AND_GRANT_FINGERPRINT_PASS\b/);
 assert.match(sql, /migration_inventory_verified/);
 assert.match(sql, /vercel_private_blob_verified/);
 assert.match(sql, /fixture_creation_authorized/);
