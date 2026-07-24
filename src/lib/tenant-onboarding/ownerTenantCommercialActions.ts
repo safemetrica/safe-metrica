@@ -22,6 +22,7 @@ const ELIGIBLE_TENANT_STATUSES = new Set(["onboarding", "active"]);
 const EXISTING_MEMBERSHIP_STATUSES = ["invited", "active", "suspended"];
 const ACTIVE_MANAGER_ROLES = new Set<TenantMembershipRole>(["tenant_admin"]);
 const EXISTING_MEMBERSHIP_LOOKUP_LIMIT = 200;
+const OWNER_INVITE_REDIRECT_URL = "https://www.safemetrica.com/auth/callback";
 
 function readRowString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -32,6 +33,8 @@ export type OwnerTenantActionFailureReason =
   | "tenant_not_found"
   | "tenant_not_eligible"
   | "membership_exists"
+  | "invite_failed"
+  | "invite_rollback_failed"
   | "membership_insert_failed"
   | "default_site_required"
   | "active_manager_required"
@@ -168,6 +171,168 @@ async function insertTenantMembershipRow(record: Record<string, unknown>) {
   });
 
   return { ok: res.ok as boolean };
+}
+
+function getSupabaseAuthAdminConfig() {
+  const supabaseUrl = getSupabaseUrl();
+  const serviceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null;
+  }
+
+  return { supabaseUrl, serviceRoleKey };
+}
+
+async function sendSupabaseAuthInvite(
+  config: NonNullable<ReturnType<typeof getSupabaseAuthAdminConfig>>,
+  email: string,
+  displayName: string,
+) {
+  const inviteUrl = new URL(`${config.supabaseUrl}/auth/v1/invite`);
+  inviteUrl.searchParams.set("redirect_to", OWNER_INVITE_REDIRECT_URL);
+  const res = await fetch(inviteUrl, {
+    method: "POST",
+    headers: {
+      apikey: config.serviceRoleKey,
+      Authorization: `Bearer ${config.serviceRoleKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      data: {
+        display_name: displayName || undefined,
+      },
+    }),
+    cache: "no-store",
+  });
+  const data = await res.json().catch(() => null);
+
+  return {
+    ok: res.ok && typeof data?.id === "string",
+    userId: typeof data?.id === "string" ? data.id : null,
+  };
+}
+
+async function deleteSupabaseAuthUser(
+  config: NonNullable<ReturnType<typeof getSupabaseAuthAdminConfig>>,
+  userId: string,
+) {
+  const res = await fetch(
+    `${config.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
+    {
+      method: "DELETE",
+      headers: {
+        apikey: config.serviceRoleKey,
+        Authorization: `Bearer ${config.serviceRoleKey}`,
+      },
+      cache: "no-store",
+    },
+  );
+
+  return { ok: res.ok };
+}
+
+export type InviteOwnerTenantMembershipInput = Omit<
+  CreateOwnerTenantMembershipInput,
+  "membershipStatus"
+>;
+
+export type InviteOwnerTenantMembershipResult =
+  | { ok: true; status: "invited"; companyCode: string }
+  | { ok: false; reason: OwnerTenantActionFailureReason };
+
+export async function inviteOwnerTenantMembership(
+  input: InviteOwnerTenantMembershipInput,
+): Promise<InviteOwnerTenantMembershipResult> {
+  const tenantResolution = await resolveEligibleTenant(input.companyCode);
+
+  if (!tenantResolution.ok) {
+    return tenantResolution;
+  }
+
+  const tenant = tenantResolution.tenant;
+  const normalizedEmail = input.managerEmail.trim().toLowerCase();
+  let existingMembership: TenantMembershipRow | null;
+
+  try {
+    existingMembership = await findExistingTenantMembership(
+      tenant.id,
+      tenant.code,
+      normalizedEmail,
+    );
+  } catch {
+    return { ok: false, reason: "missing_server_config" };
+  }
+
+  if (existingMembership) {
+    return { ok: false, reason: "membership_exists" };
+  }
+
+  const authAdminConfig = getSupabaseAuthAdminConfig();
+
+  if (!authAdminConfig) {
+    return { ok: false, reason: "missing_server_config" };
+  }
+
+  const inviteResult = await sendSupabaseAuthInvite(
+    authAdminConfig,
+    normalizedEmail,
+    input.displayName,
+  ).catch(() => ({ ok: false as const, userId: null }));
+  const invitedUserId = inviteResult.userId;
+
+  if (!inviteResult.ok || !invitedUserId) {
+    return { ok: false, reason: "invite_failed" };
+  }
+
+  const insertResult = await insertTenantMembershipRow({
+    tenant_id: tenant.id,
+    tenant_code: tenant.code,
+    user_id: invitedUserId,
+    user_email: normalizedEmail,
+    display_name: input.displayName || null,
+    role: input.role,
+    status: "invited",
+    invited_by: "owner_console",
+    accepted_at: null,
+    revoked_at: null,
+    raw_payload: {
+      source: "owner_auth_invite_v1",
+      createdBy: "owner_console",
+      inviteRedirectPath: "/auth/callback",
+    },
+  });
+
+  if (insertResult.ok) {
+    return { ok: true, status: "invited", companyCode: tenant.code };
+  }
+
+  let recheckedMembership: TenantMembershipRow | null;
+
+  try {
+    recheckedMembership = await findExistingTenantMembership(
+      tenant.id,
+      tenant.code,
+      normalizedEmail,
+    );
+  } catch {
+    recheckedMembership = null;
+  }
+
+  if (recheckedMembership) {
+    return { ok: false, reason: "membership_exists" };
+  }
+
+  const rollbackResult = await deleteSupabaseAuthUser(
+    authAdminConfig,
+    invitedUserId,
+  ).catch(() => null);
+  if (!rollbackResult?.ok) {
+    return { ok: false, reason: "invite_rollback_failed" };
+  }
+
+  return { ok: false, reason: "membership_insert_failed" };
 }
 
 export type CreateOwnerTenantMembershipInput = {
