@@ -65,6 +65,18 @@ be presented as Production E2E PASS. The remaining Supabase migration,
 function/grant, RLS, and Storage checks require an authenticated Production
 inspector before the first write.
 
+Run the repository-pinned live catalog fingerprint in the Supabase SQL Editor:
+
+```text
+scripts/sql/synthetic_tenant_production_e2e_live_fingerprint_v1.sql
+```
+
+The fingerprint reads system catalogs and bucket configuration only. It reads
+no customer or worker rows and leaves migration inventory, Vercel private Blob,
+fixture creation, and write authorization false. A final
+`SCHEMA_AND_GRANT_FINGERPRINT_PASS` is necessary but is not sufficient to
+authorize fixture creation.
+
 ## Commands
 
 Required secret or sensitive inputs must be provided as process environment
