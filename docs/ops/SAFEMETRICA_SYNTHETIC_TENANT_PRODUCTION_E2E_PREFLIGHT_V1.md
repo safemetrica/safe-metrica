@@ -93,6 +93,17 @@ delta aborts the entire public-row transaction. Auth account creation remains a
 separate operator step; an Auth-only partial state is HOLD and must not be
 silently retried or cleaned up without the separate cleanup approval.
 
+The Production database does not expose a SafeMetrica application migration
+history relation. The executor therefore requires the explicit status
+`app_history_unavailable_repository_inventory_live_fingerprint`; it must not be
+reported as a verified database migration inventory. Repository inventory,
+live schema/grant fingerprint, Vercel Production, Storage boundary, approval,
+manifest, synthetic account identity digest, and the created activation and
+entitlement audit identities are bound into one SHA-256 canonical evidence
+digest. The digest and non-secret references are stored in the synthetic
+tenant registry in the same transaction. Raw account email, password, token,
+credential, customer data, and worker data are not stored in that binding.
+
 ## Commands
 
 Required secret or sensitive inputs must be provided as process environment
