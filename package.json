@@ -86,6 +86,7 @@
     "verify:manager-inbox-customer-workspace-preview": "node scripts/verify-manager-inbox-customer-workspace-preview.mjs",
     "verify:risk-share-entitlement-enforcement-readiness-audit": "node scripts/verify-risk-share-entitlement-enforcement-readiness-audit.mjs",
     "verify:synthetic-tenant-production-e2e-fixture": "node scripts/verify-synthetic-tenant-production-e2e-fixture-contract.mjs",
+    "verify:synthetic-tenant-production-e2e-fixture-creation": "node scripts/verify-synthetic-tenant-production-e2e-fixture-creation.mjs",
     "verify:synthetic-tenant-production-e2e-preflight": "node scripts/verify-synthetic-tenant-production-e2e-preflight.mjs",
     "verify:synthetic-tenant-production-e2e-live-fingerprint": "node scripts/verify-synthetic-tenant-production-e2e-live-fingerprint.mjs",
     "synthetic-tenant-production-e2e:manifest": "node scripts/synthetic-tenant-production-e2e-preflight.mjs manifest",
