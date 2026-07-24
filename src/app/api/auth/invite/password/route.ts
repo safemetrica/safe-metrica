@@ -11,6 +11,10 @@ export const revalidate = 0;
 
 const MAX_REQUEST_BYTES = 16 * 1024;
 
+type JsonBodyResult =
+  | { ok: true; body: Record<string, unknown> }
+  | { ok: false; status: 400 | 413 };
+
 function json(body: Record<string, unknown>, status: number) {
   return NextResponse.json(body, {
     status,
@@ -50,6 +54,57 @@ function isSameOrigin(request: NextRequest) {
   }
 }
 
+async function readLimitedJsonBody(request: NextRequest): Promise<JsonBodyResult> {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(contentLength) || contentLength < 0) {
+    return { ok: false, status: 400 };
+  }
+  if (contentLength > MAX_REQUEST_BYTES) {
+    return { ok: false, status: 413 };
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) {
+    return { ok: false, status: 400 };
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_REQUEST_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413 };
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return { ok: false, status: 400 };
+  }
+
+  const rawBody = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    rawBody.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(rawBody));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { ok: false, status: 400 };
+    }
+    return { ok: true, body: parsed as Record<string, unknown> };
+  } catch {
+    return { ok: false, status: 400 };
+  }
+}
+
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
     return json({ ok: false, reason: "request_invalid" }, 400);
@@ -60,12 +115,12 @@ export async function POST(request: NextRequest) {
     return json({ ok: false, reason: "request_invalid" }, 415);
   }
 
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (!Number.isFinite(contentLength) || contentLength < 0 || contentLength > MAX_REQUEST_BYTES) {
-    return json({ ok: false, reason: "request_invalid" }, 413);
+  const bodyResult = await readLimitedJsonBody(request);
+  if (!bodyResult.ok) {
+    return json({ ok: false, reason: "request_invalid" }, bodyResult.status);
   }
 
-  const body = await request.json().catch(() => null);
+  const body = bodyResult.body;
   const accessToken = body?.accessToken;
   const password = body?.password;
   const passwordConfirm = body?.passwordConfirm;

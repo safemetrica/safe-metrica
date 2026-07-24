@@ -46,7 +46,9 @@ const checks = [
       && /allowedHosts\.has\(originUrl\.host\)/.test(route)
       && /allowedProtocols\.has\(originUrl\.protocol\)/.test(route)
       && /application\/json/.test(route)
-      && /MAX_REQUEST_BYTES/.test(route),
+      && /request\.body\?\.getReader\(\)/.test(route)
+      && /totalBytes > MAX_REQUEST_BYTES/.test(route)
+      && /reader\.cancel\(\)/.test(route),
   ],
   [
     "server validates invite token and matching password",
