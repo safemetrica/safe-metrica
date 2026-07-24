@@ -67,6 +67,7 @@
     "verify:risk-share-monthly-evidence-multi-site-gate": "node scripts/verify-risk-share-monthly-evidence-multi-site-gate.mjs",
     "verify:risk-share-manager-inbox-review-rpc": "node scripts/verify-risk-share-manager-inbox-review-rpc-contract.mjs",
     "verify:self-service-signup": "node scripts/verify-self-service-signup-contract.mjs",
+    "verify:auth-invite-password": "node scripts/verify-auth-invite-password-contract.mjs",
     "verify:self-service-onboarding-manager-access": "node scripts/verify-self-service-onboarding-manager-access.mjs",
     "verify:self-service-tenant-activation": "node scripts/verify-self-service-tenant-activation-contract.mjs",
     "verify:owner-approved-tenant-activation": "node scripts/verify-owner-approved-tenant-activation-contract.mjs",

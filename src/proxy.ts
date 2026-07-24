@@ -4,6 +4,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/signup",
+  "/auth/callback",
   "/field/participation",
   "/field/anonymous-feedback",
   "/field/representative-confirmation",

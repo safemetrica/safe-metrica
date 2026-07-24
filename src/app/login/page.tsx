@@ -60,11 +60,17 @@ function AlertNote({ tone, children }: { tone: AlertTone; children: React.ReactN
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; callbackUrl?: string; registered?: string }>;
+  searchParams?: Promise<{
+    error?: string;
+    callbackUrl?: string;
+    registered?: string;
+    password_set?: string;
+  }>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const error = resolvedSearchParams.error;
   const registered = resolvedSearchParams.registered === "1";
+  const passwordSet = resolvedSearchParams.password_set === "1";
   const isTenantRequired = error === "tenant_required";
   const hasOtherError = Boolean(error && !isTenantRequired);
   const rawCallbackUrl = readSearchParam(resolvedSearchParams.callbackUrl);
@@ -181,6 +187,16 @@ export default async function LoginPage({
                     <AlertNote tone="info">
                       <p style={{ fontWeight: 700, color: "var(--text)" }}>가입이 완료되었습니다.</p>
                       <p style={{ marginTop: "4px" }}>가입한 이메일과 비밀번호로 로그인해 주세요.</p>
+                    </AlertNote>
+                  ) : null}
+                  {passwordSet ? (
+                    <AlertNote tone="info">
+                      <p style={{ fontWeight: 700, color: "var(--text)" }}>
+                        비밀번호 설정이 완료되었습니다.
+                      </p>
+                      <p style={{ marginTop: "4px" }}>
+                        초대받은 이메일과 새 비밀번호로 로그인해 주세요.
+                      </p>
                     </AlertNote>
                   ) : null}
                   {!hasExplicitCallbackUrl ? (
