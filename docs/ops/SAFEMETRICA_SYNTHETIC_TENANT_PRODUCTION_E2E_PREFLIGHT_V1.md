@@ -77,6 +77,22 @@ fixture creation, and write authorization false. A final
 `SCHEMA_RLS_AND_SERVICE_GRANT_FINGERPRINT_PASS` is necessary but is not
 sufficient to authorize fixture creation.
 
+After the synthetic Auth account is confirmed and every remaining live
+evidence reference is recorded, the public fixture rows are created by the
+repository-pinned transaction:
+
+```text
+scripts/sql/synthetic_tenant_production_e2e_fixture_creation_v1.sql
+```
+
+Every `__SM_E2E_*__` placeholder comes from the protected manifest or verified
+live evidence. The transaction creates exactly one tenant, site, membership,
+activation event, `internal_test` entitlement, and entitlement event. Any
+missing reference, pre-existing identity, wrong tenant/site linkage, or counted
+delta aborts the entire public-row transaction. Auth account creation remains a
+separate operator step; an Auth-only partial state is HOLD and must not be
+silently retried or cleaned up without the separate cleanup approval.
+
 ## Commands
 
 Required secret or sensitive inputs must be provided as process environment
