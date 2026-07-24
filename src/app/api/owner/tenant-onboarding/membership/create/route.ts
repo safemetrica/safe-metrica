@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   createOwnerTenantMembership,
+  inviteOwnerTenantMembership,
   normalizeStrictOwnerCompanyCode,
 } from "@/lib/tenant-onboarding/ownerTenantCommercialActions";
 
@@ -12,15 +13,77 @@ export const revalidate = 0;
 const ALLOWED_ROLES = new Set(["tenant_admin", "tenant_manager"]);
 const ALLOWED_MEMBERSHIP_STATUSES = new Set(["invited", "active"]);
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const MAX_REQUEST_BYTES = 16 * 1024;
 
 function isOwnerTokenValid(ownerToken?: string) {
   const expectedToken = process.env.SAFEMETRICA_OWNER_TOKEN;
   return Boolean(expectedToken && ownerToken === expectedToken);
 }
 
-function readText(formData: FormData, key: string, max = 500) {
+function readText(formData: URLSearchParams, key: string, max = 500) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function isSameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+
+  try {
+    const originUrl = new URL(origin);
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    const requestHost = request.headers.get("host")?.trim();
+    const allowedHosts = new Set(
+      [forwardedHost, requestHost, request.nextUrl.host].filter(
+        (value): value is string => Boolean(value),
+      ),
+    );
+    const allowedProtocols = new Set(
+      [forwardedProtocol ? `${forwardedProtocol}:` : "", request.nextUrl.protocol].filter(Boolean),
+    );
+
+    return allowedHosts.has(originUrl.host) && allowedProtocols.has(originUrl.protocol);
+  } catch {
+    return false;
+  }
+}
+
+async function readLimitedForm(request: NextRequest) {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(contentLength) || contentLength < 0 || contentLength > MAX_REQUEST_BYTES) {
+    return null;
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) return null;
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_REQUEST_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return null;
+  }
+
+  const rawBody = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    rawBody.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return new URLSearchParams(new TextDecoder().decode(rawBody));
 }
 
 function buildRedirect(request: NextRequest, params: Record<string, string>) {
@@ -30,10 +93,14 @@ function buildRedirect(request: NextRequest, params: Record<string, string>) {
     if (value) url.searchParams.set(key, value);
   });
 
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, 303);
 }
 
 export async function POST(request: NextRequest) {
+  if (!isSameOrigin(request)) {
+    return buildRedirect(request, { error: "request_invalid" });
+  }
+
   const c = await cookies();
   const ownerToken = c.get("sm_owner_token")?.value;
 
@@ -41,7 +108,15 @@ export async function POST(request: NextRequest) {
     return buildRedirect(request, { error: "owner_required" });
   }
 
-  const formData = await request.formData();
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().startsWith("application/x-www-form-urlencoded")) {
+    return buildRedirect(request, { error: "request_invalid" });
+  }
+
+  const formData = await readLimitedForm(request);
+  if (!formData) {
+    return buildRedirect(request, { error: "request_invalid" });
+  }
 
   const companyCodeInput = readText(formData, "company_code", 80);
   const managerEmailInput = readText(formData, "manager_email", 320).toLowerCase();
@@ -87,13 +162,20 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const result = await createOwnerTenantMembership({
-    companyCode,
-    managerEmail: managerEmailInput,
-    displayName,
-    role: role as "tenant_admin" | "tenant_manager",
-    membershipStatus: membershipStatus as "invited" | "active",
-  });
+  const result = membershipStatus === "invited"
+    ? await inviteOwnerTenantMembership({
+        companyCode,
+        managerEmail: managerEmailInput,
+        displayName,
+        role: role as "tenant_admin" | "tenant_manager",
+      })
+    : await createOwnerTenantMembership({
+        companyCode,
+        managerEmail: managerEmailInput,
+        displayName,
+        role: role as "tenant_admin" | "tenant_manager",
+        membershipStatus: "active",
+      });
 
   if (!result.ok) {
     return buildRedirect(request, {

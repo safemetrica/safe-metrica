@@ -219,6 +219,8 @@ const commercialActionErrorMessages: Record<string, string> = {
   tenant_not_found: "등록된 고객사 코드를 찾을 수 없습니다.",
   tenant_not_eligible: "이 고객사는 현재 상태에서 이 작업을 진행할 수 없습니다.",
   membership_exists: "이미 등록된 관리자 멤버십입니다.",
+  invite_failed: "초대 메일을 보내지 못했습니다. Auth 사용자 상태와 메일 설정을 확인해 주세요.",
+  invite_rollback_failed: "초대 후 연결 복구에 실패했습니다. Auth 사용자 상태를 확인하기 전에는 재시도하지 마세요.",
   membership_insert_failed: "관리자 멤버십 저장에 실패했습니다.",
   default_site_required: "기본 현장명이 필요합니다.",
   active_manager_required: "활성 관리자 멤버십이 필요합니다.",
@@ -613,6 +615,8 @@ export default async function OwnerTenantRegistryDraftPage({
                 ? commercialActionErrorMessages[actionErrorCode] ?? "요청을 처리하지 못했습니다."
                 : membershipStatus === "created"
                   ? "관리자 멤버십이 연결되었습니다."
+                  : membershipStatus === "invited"
+                    ? "관리자 초대 메일을 발송하고 멤버십을 연결했습니다."
                   : membershipStatus === "already_exists"
                     ? "이미 등록된 관리자 멤버십입니다."
                     : activationStatus === "activated"
@@ -630,12 +634,12 @@ export default async function OwnerTenantRegistryDraftPage({
             method="post"
             className="rounded-3xl border border-slate-800 bg-white p-6 text-slate-950"
           >
-            <h2 className="text-xl font-black">관리자 멤버십 연결</h2>
+            <h2 className="text-xl font-black">관리자 초대·멤버십 연결</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              이 작업은 로그인 권한 원장을 연결하며, Auth 계정이나 비밀번호를 자동 생성하지 않습니다.
+              invited를 선택하면 Production callback으로 연결되는 Supabase 초대 메일을 보내고 로그인 권한 원장을 함께 연결합니다.
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              활성 상태는 Supabase Auth 계정과 이메일 확인을 별도로 완료한 경우에만 선택합니다.
+              active는 기존 Auth 계정과 이메일 확인을 별도로 완료한 예외 상황에서만 사용합니다.
             </p>
 
             <div className="mt-5 grid gap-4">
@@ -701,7 +705,7 @@ export default async function OwnerTenantRegistryDraftPage({
               type="submit"
               className="mt-5 w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-slate-950 hover:bg-emerald-300"
             >
-              관리자 멤버십 연결
+              관리자 초대·멤버십 연결
             </button>
           </form>
 
